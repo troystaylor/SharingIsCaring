@@ -1,0 +1,50 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "envId": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Environment ID (envId)",
+          "description": "Dataverse environment GUID to route MCP requests",
+          "tooltip": "Example: 00000000-0000-0000-0000-000000000000"
+        }
+      },
+      "token": {
+        "type": "oauthSetting",
+        "oAuthSettings": {
+          "identityProvider": "aad",
+          "clientId": "REPLACE_WITH_CLIENT_ID",
+          "scopes": [
+            "https://agent365.svc.cloud.microsoft/.default"
+          ],
+          "redirectMode": "Global",
+          "redirectUrl": "https://global.consent.azure-apim.net/redirect",
+          "properties": {
+            "IsFirstParty": "False",
+            "AzureActiveDirectoryResourceId": "https://agent365.svc.cloud.microsoft"
+          },
+          "customParameters": {
+            "resourceUri": { "value": "https://agent365.svc.cloud.microsoft" },
+            "loginUri": { "value": "https://login.microsoftonline.com" },
+            "loginUriAAD": { "value": "https://login.microsoftonline.com" }
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#da3b01",
+    "capabilities": ["actions"],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "policyTemplateInstances": [
+      {
+        "templateName": "RouteRequestToEndpoint",
+        "title": "Route MCP to Agent 365",
+        "parameters": {
+          "scheme": "https",
+          "host": "agent365.svc.cloud.microsoft",
+          "baseUrl": "/mcp/environments/@connectionParameters('envId')/servers/MCPManagement"
+        }
+      }
+    ]
+  }
+}
