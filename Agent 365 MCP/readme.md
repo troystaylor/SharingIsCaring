@@ -10,7 +10,6 @@ Power Platform custom connector template that proxies MCP JSON-RPC requests to t
 ## Files
 - `apiDefinition.swagger.json` — OpenAPI 2.0 with `/mcp` operation and OAuth2 security
 - `apiProperties.json` — Connection parameters (`envId`), OAuth2 settings, RouteRequestToEndpoint policy
-- `script.csx` — No-op placeholder (routing handled by policy)
 
 ## Prerequisites
 1. **Azure AD App Registration** for OAuth2:
