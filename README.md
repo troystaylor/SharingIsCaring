@@ -21,11 +21,11 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
 - MCP protocol support for natural language tool discovery in Copilot Studio
 - Policy-based automatic routing to correct API version
 
-**Location:** [`sharepoint-embedded-connector/`](sharepoint-embedded-connector/)
+**Location:** [`SharePoint Embedded/`](SharePoint%20Embedded/)
 
 **Quick Links:**
-- [Connector README](sharepoint-embedded-connector/readme.md)
-- [API Definition](sharepoint-embedded-connector/apiDefinition.swagger.json)
+- [Connector README](SharePoint%20Embedded/readme.md)
+- [API Definition](SharePoint%20Embedded/apiDefinition.swagger.json)
 - [Microsoft Learn - SharePoint Embedded](https://learn.microsoft.com/sharepoint/dev/embedded/overview)
 
 ## Getting Started
