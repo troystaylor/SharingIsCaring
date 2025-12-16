@@ -73,9 +73,6 @@ Most connectors use OAuth 2.0 with Microsoft Entra ID. Ensure:
 
 Connectors with MCP support expose operations as natural language tools discoverable in:
 - Copilot Studio
-- GitHub Copilot
-- Claude Desktop
-- Other MCP-compatible clients
 
 MCP endpoints support:
 - `initialize` - Establish protocol connection
