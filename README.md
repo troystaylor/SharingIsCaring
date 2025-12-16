@@ -4,6 +4,36 @@ A collection of Power Platform custom connectors and MCP servers for Microsoft G
 
 ## Connectors & MCP Servers
 
+### Agent 365 MCP
+
+Integrate enterprise agent capabilities for Microsoft 365 scenarios through the Model Context Protocol.
+
+**Location:** [`Agent 365 MCP/`](Agent%20365%20MCP/)
+
+### Copilot Retrieval
+
+Enable intelligent document retrieval and search capabilities for Copilot Studio.
+
+**Location:** [`Copilot Retrieval/`](Copilot%20Retrieval/)
+
+### MCP Management Connector
+
+Manage Model Context Protocol servers and tools programmatically.
+
+**Location:** [Connector Source](mcp-management-connector/) (if available in workspace)
+
+### MS Learn MCP
+
+Query and retrieve Microsoft Learn documentation through the Model Context Protocol.
+
+**Location:** [Connector Source](MS%20Learn%20MCP/) (if available in workspace)
+
+### PII Redactor Connector
+
+Detect and redact personally identifiable information (PII) from text content with support for multiple regions and jurisdictions.
+
+**Location:** [Connector Source](pii-redactor-connector/) (if available in workspace)
+
 ### SharePoint Embedded Connector
 
 Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensive operations.
@@ -19,41 +49,11 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
 - [Connector README](SharePoint%20Embedded/readme.md)
 - [API Definition](SharePoint%20Embedded/apiDefinition.swagger.json)
 
-### Agent 365 MCP
-
-Integrate enterprise agent capabilities for Microsoft 365 scenarios through the Model Context Protocol.
-
-**Location:** [`Agent 365 MCP/`](Agent%20365%20MCP/)
-
-### Copilot Retrieval
-
-Enable intelligent document retrieval and search capabilities for Copilot Studio.
-
-**Location:** [`Copilot Retrieval/`](Copilot%20Retrieval/)
-
-### PII Redactor Connector
-
-Detect and redact personally identifiable information (PII) from text content with support for multiple regions and jurisdictions.
-
-**Location:** [Connector Source](pii-redactor-connector/) (if available in workspace)
-
 ### Teams Transcript Connector
 
 Process and manage Microsoft Teams meeting transcripts through a Power Platform connector.
 
 **Location:** [Connector Source](teams-transcript-connector/) (if available in workspace)
-
-### MCP Management Connector
-
-Manage Model Context Protocol servers and tools programmatically.
-
-**Location:** [Connector Source](mcp-management-connector/) (if available in workspace)
-
-### MS Learn MCP
-
-Query and retrieve Microsoft Learn documentation through the Model Context Protocol.
-
-**Location:** [Connector Source](MS%20Learn%20MCP/) (if available in workspace)
 
 ## Getting Started
 
