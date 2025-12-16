@@ -16,24 +16,6 @@ Enable intelligent document retrieval and search capabilities for Copilot Studio
 
 **Location:** [`Copilot Retrieval/`](Copilot%20Retrieval/)
 
-### MCP Management Connector
-
-Manage Model Context Protocol servers and tools programmatically.
-
-**Location:** [Connector Source](mcp-management-connector/) (if available in workspace)
-
-### MS Learn MCP
-
-Query and retrieve Microsoft Learn documentation through the Model Context Protocol.
-
-**Location:** [Connector Source](MS%20Learn%20MCP/) (if available in workspace)
-
-### PII Redactor Connector
-
-Detect and redact personally identifiable information (PII) from text content with support for multiple regions and jurisdictions.
-
-**Location:** [Connector Source](pii-redactor-connector/) (if available in workspace)
-
 ### SharePoint Embedded Connector
 
 Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensive operations.
@@ -48,12 +30,6 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
 **Location:** [`SharePoint Embedded/`](SharePoint%20Embedded/)
 - [Connector README](SharePoint%20Embedded/readme.md)
 - [API Definition](SharePoint%20Embedded/apiDefinition.swagger.json)
-
-### Teams Transcript Connector
-
-Process and manage Microsoft Teams meeting transcripts through a Power Platform connector.
-
-**Location:** [Connector Source](teams-transcript-connector/) (if available in workspace)
 
 ## Getting Started
 
