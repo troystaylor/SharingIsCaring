@@ -10,6 +10,7 @@ Power Platform custom connector template that proxies MCP JSON-RPC requests to t
 ## Files
 - `apiDefinition.swagger.json` — OpenAPI 2.0 with `/mcp` operation and OAuth2 security
 - `apiProperties.json` — Connection parameters (`envId`), OAuth2 settings, RouteRequestToEndpoint policy
+- `script.csx` — MCP JSON-RPC proxy forwarding to Agent 365 MCPManagement server using `envId`
 
 ## Prerequisites
 1. **Azure AD App Registration** for OAuth2:
@@ -23,9 +24,9 @@ Power Platform custom connector template that proxies MCP JSON-RPC requests to t
 1. Import via Maker portal → Custom connectors → Import OpenAPI (apiDefinition.swagger.json)
 2. Security: Configure OAuth2 (AAD) with your app registration `clientId` and scope `https://agent365.svc.cloud.microsoft/.default`
 3. Add policy: Route request to endpoint
-	- Scheme: `https`
-	- Host: `agent365.svc.cloud.microsoft`
-	- Base URL: `/mcp/environments/@connectionParameters('envId')/servers/MCPManagement`
+   - Scheme: `https`
+   - Host: `agent365.svc.cloud.microsoft`
+   - Base URL: `/mcp/environments/@connectionParameters('envId')/servers/MCPManagement`
 4. Create a connection and set **envId** (your Dataverse environment GUID)
 
 ## Copilot Studio usage
