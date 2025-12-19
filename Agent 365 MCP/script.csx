@@ -9,87 +9,148 @@ using Newtonsoft.Json.Linq;
 
 public class Script : ScriptBase
 {
+    private const string ServerName = "Agent365McpProxy";
+    private const string ServerVersion = "1.0.0";
+    private const string ProtocolVersion = "2025-12-01";
+
+    private static bool _isInitialized = false;
+
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
         var envId = GetConnectionParameter("envId");
         if (string.IsNullOrWhiteSpace(envId))
         {
-            return new HttpResponseMessage(HttpStatusCode.BadRequest)
-            {
-                Content = new StringContent("Missing connection parameter: envId", Encoding.UTF8, "text/plain")
-            };
+            return CreateJsonRpcErrorResponse(null, -32602, "Invalid params", "Missing connection parameter: envId");
         }
 
-        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        string body;
+        try
+        {
+            body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            return CreateJsonRpcErrorResponse(null, -32700, "Parse error", "Unable to read request body");
+        }
 
         JObject request;
         try
         {
             request = JObject.Parse(body);
         }
-        catch
+        catch (JsonException)
         {
-            return await ProxyRawAsync(envId, body).ConfigureAwait(false);
+            return CreateJsonRpcErrorResponse(null, -32700, "Parse error", "Invalid JSON");
         }
 
-        var method = request.Value<string>("method");
-        var idToken = request["id"];
+        var method = request.Value<string>("method") ?? string.Empty;
+        var requestId = request["id"];
 
-        switch (method)
-        {
-            case "initialize":
-                return CreateMcpResponse(idToken, new JObject
-                {
-                    ["capabilities"] = new JObject
-                    {
-                        ["streaming"] = false
-                    }
-                });
-
-            case "tools/list":
-                return CreateMcpResponse(idToken, new JObject
-                {
-                    ["tools"] = BuildToolsList()
-                });
-
-            case "tools/call":
-                return await HandleToolsCallAsync(envId, request, idToken).ConfigureAwait(false);
-
-            default:
-                // Fallback: proxy to MCPManagement unchanged
-                return await ProxyRawAsync(envId, body).ConfigureAwait(false);
-        }
-    }
-
-    private string GetConnectionParameter(string name)
-    {
         try
         {
-            var raw = this.Context.ConnectionParameters[name]?.ToString();
-            return string.IsNullOrWhiteSpace(raw) ? null : raw;
+            switch (method)
+            {
+                case "initialize":
+                    return HandleInitialize(envId, requestId);
+
+                case "notifications/initialized":
+                    return HandleInitializedNotification();
+
+                case "tools/list":
+                    return HandleToolsList(requestId);
+
+                case "tools/call":
+                    return await HandleToolsCallAsync(envId, request, requestId).ConfigureAwait(false);
+
+                default:
+                    return CreateJsonRpcErrorResponse(requestId, -32601, "Method not found", method);
+            }
         }
-        catch
+        catch (JsonException ex)
         {
-            return null;
+            return CreateJsonRpcErrorResponse(requestId, -32700, "Parse error", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return CreateJsonRpcErrorResponse(requestId, -32603, "Internal error", ex.Message);
         }
     }
 
-    private async Task<HttpResponseMessage> HandleToolsCallAsync(string envId, JObject request, JToken idToken)
+    private HttpResponseMessage HandleInitialize(string envId, JToken requestId)
     {
+        _isInitialized = true;
+
+        var result = new JObject
+        {
+            ["protocolVersion"] = ProtocolVersion,
+            ["capabilities"] = new JObject
+            {
+                ["tools"] = new JObject
+                {
+                    ["listChanged"] = true
+                }
+            },
+            ["serverInfo"] = new JObject
+            {
+                ["name"] = ServerName,
+                ["version"] = ServerVersion
+            }
+        };
+
+        return CreateJsonRpcSuccessResponse(requestId, result);
+    }
+
+    private HttpResponseMessage HandleInitializedNotification()
+    {
+        _isInitialized = true;
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"status\":\"initialized\"}", Encoding.UTF8, "application/json")
+        };
+        return response;
+    }
+
+    private HttpResponseMessage HandleToolsList(JToken requestId)
+    {
+        if (!_isInitialized)
+        {
+            return CreateJsonRpcErrorResponse(requestId, -32002, "Server not initialized", "Call initialize first");
+        }
+
+        var result = new JObject
+        {
+            ["tools"] = BuildToolsList()
+        };
+
+        return CreateJsonRpcSuccessResponse(requestId, result);
+    }
+
+    private async Task<HttpResponseMessage> HandleToolsCallAsync(string envId, JObject request, JToken requestId)
+    {
+        if (!_isInitialized)
+        {
+            return CreateJsonRpcErrorResponse(requestId, -32002, "Server not initialized", "Call initialize first");
+        }
+
         var paramsObj = request["params"] as JObject;
-        var toolName = paramsObj?.Value<string>("name");
-        var arguments = paramsObj?["arguments"] as JObject;
+        if (paramsObj == null)
+        {
+            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "params object is required");
+        }
+
+        var toolName = paramsObj.Value<string>("name");
+        var arguments = paramsObj["arguments"] as JObject;
         var payload = arguments?["payload"];
 
         if (string.IsNullOrWhiteSpace(toolName) || payload == null)
         {
-            return CreateMcpError(idToken, -32602, "Invalid params: name and arguments.payload are required");
+            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "name and arguments.payload are required");
         }
 
         var serverName = ResolveServerName(toolName);
         if (string.IsNullOrWhiteSpace(serverName))
         {
-            return CreateMcpError(idToken, -32601, $"Unknown tool: {toolName}");
+            return CreateJsonRpcErrorResponse(requestId, -32601, "Method not found", $"Unknown tool: {toolName}");
         }
 
         var targetUrl = BuildServerUrl(envId, serverName);
@@ -101,7 +162,7 @@ public class Script : ScriptBase
         var response = await this.Context.SendAsync(forwardRequest, this.CancellationToken).ConfigureAwait(false);
         var respContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-        return CreateMcpResponse(idToken, new JObject
+        var result = new JObject
         {
             ["content"] = new JArray
             {
@@ -111,7 +172,9 @@ public class Script : ScriptBase
                     ["text"] = respContent
                 }
             }
-        });
+        };
+
+        return CreateJsonRpcSuccessResponse(requestId, result);
     }
 
     private string BuildServerUrl(string envId, string serverName)
@@ -143,8 +206,8 @@ public class Script : ScriptBase
     {
         var tools = new List<JObject>
         {
-            Tool("admintools", "Admin tools for Agent 365 governance (see admintools reference)"),
-            Tool("searchtools", "Copilot Search tools for Microsoft 365 content (see searchtools reference)"),
+            Tool("admintools", "Admin tools for Agent 365 governance (admintools reference)"),
+            Tool("searchtools", "Copilot Search tools for Microsoft 365 content (searchtools reference)"),
             Tool("me", "User profile tools (manager, reports, profile info)"),
             Tool("dataverse", "Dataverse CRUD and domain tools"),
             Tool("mcpmanagement", "MCP Management server tools to create/update MCP servers and tools"),
@@ -181,18 +244,27 @@ public class Script : ScriptBase
         };
     }
 
-    private HttpResponseMessage CreateMcpResponse(JToken idToken, JObject result)
+    private string GetConnectionParameter(string name)
+    {
+        try
+        {
+            var raw = this.Context.ConnectionParameters[name]?.ToString();
+            return string.IsNullOrWhiteSpace(raw) ? null : raw;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private HttpResponseMessage CreateJsonRpcSuccessResponse(JToken id, JObject result)
     {
         var responseObj = new JObject
         {
             ["jsonrpc"] = "2.0",
+            ["id"] = id,
             ["result"] = result
         };
-
-        if (idToken != null)
-        {
-            responseObj["id"] = idToken;
-        }
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -200,43 +272,29 @@ public class Script : ScriptBase
         };
     }
 
-    private HttpResponseMessage CreateMcpError(JToken idToken, int code, string message)
+    private HttpResponseMessage CreateJsonRpcErrorResponse(JToken id, int code, string message, string data = null)
     {
-        var errorObj = new JObject
+        var error = new JObject
         {
-            ["jsonrpc"] = "2.0",
-            ["error"] = new JObject
-            {
-                ["code"] = code,
-                ["message"] = message
-            }
+            ["code"] = code,
+            ["message"] = message
         };
 
-        if (idToken != null)
+        if (!string.IsNullOrWhiteSpace(data))
         {
-            errorObj["id"] = idToken;
+            error["data"] = data;
         }
+
+        var responseObj = new JObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = id,
+            ["error"] = error
+        };
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(errorObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
-        };
-    }
-
-    private async Task<HttpResponseMessage> ProxyRawAsync(string envId, string body)
-    {
-        var serverUrl = BuildServerUrl(envId, "MCPManagement");
-        var forwardRequest = new HttpRequestMessage(HttpMethod.Post, serverUrl)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json")
-        };
-
-        var response = await this.Context.SendAsync(forwardRequest, this.CancellationToken).ConfigureAwait(false);
-        var respContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-        return new HttpResponseMessage(response.StatusCode)
-        {
-            Content = new StringContent(respContent, Encoding.UTF8, "application/json")
+            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 }
