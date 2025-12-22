@@ -16,6 +16,21 @@ Enable intelligent document retrieval and search capabilities for Copilot Studio
 
 **Location:** [`Copilot Retrieval/`](Copilot%20Retrieval/)
 
+### Crunchbase MCP
+
+Search and retrieve business intelligence data from Crunchbase: companies, people, and funding rounds. Optimized for Copilot Studio agents with natural language tool discovery.
+
+**Features:**
+- 6 MCP tools: search/get organizations, search/get people, search funding rounds, autocomplete
+- Advanced filtering by location, industry, funding amount, date range, etc.
+- Entity relationships (founders, funding rounds, acquisitions, roles)
+- Keyset pagination for large result sets
+- Designed for Copilot Studio natural language queries
+
+**Location:** [`Crunchbase/`](Crunchbase/)
+- [Crunchbase README](Crunchbase/readme.md)
+- [API Definition](Crunchbase/apiDefinition.swagger.json)
+
 ### Graph Mail
 
 Microsoft Graph Mail connector with MCP support for Copilot Studio agents. Optimized for token efficiency with bodyPreview defaults.
@@ -96,8 +111,10 @@ Each connector typically includes:
 
 Most connectors use OAuth 2.0 with Microsoft Entra ID. Ensure:
 - Application is registered in your tenant
-- Required Graph API permissions are granted
+- Required permissions are granted
 - Admin consent is provided for delegated flows
+
+Crunchbase uses API Key authentication (X-cb-user-key header).
 
 ## MCP Protocol Support
 
@@ -127,6 +144,7 @@ Connectors are designed following Microsoft Power Platform best practices:
 
 ## Resources
 
+- [Crunchbase API Documentation](https://data.crunchbase.com/docs/)
 - [SharePoint Embedded Documentation](https://learn.microsoft.com/sharepoint/dev/embedded/overview)
 - [Power Platform Custom Connectors](https://learn.microsoft.com/connectors/custom-connectors/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
@@ -141,7 +159,7 @@ These connectors are provided as-is for use with Microsoft Power Platform.
 
 For issues or questions:
 - Check the connector-specific README files
-- Review Microsoft Learn documentation
+- Review official API documentation
 - Open an issue in this repository
 - Contact the connector developer
 
