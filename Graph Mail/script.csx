@@ -236,7 +236,7 @@ public class Script : ScriptBase
         var filter = args?["filter"]?.ToString();
         var orderby = args?["orderby"]?.ToString();
         var select = args?["select"]?.ToString();
-        var previewOnly = args?["previewOnly"]?.ToObject<bool?>() ?? false;
+        var previewOnly = args?["previewOnly"]?.ToObject<bool?>() ?? true;
 
         var v = GraphVersion();
         var url = new StringBuilder($"https://graph.microsoft.com/{v}/users/{Uri.EscapeDataString(userId)}/messages");
@@ -268,7 +268,7 @@ public class Script : ScriptBase
         var userId = args?["userId"]?.ToString();
         var messageId = args?["messageId"]?.ToString();
         var select = args?["select"]?.ToString();
-        var previewOnly = args?["previewOnly"]?.ToObject<bool?>() ?? false;
+        var previewOnly = args?["previewOnly"]?.ToObject<bool?>() ?? true;
         if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("userId is required");
         if (string.IsNullOrWhiteSpace(messageId)) throw new ArgumentException("messageId is required");
 

@@ -23,13 +23,23 @@ Configure OAuth 2.0 (Azure AD v2) in the connector Security tab with the Microso
 - `Mail.Send`
 
 ## Usage in Copilot Studio
-Add this connector to your agent; Copilot detects the MCP endpoint and will call the tools based on intent. Provide inputs like `userId` (e.g., `me`), `top`, `filter`, and Graph `message` payloads as needed.
+
+**This connector is designed specifically for Copilot Studio agents.** When you add it to your agent:
+
+1. **Tool Discovery**: Copilot Studio automatically detects the MCP endpoint (marked with `x-ms-agentic-protocol: mcp-streamable-1.0`) and calls `tools/list` to discover available tools
+2. **Natural Language Mapping**: The agent uses tool descriptions to understand when to invoke each tool based on user intent (e.g., "show me my latest emails" → `listMessages`)
+3. **Smart Invocation**: The agent determines parameter values from context and calls `tools/call` with appropriate arguments
+4. **Response Processing**: Results are returned to the agent for natural language formatting and follow-up actions
 
 ### Token optimization with `previewOnly`
-To reduce token usage when reading messages, set the `previewOnly` parameter to `true` in `listMessages` and `getMessage` tools. This returns only `bodyPreview` (~255 chars) instead of the full `body`, significantly reducing the amount of data pulled from Microsoft Graph.
+
+To avoid token limit issues with large email bodies, both `listMessages` and `getMessage` support a `previewOnly` parameter:
+
+- **`previewOnly: true` (default)**: Returns `bodyPreview` (~255 characters) instead of the full `body` property. This is the recommended setting for agents to prevent token exhaustion.
+- **`previewOnly: false`**: Returns the full `body` property when complete email content is needed.
+
+The connector automatically adjusts the `$select` parameter based on `previewOnly` unless you provide a custom `select` value. The `true` default ensures your agents won't hit token limits on large emails unless you explicitly need full content.
 
 **Example:**
-- `previewOnly: true` → returns `bodyPreview` (short summary)
-- `previewOnly: false` (default) → returns full `body` (can be large)
-
-When `previewOnly` is set, the connector automatically adjusts the `$select` parameter to exclude `body` and include `bodyPreview`, unless you explicitly provide a custom `select` parameter.
+- `previewOnly: true` (default) → returns `bodyPreview` (short summary, ~255 chars)
+- `previewOnly: false` → returns full `body` (can be megabytes)
