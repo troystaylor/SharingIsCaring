@@ -10,19 +10,6 @@ Integrate enterprise agent capabilities for Microsoft 365 scenarios through the 
 
 **Location:** [`Agent 365 MCP/`](Agent%20365%20MCP/)
 
-### Connector-Code
-
-Power Platform custom connector code samples and scripts for various authentication methods, data transformations, and API integrations.
-
-**Features:**
-- Bearer Token, JWT, OAuth 2.0, and PKCE authentication examples
-- Data transformation scripts (JSON/XML, hashing, null handling)
-- API-specific implementations (Tomorrow.io, Copilot Retrieval, Moneris)
-- Copilot Instructions for VS Code workspace validation
-
-**Location:** [`Connector-Code/`](Connector-Code/)
-- [Connector-Code README](Connector-Code/README.md) - Full index of all code samples
-
 ### Copilot Retrieval
 
 Enable intelligent document retrieval and search capabilities for Copilot Studio.
@@ -58,6 +45,21 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
 **Location:** [`SharePoint Embedded/`](SharePoint%20Embedded/)
 - [Connector README](SharePoint%20Embedded/readme.md)
 - [API Definition](SharePoint%20Embedded/apiDefinition.swagger.json)
+
+## Connector Code Samples
+
+### Connector-Code
+
+Power Platform custom connector code samples and scripts for various authentication methods, data transformations, and API integrations.
+
+**Features:**
+- Bearer Token, JWT, OAuth 2.0, and PKCE authentication examples
+- Data transformation scripts (JSON/XML, hashing, null handling)
+- API-specific implementations (Tomorrow.io, Copilot Retrieval, Moneris)
+- Copilot Instructions for VS Code workspace validation
+
+**Location:** [`Connector-Code/`](Connector-Code/)
+- [Connector-Code README](Connector-Code/README.md) - Full index of all code samples
 
 ## Getting Started
 
