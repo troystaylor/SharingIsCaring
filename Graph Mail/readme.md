@@ -4,13 +4,15 @@ Custom connector that exposes Outlook Mail (Microsoft Graph) actions via Model C
 
 Only the following API operations are wrapped, per the provided spec:
 - GET /users/{userId}/messages (list messages)
+- GET /users/{userId}/messages/{messageId} (get a specific message)
 - POST /users/{userId}/messages (create draft message)
 - POST /users/{userId}/sendMail (send mail action)
+- POST /users/{userId}/messages/{messageId}/reply (reply to a message)
 
 ## Files
 - `apiDefinition.swagger.json` — OpenAPI 2.0 with a single `/mcp` operation and `x-ms-agentic-protocol: mcp-streamable-1.0`
 - `apiProperties.json` — Connector metadata, `useBeta` connection parameter to switch Graph version
-- `script.csx` — MCP JSON-RPC implementation with tools: `listMessages`, `createMessage`, `sendMail`
+- `script.csx` — MCP JSON-RPC implementation with tools: `listMessages`, `getMessage`, `createMessage`, `sendMail`, `replyMessage`
 
 ## Beta compatibility
 Set the `useBeta` connection parameter to route requests to `https://graph.microsoft.com/beta` instead of `v1.0`.

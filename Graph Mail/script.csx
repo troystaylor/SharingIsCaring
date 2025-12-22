@@ -38,6 +38,22 @@ public class Script : ScriptBase
         },
         new JObject
         {
+            ["name"] = "getMessage",
+            ["description"] = "Get a specific message. Based strictly on GET /users/{userId}/messages/{messageId}.",
+            ["inputSchema"] = new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JObject
+                {
+                    ["userId"] = new JObject { ["type"] = "string", ["description"] = "User ID or 'me'" },
+                    ["messageId"] = new JObject { ["type"] = "string", ["description"] = "Message ID" },
+                    ["select"] = new JObject { ["type"] = "string", ["description"] = "Comma-separated list for $select (e.g., subject,from,receivedDateTime)" }
+                },
+                ["required"] = new JArray { "userId", "messageId" }
+            }
+        },
+        new JObject
+        {
             ["name"] = "createMessage",
             ["description"] = "Create a draft message using Microsoft Graph. Based strictly on POST /users/{userId}/messages.",
             ["inputSchema"] = new JObject
@@ -65,6 +81,22 @@ public class Script : ScriptBase
                     ["saveToSentItems"] = new JObject { ["type"] = "boolean", ["description"] = "Save to Sent Items (default true)" }
                 },
                 ["required"] = new JArray { "userId", "message" }
+            }
+        },
+        new JObject
+        {
+            ["name"] = "replyMessage",
+            ["description"] = "Reply to a message. Based strictly on POST /users/{userId}/messages/{messageId}/reply.",
+            ["inputSchema"] = new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JObject
+                {
+                    ["userId"] = new JObject { ["type"] = "string", ["description"] = "User ID or 'me'" },
+                    ["messageId"] = new JObject { ["type"] = "string", ["description"] = "Message ID" },
+                    ["comment"] = new JObject { ["type"] = "string", ["description"] = "Reply comment text" }
+                },
+                ["required"] = new JArray { "userId", "messageId", "comment" }
             }
         }
     };
@@ -152,10 +184,14 @@ public class Script : ScriptBase
             {
                 case "listMessages":
                     return await ExecuteListMessagesAsync(args, id).ConfigureAwait(false);
+                case "getMessage":
+                    return await ExecuteGetMessageAsync(args, id).ConfigureAwait(false);
                 case "createMessage":
                     return await ExecuteCreateMessageAsync(args, id).ConfigureAwait(false);
                 case "sendMail":
                     return await ExecuteSendMailAsync(args, id).ConfigureAwait(false);
+                case "replyMessage":
+                    return await ExecuteReplyMessageAsync(args, id).ConfigureAwait(false);
                 default:
                     return CreateError(id, -32601, "Unknown tool", toolName);
             }
@@ -220,6 +256,32 @@ public class Script : ScriptBase
         }, id);
     }
 
+    private async Task<HttpResponseMessage> ExecuteGetMessageAsync(JObject args, JToken id)
+    {
+        var userId = args?["userId"]?.ToString();
+        var messageId = args?["messageId"]?.ToString();
+        var select = args?["select"]?.ToString();
+        if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("userId is required");
+        if (string.IsNullOrWhiteSpace(messageId)) throw new ArgumentException("messageId is required");
+
+        var v = GraphVersion();
+        var url = new StringBuilder($"https://graph.microsoft.com/{v}/users/{Uri.EscapeDataString(userId)}/messages/{Uri.EscapeDataString(messageId)}");
+        var q = new List<string>();
+        if (!string.IsNullOrWhiteSpace(select)) q.Add("$select=" + Uri.EscapeDataString(select));
+        if (q.Count > 0) url.Append("?" + string.Join("&", q));
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
+        request.Headers.Add("Accept", "application/json");
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        return CreateSuccess(new JObject
+        {
+            ["content"] = new JArray { new JObject { ["type"] = "text", ["text"] = content } }
+        }, id);
+    }
+
     private async Task<HttpResponseMessage> ExecuteCreateMessageAsync(JObject args, JToken id)
     {
         var userId = args?["userId"]?.ToString();
@@ -269,6 +331,36 @@ public class Script : ScriptBase
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
         // sendMail returns 202 Accepted with empty body on success
+        var textOut = string.IsNullOrEmpty(content) ? $"Status: {(int)response.StatusCode} {response.StatusCode}" : content;
+
+        return CreateSuccess(new JObject
+        {
+            ["content"] = new JArray { new JObject { ["type"] = "text", ["text"] = textOut } }
+        }, id);
+    }
+
+    private async Task<HttpResponseMessage> ExecuteReplyMessageAsync(JObject args, JToken id)
+    {
+        var userId = args?["userId"]?.ToString();
+        var messageId = args?["messageId"]?.ToString();
+        var comment = args?["comment"]?.ToString();
+        if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("userId is required");
+        if (string.IsNullOrWhiteSpace(messageId)) throw new ArgumentException("messageId is required");
+        if (string.IsNullOrWhiteSpace(comment)) throw new ArgumentException("comment is required");
+
+        var payload = new JObject { ["comment"] = comment };
+
+        var v = GraphVersion();
+        var url = $"https://graph.microsoft.com/{v}/users/{Uri.EscapeDataString(userId)}/messages/{Uri.EscapeDataString(messageId)}/reply";
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(payload.ToString(Formatting.None), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Add("Accept", "application/json");
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
         var textOut = string.IsNullOrEmpty(content) ? $"Status: {(int)response.StatusCode} {response.StatusCode}" : content;
 
         return CreateSuccess(new JObject
