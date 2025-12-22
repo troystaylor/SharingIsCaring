@@ -24,3 +24,12 @@ Configure OAuth 2.0 (Azure AD v2) in the connector Security tab with the Microso
 
 ## Usage in Copilot Studio
 Add this connector to your agent; Copilot detects the MCP endpoint and will call the tools based on intent. Provide inputs like `userId` (e.g., `me`), `top`, `filter`, and Graph `message` payloads as needed.
+
+### Token optimization with `previewOnly`
+To reduce token usage when reading messages, set the `previewOnly` parameter to `true` in `listMessages` and `getMessage` tools. This returns only `bodyPreview` (~255 chars) instead of the full `body`, significantly reducing the amount of data pulled from Microsoft Graph.
+
+**Example:**
+- `previewOnly: true` → returns `bodyPreview` (short summary)
+- `previewOnly: false` (default) → returns full `body` (can be large)
+
+When `previewOnly` is set, the connector automatically adjusts the `$select` parameter to exclude `body` and include `bodyPreview`, unless you explicitly provide a custom `select` parameter.

@@ -31,7 +31,8 @@ public class Script : ScriptBase
                     ["top"] = new JObject { ["type"] = "integer", ["description"] = "$top query option (1-1000)" },
                     ["filter"] = new JObject { ["type"] = "string", ["description"] = "$filter OData expression" },
                     ["orderby"] = new JObject { ["type"] = "string", ["description"] = "$orderby fields (e.g., receivedDateTime desc)" },
-                    ["select"] = new JObject { ["type"] = "string", ["description"] = "Comma-separated list for $select (e.g., subject,from,receivedDateTime)" }
+                    ["select"] = new JObject { ["type"] = "string", ["description"] = "Comma-separated list for $select (e.g., subject,from,receivedDateTime)" },
+                    ["previewOnly"] = new JObject { ["type"] = "boolean", ["description"] = "If true, return only bodyPreview and omit body to reduce tokens" }
                 },
                 ["required"] = new JArray { "userId" }
             }
@@ -47,7 +48,8 @@ public class Script : ScriptBase
                 {
                     ["userId"] = new JObject { ["type"] = "string", ["description"] = "User ID or 'me'" },
                     ["messageId"] = new JObject { ["type"] = "string", ["description"] = "Message ID" },
-                    ["select"] = new JObject { ["type"] = "string", ["description"] = "Comma-separated list for $select (e.g., subject,from,receivedDateTime)" }
+                    ["select"] = new JObject { ["type"] = "string", ["description"] = "Comma-separated list for $select (e.g., subject,from,receivedDateTime)" },
+                    ["previewOnly"] = new JObject { ["type"] = "boolean", ["description"] = "If true, return only bodyPreview and omit body to reduce tokens" }
                 },
                 ["required"] = new JArray { "userId", "messageId" }
             }
@@ -234,6 +236,7 @@ public class Script : ScriptBase
         var filter = args?["filter"]?.ToString();
         var orderby = args?["orderby"]?.ToString();
         var select = args?["select"]?.ToString();
+        var previewOnly = args?["previewOnly"]?.ToObject<bool?>() ?? false;
 
         var v = GraphVersion();
         var url = new StringBuilder($"https://graph.microsoft.com/{v}/users/{Uri.EscapeDataString(userId)}/messages");
@@ -241,6 +244,10 @@ public class Script : ScriptBase
         if (!string.IsNullOrWhiteSpace(top)) q.Add("$top=" + Uri.EscapeDataString(top));
         if (!string.IsNullOrWhiteSpace(filter)) q.Add("$filter=" + Uri.EscapeDataString(filter));
         if (!string.IsNullOrWhiteSpace(orderby)) q.Add("$orderby=" + Uri.EscapeDataString(orderby));
+        if (string.IsNullOrWhiteSpace(select))
+        {
+            select = previewOnly ? "subject,from,receivedDateTime,bodyPreview" : "subject,from,receivedDateTime,body";
+        }
         if (!string.IsNullOrWhiteSpace(select)) q.Add("$select=" + Uri.EscapeDataString(select));
         if (q.Count > 0) url.Append("?" + string.Join("&", q));
 
@@ -261,12 +268,17 @@ public class Script : ScriptBase
         var userId = args?["userId"]?.ToString();
         var messageId = args?["messageId"]?.ToString();
         var select = args?["select"]?.ToString();
+        var previewOnly = args?["previewOnly"]?.ToObject<bool?>() ?? false;
         if (string.IsNullOrWhiteSpace(userId)) throw new ArgumentException("userId is required");
         if (string.IsNullOrWhiteSpace(messageId)) throw new ArgumentException("messageId is required");
 
         var v = GraphVersion();
         var url = new StringBuilder($"https://graph.microsoft.com/{v}/users/{Uri.EscapeDataString(userId)}/messages/{Uri.EscapeDataString(messageId)}");
         var q = new List<string>();
+        if (string.IsNullOrWhiteSpace(select))
+        {
+            select = previewOnly ? "subject,from,receivedDateTime,bodyPreview" : "subject,from,receivedDateTime,body";
+        }
         if (!string.IsNullOrWhiteSpace(select)) q.Add("$select=" + Uri.EscapeDataString(select));
         if (q.Count > 0) url.Append("?" + string.Join("&", q));
 
