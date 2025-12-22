@@ -1,6 +1,6 @@
 # #SharingIsCaring
 
-A collection of Power Platform custom connectors and MCP servers for Microsoft Graph APIs, document collaboration, and enterprise services.
+A collection of Power Platform custom connectors, MCP servers, and connector code samples for Microsoft Graph APIs, document collaboration, and enterprise services.
 
 ## Connectors & MCP Servers
 
@@ -10,11 +10,39 @@ Integrate enterprise agent capabilities for Microsoft 365 scenarios through the 
 
 **Location:** [`Agent 365 MCP/`](Agent%20365%20MCP/)
 
+### Connector-Code
+
+Power Platform custom connector code samples and scripts for various authentication methods, data transformations, and API integrations.
+
+**Features:**
+- Bearer Token, JWT, OAuth 2.0, and PKCE authentication examples
+- Data transformation scripts (JSON/XML, hashing, null handling)
+- API-specific implementations (Tomorrow.io, Copilot Retrieval, Moneris)
+- Copilot Instructions for VS Code workspace validation
+
+**Location:** [`Connector-Code/`](Connector-Code/)
+- [Connector-Code README](Connector-Code/README.md) - Full index of all code samples
+
 ### Copilot Retrieval
 
 Enable intelligent document retrieval and search capabilities for Copilot Studio.
 
 **Location:** [`Copilot Retrieval/`](Copilot%20Retrieval/)
+
+### Graph Mail
+
+Microsoft Graph Mail connector with MCP support for Copilot Studio agents. Optimized for token efficiency with bodyPreview defaults.
+
+**Features:**
+- 5 MCP tools: listMessages, getMessage, createMessage, sendMail, replyMessage
+- Token-optimized with previewOnly parameter (defaults to true)
+- Dual Graph API version support (v1.0 and beta)
+- OAuth 2.0 authentication with Mail.Read and Mail.Send scopes
+- Designed specifically for Copilot Studio natural language tool discovery
+
+**Location:** [`Graph Mail/`](Graph%20Mail/)
+- [Graph Mail README](Graph%20Mail/readme.md)
+- [API Definition](Graph%20Mail/apiDefinition.swagger.json)
 
 ### SharePoint Embedded Connector
 
@@ -44,7 +72,7 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
    - Check apiDefinition.swagger.json for operation details
 
 3. **Deploy to Power Platform (Connectors)**
-   - Power Automate → Custom Connectors → Import OpenAPI
+   - Power Automate  Custom Connectors  Import OpenAPI
    - Upload the `apiDefinition.swagger.json` file
    - Configure connection parameters
    - Enable code if required (script.csx present)
@@ -57,7 +85,7 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
 ## Architecture
 
 Each connector typically includes:
-- **apiDefinition.swagger.json** - OpenAPI 2.0 specification with 40+ operations
+- **apiDefinition.swagger.json** - OpenAPI 2.0 specification with operations
 - **apiProperties.json** - Connection parameters, policies, and branding
 - **script.csx** - C# code for MCP protocol support (where applicable)
 - **readme.md** - Comprehensive documentation
