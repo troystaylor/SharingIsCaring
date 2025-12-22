@@ -1,0 +1,1 @@
+User creating connection reference will need to set the authentication URL in the variable authURL.

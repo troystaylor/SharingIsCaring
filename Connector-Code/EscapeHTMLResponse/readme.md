@@ -1,0 +1,1 @@
+This custom code removes unwanted HTML elements from an API response. Specifically designed to strip social media widgets and GitHub buttons from weather API responses (wttr.in), making the response cleaner for display.

@@ -1,0 +1,354 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft 365 Copilot Retrieval",
+        "description": "The Microsoft 365 Copilot Retrieval API allows you to retrieve relevant text extracts from SharePoint, OneDrive, and Copilot connectors content while respecting access controls and compliance settings. Use this API to ground your generative AI solutions with Microsoft 365 data while optimizing for context recall.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeServer",
+                "summary": "Invoke Copilot Retrieval MCP Server",
+                "description": "Invokes the Model Context Protocol (MCP) server for AI agent integration. Supports MCP protocol operations including tool listing and execution.",
+                "x-ms-summary": "Invoke Copilot Retrieval MCP Server",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/copilot/retrieval": {
+            "post": {
+                "operationId": "RetrieveGroundingData",
+                "summary": "Retrieve Grounding Data",
+                "description": "Retrieves relevant text extracts from SharePoint, OneDrive, or Copilot connectors based on a natural language query. Returns up to 25 results with relevance scores and metadata.",
+                "x-ms-summary": "Retrieve Grounding Data",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString",
+                                "dataSource"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "Natural language query string (single sentence, max 1,500 characters). Provide as much context as possible and avoid spelling errors.",
+                                    "x-ms-summary": "Query String",
+                                    "x-ms-visibility": "important",
+                                    "maxLength": 1500
+                                },
+                                "dataSource": {
+                                    "type": "string",
+                                    "description": "Data source to retrieve from.",
+                                    "x-ms-summary": "Data Source",
+                                    "x-ms-visibility": "important",
+                                    "enum": [
+                                        "sharePoint",
+                                        "oneDriveBusiness",
+                                        "externalItem"
+                                    ],
+                                    "x-ms-enum-values": [
+                                        {
+                                            "value": "sharePoint",
+                                            "displayName": "SharePoint"
+                                        },
+                                        {
+                                            "value": "oneDriveBusiness",
+                                            "displayName": "OneDrive for Business"
+                                        },
+                                        {
+                                            "value": "externalItem",
+                                            "displayName": "Copilot Connectors"
+                                        }
+                                    ]
+                                },
+                                "filterExpression": {
+                                    "type": "string",
+                                    "description": "Optional KQL expression to filter results. Supports properties like Author, FileExtension, Filename, FileType, LastModifiedTime, ModifiedBy, Path, SiteID, Title. Use AND, OR, NOT operators.",
+                                    "x-ms-summary": "Filter Expression (KQL)",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "dataSourceConfiguration": {
+                                    "type": "object",
+                                    "description": "Additional configuration for Copilot connectors (externalItem data source).",
+                                    "x-ms-summary": "Data Source Configuration",
+                                    "x-ms-visibility": "advanced",
+                                    "properties": {
+                                        "externalItem": {
+                                            "type": "object",
+                                            "description": "Configuration for Copilot connectors retrieval.",
+                                            "x-ms-summary": "External Item Configuration",
+                                            "properties": {
+                                                "connections": {
+                                                    "type": "array",
+                                                    "description": "List of specific connection IDs to retrieve from.",
+                                                    "x-ms-summary": "Connection IDs",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "connectionId": {
+                                                                "type": "string",
+                                                                "description": "Copilot connector connection ID.",
+                                                                "x-ms-summary": "Connection ID"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "resourceMetadata": {
+                                    "type": "array",
+                                    "description": "List of metadata fields to return for each result (e.g., title, author). By default, no metadata is returned.",
+                                    "x-ms-summary": "Resource Metadata Fields",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "Metadata field name",
+                                        "x-ms-summary": "Field Name"
+                                    }
+                                },
+                                "maximumNumberOfResults": {
+                                    "type": "integer",
+                                    "description": "Number of results to return (1-25). Default is 25. Recommended to use maximum unless you have strict token limits.",
+                                    "x-ms-summary": "Maximum Results",
+                                    "x-ms-visibility": "advanced",
+                                    "format": "int32",
+                                    "minimum": 1,
+                                    "maximum": 25,
+                                    "default": 25
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success - Returns relevant text extracts with relevance scores.",
+                        "x-ms-summary": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "retrievalHits": {
+                                    "type": "array",
+                                    "description": "Array of retrieval hits with text extracts and metadata.",
+                                    "x-ms-summary": "Retrieval Hits",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "webUrl": {
+                                                "type": "string",
+                                                "description": "URL of the source document.",
+                                                "x-ms-summary": "Web URL"
+                                            },
+                                            "extracts": {
+                                                "type": "array",
+                                                "description": "Relevant text extracts from the document.",
+                                                "x-ms-summary": "Text Extracts",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "text": {
+                                                            "type": "string",
+                                                            "description": "Extracted text snippet.",
+                                                            "x-ms-summary": "Text"
+                                                        },
+                                                        "relevanceScore": {
+                                                            "type": "number",
+                                                            "description": "Relevance score (0-1) indicating cosine similarity between query and extract.",
+                                                            "x-ms-summary": "Relevance Score",
+                                                            "format": "double"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "resourceType": {
+                                                "type": "string",
+                                                "description": "Type of resource. Possible values: site, list, listItem, externalItem, drive, driveItem.",
+                                                "x-ms-summary": "Resource Type",
+                                                "enum": [
+                                                    "site",
+                                                    "list",
+                                                    "listItem",
+                                                    "externalItem",
+                                                    "drive",
+                                                    "driveItem",
+                                                    "unknownFutureValue"
+                                                ]
+                                            },
+                                            "resourceMetadata": {
+                                                "type": "object",
+                                                "description": "Metadata for the resource (fields specified in request).",
+                                                "x-ms-summary": "Resource Metadata",
+                                                "additionalProperties": true
+                                            },
+                                            "sensitivityLabel": {
+                                                "type": "object",
+                                                "description": "Sensitivity label information (SharePoint/OneDrive only).",
+                                                "x-ms-summary": "Sensitivity Label",
+                                                "properties": {
+                                                    "sensitivityLabelId": {
+                                                        "type": "string",
+                                                        "description": "ID of the sensitivity label.",
+                                                        "x-ms-summary": "Label ID"
+                                                    },
+                                                    "displayName": {
+                                                        "type": "string",
+                                                        "description": "Display name of the sensitivity label.",
+                                                        "x-ms-summary": "Display Name"
+                                                    },
+                                                    "toolTip": {
+                                                        "type": "string",
+                                                        "description": "Tooltip description for the label.",
+                                                        "x-ms-summary": "Tooltip"
+                                                    },
+                                                    "priority": {
+                                                        "type": "integer",
+                                                        "description": "Priority level of the label.",
+                                                        "x-ms-summary": "Priority",
+                                                        "format": "int32"
+                                                    },
+                                                    "color": {
+                                                        "type": "string",
+                                                        "description": "Color code for the label.",
+                                                        "x-ms-summary": "Color"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters.",
+                        "x-ms-summary": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions. Requires Files.Read.All, Sites.Read.All, and/or ExternalItem.Read.All.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded (200 requests per user per hour).",
+                        "x-ms-summary": "Rate Limit Exceeded"
+                    },
+                    "500": {
+                        "description": "Internal Server Error - An error occurred on the server.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')"
+                },
+                "id": {
+                    "description": "Request identifier"
+                },
+                "result": {
+                    "type": "object",
+                    "description": "MCP response result"
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')"
+                },
+                "id": {
+                    "description": "Request identifier"
+                },
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "description": "Error code"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message"
+                        },
+                        "data": {
+                            "description": "Additional error data"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Files.Read.All Sites.Read.All ExternalItem.Read.All": "Access Microsoft 365 Copilot Retrieval API"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "Files.Read.All Sites.Read.All ExternalItem.Read.All"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365-copilot/extensibility/api/ai-services/retrieval/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}

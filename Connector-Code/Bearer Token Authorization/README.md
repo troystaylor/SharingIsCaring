@@ -1,0 +1,1 @@
+This custom code works with the API Key security method when the parameter name is set to Authorization. It removes the need to ask the user to enter "Bearer " before the token value.

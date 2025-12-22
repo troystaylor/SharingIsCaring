@@ -1,0 +1,1 @@
+This custom code downloads a file from a URL provided as a query parameter, bypassing the connector's standard authorization. Useful for downloading files from URLs that don't require the connector's credentials.
