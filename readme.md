@@ -61,6 +61,23 @@ Manage Microsoft SharePoint Embedded file storage containers with 40 comprehensi
 - [Connector README](SharePoint%20Embedded/readme.md)
 - [API Definition](SharePoint%20Embedded/apiDefinition.swagger.json)
 
+### Snowflake MCP
+
+Power Automate custom connector for Snowflake's Managed MCP Server enabling SQL execution through the Model Context Protocol.
+
+Features:
+
+• Request/response transformation with protocol compliance (MCP v2025-06-18)
+• JSON-RPC ID normalization and protocol version enforcement
+• Notification acknowledgment handling for Copilot Studio compatibility
+• Application Insights logging integration
+• OAuth 2.0 authentication with Snowflake custom OAuth integration
+
+Location: [Snowflake/](https://github.com/troystaylor/SharingIsCaring/tree/main/Snowflake)
+
+• [Snowflake README](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/README.md)
+• [API Definition](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/apiDefinition.swagger.json)
+
 ## Connector Code Samples
 
 ### Connector-Code
