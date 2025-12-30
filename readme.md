@@ -75,7 +75,7 @@ Features:
 
 Location: [Snowflake/](https://github.com/troystaylor/SharingIsCaring/tree/main/Snowflake)
 
-• [Snowflake README](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/README.md)
+• [Snowflake README](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/readme.md)
 • [API Definition](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/apiDefinition.swagger.json)
 
 ## Connector Code Samples
