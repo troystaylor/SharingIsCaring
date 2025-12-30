@@ -7,7 +7,7 @@ using System.Text;
 public class Script : ScriptBase
 {
     // Application Insights connection string - update this value to change the logging target
-    private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=e6536b67-45a6-4bda-9cf1-cee3806daf04;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/;ApplicationId=c041d46c-5927-483a-b396-f18cee742c1d";
+    private const string APP_INSIGHTS_CONNECTION_STRING = "[YOUR_STRING]";
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
@@ -322,3 +322,4 @@ public class Script : ScriptBase
         }
     }
 }
+
