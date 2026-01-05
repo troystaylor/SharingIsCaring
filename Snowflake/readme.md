@@ -1,82 +1,104 @@
 # Snowflake MCP Connector
 
-This repository contains the Power Automate custom connector implementation for Snowflake's Managed MCP Server.
+Snowflake Model Context Protocol connector for Microsoft Copilot Studio providing comprehensive SQL execution, database management, and query optimization capabilities through a unified interface. This connector enables seamless integration of Snowflake's powerful data platform with Microsoft's AI-driven applications.
 
-## Setup
+## Publisher: Troy Taylor
 
-For complete setup instructions, refer to the official Snowflake documentation:
-**[Snowflake Cortex Agents - MCP Integration Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents-mcp)**
+## Prerequisites
 
-This guide covers:
-- MCP server configuration in Snowflake
-- OAuth integration setup
-- Network policy requirements
-- Connector deployment to Power Automate
+- **Snowflake Account**: Active Snowflake account (Standard edition or higher)
+- **OAuth Integration**: Custom OAuth security integration configured in Snowflake
+- **Network Policy**: Appropriate network policy binding for MCP server access
+- **Credentials**: OAuth client ID and client secret from Snowflake security integration
+- **MCP Server**: Snowflake MCP server deployed and configured
 
-## Files in This Repository
+## Supported Operations
 
-- **[apiDefinition.swagger.json](apiDefinition.swagger.json)** — Connector API definition (customize with your Snowflake endpoints)
-- **[apiProperties.json](apiProperties.json)** — OAuth and connector metadata (customize with your credentials)
-- **[script.csx](script.csx)** — Request/response transformation logic with Application Insights logging
+This connector implements the Model Context Protocol (MCP) with 556+ prompts covering comprehensive Snowflake functionality and 32 dynamic resources reflecting actual account state.
 
-## Quick Reference
+### tools/list
+Retrieve complete list of 556+ available prompts/tools across all Snowflake feature areas including SQL execution, performance tuning, security management, and advanced capabilities.
 
-- **Connector Endpoint**: POST to your Snowflake MCP server endpoint (configure in `apiDefinition.swagger.json`)
-- **Authentication**: OAuth 2.0 via Snowflake custom OAuth integration (configure in `apiProperties.json`)
-- **Protocol**: MCP (Model Context Protocol) v2025-06-18
-- **Script**: Handles JSON-RPC ID normalization, protocol version enforcement, notification acknowledgment, and Application Insights logging
+### tools/get
+Get detailed prompt template for any of the 556+ tools, including argument definitions, parameter specifications, and usage guidance for specific operations.
 
-## Troubleshooting
+### tools/call
+Execute/call any available tool with appropriate arguments. Supports all prompt-based operations including SQL queries, configuration management, and resource inspection.
 
-### SystemError on First Chat Attempt
-**Problem**: Copilot Studio returns "Error code: SystemError" on the first chat, but works on the second attempt.
+### resources/list
+Retrieve list of 32 dynamic resources organized by category (data objects, compute, security, pipelines, integration, monitoring) that reflect actual account state.
 
-**Root Cause**: The `notifications/initialized` request is being converted to a full `tools/list` response. Copilot Studio expects either no response or a simple acknowledgment for notifications.
+### resources/read
+Read detailed information about specific resources by URI (e.g., `snowflake://databases`, `snowflake://account/roles`) with configuration and status details.
 
-**Solution**: Verify the `script.csx` returns a minimal acknowledgment `{"jsonrpc":"2.0","method":"notifications/initialized"}` for notification requests without forwarding to Snowflake.
+### notifications/initialized
+Handle MCP initialization notifications. Connector automatically acknowledges initialization without forwarding to backend.
 
-### OAuth Authentication Failures
-**Problem**: "not authorized" or "invalid_grant" errors from the OAuth token endpoint.
+## Obtaining Credentials
 
-**Checklist**:
-- Verify the OAuth client ID in `apiProperties.json` matches your Snowflake security integration
-- Ensure OAuth scopes include both `refresh_token` and `session:role:ACCOUNTADMIN`
-- Check that the security integration is `ENABLED = TRUE` and type `CUSTOM`
-- Confirm the redirect URI in `apiProperties.json` exactly matches your connector's unique URL
+1. **Navigate to Snowflake Account**:
+   - Log in to your Snowflake account
+   - Go to Admin > Security integrations
 
-### Protocol Version Mismatches
-**Problem**: Snowflake rejects requests with `protocolVersion: "2024-11-05"`.
+2. **Create OAuth Integration**:
+   - Click "Create" and select "API Integration"
+   - Configure as OAuth provider
+   - Set redirect URI to your Power Automate connector URL
 
-**Solution**: The `script.csx` automatically enforces `protocolVersion: "2025-06-18"` on all initialize requests. Verify the script is deployed and check Application Insights logs for transformation events.
+3. **Get Credentials**:
+   - Copy the generated Client ID
+   - Generate and copy the Client Secret
+   - Note the authorization and token endpoint URLs
 
-### Network Policy Errors
-**Problem**: "Network policy is required" or "Requestor IP not allowed".
+4. **Configure Connector**:
+   - Update `apiProperties.json` with Client ID and Client Secret
+   - Update `apiDefinition.swagger.json` with your Snowflake endpoint
+   - Verify network policy allows Power Automate egress IPs
 
-**Solution**:
-- Ensure your Snowflake network policy is bound to the user executing MCP requests
-- Verify the policy includes all Power Automate egress IPs for your region
-- Wait 30-60 seconds after applying policy changes for Snowflake to activate them
+## Getting Started
 
-### Tool Discovery Issues
-**Problem**: SYSTEM_EXECUTE_SQL tool not found or not discoverable.
+1. **Deploy the Connector**:
+   - Upload `apiDefinition.swagger.json` and `script.csx` to your custom connector
+   - Configure authentication with your OAuth credentials
+   - Test connectivity with a simple query
 
-**Checklist**:
-- Verify MCP server exists: `SHOW MCP SERVERS;`
-- Check tool configuration: `DESCRIBE MCP SERVER <server_name>;`
-- Verify grants are set on the server
-- Confirm the connector is using the correct database/schema/server path in `apiDefinition.swagger.json`
+2. **Configure MCP Server**:
+   - Ensure your Snowflake MCP server is running
+   - Verify the server path in connector configuration
+   - Test with `SHOW MCP SERVERS` command
 
-### Debugging with Application Insights
-Enable logging by configuring the instrumentation key in `script.csx`. Events logged include:
-- `OriginalRequest` — Raw request from Copilot Studio
-- `TransformedRequest` — Request after transformations (ID normalization, protocol version, etc.)
-- `SnowflakeResponse` — Response from Snowflake MCP server with latency
-- `NotificationHandled` — Notification acknowledgment
+3. **Use in Copilot Studio**:
+   - Add the connector as an action in your copilot
+   - Test with one of the 556+ available prompts
+   - Monitor responses using Application Insights
 
-Check the `Transformations` field to verify protocol adaptations are working.
+## Known Issues and Limitations
 
-## Support
+- **Initial Chat Delay**: First chat attempt may show "SystemError" due to notification handling; retry resolves the issue
+- **Protocol Version Enforcement**: Connector automatically converts protocol versions to 2025-06-18; ensure Snowflake MCP server supports this version
+- **Network Policy Requirements**: All MCP requests must pass Snowflake network policy checks; whitelist Power Automate egress IPs
+- **OAuth Scope Limitations**: Certain operations require ACCOUNTADMIN role; ensure OAuth integration has appropriate scopes
+- **Query Timeout**: Large queries may timeout; implement result pagination for better performance
+- **Resource URI Format**: Resource URIs must follow strict validation patterns; invalid formats are rejected for security
 
-For official setup guidance, refer to the [Snowflake Cortex Agents - MCP Integration Guide](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents-mcp).
+## Frequently Asked Questions
 
-For connector-specific issues, review the troubleshooting section above or check Application Insights logs.
+### How do I find my Snowflake account URL?
+
+Your Snowflake account URL follows the format: `https://<account_id>.<region>.snowflakecomputing.com`. You can find it in the Snowflake console URL bar after login.
+
+### What is the correct OAuth redirect URI format?
+
+The redirect URI must exactly match your Power Automate custom connector's unique URL. It typically follows: `https://logic.powerappsportals.com/callbacks/<connector-id>`. Verify exact spelling and protocol (https only).
+
+### Can I use the connector without MCP?
+
+No, this connector requires an active Snowflake MCP server. Standard Snowflake drivers or APIs cannot be used directly with this connector. MCP server must be deployed and accessible at your configured endpoint.
+
+### How do I enable Application Insights logging?
+
+Update the instrumentation key in `script.csx` to your Application Insights instance. Logs include request transformations, protocol version conversions, and Snowflake response latency.
+
+### What do I do if OAuth authentication fails?
+
+Verify: (1) Client ID matches your security integration, (2) Client Secret is correct, (3) Scopes include `refresh_token`, (4) Network policy allows the redirect URI, (5) Security integration is ENABLED = TRUE.
