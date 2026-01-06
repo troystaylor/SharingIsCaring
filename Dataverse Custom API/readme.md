@@ -724,30 +724,6 @@ Enable detailed logging in Power Platform:
 3. Send MCP request via **Test operation**
 4. Review logs in **Response** section (includes correlation IDs)
 
-## Comparison with Dataverse Power Agent
-
-| Feature | **Custom API MCP** (This Connector) | Dataverse Power Agent |
-|---------|-------------------------------------|----------------------|
-| **Discovery** | Metadata-driven (automatic) | Hardcoded 45 tools |
-| **Adaptability** | Works with any Custom API | Fixed tool set only |
-| **Code Changes** | None needed for new APIs | Requires code updates |
-| **AI Orchestration** | No (pure MCP protocol) | Yes (AI-driven routing) |
-| **Schema Inference** | From metadata | Dynamic AI-generated |
-| **Use Case** | Custom API execution | General Dataverse operations |
-| **Binding Types** | All 3 (Global/Entity/EntityCollection) | N/A (table-based) |
-| **Parameter Types** | All 13 Dataverse types | Dynamic based on AI |
-
-**When to Use Custom API MCP:**
-- You have Custom APIs created in Dataverse
-- You want zero-maintenance discovery (no code updates)
-- You need precise control over Custom API execution
-- You're building specialized business logic in Custom APIs
-
-**When to Use Dataverse Power Agent:**
-- You need general Dataverse CRUD operations
-- You want AI to interpret user intent and generate queries
-- You don't have Custom APIs (using standard tables)
-
 ## Architecture
 
 ### Request Flow
@@ -799,20 +775,17 @@ HandleMCPRequest()
 
 ## Version History
 
-### 2.0.0 (January 2026)
-**Management Tools Release**
-- **6 Management Tools**: Create, update, delete Custom APIs from Copilot Studio
-- **Create Custom APIs**: Full definition creation with solution integration
-- **Add Parameters & Properties**: Dynamic schema building via MCP tools
-- **Solution Integration**: `SolutionUniqueName` parameter for proper ALM
-- **Auto Cache Invalidation**: Newly created/modified APIs immediately available
-- **List Solutions**: Discover managed/unmanaged solutions for API placement
-- **Self-Bootstrapping**: Create Custom APIs that become tools without code changes
-- **Enhanced Security**: Management tools require `prvCreate/Write/DeleteCustomAPI` privileges
-- **Type Descriptions**: Human-readable type names in success messages
-
 ### 1.0.0 (January 2026)
 **Initial Release**
+- 6 Management Tools: Create, update, delete Custom APIs from Copilot Studio
+- Create Custom APIs: Full definition creation with solution integration
+- Add Parameters & Properties: Dynamic schema building via MCP tools
+- Solution Integration: `SolutionUniqueName` parameter for proper ALM
+- Auto Cache Invalidation: Newly created/modified APIs immediately available
+- List Solutions: Discover managed/unmanaged solutions for API placement
+- Self-Bootstrapping: Create Custom APIs that become tools without code changes
+- Enhanced Security: Management tools require `prvCreate/Write/DeleteCustomAPI` privileges
+- Type Descriptions: Human-readable type names in success messages
 - Automatic Custom API discovery from Dataverse metadata
 - Support for all 3 binding types (Global/Entity/EntityCollection)
 - Support for all 13 Dataverse parameter types
