@@ -1,8 +1,8 @@
-# Dataverse MCP Agent
+# Dataverse Power Agent
 
 ## Overview
 
-Dataverse MCP Agent is an AI-driven custom code connector that exposes comprehensive Dataverse operations through both natural language and typed operations. It acts as an agent orchestrator inside Power Automate or Copilot Studio, letting an AI model plan and execute Dataverse operations (CRUD, bulk operations, relationships, metadata discovery, analytics, ownership, security) without any external servers.
+Dataverse Power Agent is an AI-driven custom code connector that exposes comprehensive Dataverse operations through both natural language and typed operations. It acts as an agent orchestrator inside Power Automate or Copilot Studio, letting an AI model plan and execute Dataverse operations (CRUD, bulk operations, relationships, metadata discovery, analytics, ownership, security) without any external servers.
 
 ## Key Features
 - **Dual-Mode Operations**: Natural language agent endpoint + typed query operations with IntelliSense
