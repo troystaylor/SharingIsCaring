@@ -1,4 +1,4 @@
-# #SharingIsCaring
+﻿# #SharingIsCaring
 
 A collection of Power Platform custom connectors, MCP servers, and connector code samples for Microsoft Graph APIs, document collaboration, and enterprise services.
 
@@ -17,6 +17,38 @@ Enable intelligent document retrieval and search capabilities for Copilot Studio
 **Location:** [`Copilot Retrieval/`](Copilot%20Retrieval/)
 
 ### Crunchbase MCP
+
+Search and retrieve business intelligence data from Crunchbase: companies, people, and funding rounds. Optimized for Copilot Studio agents with natural language tool discovery.
+
+**Features:**
+- 6 MCP tools: search/get organizations, search/get people, search funding rounds, autocomplete
+- Advanced filtering by location, industry, funding amount, date range, etc.
+- Entity relationships (founders, funding rounds, acquisitions, roles)
+- Keyset pagination for large result sets
+- Designed for Copilot Studio natural language queries
+
+**Location:** [`Crunchbase/`](Crunchbase/)
+- [Crunchbase README](Crunchbase/readme.md)
+- [API Definition](Crunchbase/apiDefinition.swagger.json)
+
+### Dataverse Power Agent
+
+AI-driven custom code connector exposing comprehensive Dataverse operations through both natural language and typed operations. Runs entirely within Power Automate connector runtime with GitHub Models (or other AI providers) for orchestration.
+
+**Features:**
+- Dual-mode operations: Natural language agent endpoint + typed query operations with IntelliSense
+- 45 specialized tools covering CRUD, bulk operations, relationships, metadata, analytics, ownership, security
+- Dynamic schema support with Power Automate IntelliSense for table columns
+- Query metadata extraction (suggestedQuery with 13 OData parameters)
+- OAuth-only authentication with direct AAD v2 integration
+- No external hosting required - entire agent runs in connector runtime
+- Supports GitHub Models (recommended), Azure AI Foundry, Azure OpenAI, OpenAI, and Anthropic
+
+**Location:** [`Dataverse Power Agent/`](Dataverse%20Power%20Agent/)
+- [Dataverse Power Agent README](Dataverse%20Power%20Agent/readme.md)
+- [API Definition](Dataverse%20Power%20Agent/apiDefinition.swagger.json)
+
+### Graph Mail
 
 Search and retrieve business intelligence data from Crunchbase: companies, people, and funding rounds. Optimized for Copilot Studio agents with natural language tool discovery.
 
@@ -67,16 +99,16 @@ Power Automate custom connector for Snowflake's Managed MCP Server enabling SQL 
 
 Features:
 
-• Request/response transformation with protocol compliance (MCP v2025-06-18)
-• JSON-RPC ID normalization and protocol version enforcement
-• Notification acknowledgment handling for Copilot Studio compatibility
-• Application Insights logging integration
-• OAuth 2.0 authentication with Snowflake custom OAuth integration
+ΓÇó Request/response transformation with protocol compliance (MCP v2025-06-18)
+ΓÇó JSON-RPC ID normalization and protocol version enforcement
+ΓÇó Notification acknowledgment handling for Copilot Studio compatibility
+ΓÇó Application Insights logging integration
+ΓÇó OAuth 2.0 authentication with Snowflake custom OAuth integration
 
 Location: [Snowflake/](https://github.com/troystaylor/SharingIsCaring/tree/main/Snowflake)
 
-• [Snowflake README](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/readme.md)
-• [API Definition](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/apiDefinition.swagger.json)
+ΓÇó [Snowflake README](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/readme.md)
+ΓÇó [API Definition](https://github.com/troystaylor/SharingIsCaring/blob/main/Snowflake/apiDefinition.swagger.json)
 
 ## Connector Code Samples
 
@@ -162,6 +194,7 @@ Connectors are designed following Microsoft Power Platform best practices:
 ## Resources
 
 - [Crunchbase API Documentation](https://data.crunchbase.com/docs/)
+- [Dataverse Web API v9.2](https://learn.microsoft.com/power-apps/developer/data-platform/webapi/overview)
 - [SharePoint Embedded Documentation](https://learn.microsoft.com/sharepoint/dev/embedded/overview)
 - [Power Platform Custom Connectors](https://learn.microsoft.com/connectors/custom-connectors/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
@@ -187,3 +220,5 @@ Contributions welcome! Please:
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request with detailed description
+
+
