@@ -50,21 +50,6 @@ AI-driven custom code connector exposing comprehensive Dataverse operations thro
 
 ### Graph Mail
 
-Search and retrieve business intelligence data from Crunchbase: companies, people, and funding rounds. Optimized for Copilot Studio agents with natural language tool discovery.
-
-**Features:**
-- 6 MCP tools: search/get organizations, search/get people, search funding rounds, autocomplete
-- Advanced filtering by location, industry, funding amount, date range, etc.
-- Entity relationships (founders, funding rounds, acquisitions, roles)
-- Keyset pagination for large result sets
-- Designed for Copilot Studio natural language queries
-
-**Location:** [`Crunchbase/`](Crunchbase/)
-- [Crunchbase README](Crunchbase/readme.md)
-- [API Definition](Crunchbase/apiDefinition.swagger.json)
-
-### Graph Mail
-
 Microsoft Graph Mail connector with MCP support for Copilot Studio agents. Optimized for token efficiency with bodyPreview defaults.
 
 **Features:**
