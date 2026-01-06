@@ -42,7 +42,7 @@ AI-driven custom code connector exposing comprehensive Dataverse operations thro
 - Query metadata extraction (suggestedQuery with 13 OData parameters)
 - OAuth-only authentication with direct AAD v2 integration
 - No external hosting required - entire agent runs in connector runtime
-- Supports GitHub Models (recommended), Azure AI Foundry, Azure OpenAI, OpenAI, and Anthropic
+- Supports Azure AI Foundry, Azure OpenAI, OpenAI, GitHub Models, and Anthropic
 
 **Location:** [`Dataverse Power Agent/`](Dataverse%20Power%20Agent/)
 - [Dataverse Power Agent README](Dataverse%20Power%20Agent/readme.md)
