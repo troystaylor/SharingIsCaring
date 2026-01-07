@@ -8,13 +8,14 @@ using Newtonsoft.Json.Linq;
 
 public class Script : ScriptBase
 {
+    // Configuration
+    private const bool INCLUDE_PRIVATE_APIS = true; // Set to true to include private Custom APIs
+    private const string APP_INSIGHTS_CONNECTION_STRING = ""; // Application Insights connection string for telemetry
+    
     // MCP Server metadata
     private const string SERVER_NAME = "dataverse-custom-api-mcp";
     private const string SERVER_VERSION = "1.0.0";
-
-    // Configuration
-    private const bool INCLUDE_PRIVATE_APIS = true; // Set to true to include private Custom APIs
-
+    
     // Cache for Custom API metadata (30 minute TTL)
     private static readonly Dictionary<string, CachedCustomAPIs> _customAPICache = new Dictionary<string, CachedCustomAPIs>();
     private static readonly TimeSpan CACHE_DURATION = TimeSpan.FromMinutes(30);
@@ -39,12 +40,20 @@ public class Script : ScriptBase
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
+        var startTime = DateTime.UtcNow;
         var correlationId = Guid.NewGuid().ToString();
         this.Context.Logger.LogInformation($"Dataverse Custom API MCP request received. CorrelationId: {correlationId}");
 
         try
         {
             var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            
+            // Log original request
+            await LogToAppInsights("OriginalRequest", new { 
+                CorrelationId = correlationId,
+                RequestBody = body?.Substring(0, Math.Min(1000, body?.Length ?? 0)),
+                UserAgent = this.Context.Request.Headers.UserAgent?.ToString()
+            });
             if (string.IsNullOrWhiteSpace(body))
             {
                 return CreateErrorResponse("Request body is required", 400);
@@ -74,31 +83,50 @@ public class Script : ScriptBase
         var paramsObj = request["params"] as JObject;
 
         this.Context.Logger.LogInformation($"MCP method: {method}");
+        await LogToAppInsights("MCPMethodCall", new { Method = method, HasParams = paramsObj != null });
 
         switch (method)
         {
             case "initialize":
-                return CreateMCPSuccessResponse(new JObject
+                // Standard MCP initialize - tools discovered via tools/list
+                // Echo back client's requested protocol version (MCP best practice)
+                var protocolVersion = paramsObj?["protocolVersion"]?.ToString() ?? "2024-11-05";
+                
+                var initResponse = new JObject
                 {
-                    ["protocolVersion"] = "2024-11-05",
+                    ["protocolVersion"] = protocolVersion,
                     ["capabilities"] = new JObject
                     {
-                        ["tools"] = new JObject { ["listChanged"] = false }
+                        ["tools"] = new JObject
+                        {
+                            ["listChanged"] = true  // Signal that tools list should be actively queried
+                        }
                     },
                     ["serverInfo"] = new JObject
                     {
                         ["name"] = SERVER_NAME,
                         ["version"] = SERVER_VERSION
                     }
-                }, id);
+                };
+                
+                await LogToAppInsights("MCPInitialize", new { 
+                    Message = "Initialize called - tools available via tools/list",
+                    ProtocolVersion = protocolVersion,
+                    ClientRequestedVersion = paramsObj?["protocolVersion"]?.ToString() ?? "none",
+                    ResponsePreview = initResponse.ToString().Substring(0, Math.Min(500, initResponse.ToString().Length))
+                });
+                
+                return CreateMCPSuccessResponse(initResponse, id);
 
             case "notifications/initialized":
                 return new HttpResponseMessage(HttpStatusCode.OK);
 
             case "tools/list":
+                var tools = await GetToolDefinitionsAsync().ConfigureAwait(false);
+                await LogToAppInsights("ToolsListResult", new { ToolCount = tools.Count });
                 return CreateMCPSuccessResponse(new JObject
                 {
-                    ["tools"] = await GetToolDefinitionsAsync().ConfigureAwait(false)
+                    ["tools"] = tools
                 }, id);
 
             case "tools/call":
@@ -120,6 +148,7 @@ public class Script : ScriptBase
             var arguments = parms?["arguments"] as JObject ?? new JObject();
 
             this.Context.Logger.LogInformation($"Tool call: {toolName}");
+            await LogToAppInsights("ToolCallReceived", new { ToolName = toolName, HasArguments = arguments.Count > 0 });
 
             // Route management tools
             if (!string.IsNullOrEmpty(toolName))
@@ -1351,6 +1380,104 @@ public class Script : ScriptBase
         public string Description { get; set; }
         public int Type { get; set; }
         public string LogicalEntityName { get; set; }
+    }
+
+    // Application Insights Telemetry
+    private async Task LogToAppInsights(string eventName, object properties)
+    {
+        try
+        {
+            var instrumentationKey = ExtractInstrumentationKey(APP_INSIGHTS_CONNECTION_STRING);
+            var ingestionEndpoint = ExtractIngestionEndpoint(APP_INSIGHTS_CONNECTION_STRING);
+            
+            if (string.IsNullOrEmpty(instrumentationKey) || string.IsNullOrEmpty(ingestionEndpoint))
+            {
+                return;
+            }
+
+            // Convert properties to dictionary of strings for Application Insights
+            var propsDict = new Dictionary<string, string>();
+            if (properties != null)
+            {
+                var propsJson = Newtonsoft.Json.JsonConvert.SerializeObject(properties);
+                var propsObj = Newtonsoft.Json.Linq.JObject.Parse(propsJson);
+                foreach (var prop in propsObj.Properties())
+                {
+                    propsDict[prop.Name] = prop.Value?.ToString() ?? "";
+                }
+            }
+
+            var telemetryData = new
+            {
+                name = $"Microsoft.ApplicationInsights.{instrumentationKey}.Event",
+                time = DateTime.UtcNow.ToString("o"),
+                iKey = instrumentationKey,
+                data = new
+                {
+                    baseType = "EventData",
+                    baseData = new
+                    {
+                        ver = 2,
+                        name = eventName,
+                        properties = propsDict
+                    }
+                }
+            };
+
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(telemetryData);
+            var telemetryUrl = new Uri(ingestionEndpoint.TrimEnd('/') + "/v2/track");
+
+            var telemetryRequest = new HttpRequestMessage(HttpMethod.Post, telemetryUrl)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+
+            await this.Context.SendAsync(telemetryRequest, this.CancellationToken);
+        }
+        catch
+        {
+            // Suppress telemetry errors
+        }
+    }
+
+    private string ExtractInstrumentationKey(string connectionString)
+    {
+        try
+        {
+            var parts = connectionString.Split(';');
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("InstrumentationKey=", StringComparison.OrdinalIgnoreCase))
+                {
+                    return part.Substring("InstrumentationKey=".Length);
+                }
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string ExtractIngestionEndpoint(string connectionString)
+    {
+        try
+        {
+            var parts = connectionString.Split(';');
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("IngestionEndpoint=", StringComparison.OrdinalIgnoreCase))
+                {
+                    return part.Substring("IngestionEndpoint=".Length);
+                }
+            }
+            return "https://dc.services.visualstudio.com/";
+        }
+        catch
+        {
+            return "https://dc.services.visualstudio.com/";
+        }
     }
 
     // Helper methods
