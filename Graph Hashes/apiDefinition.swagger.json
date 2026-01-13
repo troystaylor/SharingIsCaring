@@ -1,0 +1,495 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Graph Hashes",
+    "description": "File hash computation and verification for Microsoft Graph files. Supports QuickXorHash, SHA1, and CRC32 algorithms for integrity verification and deduplication.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troytaylor@microsoft.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Graph Hashes MCP",
+        "description": "Sends JSON-RPC requests to invoke file hash computation and verification tools via MCP.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/computeQuickXorHash": {
+      "post": {
+        "summary": "Compute QuickXorHash",
+        "description": "Calculate the QuickXorHash for file content. QuickXorHash is the standard hash used by OneDrive and SharePoint.",
+        "operationId": "ComputeQuickXorHash",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["fileContent"],
+              "properties": {
+                "fileContent": {
+                  "type": "string",
+                  "description": "Base64-encoded file content"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hash computed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "algorithm": {
+                  "type": "string",
+                  "description": "Hash algorithm used"
+                },
+                "hash": {
+                  "type": "string",
+                  "description": "Computed hash value (base64)"
+                },
+                "fileSize": {
+                  "type": "integer",
+                  "description": "File size in bytes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/computeSHA1Hash": {
+      "post": {
+        "summary": "Compute SHA1 Hash",
+        "description": "Calculate the SHA1 hash for file content.",
+        "operationId": "ComputeSHA1Hash",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["fileContent"],
+              "properties": {
+                "fileContent": {
+                  "type": "string",
+                  "description": "Base64-encoded file content"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hash computed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "algorithm": {
+                  "type": "string",
+                  "description": "Hash algorithm used"
+                },
+                "hash": {
+                  "type": "string",
+                  "description": "Computed hash value (hex)"
+                },
+                "fileSize": {
+                  "type": "integer",
+                  "description": "File size in bytes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/computeCRC32Hash": {
+      "post": {
+        "summary": "Compute CRC32 Hash",
+        "description": "Calculate the CRC32 hash for file content.",
+        "operationId": "ComputeCRC32Hash",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["fileContent"],
+              "properties": {
+                "fileContent": {
+                  "type": "string",
+                  "description": "Base64-encoded file content"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hash computed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "algorithm": {
+                  "type": "string",
+                  "description": "Hash algorithm used"
+                },
+                "hash": {
+                  "type": "string",
+                  "description": "Computed hash value (hex)"
+                },
+                "fileSize": {
+                  "type": "integer",
+                  "description": "File size in bytes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/compareHashes": {
+      "post": {
+        "summary": "Compare Hash Values",
+        "description": "Compare two hash values to determine if they match.",
+        "operationId": "CompareHashes",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["hash1", "hash2"],
+              "properties": {
+                "hash1": {
+                  "type": "string",
+                  "description": "First hash value"
+                },
+                "hash2": {
+                  "type": "string",
+                  "description": "Second hash value"
+                },
+                "algorithm": {
+                  "type": "string",
+                  "description": "Hash algorithm (for context)",
+                  "enum": ["quickXorHash", "sha1Hash", "crc32Hash"]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comparison result",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "match": {
+                  "type": "boolean",
+                  "description": "Whether the hashes match"
+                },
+                "hash1": {
+                  "type": "string",
+                  "description": "First hash value"
+                },
+                "hash2": {
+                  "type": "string",
+                  "description": "Second hash value"
+                },
+                "algorithm": {
+                  "type": "string",
+                  "description": "Hash algorithm"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verifyFileIntegrity": {
+      "post": {
+        "summary": "Verify File Integrity",
+        "description": "Compute hash of file content and compare to Graph API stored hash to verify integrity.",
+        "operationId": "VerifyFileIntegrity",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["fileContent", "driveId", "itemId"],
+              "properties": {
+                "fileContent": {
+                  "type": "string",
+                  "description": "Base64-encoded file content to verify"
+                },
+                "driveId": {
+                  "type": "string",
+                  "description": "Drive ID from Graph API"
+                },
+                "itemId": {
+                  "type": "string",
+                  "description": "Item ID from Graph API"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "verified": {
+                  "type": "boolean",
+                  "description": "Whether file integrity is verified"
+                },
+                "computedHash": {
+                  "type": "string",
+                  "description": "Computed QuickXorHash"
+                },
+                "graphHash": {
+                  "type": "string",
+                  "description": "Hash from Graph API"
+                },
+                "fileName": {
+                  "type": "string",
+                  "description": "File name from Graph"
+                },
+                "fileSize": {
+                  "type": "integer",
+                  "description": "File size in bytes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/drives/{driveId}/items/{itemId}": {
+      "get": {
+        "summary": "Get File Metadata with Hashes",
+        "description": "Retrieve file metadata including hash values from Microsoft Graph.",
+        "operationId": "GetFileHashes",
+        "parameters": [
+          {
+            "name": "driveId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Drive ID"
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Item ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Select specific properties (e.g., 'id,name,file')",
+            "default": "id,name,size,file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File metadata with hashes",
+            "schema": {
+              "$ref": "#/definitions/driveItem"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/drives/{driveId}/items/{itemId}/content": {
+      "get": {
+        "summary": "Download File Content",
+        "description": "Download file content for hash computation.",
+        "operationId": "DownloadFileContent",
+        "parameters": [
+          {
+            "name": "driveId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Drive ID"
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Item ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File content",
+            "schema": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/drive/items/{itemId}": {
+      "get": {
+        "summary": "Get My File Metadata",
+        "description": "Retrieve file metadata from current user's drive including hash values.",
+        "operationId": "GetMyFileHashes",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Item ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Select specific properties",
+            "default": "id,name,size,file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File metadata with hashes",
+            "schema": {
+              "$ref": "#/definitions/driveItem"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "driveItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "File name"
+        },
+        "size": {
+          "type": "integer",
+          "description": "File size in bytes"
+        },
+        "file": {
+          "$ref": "#/definitions/fileObject"
+        },
+        "webUrl": {
+          "type": "string",
+          "description": "URL to view file in browser"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "fileObject": {
+      "type": "object",
+      "properties": {
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type"
+        },
+        "hashes": {
+          "$ref": "#/definitions/hashes"
+        }
+      }
+    },
+    "hashes": {
+      "type": "object",
+      "properties": {
+        "quickXorHash": {
+          "type": "string",
+          "description": "QuickXorHash (base64) - guaranteed for OneDrive/SharePoint"
+        },
+        "sha1Hash": {
+          "type": "string",
+          "description": "SHA1 hash (hex) - if available"
+        },
+        "crc32Hash": {
+          "type": "string",
+          "description": "CRC32 hash (hex) - if available"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+      "scopes": {
+        "Files.Read": "Read user files",
+        "Files.Read.All": "Read all files user can access"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "Files.Read",
+        "Files.Read.All"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/graph/api/resources/hashes"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Data;Productivity"
+    }
+  ]
+}
