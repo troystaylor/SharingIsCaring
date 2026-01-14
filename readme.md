@@ -1,4 +1,4 @@
-# SharingIsCaring
+# #SharingIsCaring
 
 A collection of Power Platform custom connectors with Model Context Protocol (MCP) integration for Microsoft Copilot Studio agents.
 
@@ -277,3 +277,4 @@ MIT License - see individual connector folders for specific licensing details.
 ---
 
 ⭐ **Star this repo** if you find these connectors useful!
+
