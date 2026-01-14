@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 /// <summary>
 /// Dataverse Power Orchestration Tools: Power MCP tool server for Copilot Studio
 /// Dynamic tools loaded from tst_agentinstructions table with learned pattern discovery.
-/// Orchestration tools: search_tools, call_tool, execute_workflow, get_patterns
+/// Orchestration tools: discover_functions, invoke_tool, orchestrate_plan, learn_patterns
 /// </summary>
 public class Script : ScriptBase
 {
@@ -20,10 +20,10 @@ public class Script : ScriptBase
     private const string APP_INSIGHTS_CONNECTION_STRING = "";
 
     // Meta-tool names
-    private const string TOOL_SEARCH_TOOLS = "search_tools";
-    private const string TOOL_CALL_TOOL = "call_tool";
-    private const string TOOL_EXECUTE_WORKFLOW = "execute_workflow";
-    private const string TOOL_GET_PATTERNS = "get_patterns";
+    private const string TOOL_DISCOVER_FUNCTIONS = "discover_functions";
+    private const string TOOL_INVOKE_TOOL = "invoke_tool";
+    private const string TOOL_ORCHESTRATE_PLAN = "orchestrate_plan";
+    private const string TOOL_LEARN_PATTERNS = "learn_patterns";
     
     // Cache for dynamic content (per request lifecycle)
     private string _cachedAgentMd = null;
@@ -128,7 +128,7 @@ public class Script : ScriptBase
     }
     
     // Search tools by intent - matches against name, description, category, keywords
-    private async Task<JObject> ExecuteSearchTools(JObject args)
+    private async Task<JObject> ExecuteDiscoverFunctions(JObject args)
     {
         var intent = args["intent"]?.ToString()?.ToLowerInvariant() ?? "";
         var category = args["category"]?.ToString()?.ToLowerInvariant();
@@ -212,7 +212,7 @@ public class Script : ScriptBase
     }
     
     // Execute a tool dynamically by name
-    private async Task<JObject> ExecuteCallTool(JObject args)
+    private async Task<JObject> ExecuteInvokeTool(JObject args)
     {
         var toolName = args["toolName"]?.ToString();
         if (string.IsNullOrWhiteSpace(toolName))
@@ -242,7 +242,7 @@ public class Script : ScriptBase
         
         try
         {
-            this.Context.Logger.LogInformation($"call_tool executing: {toolName}");
+            this.Context.Logger.LogInformation($"invoke_tool executing: {toolName}");
             var result = await ExecuteToolByName(toolName, toolArgs).ConfigureAwait(false);
             
             return new JObject
@@ -273,8 +273,8 @@ public class Script : ScriptBase
         }
     }
     
-    // Execute a workflow of multiple tool calls in sequence
-    private async Task<JObject> ExecuteWorkflow(JObject args)
+    // Execute a plan of multiple tool calls in sequence
+    private async Task<JObject> ExecuteOrchestratePlan(JObject args)
     {
         var stepsToken = args["steps"];
         if (stepsToken == null || stepsToken.Type != JTokenType.Array)
@@ -301,9 +301,9 @@ public class Script : ScriptBase
         var context = new JObject(); // Shared context for variable substitution
         var allSuccess = true;
         
-        this.Context.Logger.LogInformation($"execute_workflow starting with {steps.Count} steps");
+        this.Context.Logger.LogInformation($"orchestrate_plan starting with {steps.Count} steps");
         
-        _ = LogToAppInsights("WorkflowStarted", new Dictionary<string, string>
+        _ = LogToAppInsights("PlanStarted", new Dictionary<string, string>
         {
             ["stepCount"] = steps.Count.ToString(),
             ["stopOnError"] = stopOnError.ToString()
@@ -343,11 +343,11 @@ public class Script : ScriptBase
             }
             
             // Substitute variables from context into args
-            var resolvedArgs = ResolveWorkflowVariables(stepArgs, context);
+            var resolvedArgs = ResolvePlanVariables(stepArgs, context);
             
             try
             {
-                this.Context.Logger.LogInformation($"Workflow step {i + 1}/{steps.Count}: {toolName}");
+                this.Context.Logger.LogInformation($"Plan step {i + 1}/{steps.Count}: {toolName}");
                 var result = await ExecuteToolByName(toolName, resolvedArgs).ConfigureAwait(false);
                 
                 // Store result in context if outputAs specified
@@ -475,7 +475,7 @@ public class Script : ScriptBase
     /// <summary>
     /// Get learned patterns from tst_learnedpatterns - exposes organizational learning to Copilot
     /// </summary>
-    private async Task<JObject> ExecuteGetPatterns(JObject args)
+    private async Task<JObject> ExecuteLearnPatterns(JObject args)
     {
         var toolNameFilter = args["toolName"]?.ToString()?.ToLowerInvariant();
         var limit = Math.Min(Math.Max(args["limit"]?.Value<int?>() ?? 10, 1), 50);
@@ -513,7 +513,7 @@ public class Script : ScriptBase
                     ["patterns"] = new JArray(),
                     ["totalCount"] = 0,
                     ["updateCount"] = updateCount,
-                    ["message"] = "No patterns learned yet. Execute workflows to start learning."
+                    ["message"] = "No patterns learned yet. Orchestrate plans to start learning."
                 };
             }
             
@@ -600,7 +600,7 @@ public class Script : ScriptBase
     {
         try
         {
-            // Format: "- [2026-01-10 14:23] workflow: tool1 → tool2 → tool3"
+            // Format: "- [2026-01-10 14:23] plan: tool1 → tool2 → tool3"
             var trimmed = line.TrimStart('-', ' ');
             
             var timestampEnd = trimmed.IndexOf(']');
@@ -634,8 +634,8 @@ public class Script : ScriptBase
         }
     }
     
-    // Resolve {{variable}} placeholders in workflow args from context
-    private JObject ResolveWorkflowVariables(JObject args, JObject context)
+    // Resolve {{variable}} placeholders in plan args from context
+    private JObject ResolvePlanVariables(JObject args, JObject context)
     {
         var resolved = new JObject();
         
@@ -662,7 +662,7 @@ public class Script : ScriptBase
         }
         else if (value.Type == JTokenType.Object)
         {
-            return ResolveWorkflowVariables(value as JObject, context);
+            return ResolvePlanVariables(value as JObject, context);
         }
         else if (value.Type == JTokenType.Array)
         {
@@ -744,10 +744,10 @@ public class Script : ScriptBase
             var mcpTools = new JArray();
             
             // Always inject orchestration tools first
-            mcpTools.Add(GetSearchToolsDefinition());
-            mcpTools.Add(GetCallToolDefinition());
-            mcpTools.Add(GetExecuteWorkflowDefinition());
-            mcpTools.Add(GetGetPatternsDefinition());
+            mcpTools.Add(GetDiscoverFunctionsDefinition());
+            mcpTools.Add(GetInvokeToolDefinition());
+            mcpTools.Add(GetOrchestratePlanDefinition());
+            mcpTools.Add(GetLearnPatternsDefinition());
             
             foreach (var tool in toolsArray)
             {
@@ -811,9 +811,9 @@ public class Script : ScriptBase
     }
     
     // Orchestration tools definition (always available)
-    private JObject GetSearchToolsDefinition() => new JObject
+    private JObject GetDiscoverFunctionsDefinition() => new JObject
     {
-        ["name"] = "search_tools",
+        ["name"] = "discover_functions",
         ["description"] = "Search available tools by intent/keywords or category. Use this to discover relevant tools before calling them.",
         ["inputSchema"] = new JObject
         {
@@ -828,10 +828,10 @@ public class Script : ScriptBase
         }
     };
     
-    private JObject GetCallToolDefinition() => new JObject
+    private JObject GetInvokeToolDefinition() => new JObject
     {
-        ["name"] = "call_tool",
-        ["description"] = "Execute a tool dynamically by name. Use search_tools first to find the right tool, then call_tool to execute it.",
+        ["name"] = "invoke_tool",
+        ["description"] = "Execute a tool dynamically by name. Use discover_functions first to find the right tool, then invoke_tool to execute it.",
         ["inputSchema"] = new JObject
         {
             ["type"] = "object",
@@ -844,10 +844,10 @@ public class Script : ScriptBase
         }
     };
     
-    private JObject GetExecuteWorkflowDefinition() => new JObject
+    private JObject GetOrchestratePlanDefinition() => new JObject
     {
-        ["name"] = "execute_workflow",
-        ["description"] = "Execute multiple tools in sequence as a workflow. Supports variable substitution between steps using {{varName}} syntax. Use for multi-step operations like 'create account then add contact'.",
+        ["name"] = "orchestrate_plan",
+        ["description"] = "Execute multiple tools in sequence as a plan. Supports variable substitution between steps using {{varName}} syntax. Use for multi-step operations like 'create account then add contact'.",
         ["inputSchema"] = new JObject
         {
             ["type"] = "object",
@@ -856,7 +856,7 @@ public class Script : ScriptBase
                 ["steps"] = new JObject
                 {
                     ["type"] = "array",
-                    ["description"] = "Array of workflow steps to execute in order",
+                    ["description"] = "Array of plan steps to execute in order",
                     ["items"] = new JObject
                     {
                         ["type"] = "object",
@@ -869,15 +869,15 @@ public class Script : ScriptBase
                         ["required"] = new JArray { "tool" }
                     }
                 },
-                ["stopOnError"] = new JObject { ["type"] = "boolean", ["description"] = "Stop workflow on first error (default true)" }
+                ["stopOnError"] = new JObject { ["type"] = "boolean", ["description"] = "Stop plan on first error (default true)" }
             },
             ["required"] = new JArray { "steps" }
         }
     };
     
-    private JObject GetGetPatternsDefinition() => new JObject
+    private JObject GetLearnPatternsDefinition() => new JObject
     {
-        ["name"] = "get_patterns",
+        ["name"] = "learn_patterns",
         ["description"] = "Get successful workflow patterns learned from previous executions. Use to suggest next steps or discover common tool sequences used in this organization.",
         ["inputSchema"] = new JObject
         {
@@ -894,10 +894,10 @@ public class Script : ScriptBase
     // Minimal fallback tools when agents.md not configured
     private JArray GetFallbackTools() => new JArray
     {
-        GetSearchToolsDefinition(),
-        GetCallToolDefinition(),
-        GetExecuteWorkflowDefinition(),
-        GetGetPatternsDefinition(),
+        GetDiscoverFunctionsDefinition(),
+        GetInvokeToolDefinition(),
+        GetOrchestratePlanDefinition(),
+        GetLearnPatternsDefinition(),
         new JObject
         {
             ["name"] = "dataverse_list_rows",
@@ -1151,10 +1151,10 @@ public class Script : ScriptBase
         _toolHandlers = new Dictionary<string, Func<JObject, Task<JObject>>>
         {
             // Orchestration tools (use constants)
-            [TOOL_SEARCH_TOOLS] = ExecuteSearchTools,
-            [TOOL_CALL_TOOL] = ExecuteCallTool,
-            [TOOL_EXECUTE_WORKFLOW] = ExecuteWorkflow,
-            [TOOL_GET_PATTERNS] = ExecuteGetPatterns,
+            [TOOL_DISCOVER_FUNCTIONS] = ExecuteDiscoverFunctions,
+            [TOOL_INVOKE_TOOL] = ExecuteInvokeTool,
+            [TOOL_ORCHESTRATE_PLAN] = ExecuteOrchestratePlan,
+            [TOOL_LEARN_PATTERNS] = ExecuteLearnPatterns,
             
             // Dataverse tools (inline strings - definitions in agents.md)
             ["dataverse_list_rows"] = ExecuteListRows,

@@ -8,10 +8,10 @@ Dataverse Power Orchestration Tools is a Power Platform custom connector that ex
 - **MCP Tool Server**: Exposes 45 Dataverse tools + 4 orchestration tools via Model Context Protocol for Copilot Studio
 - **Dynamic Tool Loading**: Tool definitions stored in agents.md in Dataverse table, loaded at runtime
 - **4 Orchestration Tools**: 
-  - `search_tools` — Discover tools by intent/category with relevance scoring
-  - `call_tool` — Execute any tool dynamically by name
-  - `execute_workflow` — Run multi-step tool sequences atomically
-  - `get_patterns` — Surface organizational learning and successful patterns
+  - `discover_functions` — Find available tools/resources/prompts
+  - `invoke_tool` — Trigger a specific tool
+  - `orchestrate_plan` — Coordinate multi-step operations
+  - `learn_patterns` — Upsert from retrieved Dataverse record
 - **Dual-Mode Operations**: MCP endpoint for Copilot Studio + typed query operations with IntelliSense
 - **Self-Learning**: Agent logs successful patterns to Dataverse for continuous improvement
 - **Dynamic Schema Support**: Power Automate IntelliSense for table columns via x-ms-dynamic-schema
@@ -22,10 +22,10 @@ Dataverse Power Orchestration Tools is a Power Platform custom connector that ex
 ## Tools by Category
 
 ### ORCHESTRATION (4 tools)
-- `search_tools` — Search available tools by intent keywords or category
-- `call_tool` — Execute any tool dynamically by name with arguments
-- `execute_workflow` — Run multi-step tool sequences with dependency handling
-- `get_patterns` — Retrieve learned patterns from organizational history
+- `discover_functions` — Find available tools/resources/prompts
+- `invoke_tool` — Trigger a specific tool
+- `orchestrate_plan` — Coordinate multi-step operations
+- `learn_patterns` — Upsert from retrieved Dataverse record
 
 ### READ Operations (7 tools)
 ### WRITE Operations (4 tools)
