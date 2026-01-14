@@ -31,6 +31,17 @@ public class Script : ScriptBase
     private JArray _cachedTools = null;           // MCP format (name, description, inputSchema)
     private JArray _cachedFullTools = null;       // Full format (includes category, keywords)
     
+    // Discovery cache data (from Dataverse)
+    private string _cachedDiscoveredToolsJson = null;
+    private DateTime? _cacheTimestamp = null;
+    private int _cacheDuration = 30; // Default 30 minutes
+    
+    // Discovery configuration (from Dataverse)
+    private bool _enableTables = true;
+    private bool _enableCustomAPIs = true;
+    private bool _enableActions = true;
+    private HashSet<string> _blacklist = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    
     // Tool handler registry - dictionary dispatch for O(1) lookup
     private Dictionary<string, Func<JObject, Task<JObject>>> _toolHandlers;
     
@@ -44,7 +55,7 @@ public class Script : ScriptBase
         {
             // Query tst_agentinstructions table for active instructions
             var filter = "tst_name eq 'dataverse-tools-agent' and tst_enabled eq true";
-            var select = "tst_agentinstructionsid,tst_agentmd,tst_learnedpatterns,tst_version,tst_updatecount";
+            var select = "tst_agentinstructionsid,tst_agentmd,tst_learnedpatterns,tst_version,tst_updatecount,tst_discoveredtools,tst_discoverycache_timestamp,tst_discoverycache_duration,tst_enabletables,tst_enablecustomapis,tst_enableactions,tst_discoveryblacklist";
             var url = BuildDataverseUrl($"tst_agentinstructionses?$filter={Uri.EscapeDataString(filter)}&$select={Uri.EscapeDataString(select)}&$top=1");
             
             var result = await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
@@ -60,6 +71,25 @@ public class Script : ScriptBase
             _cachedInstructionsRecordId = record?["tst_agentinstructionsid"]?.ToString();
             var agentMd = record?["tst_agentmd"]?.ToString() ?? string.Empty;
             var learnedPatterns = record?["tst_learnedpatterns"]?.ToString();
+            
+            // Cache discovery data
+            _cachedDiscoveredToolsJson = record?["tst_discoveredtools"]?.ToString();
+            _cacheTimestamp = record?["tst_discoverycache_timestamp"]?.Value<DateTime?>();
+            _cacheDuration = record?["tst_discoverycache_duration"]?.Value<int?>() ?? 30;
+            
+            // Cache discovery configuration
+            _enableTables = record?["tst_enabletables"]?.Value<bool?>() ?? true;
+            _enableCustomAPIs = record?["tst_enablecustomapis"]?.Value<bool?>() ?? true;
+            _enableActions = record?["tst_enableactions"]?.Value<bool?>() ?? true;
+            
+            // Parse blacklist (comma or newline-separated)
+            var blacklistRaw = record?["tst_discoveryblacklist"]?.ToString() ?? "";
+            _blacklist = new HashSet<string>(
+                blacklistRaw.Split(new[] { ',', '\n', '\r', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .Where(s => !string.IsNullOrWhiteSpace(s)),
+                StringComparer.OrdinalIgnoreCase
+            );
             
             // Append learned patterns if present
             if (!string.IsNullOrWhiteSpace(learnedPatterns))
@@ -78,14 +108,63 @@ public class Script : ScriptBase
         }
     }
     
-    // Parse tools from agents.md JSON block
+    // Parse tools from agents.md JSON block and merge with discovered tools from cache
     private async Task<JArray> GetDynamicToolsAsync()
     {
         if (_cachedTools != null)
             return _cachedTools;
             
+        // Get static tools from agents.md (also loads cache data)
         var agentMd = await GetAgentMdAsync().ConfigureAwait(false);
-        _cachedTools = ParseToolsFromAgentMd(agentMd);
+        var staticTools = ParseToolsFromAgentMd(agentMd);
+        
+        // Check if discovery cache is expired
+        var isCacheExpired = _cacheTimestamp == null || 
+                             DateTime.UtcNow - _cacheTimestamp.Value > TimeSpan.FromMinutes(_cacheDuration);
+        
+        if (isCacheExpired)
+        {
+            this.Context.Logger.LogInformation("Discovery cache expired or missing - running discovery");
+            
+            try
+            {
+                // Discover all tools (tables, Custom APIs, actions/functions)
+                var discoveredTools = await DiscoverAllToolsAsync().ConfigureAwait(false);
+                
+                // Update cache in Dataverse
+                await UpdateDiscoveryCacheAsync(discoveredTools).ConfigureAwait(false);
+                
+                // Merge and cache
+                _cachedTools = MergeTools(staticTools, discoveredTools);
+            }
+            catch (Exception ex)
+            {
+                this.Context.Logger.LogWarning($"Discovery failed: {ex.Message}. Using static tools only.");
+                _cachedTools = staticTools;
+            }
+        }
+        else
+        {
+            this.Context.Logger.LogInformation($"Using cached discovered tools (expires in {(_cacheTimestamp.Value.AddMinutes(_cacheDuration) - DateTime.UtcNow).TotalMinutes:F0} min)");
+            
+            // Parse cached discovered tools
+            JArray discoveredTools = new JArray();
+            if (!string.IsNullOrWhiteSpace(_cachedDiscoveredToolsJson))
+            {
+                try
+                {
+                    discoveredTools = JArray.Parse(_cachedDiscoveredToolsJson);
+                }
+                catch (Exception ex)
+                {
+                    this.Context.Logger.LogWarning($"Failed to parse cached discovered tools: {ex.Message}");
+                }
+            }
+            
+            // Merge and cache
+            _cachedTools = MergeTools(staticTools, discoveredTools);
+        }
+        
         return _cachedTools;
     }
     
@@ -96,8 +175,850 @@ public class Script : ScriptBase
             return _cachedFullTools;
             
         var agentMd = await GetAgentMdAsync().ConfigureAwait(false);
-        _cachedFullTools = ParseFullToolsFromAgentMd(agentMd);
+        var staticFullTools = ParseFullToolsFromAgentMd(agentMd);
+        
+        // For discover_functions, we also need full metadata from discovered tools
+        // Parse cached discovered tools with full metadata
+        JArray discoveredFullTools = new JArray();
+        if (!string.IsNullOrWhiteSpace(_cachedDiscoveredToolsJson))
+        {
+            try
+            {
+                var discoveredTools = JArray.Parse(_cachedDiscoveredToolsJson);
+                // Discovered tools already have category/keywords in full format
+                discoveredFullTools = discoveredTools;
+            }
+            catch (Exception ex)
+            {
+                this.Context.Logger.LogWarning($"Failed to parse discovered tools for search: {ex.Message}");
+            }
+        }
+        
+        // Merge full tools (static + discovered)
+        _cachedFullTools = new JArray();
+        foreach (var tool in staticFullTools) _cachedFullTools.Add(tool);
+        foreach (var tool in discoveredFullTools) _cachedFullTools.Add(tool);
+        
         return _cachedFullTools;
+    }
+    
+    /// <summary>
+    /// Merge static tools with discovered tools, removing duplicates (static wins)
+    /// </summary>
+    private JArray MergeTools(JArray staticTools, JArray discoveredTools)
+    {
+        var merged = new JArray();
+        var toolNames = new HashSet<string>();
+        
+        // Add static tools first (they take precedence)
+        foreach (var tool in staticTools)
+        {
+            var name = tool["name"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                merged.Add(tool);
+                toolNames.Add(name);
+            }
+        }
+        
+        // Add discovered tools (skip duplicates)
+        foreach (var tool in discoveredTools)
+        {
+            var name = tool["name"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(name) && !toolNames.Contains(name))
+            {
+                merged.Add(tool);
+                toolNames.Add(name);
+            }
+        }
+        
+        this.Context.Logger.LogInformation($"Merged tools: {staticTools.Count} static + {discoveredTools.Count} discovered = {merged.Count} total");
+        return merged;
+    }
+    
+    /// <summary>
+    /// Discover all tools from Dataverse (tables, Custom APIs, actions/functions)
+    /// </summary>
+    private async Task<JArray> DiscoverAllToolsAsync()
+    {
+        var discoveredTools = new JArray();
+        
+        // Phase 1: Table discovery
+        if (_enableTables)
+        {
+            var tableTools = await DiscoverTablesAsync().ConfigureAwait(false);
+            foreach (var tool in tableTools) discoveredTools.Add(tool);
+        }
+        
+        // Phase 2: Custom API discovery
+        if (_enableCustomAPIs)
+        {
+            var customApiTools = await DiscoverCustomAPIsAsync().ConfigureAwait(false);
+            foreach (var tool in customApiTools) discoveredTools.Add(tool);
+        }
+        
+        // Phase 3: Actions/Functions discovery
+        if (_enableActions)
+        {
+            var actionTools = await DiscoverActionsAsync().ConfigureAwait(false);
+            foreach (var tool in actionTools) discoveredTools.Add(tool);
+        }
+        
+        this.Context.Logger.LogInformation($"Discovered {discoveredTools.Count} tools");
+        return discoveredTools;
+    }
+    
+    /// <summary>
+    /// Discover all Dataverse tables and generate 6 CRUD tools per table
+    /// Generates: create_{table}, get_{table}, update_{table}, delete_{table}, list_{table}, query_{table}
+    /// </summary>
+    private async Task<JArray> DiscoverTablesAsync()
+    {
+        var tools = new JArray();
+        
+        try
+        {
+            this.Context.Logger.LogInformation("Starting table discovery...");
+            
+            // Query EntityDefinitions with attributes expanded
+            var url = BuildDataverseUrl("EntityDefinitions?$select=LogicalName,DisplayName,Description,PrimaryIdAttribute,PrimaryNameAttribute,IsCustomEntity,IsActivity&$expand=Attributes($select=LogicalName,DisplayName,Description,AttributeType,MaxLength,IsValidForCreate,IsValidForUpdate,IsValidForRead,IsPrimaryId,IsPrimaryName,RequiredLevel,Format)&$filter=IsPrivate eq false");
+            
+            var result = await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+            var entities = result["value"] as JArray;
+            
+            if (entities == null || entities.Count == 0)
+            {
+                this.Context.Logger.LogWarning("No entities discovered");
+                return tools;
+            }
+            
+            this.Context.Logger.LogInformation($"Processing {entities.Count} entities...");
+            
+            foreach (var entity in entities)
+            {
+                var entityObj = entity as JObject;
+                if (entityObj == null) continue;
+                
+                var logicalName = entityObj["LogicalName"]?.ToString();
+                if (string.IsNullOrWhiteSpace(logicalName)) continue;
+                
+                // Check blacklist
+                if (_blacklist.Contains(logicalName))
+                {
+                    this.Context.Logger.LogDebug($"Skipping blacklisted table: {logicalName}");
+                    continue;
+                }
+                
+                var displayName = entityObj["DisplayName"]?.Value<JObject>()?["UserLocalizedLabel"]?["Label"]?.ToString() ?? logicalName;
+                var description = entityObj["Description"]?.Value<JObject>()?["UserLocalizedLabel"]?["Label"]?.ToString() ?? "";
+                var primaryIdAttr = entityObj["PrimaryIdAttribute"]?.ToString();
+                var primaryNameAttr = entityObj["PrimaryNameAttribute"]?.ToString();
+                var attributes = entityObj["Attributes"] as JArray;
+                
+                // Build detailed schema for attributes
+                var createSchema = BuildAttributeSchema(attributes, "create");
+                var updateSchema = BuildAttributeSchema(attributes, "update");
+                var readSchema = BuildAttributeSchema(attributes, "read");
+                
+                // Generate 6 tools per table (all operations, fail gracefully at runtime)
+                tools.Add(GenerateTableTool(logicalName, displayName, description, "create", createSchema, primaryIdAttr));
+                tools.Add(GenerateTableTool(logicalName, displayName, description, "get", readSchema, primaryIdAttr));
+                tools.Add(GenerateTableTool(logicalName, displayName, description, "update", updateSchema, primaryIdAttr));
+                tools.Add(GenerateTableTool(logicalName, displayName, description, "delete", null, primaryIdAttr));
+                tools.Add(GenerateTableTool(logicalName, displayName, description, "list", readSchema, primaryIdAttr));
+                tools.Add(GenerateTableTool(logicalName, displayName, description, "query", readSchema, primaryIdAttr));
+            }
+            
+            this.Context.Logger.LogInformation($"Discovered {tools.Count} table tools ({entities.Count} tables × 6 operations)");
+        }
+        catch (Exception ex)
+        {
+            this.Context.Logger.LogError($"Table discovery failed: {ex.Message}");
+            // Return partial results on error (fail-retry at operation level)
+        }
+        
+        return tools;
+    }
+    
+    /// <summary>
+    /// Build JSON Schema for table attributes with detailed metadata
+    /// </summary>
+    private JObject BuildAttributeSchema(JArray attributes, string operation)
+    {
+        var properties = new JObject();
+        var required = new JArray();
+        
+        if (attributes == null) return new JObject { ["type"] = "object", ["properties"] = properties };
+        
+        foreach (var attr in attributes)
+        {
+            var attrObj = attr as JObject;
+            if (attrObj == null) continue;
+            
+            var logicalName = attrObj["LogicalName"]?.ToString();
+            if (string.IsNullOrWhiteSpace(logicalName)) continue;
+            
+            var isPrimaryId = attrObj["IsPrimaryId"]?.Value<bool?>() ?? false;
+            var isValidForCreate = attrObj["IsValidForCreate"]?.Value<bool?>() ?? false;
+            var isValidForUpdate = attrObj["IsValidForUpdate"]?.Value<bool?>() ?? false;
+            var isValidForRead = attrObj["IsValidForRead"]?.Value<bool?>() ?? false;
+            
+            // Filter by operation type
+            if (operation == "create" && (!isValidForCreate || isPrimaryId)) continue;
+            if (operation == "update" && !isValidForUpdate) continue;
+            if (operation == "read" && !isValidForRead) continue;
+            
+            var displayName = attrObj["DisplayName"]?.Value<JObject>()?["UserLocalizedLabel"]?["Label"]?.ToString() ?? logicalName;
+            var description = attrObj["Description"]?.Value<JObject>()?["UserLocalizedLabel"]?["Label"]?.ToString() ?? "";
+            var attributeType = attrObj["AttributeType"]?.ToString() ?? "String";
+            var maxLength = attrObj["MaxLength"]?.Value<int?>();
+            var requiredLevel = attrObj["RequiredLevel"]?.Value<JObject>()?["Value"]?.ToString();
+            var format = attrObj["Format"]?.ToString();
+            
+            // Map Dataverse types to JSON Schema types
+            var schemaType = MapAttributeTypeToSchema(attributeType);
+            
+            var propSchema = new JObject
+            {
+                ["type"] = schemaType,
+                ["description"] = $"{displayName}{(string.IsNullOrWhiteSpace(description) ? "" : $": {description}")}"
+            };
+            
+            // Add detailed constraints
+            if (maxLength.HasValue && maxLength.Value > 0)
+                propSchema["maxLength"] = maxLength.Value;
+            
+            if (!string.IsNullOrWhiteSpace(format))
+                propSchema["format"] = format.ToLowerInvariant();
+            
+            if (isPrimaryId)
+                propSchema["x-ms-primary-id"] = true;
+            
+            properties[logicalName] = propSchema;
+            
+            // Track required fields (for create operation)
+            if (operation == "create" && requiredLevel == "ApplicationRequired")
+                required.Add(logicalName);
+        }
+        
+        var schema = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = properties
+        };
+        
+        if (required.Count > 0)
+            schema["required"] = required;
+        
+        return schema;
+    }
+    
+    /// <summary>
+    /// Map Dataverse AttributeType to JSON Schema type
+    /// </summary>
+    private string MapAttributeTypeToSchema(string attributeType)
+    {
+        switch (attributeType?.ToLowerInvariant())
+        {
+            case "boolean":
+                return "boolean";
+            case "integer":
+            case "bigint":
+            case "picklist":
+            case "state":
+            case "status":
+                return "integer";
+            case "decimal":
+            case "double":
+            case "money":
+                return "number";
+            case "datetime":
+                return "string"; // ISO 8601 format
+            case "uniqueidentifier":
+            case "lookup":
+            case "owner":
+            case "customer":
+                return "string"; // GUID format
+            default:
+                return "string";
+        }
+    }
+    
+    /// <summary>
+    /// Generate a tool definition for a table operation
+    /// </summary>
+    private JObject GenerateTableTool(string logicalName, string displayName, string description, string operation, JObject schema, string primaryIdAttr)
+    {
+        var toolName = $"{operation}_{logicalName}";
+        var operationDesc = operation switch
+        {
+            "create" => $"Create a new {displayName} record",
+            "get" => $"Get a single {displayName} record by ID",
+            "update" => $"Update an existing {displayName} record",
+            "delete" => $"Delete a {displayName} record",
+            "list" => $"List {displayName} records with optional filtering",
+            "query" => $"Query {displayName} records with advanced OData filters",
+            _ => $"{operation} {displayName}"
+        };
+        
+        var fullDescription = string.IsNullOrWhiteSpace(description) 
+            ? operationDesc 
+            : $"{operationDesc}. {description}";
+        
+        // Build inputSchema based on operation
+        JObject inputSchema;
+        
+        switch (operation)
+        {
+            case "create":
+                inputSchema = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = schema["properties"],
+                    ["required"] = schema["required"] ?? new JArray()
+                };
+                break;
+                
+            case "get":
+                inputSchema = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["id"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = $"The {primaryIdAttr} GUID"
+                        },
+                        ["select"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Comma-separated column names to return"
+                        }
+                    },
+                    ["required"] = new JArray { "id" }
+                };
+                break;
+                
+            case "update":
+                var updateProps = new JObject(schema["properties"]);
+                updateProps["id"] = new JObject
+                {
+                    ["type"] = "string",
+                    ["description"] = $"The {primaryIdAttr} GUID"
+                };
+                inputSchema = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = updateProps,
+                    ["required"] = new JArray { "id" }
+                };
+                break;
+                
+            case "delete":
+                inputSchema = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["id"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = $"The {primaryIdAttr} GUID"
+                        }
+                    },
+                    ["required"] = new JArray { "id" }
+                };
+                break;
+                
+            case "list":
+                inputSchema = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["select"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Comma-separated column names to return"
+                        },
+                        ["filter"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "OData $filter expression"
+                        },
+                        ["orderby"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "OData $orderby expression"
+                        },
+                        ["top"] = new JObject
+                        {
+                            ["type"] = "integer",
+                            ["description"] = "Maximum number of records (default 10)"
+                        }
+                    }
+                };
+                break;
+                
+            case "query":
+                inputSchema = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["select"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Comma-separated column names to return"
+                        },
+                        ["filter"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "OData $filter expression"
+                        },
+                        ["orderby"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "OData $orderby expression"
+                        },
+                        ["top"] = new JObject
+                        {
+                            ["type"] = "integer",
+                            ["description"] = "Maximum records to return"
+                        },
+                        ["expand"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Related entities to expand"
+                        }
+                    }
+                };
+                break;
+                
+            default:
+                inputSchema = new JObject { ["type"] = "object" };
+                break;
+        }
+        
+        // Return full tool definition (MCP format + category/keywords for discover_functions)
+        return new JObject
+        {
+            ["name"] = toolName,
+            ["description"] = fullDescription,
+            ["inputSchema"] = inputSchema,
+            ["category"] = operation.ToUpperInvariant() switch
+            {
+                "CREATE" => "WRITE",
+                "UPDATE" => "WRITE",
+                "DELETE" => "WRITE",
+                "GET" => "READ",
+                "LIST" => "READ",
+                "QUERY" => "READ",
+                _ => "ADVANCED"
+            },
+            ["keywords"] = new JArray { logicalName, displayName.ToLowerInvariant(), operation, "table", "dataverse" },
+            ["x-ms-table"] = logicalName,
+            ["x-ms-operation"] = operation
+        };
+    }
+    
+    /// <summary>
+    /// Discover all Dataverse Custom APIs and generate tools
+    /// </summary>
+    private async Task<JArray> DiscoverCustomAPIsAsync()
+    {
+        var tools = new JArray();
+        
+        try
+        {
+            this.Context.Logger.LogInformation("Starting Custom API discovery...");
+            
+            // Query customapis with expanded parameters and properties
+            var query = "customapis?$select=uniquename,displayname,description,bindingtype,boundentitylogicalname,isfunction,isprivate&" +
+                "$expand=" +
+                "CustomAPIRequestParameters($select=uniquename,name,displayname,description,type,logicalentityname,isoptional)," +
+                "CustomAPIResponseProperties($select=uniquename,name,displayname,description,type,logicalentityname)";
+            
+            var url = BuildDataverseUrl(query);
+            var result = await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+            var apiRecords = result["value"] as JArray;
+            
+            if (apiRecords == null || apiRecords.Count == 0)
+            {
+                this.Context.Logger.LogWarning("No Custom APIs discovered");
+                return tools;
+            }
+            
+            this.Context.Logger.LogInformation($"Processing {apiRecords.Count} Custom APIs...");
+            
+            foreach (var apiRecord in apiRecords)
+            {
+                var apiObj = apiRecord as JObject;
+                if (apiObj == null) continue;
+                
+                var uniqueName = apiObj["uniquename"]?.ToString();
+                if (string.IsNullOrWhiteSpace(uniqueName)) continue;
+                
+                // Check blacklist
+                if (_blacklist.Contains(uniqueName))
+                {
+                    this.Context.Logger.LogDebug($"Skipping blacklisted Custom API: {uniqueName}");
+                    continue;
+                }
+                
+                var displayName = apiObj["displayname"]?.ToString() ?? uniqueName;
+                var description = apiObj["description"]?.ToString() ?? "";
+                var bindingType = apiObj["bindingtype"]?.Value<int>() ?? 0;
+                var boundEntityLogicalName = apiObj["boundentitylogicalName"]?.ToString();
+                var isFunction = apiObj["isfunction"]?.Value<bool>() ?? false;
+                var isPrivate = apiObj["isprivate"]?.Value<bool>() ?? false;
+                
+                var requestParams = apiObj["CustomAPIRequestParameters"] as JArray ?? new JArray();
+                var responseProps = apiObj["CustomAPIResponseProperties"] as JArray ?? new JArray();
+                
+                // Generate tool definition
+                var tool = GenerateCustomAPITool(uniqueName, displayName, description, bindingType, 
+                    boundEntityLogicalName, isFunction, isPrivate, requestParams, responseProps);
+                
+                tools.Add(tool);
+            }
+            
+            this.Context.Logger.LogInformation($"Discovered {tools.Count} Custom API tools");
+        }
+        catch (Exception ex)
+        {
+            this.Context.Logger.LogError($"Custom API discovery failed: {ex.Message}");
+            // Return partial results on error
+        }
+        
+        return tools;
+    }
+    
+    /// <summary>
+    /// Generate tool definition for a Custom API
+    /// </summary>
+    private JObject GenerateCustomAPITool(string uniqueName, string displayName, string description,
+        int bindingType, string boundEntityLogicalName, bool isFunction, bool isPrivate,
+        JArray requestParams, JArray responseProps)
+    {
+        var toolName = $"customapi_{uniqueName}";
+        
+        // Build description with binding info
+        var bindingInfo = bindingType switch
+        {
+            0 => "Global unbound",
+            1 => $"Bound to {boundEntityLogicalName} entity",
+            2 => $"Bound to {boundEntityLogicalName} entity collection",
+            _ => "Unknown binding"
+        };
+        var fullDescription = string.IsNullOrWhiteSpace(description)
+            ? $"{displayName} ({bindingInfo} {(isFunction ? "Function" : "Action")})"
+            : $"{description} ({bindingInfo} {(isFunction ? "Function" : "Action")})";
+        
+        // Build inputSchema
+        var properties = new JObject();
+        var required = new JArray();
+        
+        // Add Target parameter for Entity-bound APIs
+        if (bindingType == 1)
+        {
+            properties["Target"] = new JObject
+            {
+                ["type"] = "string",
+                ["description"] = $"GUID of the {boundEntityLogicalName} record",
+                ["format"] = "uuid"
+            };
+            required.Add("Target");
+        }
+        
+        // Add request parameters
+        foreach (var param in requestParams)
+        {
+            var paramObj = param as JObject;
+            if (paramObj == null) continue;
+            
+            var paramUniqueName = paramObj["uniquename"]?.ToString();
+            if (string.IsNullOrWhiteSpace(paramUniqueName)) continue;
+            
+            var paramDisplayName = paramObj["displayname"]?.ToString() ?? paramUniqueName;
+            var paramDescription = paramObj["description"]?.ToString() ?? paramDisplayName;
+            var paramType = paramObj["type"]?.Value<int>() ?? 10;
+            var logicalEntityName = paramObj["logicalentityname"]?.ToString();
+            var isOptional = paramObj["isoptional"]?.Value<bool>() ?? false;
+            
+            var paramSchema = new JObject
+            {
+                ["type"] = MapCustomAPITypeToSchema(paramType),
+                ["description"] = paramDescription
+            };
+            
+            // Add format and type hints
+            switch (paramType)
+            {
+                case 1: // DateTime
+                    paramSchema["format"] = "date-time";
+                    break;
+                case 12: // Guid
+                    paramSchema["format"] = "uuid";
+                    break;
+                case 5: // EntityReference
+                    paramSchema["description"] = $"{paramSchema["description"]} (EntityReference with logicalName and id)";
+                    break;
+                case 3: // Entity
+                    if (string.IsNullOrEmpty(logicalEntityName))
+                        paramSchema["description"] = $"{paramSchema["description"]} (Open type: accepts any entity with @odata.type and attributes)";
+                    else
+                        paramSchema["description"] = $"{paramSchema["description"]} ({logicalEntityName} entity)";
+                    break;
+                case 4: // EntityCollection
+                    if (string.IsNullOrEmpty(logicalEntityName))
+                        paramSchema["description"] = $"{paramSchema["description"]} (Open type: array of entities with @odata.type)";
+                    else
+                        paramSchema["description"] = $"{paramSchema["description"]} (Collection of {logicalEntityName} entities)";
+                    break;
+            }
+            
+            properties[paramUniqueName] = paramSchema;
+            
+            if (!isOptional)
+                required.Add(paramUniqueName);
+        }
+        
+        var inputSchema = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = properties
+        };
+        
+        if (required.Count > 0)
+            inputSchema["required"] = required;
+        
+        // Build keywords for discovery
+        var keywords = new JArray { uniqueName, "customapi", isFunction ? "function" : "action" };
+        if (!string.IsNullOrWhiteSpace(boundEntityLogicalName))
+            keywords.Add(boundEntityLogicalName);
+        
+        return new JObject
+        {
+            ["name"] = toolName,
+            ["description"] = fullDescription,
+            ["inputSchema"] = inputSchema,
+            ["category"] = isFunction ? "READ" : "WRITE",
+            ["keywords"] = keywords,
+            ["x-ms-customapi"] = uniqueName,
+            ["x-ms-bindingtype"] = bindingType,
+            ["x-ms-isfunction"] = isFunction,
+            ["x-ms-boundentity"] = boundEntityLogicalName
+        };
+    }
+    
+    /// <summary>
+    /// Map Custom API type codes to JSON Schema types
+    /// </summary>
+    private string MapCustomAPITypeToSchema(int dataverseType)
+    {
+        return dataverseType switch
+        {
+            0 => "boolean",      // Boolean
+            1 => "string",       // DateTime (ISO 8601 string)
+            2 => "number",       // Decimal
+            3 => "object",       // Entity
+            4 => "array",        // EntityCollection
+            5 => "object",       // EntityReference
+            6 => "number",       // Float
+            7 => "integer",      // Integer
+            8 => "number",       // Money
+            9 => "integer",      // Picklist
+            10 => "string",      // String
+            11 => "array",       // StringArray
+            12 => "string",      // Guid (formatted as string)
+            _ => "string"        // Default fallback
+        };
+    }
+    
+    /// <summary>
+    /// Discover built-in Dataverse Actions and Functions
+    /// </summary>
+    private async Task<JArray> DiscoverActionsAsync()
+    {
+        var tools = new JArray();
+        
+        try
+        {
+            this.Context.Logger.LogInformation("Starting Actions/Functions discovery...");
+            
+            // Query EntityDefinitions with Actions and Functions expanded
+            // Note: Actions/Functions are global operations, not entity-specific in most cases
+            // We'll query the metadata for SdkMessage entities which represent all callable operations
+            var query = "sdkmessages?$select=name,isprivate&" +
+                "$expand=sdkmessagerequestfields($select=name,optional,clrformatter)," +
+                "sdkmessageresponsefields($select=name,clrformatter)&" +
+                "$filter=isprivate eq false and (categoryname eq 'Action' or categoryname eq 'Function')&" +
+                "$orderby=name";
+            
+            var url = BuildDataverseUrl(query);
+            var result = await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+            var messageRecords = result["value"] as JArray;
+            
+            if (messageRecords == null || messageRecords.Count == 0)
+            {
+                this.Context.Logger.LogWarning("No Actions/Functions discovered");
+                return tools;
+            }
+            
+            this.Context.Logger.LogInformation($"Processing {messageRecords.Count} Actions/Functions...");
+            
+            foreach (var messageRecord in messageRecords)
+            {
+                var messageObj = messageRecord as JObject;
+                if (messageObj == null) continue;
+                
+                var name = messageObj["name"]?.ToString();
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                
+                // Check blacklist
+                if (_blacklist.Contains(name))
+                {
+                    this.Context.Logger.LogDebug($"Skipping blacklisted Action/Function: {name}");
+                    continue;
+                }
+                
+                var isPrivate = messageObj["isprivate"]?.Value<bool?>() ?? false;
+                if (isPrivate) continue;
+                
+                var requestFields = messageObj["sdkmessagerequestfields"] as JArray ?? new JArray();
+                var responseFields = messageObj["sdkmessageresponsefields"] as JArray ?? new JArray();
+                
+                // Generate tool definition
+                var tool = GenerateActionFunctionTool(name, requestFields, responseFields);
+                tools.Add(tool);
+            }
+            
+            this.Context.Logger.LogInformation($"Discovered {tools.Count} Action/Function tools");
+        }
+        catch (Exception ex)
+        {
+            this.Context.Logger.LogError($"Actions/Functions discovery failed: {ex.Message}");
+            // Return partial results on error
+        }
+        
+        return tools;
+    }
+    
+    /// <summary>
+    /// Generate tool definition for a Dataverse Action/Function
+    /// </summary>
+    private JObject GenerateActionFunctionTool(string name, JArray requestFields, JArray responseFields)
+    {
+        var toolName = $"action_{name}";
+        var description = $"Execute {name} Dataverse operation";
+        
+        // Build inputSchema from request fields
+        var properties = new JObject();
+        var required = new JArray();
+        
+        foreach (var field in requestFields)
+        {
+            var fieldObj = field as JObject;
+            if (fieldObj == null) continue;
+            
+            var fieldName = fieldObj["name"]?.ToString();
+            if (string.IsNullOrWhiteSpace(fieldName)) continue;
+            
+            var isOptional = fieldObj["optional"]?.Value<bool?>() ?? true;
+            var formatter = fieldObj["clrformatter"]?.ToString();
+            
+            var fieldSchema = new JObject
+            {
+                ["type"] = MapFormatterToSchema(formatter),
+                ["description"] = $"{fieldName} parameter for {name}"
+            };
+            
+            properties[fieldName] = fieldSchema;
+            
+            if (!isOptional)
+                required.Add(fieldName);
+        }
+        
+        var inputSchema = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = properties
+        };
+        
+        if (required.Count > 0)
+            inputSchema["required"] = required;
+        
+        return new JObject
+        {
+            ["name"] = toolName,
+            ["description"] = description,
+            ["inputSchema"] = inputSchema,
+            ["category"] = "ADVANCED",
+            ["keywords"] = new JArray { name, "action", "function", "operation", "sdkmessage" },
+            ["x-ms-action"] = name
+        };
+    }
+    
+    /// <summary>
+    /// Map CLR formatter to JSON Schema type
+    /// </summary>
+    private string MapFormatterToSchema(string formatter)
+    {
+        if (string.IsNullOrWhiteSpace(formatter))
+            return "string";
+        
+        return formatter.ToLowerInvariant() switch
+        {
+            var f when f.Contains("boolean") => "boolean",
+            var f when f.Contains("int32") || f.Contains("int64") || f.Contains("integer") => "integer",
+            var f when f.Contains("decimal") || f.Contains("double") || f.Contains("float") || f.Contains("money") => "number",
+            var f when f.Contains("datetime") || f.Contains("guid") || f.Contains("string") => "string",
+            var f when f.Contains("entity") && !f.Contains("collection") => "object",
+            var f when f.Contains("collection") || f.Contains("array") => "array",
+            _ => "string"
+        };
+    }
+    
+    /// <summary>
+    /// Update discovery cache in Dataverse
+    /// </summary>
+    private async Task UpdateDiscoveryCacheAsync(JArray discoveredTools)
+    {
+        if (string.IsNullOrWhiteSpace(_cachedInstructionsRecordId))
+        {
+            this.Context.Logger.LogWarning("Cannot update discovery cache: no instructions record ID");
+            return;
+        }
+        
+        try
+        {
+            var updateUrl = BuildDataverseUrl($"tst_agentinstructionses({_cachedInstructionsRecordId})");
+            var updateBody = new JObject
+            {
+                ["tst_discoveredtools"] = discoveredTools.ToString(Newtonsoft.Json.Formatting.None),
+                ["tst_discoverycache_timestamp"] = DateTime.UtcNow.ToString("o")
+            };
+            
+            await SendDataverseRequest(new HttpMethod("PATCH"), updateUrl, updateBody).ConfigureAwait(false);
+            
+            // Update local cache
+            _cachedDiscoveredToolsJson = discoveredTools.ToString(Newtonsoft.Json.Formatting.None);
+            _cacheTimestamp = DateTime.UtcNow;
+            
+            this.Context.Logger.LogInformation($"Updated discovery cache with {discoveredTools.Count} tools");
+            
+            _ = LogToAppInsights("DiscoveryCacheUpdated", new Dictionary<string, string>
+            {
+                ["toolCount"] = discoveredTools.Count.ToString(),
+                ["cacheDuration"] = _cacheDuration.ToString()
+            });
+        }
+        catch (Exception ex)
+        {
+            this.Context.Logger.LogWarning($"Failed to update discovery cache: {ex.Message}");
+        }
     }
     
     private JArray ParseFullToolsFromAgentMd(string agentMd)
@@ -158,6 +1079,13 @@ public class Script : ScriptBase
             var keywords = toolObj["keywords"] as JArray;
             var keywordList = keywords?.Select(k => k.ToString().ToLowerInvariant()).ToList() ?? new List<string>();
             
+            // Extract metadata for enhanced scoring
+            var isTableTool = toolObj["x-ms-table"] != null;
+            var isCustomAPI = toolObj["x-ms-customapi"] != null;
+            var isAction = toolObj["x-ms-action"] != null;
+            var tableName = toolObj["x-ms-table"]?.ToString()?.ToLowerInvariant();
+            var operation = toolObj["x-ms-operation"]?.ToString()?.ToLowerInvariant();
+            
             // Category filter (exact match)
             if (!string.IsNullOrWhiteSpace(category) && toolCategory != category)
                 continue;
@@ -171,17 +1099,53 @@ public class Script : ScriptBase
                 
                 // Exact keyword match = highest score
                 if (keywordList.Contains(word)) score += 10;
+                // Exact table name match (for discovered table tools)
+                else if (isTableTool && tableName == word) score += 12;
                 // Name contains word
                 else if (name.Contains(word)) score += 8;
                 // Description contains word
                 else if (desc.Contains(word)) score += 3;
                 // Partial keyword match
                 else if (keywordList.Any(k => k.Contains(word) || word.Contains(k))) score += 5;
+                // Operation match (create, update, delete, etc.)
+                else if (!string.IsNullOrWhiteSpace(operation) && operation.Contains(word)) score += 6;
             }
             
             // Category match bonus (when filtering by category)
             if (!string.IsNullOrWhiteSpace(category) && toolCategory == category)
                 score += 5;
+            
+            // Boost Custom APIs and Actions (they're more specific than generic CRUD)
+            if (isCustomAPI && score > 0) score += 2;
+            if (isAction && score > 0) score += 2;
+            
+            // Intent-based boosting for common patterns
+            if (!string.IsNullOrWhiteSpace(intent))
+            {
+                var intentLower = intent.ToLowerInvariant();
+                
+                // CRUD pattern boosting
+                if (intentLower.Contains("create") || intentLower.Contains("add") || intentLower.Contains("new"))
+                {
+                    if (operation == "create") score += 4;
+                }
+                else if (intentLower.Contains("update") || intentLower.Contains("modify") || intentLower.Contains("edit") || intentLower.Contains("change"))
+                {
+                    if (operation == "update") score += 4;
+                }
+                else if (intentLower.Contains("delete") || intentLower.Contains("remove"))
+                {
+                    if (operation == "delete") score += 4;
+                }
+                else if (intentLower.Contains("get") || intentLower.Contains("retrieve") || intentLower.Contains("fetch") || intentLower.Contains("find one"))
+                {
+                    if (operation == "get") score += 4;
+                }
+                else if (intentLower.Contains("list") || intentLower.Contains("all") || intentLower.Contains("find all") || intentLower.Contains("search"))
+                {
+                    if (operation == "list" || operation == "query") score += 4;
+                }
+            }
             
             if (score > 0 || !string.IsNullOrWhiteSpace(category))
             {
@@ -1229,6 +2193,37 @@ public class Script : ScriptBase
                 return result;
             }
             
+            // Check if it's a discovered table tool (format: {operation}_{table})
+            var parts = toolName.Split(new[] { '_' }, 2);
+            if (parts.Length == 2)
+            {
+                var operation = parts[0];
+                var table = parts[1];
+                
+                // Route to appropriate handler based on operation
+                switch (operation)
+                {
+                    case "create":
+                        return await ExecuteDiscoveredCreate(table, args).ConfigureAwait(false);
+                    case "get":
+                        return await ExecuteDiscoveredGet(table, args).ConfigureAwait(false);
+                    case "update":
+                        return await ExecuteDiscoveredUpdate(table, args).ConfigureAwait(false);
+                    case "delete":
+                        return await ExecuteDiscoveredDelete(table, args).ConfigureAwait(false);
+                    case "list":
+                        return await ExecuteDiscoveredList(table, args).ConfigureAwait(false);
+                    case "query":
+                        return await ExecuteDiscoveredQuery(table, args).ConfigureAwait(false);
+                    case "customapi":
+                        // Custom API format: customapi_{uniquename}
+                        return await ExecuteDiscoveredCustomAPI(table, args).ConfigureAwait(false);
+                    case "action":
+                        // Action/Function format: action_{name}
+                        return await ExecuteDiscoveredAction(table, args).ConfigureAwait(false);
+                }
+            }
+            
             throw new Exception($"Unknown tool: {toolName}");
         }
         catch (Exception ex)
@@ -1272,6 +2267,330 @@ public class Script : ScriptBase
         var url = BuildDataverseUrl($"{table}?{string.Join("&", query)}");
         var resp = await SendDataverseRequest(HttpMethod.Get, url, null, includeFormatted, impersonateUserId).ConfigureAwait(false);
         return resp;
+    }
+    
+    // ---------- Discovered Table Tool Handlers ----------
+    
+    /// <summary>
+    /// Execute create operation for discovered table
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredCreate(string table, JObject args)
+    {
+        // Extract non-metadata fields for record creation
+        var record = new JObject();
+        foreach (var prop in args.Properties())
+        {
+            record[prop.Name] = prop.Value;
+        }
+        
+        var url = BuildDataverseUrl(table);
+        return await SendDataverseRequest(HttpMethod.Post, url, record).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Execute get operation for discovered table
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredGet(string table, JObject args)
+    {
+        var id = Require(args, "id");
+        var select = args["select"]?.ToString();
+        var qs = string.IsNullOrWhiteSpace(select) ? string.Empty : $"?$select={Uri.EscapeDataString(select)}";
+        var url = BuildDataverseUrl($"{table}({SanitizeGuid(id)}){qs}");
+        return await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Execute update operation for discovered table
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredUpdate(string table, JObject args)
+    {
+        var id = Require(args, "id");
+        
+        // Extract update fields (exclude id)
+        var record = new JObject();
+        foreach (var prop in args.Properties())
+        {
+            if (prop.Name.Equals("id", StringComparison.OrdinalIgnoreCase))
+                continue;
+            record[prop.Name] = prop.Value;
+        }
+        
+        var url = BuildDataverseUrl($"{table}({SanitizeGuid(id)})");
+        return await SendDataverseRequest(new HttpMethod("PATCH"), url, record).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Execute delete operation for discovered table
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredDelete(string table, JObject args)
+    {
+        var id = Require(args, "id");
+        var url = BuildDataverseUrl($"{table}({SanitizeGuid(id)})");
+        return await SendDataverseRequest(HttpMethod.Delete, url, null).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Execute list operation for discovered table
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredList(string table, JObject args)
+    {
+        var select = args["select"]?.ToString();
+        var filter = args["filter"]?.ToString();
+        var orderby = args["orderby"]?.ToString();
+        var top = args["top"]?.Value<int?>() ?? 10;
+        top = Math.Min(Math.Max(top, 1), 50);
+
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(select)) query.Add("$select=" + Uri.EscapeDataString(select));
+        if (!string.IsNullOrWhiteSpace(filter)) query.Add("$filter=" + Uri.EscapeDataString(filter));
+        if (!string.IsNullOrWhiteSpace(orderby)) query.Add("$orderby=" + Uri.EscapeDataString(orderby));
+        query.Add("$top=" + top);
+
+        var url = BuildDataverseUrl($"{table}?{string.Join("&", query)}");
+        return await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Execute query operation for discovered table (advanced with expand)
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredQuery(string table, JObject args)
+    {
+        var select = args["select"]?.ToString();
+        var filter = args["filter"]?.ToString();
+        var orderby = args["orderby"]?.ToString();
+        var top = args["top"]?.Value<int?>();
+        var expand = args["expand"]?.ToString();
+
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(select)) query.Add("$select=" + Uri.EscapeDataString(select));
+        if (!string.IsNullOrWhiteSpace(filter)) query.Add("$filter=" + Uri.EscapeDataString(filter));
+        if (!string.IsNullOrWhiteSpace(orderby)) query.Add("$orderby=" + Uri.EscapeDataString(orderby));
+        if (top.HasValue) query.Add("$top=" + Math.Min(Math.Max(top.Value, 1), 100));
+        if (!string.IsNullOrWhiteSpace(expand)) query.Add("$expand=" + Uri.EscapeDataString(expand));
+
+        var url = BuildDataverseUrl($"{table}{(query.Count > 0 ? "?" + string.Join("&", query) : "")}");
+        return await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+    }
+    
+    /// <summary>
+    /// Execute discovered Custom API
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredCustomAPI(string uniqueName, JObject args)
+    {
+        try
+        {
+            // Need to look up the Custom API metadata to determine binding type and function/action
+            // For now, we'll try to infer from the cached discovered tools
+            var discoveredTools = new JArray();
+            if (!string.IsNullOrWhiteSpace(_cachedDiscoveredToolsJson))
+            {
+                try
+                {
+                    discoveredTools = JArray.Parse(_cachedDiscoveredToolsJson);
+                }
+                catch
+                {
+                    // Fall through to query metadata directly
+                }
+            }
+            
+            // Find the tool definition to get metadata
+            var toolName = $"customapi_{uniqueName}";
+            var toolDef = discoveredTools.FirstOrDefault(t => t["name"]?.ToString() == toolName) as JObject;
+            
+            int bindingType = 0;
+            bool isFunction = false;
+            string boundEntityLogicalName = null;
+            
+            if (toolDef != null)
+            {
+                bindingType = toolDef["x-ms-bindingtype"]?.Value<int?>() ?? 0;
+                isFunction = toolDef["x-ms-isfunction"]?.Value<bool?>() ?? false;
+                boundEntityLogicalName = toolDef["x-ms-boundentity"]?.ToString();
+            }
+            else
+            {
+                // Fallback: query the Custom API metadata directly
+                var metadataQuery = $"customapis?$select=bindingtype,isfunction,boundentitylogicalname&$filter=uniquename eq '{uniqueName}'";
+                var metadataUrl = BuildDataverseUrl(metadataQuery);
+                var metadataResult = await SendDataverseRequest(HttpMethod.Get, metadataUrl, null).ConfigureAwait(false);
+                var apiRecords = metadataResult["value"] as JArray;
+                
+                if (apiRecords == null || apiRecords.Count == 0)
+                {
+                    throw new Exception($"Custom API '{uniqueName}' not found");
+                }
+                
+                var apiRecord = apiRecords[0] as JObject;
+                bindingType = apiRecord["bindingtype"]?.Value<int>() ?? 0;
+                isFunction = apiRecord["isfunction"]?.Value<bool>() ?? false;
+                boundEntityLogicalName = apiRecord["boundentitylogicalname"]?.ToString();
+            }
+            
+            // Build the URL based on binding type
+            string url;
+            switch (bindingType)
+            {
+                case 0: // Global unbound
+                    url = BuildDataverseUrl(uniqueName);
+                    break;
+                    
+                case 1: // Entity-bound
+                    var targetId = Require(args, "Target");
+                    var entitySet = GetEntitySetName(boundEntityLogicalName);
+                    url = BuildDataverseUrl($"{entitySet}({SanitizeGuid(targetId)})/Microsoft.Dynamics.CRM.{uniqueName}");
+                    break;
+                    
+                case 2: // EntityCollection-bound
+                    var collectionEntitySet = GetEntitySetName(boundEntityLogicalName);
+                    url = BuildDataverseUrl($"{collectionEntitySet}/Microsoft.Dynamics.CRM.{uniqueName}");
+                    break;
+                    
+                default:
+                    throw new Exception($"Unknown binding type: {bindingType}");
+            }
+            
+            // Execute based on function vs action
+            if (isFunction)
+            {
+                // Functions: GET with parameters in URL
+                url = AppendFunctionParameters(url, args);
+                return await SendDataverseRequest(HttpMethod.Get, url, null).ConfigureAwait(false);
+            }
+            else
+            {
+                // Actions: POST with parameters in body
+                var body = FormatActionParameters(args);
+                return await SendDataverseRequest(HttpMethod.Post, url, body).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            this.Context.Logger.LogError($"Custom API execution failed: {ex.Message}");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Execute discovered Dataverse Action/Function (SdkMessage)
+    /// </summary>
+    private async Task<JObject> ExecuteDiscoveredAction(string actionName, JObject args)
+    {
+        try
+        {
+            // Build URL for the action/function
+            // Most Dataverse actions/functions are POST operations
+            var url = BuildDataverseUrl(actionName);
+            
+            // Format parameters
+            var body = new JObject();
+            foreach (var prop in args.Properties())
+            {
+                body[prop.Name] = prop.Value;
+            }
+            
+            // Execute the action
+            return await SendDataverseRequest(HttpMethod.Post, url, body).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            this.Context.Logger.LogError($"Action/Function execution failed: {ex.Message}");
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Append function parameters to URL
+    /// </summary>
+    private string AppendFunctionParameters(string url, JObject args)
+    {
+        var parameters = new List<string>();
+        
+        foreach (var prop in args.Properties())
+        {
+            if (prop.Name.Equals("Target", StringComparison.OrdinalIgnoreCase))
+                continue; // Target is in the URL path, not a parameter
+                
+            var value = FormatFunctionParameterValue(prop.Value);
+            parameters.Add($"{prop.Name}={value}");
+        }
+        
+        if (parameters.Count > 0)
+            return $"{url}({string.Join(",", parameters)})";
+        
+        return url;
+    }
+    
+    /// <summary>
+    /// Format parameter value for function URL
+    /// </summary>
+    private string FormatFunctionParameterValue(JToken value)
+    {
+        switch (value.Type)
+        {
+            case JTokenType.Boolean:
+                return value.Value<bool>().ToString().ToLower();
+            case JTokenType.String:
+                return $"'{value.ToString().Replace("'", "''")}'";
+            case JTokenType.Integer:
+            case JTokenType.Float:
+                return value.ToString();
+            default:
+                return $"'{value.ToString().Replace("'", "''")}'";
+        }
+    }
+    
+    /// <summary>
+    /// Format action parameters for request body
+    /// </summary>
+    private JObject FormatActionParameters(JObject args)
+    {
+        var body = new JObject();
+        
+        foreach (var prop in args.Properties())
+        {
+            if (prop.Name.Equals("Target", StringComparison.OrdinalIgnoreCase))
+                continue; // Target is in the URL path, not a parameter
+                
+            body[prop.Name] = prop.Value;
+        }
+        
+        return body;
+    }
+    
+    /// <summary>
+    /// Get entity set name from logical name (with common mappings)
+    /// </summary>
+    private string GetEntitySetName(string logicalName)
+    {
+        if (string.IsNullOrEmpty(logicalName))
+            throw new Exception("Entity logical name is required");
+        
+        // Common entity set name mappings
+        var commonMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "account", "accounts" },
+            { "contact", "contacts" },
+            { "lead", "leads" },
+            { "opportunity", "opportunities" },
+            { "systemuser", "systemusers" },
+            { "team", "teams" },
+            { "businessunit", "businessunits" },
+            { "task", "tasks" },
+            { "email", "emails" },
+            { "appointment", "appointments" },
+            { "phonecall", "phonecalls" },
+            { "incident", "incidents" },
+            { "quote", "quotes" },
+            { "salesorder", "salesorders" },
+            { "invoice", "invoices" }
+        };
+        
+        if (commonMappings.TryGetValue(logicalName, out var entitySet))
+            return entitySet;
+        
+        // Default pluralization: add 's'
+        return logicalName + "s";
     }
 
     private async Task<JObject> ExecuteGetRow(JObject args)
