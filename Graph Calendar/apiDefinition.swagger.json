@@ -1,0 +1,1681 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Graph Calendar",
+    "description": "Microsoft Graph Calendar API connector for enterprise calendar management, meeting scheduling, and availability checking across users.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troytaylor@microsoft.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Graph Calendar MCP",
+        "description": "Sends JSON-RPC requests to invoke Microsoft Graph Calendar tools via MCP for enterprise calendar management.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/events": {
+      "get": {
+        "summary": "List My Calendar Events",
+        "description": "Get events from the current user's primary calendar.",
+        "operationId": "ListMyEvents",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "description": "Order results (e.g., start/dateTime)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of calendar events",
+            "schema": {
+              "$ref": "#/definitions/eventCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Calendar Event",
+        "description": "Create a new event in the current user's primary calendar.",
+        "operationId": "CreateMyEvent",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created event",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/events/{eventId}": {
+      "get": {
+        "summary": "Get Calendar Event",
+        "description": "Get a specific event from the current user's calendar.",
+        "operationId": "GetMyEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar event",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Calendar Event",
+        "description": "Update an existing event in the current user's calendar.",
+        "operationId": "UpdateMyEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated event",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Calendar Event",
+        "description": "Delete an event from the current user's calendar.",
+        "operationId": "DeleteMyEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Event deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendarView": {
+      "get": {
+        "summary": "Get My Calendar View",
+        "description": "Get calendar events within a date range for the current user.",
+        "operationId": "GetMyCalendarView",
+        "parameters": [
+          {
+            "name": "startDateTime",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Start of time range (ISO 8601)"
+          },
+          {
+            "name": "endDateTime",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "End of time range (ISO 8601)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar events in range",
+            "schema": {
+              "$ref": "#/definitions/eventCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/calendar/events": {
+      "get": {
+        "summary": "List User Calendar Events",
+        "description": "Get events from a specific user's primary calendar.",
+        "operationId": "ListUserEvents",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "description": "Order results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of calendar events",
+            "schema": {
+              "$ref": "#/definitions/eventCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create User Calendar Event",
+        "description": "Create a new event in a specific user's calendar.",
+        "operationId": "CreateUserEvent",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created event",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/calendar/events/{eventId}": {
+      "get": {
+        "summary": "Get User Calendar Event",
+        "description": "Get a specific event from a user's calendar.",
+        "operationId": "GetUserEvent",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar event",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update User Calendar Event",
+        "description": "Update an event in a specific user's calendar.",
+        "operationId": "UpdateUserEvent",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated event",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete User Calendar Event",
+        "description": "Delete an event from a specific user's calendar.",
+        "operationId": "DeleteUserEvent",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Event deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/calendarView": {
+      "get": {
+        "summary": "Get User Calendar View",
+        "description": "Get calendar events within a date range for a specific user.",
+        "operationId": "GetUserCalendarView",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "startDateTime",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Start of time range (ISO 8601)"
+          },
+          {
+            "name": "endDateTime",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "End of time range (ISO 8601)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of events to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calendar events in range",
+            "schema": {
+              "$ref": "#/definitions/eventCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/getSchedule": {
+      "post": {
+        "summary": "Get Free/Busy Schedule",
+        "description": "Get the free/busy availability information for multiple users within a specified time period.",
+        "operationId": "GetSchedule",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/getScheduleRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schedule information",
+            "schema": {
+              "$ref": "#/definitions/getScheduleResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/findMeetingTimes": {
+      "post": {
+        "summary": "Find Meeting Times",
+        "description": "Suggest meeting times based on attendee availability, time constraints, and other parameters.",
+        "operationId": "FindMeetingTimes",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/findMeetingTimesRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suggested meeting times",
+            "schema": {
+              "$ref": "#/definitions/meetingTimeSuggestionsResult"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/events/{eventId}/cancel": {
+      "post": {
+        "summary": "Cancel Calendar Event",
+        "description": "Cancel an event and send cancellation notices to attendees.",
+        "operationId": "CancelMyEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "description": "Cancellation message to send to attendees"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Event cancelled"
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/events/{eventId}/accept": {
+      "post": {
+        "summary": "Accept Event Invitation",
+        "description": "Accept a meeting invitation.",
+        "operationId": "AcceptEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "description": "Response message"
+                },
+                "sendResponse": {
+                  "type": "boolean",
+                  "description": "Send response to organizer"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Event accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/events/{eventId}/decline": {
+      "post": {
+        "summary": "Decline Event Invitation",
+        "description": "Decline a meeting invitation.",
+        "operationId": "DeclineEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "description": "Response message"
+                },
+                "sendResponse": {
+                  "type": "boolean",
+                  "description": "Send response to organizer"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Event declined"
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/events/{eventId}/tentativelyAccept": {
+      "post": {
+        "summary": "Tentatively Accept Event",
+        "description": "Tentatively accept a meeting invitation.",
+        "operationId": "TentativelyAcceptEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "description": "Response message"
+                },
+                "sendResponse": {
+                  "type": "boolean",
+                  "description": "Send response to organizer"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Event tentatively accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/users": {
+      "get": {
+        "summary": "List Users",
+        "description": "Get list of users in the organization for calendar operations.",
+        "operationId": "ListUsers",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of users to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter (e.g., department eq 'Leadership')"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "description": "Search expression"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "schema": {
+              "$ref": "#/definitions/userCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}": {
+      "get": {
+        "summary": "Get User",
+        "description": "Get a specific user by ID or email.",
+        "operationId": "GetUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/groups": {
+      "get": {
+        "summary": "List Groups",
+        "description": "Get list of groups (for finding leadership team groups).",
+        "operationId": "ListGroups",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of groups to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "description": "Search expression"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of groups",
+            "schema": {
+              "$ref": "#/definitions/groupCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/groups/{groupId}/members": {
+      "get": {
+        "summary": "List Group Members",
+        "description": "Get members of a group (e.g., leadership team).",
+        "operationId": "ListGroupMembers",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Group ID"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of members to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of group members",
+            "schema": {
+              "$ref": "#/definitions/directoryObjectCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendars": {
+      "get": {
+        "summary": "List My Calendars",
+        "description": "Get all calendars for the current user.",
+        "operationId": "ListMyCalendars",
+        "responses": {
+          "200": {
+            "description": "List of calendars",
+            "schema": {
+              "$ref": "#/definitions/calendarCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/calendars": {
+      "get": {
+        "summary": "List User Calendars",
+        "description": "Get all calendars for a specific user.",
+        "operationId": "ListUserCalendars",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "User ID or UPN (email)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of calendars",
+            "schema": {
+              "$ref": "#/definitions/calendarCollectionResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the event"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Event subject/title"
+        },
+        "body": {
+          "$ref": "#/definitions/itemBody"
+        },
+        "bodyPreview": {
+          "type": "string",
+          "description": "Preview of the event body"
+        },
+        "start": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "end": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "location": {
+          "$ref": "#/definitions/location"
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/location"
+          }
+        },
+        "attendees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/attendee"
+          }
+        },
+        "organizer": {
+          "$ref": "#/definitions/recipient"
+        },
+        "isAllDay": {
+          "type": "boolean"
+        },
+        "isCancelled": {
+          "type": "boolean"
+        },
+        "isOnlineMeeting": {
+          "type": "boolean"
+        },
+        "onlineMeetingProvider": {
+          "type": "string",
+          "enum": ["unknown", "teamsForBusiness", "skypeForBusiness", "skypeForConsumer"]
+        },
+        "onlineMeeting": {
+          "$ref": "#/definitions/onlineMeetingInfo"
+        },
+        "onlineMeetingUrl": {
+          "type": "string"
+        },
+        "responseStatus": {
+          "$ref": "#/definitions/responseStatus"
+        },
+        "showAs": {
+          "type": "string",
+          "enum": ["free", "tentative", "busy", "oof", "workingElsewhere", "unknown"]
+        },
+        "importance": {
+          "type": "string",
+          "enum": ["low", "normal", "high"]
+        },
+        "sensitivity": {
+          "type": "string",
+          "enum": ["normal", "personal", "private", "confidential"]
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recurrence": {
+          "$ref": "#/definitions/patternedRecurrence"
+        },
+        "reminderMinutesBeforeStart": {
+          "type": "integer"
+        },
+        "isReminderOn": {
+          "type": "boolean"
+        },
+        "hasAttachments": {
+          "type": "boolean"
+        },
+        "webLink": {
+          "type": "string"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seriesMasterId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["singleInstance", "occurrence", "exception", "seriesMaster"]
+        }
+      }
+    },
+    "eventCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/event"
+          }
+        }
+      }
+    },
+    "dateTimeTimeZone": {
+      "type": "object",
+      "properties": {
+        "dateTime": {
+          "type": "string",
+          "description": "Date and time (ISO 8601 format)"
+        },
+        "timeZone": {
+          "type": "string",
+          "description": "Time zone (e.g., Pacific Standard Time, UTC)"
+        }
+      }
+    },
+    "itemBody": {
+      "type": "object",
+      "properties": {
+        "contentType": {
+          "type": "string",
+          "enum": ["text", "html"]
+        },
+        "content": {
+          "type": "string"
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "locationEmailAddress": {
+          "type": "string"
+        },
+        "address": {
+          "$ref": "#/definitions/physicalAddress"
+        },
+        "coordinates": {
+          "$ref": "#/definitions/outlookGeoCoordinates"
+        },
+        "locationType": {
+          "type": "string",
+          "enum": ["default", "conferenceRoom", "homeAddress", "businessAddress", "geoCoordinates", "streetAddress", "hotel", "restaurant", "localBusiness", "postalAddress"]
+        },
+        "uniqueId": {
+          "type": "string"
+        },
+        "uniqueIdType": {
+          "type": "string",
+          "enum": ["unknown", "locationStore", "directory", "private", "bing"]
+        }
+      }
+    },
+    "physicalAddress": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "countryOrRegion": {
+          "type": "string"
+        },
+        "postalCode": {
+          "type": "string"
+        }
+      }
+    },
+    "outlookGeoCoordinates": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "accuracy": {
+          "type": "number"
+        },
+        "altitude": {
+          "type": "number"
+        },
+        "altitudeAccuracy": {
+          "type": "number"
+        }
+      }
+    },
+    "attendee": {
+      "type": "object",
+      "properties": {
+        "emailAddress": {
+          "$ref": "#/definitions/emailAddress"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["required", "optional", "resource"]
+        },
+        "status": {
+          "$ref": "#/definitions/responseStatus"
+        },
+        "proposedNewTime": {
+          "$ref": "#/definitions/timeSlot"
+        }
+      }
+    },
+    "emailAddress": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      }
+    },
+    "recipient": {
+      "type": "object",
+      "properties": {
+        "emailAddress": {
+          "$ref": "#/definitions/emailAddress"
+        }
+      }
+    },
+    "responseStatus": {
+      "type": "object",
+      "properties": {
+        "response": {
+          "type": "string",
+          "enum": ["none", "organizer", "tentativelyAccepted", "accepted", "declined", "notResponded"]
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "onlineMeetingInfo": {
+      "type": "object",
+      "properties": {
+        "joinUrl": {
+          "type": "string"
+        },
+        "conferenceId": {
+          "type": "string"
+        },
+        "tollNumber": {
+          "type": "string"
+        },
+        "tollFreeNumbers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "quickDial": {
+          "type": "string"
+        },
+        "phones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/phone"
+          }
+        }
+      }
+    },
+    "phone": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["home", "business", "mobile", "other", "assistant", "homeFax", "businessFax", "otherFax", "pager", "radio"]
+        }
+      }
+    },
+    "patternedRecurrence": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "$ref": "#/definitions/recurrencePattern"
+        },
+        "range": {
+          "$ref": "#/definitions/recurrenceRange"
+        }
+      }
+    },
+    "recurrencePattern": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["daily", "weekly", "absoluteMonthly", "relativeMonthly", "absoluteYearly", "relativeYearly"]
+        },
+        "interval": {
+          "type": "integer"
+        },
+        "daysOfWeek": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+          }
+        },
+        "dayOfMonth": {
+          "type": "integer"
+        },
+        "month": {
+          "type": "integer"
+        },
+        "firstDayOfWeek": {
+          "type": "string",
+          "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+        },
+        "index": {
+          "type": "string",
+          "enum": ["first", "second", "third", "fourth", "last"]
+        }
+      }
+    },
+    "recurrenceRange": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["endDate", "noEnd", "numbered"]
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "numberOfOccurrences": {
+          "type": "integer"
+        },
+        "recurrenceTimeZone": {
+          "type": "string"
+        }
+      }
+    },
+    "timeSlot": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "end": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        }
+      }
+    },
+    "getScheduleRequest": {
+      "type": "object",
+      "required": ["schedules", "startTime", "endTime"],
+      "properties": {
+        "schedules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Email addresses of users to get schedules for"
+        },
+        "startTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "endTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "availabilityViewInterval": {
+          "type": "integer",
+          "description": "Duration of time slot in minutes (default 30)"
+        }
+      }
+    },
+    "getScheduleResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/scheduleInformation"
+          }
+        }
+      }
+    },
+    "scheduleInformation": {
+      "type": "object",
+      "properties": {
+        "scheduleId": {
+          "type": "string",
+          "description": "Email address of the user"
+        },
+        "availabilityView": {
+          "type": "string",
+          "description": "Availability string (0=free, 1=tentative, 2=busy, 3=oof, 4=working elsewhere)"
+        },
+        "scheduleItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/scheduleItem"
+          }
+        },
+        "workingHours": {
+          "$ref": "#/definitions/workingHours"
+        },
+        "error": {
+          "$ref": "#/definitions/freeBusyError"
+        }
+      }
+    },
+    "scheduleItem": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "end": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["free", "tentative", "busy", "oof", "workingElsewhere", "unknown"]
+        },
+        "subject": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "isPrivate": {
+          "type": "boolean"
+        }
+      }
+    },
+    "workingHours": {
+      "type": "object",
+      "properties": {
+        "daysOfWeek": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+          }
+        },
+        "startTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "timeZone": {
+          "$ref": "#/definitions/timeZoneBase"
+        }
+      }
+    },
+    "timeZoneBase": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "freeBusyError": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "responseCode": {
+          "type": "string"
+        }
+      }
+    },
+    "findMeetingTimesRequest": {
+      "type": "object",
+      "properties": {
+        "attendees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/attendeeBase"
+          }
+        },
+        "timeConstraint": {
+          "$ref": "#/definitions/timeConstraint"
+        },
+        "meetingDuration": {
+          "type": "string",
+          "description": "Duration in ISO 8601 format (e.g., PT1H for 1 hour)"
+        },
+        "maxCandidates": {
+          "type": "integer",
+          "description": "Maximum number of suggestions to return"
+        },
+        "isOrganizerOptional": {
+          "type": "boolean"
+        },
+        "returnSuggestionReasons": {
+          "type": "boolean"
+        },
+        "minimumAttendeePercentage": {
+          "type": "number",
+          "description": "Minimum percentage of attendees that must be able to attend"
+        },
+        "locationConstraint": {
+          "$ref": "#/definitions/locationConstraint"
+        }
+      }
+    },
+    "attendeeBase": {
+      "type": "object",
+      "properties": {
+        "emailAddress": {
+          "$ref": "#/definitions/emailAddress"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["required", "optional", "resource"]
+        }
+      }
+    },
+    "timeConstraint": {
+      "type": "object",
+      "properties": {
+        "activityDomain": {
+          "type": "string",
+          "enum": ["work", "personal", "unrestricted", "unknown"]
+        },
+        "timeSlots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/timeSlot"
+          }
+        }
+      }
+    },
+    "locationConstraint": {
+      "type": "object",
+      "properties": {
+        "isRequired": {
+          "type": "boolean"
+        },
+        "suggestLocation": {
+          "type": "boolean"
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/locationConstraintItem"
+          }
+        }
+      }
+    },
+    "locationConstraintItem": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "locationEmailAddress": {
+          "type": "string"
+        },
+        "resolveAvailability": {
+          "type": "boolean"
+        }
+      }
+    },
+    "meetingTimeSuggestionsResult": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "emptySuggestionsReason": {
+          "type": "string"
+        },
+        "meetingTimeSuggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/meetingTimeSuggestion"
+          }
+        }
+      }
+    },
+    "meetingTimeSuggestion": {
+      "type": "object",
+      "properties": {
+        "confidence": {
+          "type": "number",
+          "description": "Confidence level (0-100)"
+        },
+        "organizerAvailability": {
+          "type": "string",
+          "enum": ["free", "tentative", "busy", "oof", "workingElsewhere", "unknown"]
+        },
+        "suggestionReason": {
+          "type": "string"
+        },
+        "meetingTimeSlot": {
+          "$ref": "#/definitions/timeSlot"
+        },
+        "attendeeAvailability": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/attendeeAvailability"
+          }
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/location"
+          }
+        }
+      }
+    },
+    "attendeeAvailability": {
+      "type": "object",
+      "properties": {
+        "attendee": {
+          "$ref": "#/definitions/attendeeBase"
+        },
+        "availability": {
+          "type": "string",
+          "enum": ["free", "tentative", "busy", "oof", "workingElsewhere", "unknown"]
+        }
+      }
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "mail": {
+          "type": "string"
+        },
+        "userPrincipalName": {
+          "type": "string"
+        },
+        "jobTitle": {
+          "type": "string"
+        },
+        "department": {
+          "type": "string"
+        },
+        "officeLocation": {
+          "type": "string"
+        },
+        "mobilePhone": {
+          "type": "string"
+        },
+        "businessPhones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "userCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/user"
+          }
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mail": {
+          "type": "string"
+        },
+        "mailEnabled": {
+          "type": "boolean"
+        },
+        "securityEnabled": {
+          "type": "boolean"
+        },
+        "groupTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "groupCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/group"
+          }
+        }
+      }
+    },
+    "directoryObject": {
+      "type": "object",
+      "properties": {
+        "@odata.type": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      }
+    },
+    "directoryObjectCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/directoryObject"
+          }
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "enum": ["auto", "lightBlue", "lightGreen", "lightOrange", "lightGray", "lightYellow", "lightTeal", "lightPink", "lightBrown", "lightRed", "maxColor"]
+        },
+        "isDefaultCalendar": {
+          "type": "boolean"
+        },
+        "canEdit": {
+          "type": "boolean"
+        },
+        "canShare": {
+          "type": "boolean"
+        },
+        "canViewPrivateItems": {
+          "type": "boolean"
+        },
+        "owner": {
+          "$ref": "#/definitions/emailAddress"
+        }
+      }
+    },
+    "calendarCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/calendar"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+      "scopes": {
+        "Calendars.Read": "Read user calendars",
+        "Calendars.Read.Shared": "Read shared calendars",
+        "Calendars.ReadWrite": "Read and write user calendars",
+        "Calendars.ReadWrite.Shared": "Read and write shared calendars",
+        "User.Read": "Read user profile",
+        "User.Read.All": "Read all users",
+        "Group.Read.All": "Read all groups"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "Calendars.Read",
+        "Calendars.Read.Shared",
+        "Calendars.ReadWrite",
+        "Calendars.ReadWrite.Shared",
+        "User.Read",
+        "User.Read.All",
+        "Group.Read.All"
+      ]
+    }
+  ]
+}

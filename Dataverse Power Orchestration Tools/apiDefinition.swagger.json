@@ -1,0 +1,243 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Dataverse Power Orchestration Tools",
+        "description": "Power MCP tool server exposing 49 Dataverse tools (45 operations + 4 orchestration tools) via Model Context Protocol for Copilot Studio agents. Features dynamic tool loading from Dataverse table, self-learning patterns, and tool discovery via search_tools.",
+        "version": "2.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "org.crm.dynamics.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "MCP Protocol Endpoint",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes 49 Dataverse tools via JSON-RPC 2.0.",
+                "operationId": "McpEndpoint",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/query/list": {
+            "get": {
+                "summary": "List records",
+                "description": "Retrieve records from a Dataverse table with filtering.",
+                "operationId": "ListRecords",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Table name (plural, e.g., accounts, contacts).",
+                        "x-ms-summary": "Table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "name",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "select",
+                        "in": "query",
+                        "description": "Comma-separated columns.",
+                        "x-ms-summary": "Columns",
+                        "type": "string"
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "description": "OData $filter expression.",
+                        "x-ms-summary": "Filter",
+                        "type": "string"
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "description": "Max records (default 10, max 50).",
+                        "x-ms-summary": "Top",
+                        "type": "integer",
+                        "default": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of records.",
+                        "schema": {
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetTableSchema",
+                                "parameters": {
+                                    "table": {
+                                        "parameter": "table"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/query/get": {
+            "get": {
+                "summary": "Get record",
+                "description": "Retrieve a single record by ID.",
+                "operationId": "GetRecord",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Table name (plural).",
+                        "x-ms-summary": "Table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetTables",
+                            "value-path": "name",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Record GUID.",
+                        "x-ms-summary": "ID",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "select",
+                        "in": "query",
+                        "description": "Comma-separated columns.",
+                        "x-ms-summary": "Columns",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Single record.",
+                        "schema": {
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetTableSchema",
+                                "parameters": {
+                                    "table": {
+                                        "parameter": "table"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/tables": {
+            "get": {
+                "summary": "Get tables (internal)",
+                "description": "List Dataverse tables for dynamic dropdowns.",
+                "operationId": "GetTables",
+                "x-ms-visibility": "internal",
+                "responses": {
+                    "200": {
+                        "description": "List of tables.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "displayName": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/schema": {
+            "get": {
+                "summary": "Get table schema (internal)",
+                "description": "Retrieve JSON schema for dynamic schema resolution.",
+                "operationId": "GetTableSchema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Table schema.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+            "scopes": {
+                "https://service.crm.dynamics.com/.default": "Access Dataverse Web API"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://service.crm.dynamics.com/.default"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/power-apps/developer/data-platform/webapi/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Data"
+        }
+    ]
+}

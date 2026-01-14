@@ -1,0 +1,298 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Copilot Licensing",
+        "description": "Retrieve Copilot Studio credits consumption and environment information from the Power Platform Licensing API. This connector exposes the undocumented licensing.powerplatform.microsoft.com API for monitoring billed and non-billed Copilot credits.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "api.powerplatform.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/environments": {
+            "get": {
+                "operationId": "ListEnvironments",
+                "summary": "List environments",
+                "description": "Retrieve a list of Power Platform environments available to the authenticated user.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing environments list.",
+                        "schema": {
+                            "$ref": "#/definitions/EnvironmentsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid or expired token."
+                    }
+                },
+                "x-ms-visibility": "internal"
+            }
+        },
+        "/credits": {
+            "get": {
+                "operationId": "GetEnvironmentCredits",
+                "summary": "Get environment Copilot credits",
+                "description": "Retrieve Copilot Studio credits (billed and non-billed) for a specific environment within a date range. Returns consumption data per agent including resource name, product name, feature name, and credit quantities.",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment.",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListEnvironments",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "format": "date",
+                        "description": "Start date for the query range.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "format": "date",
+                        "description": "End date for the query range.",
+                        "x-ms-summary": "To Date"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing credits data.",
+                        "schema": {
+                            "$ref": "#/definitions/CreditsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid or expired token."
+                    },
+                    "404": {
+                        "description": "Environment not found or no data available."
+                    }
+                },
+                "x-ms-visibility": "important"
+            }
+        },
+        "/entitlements": {
+            "get": {
+                "operationId": "GetTenantEntitlements",
+                "summary": "Get tenant entitlements",
+                "description": "Retrieve the Copilot Studio entitlements summary for the tenant.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing entitlements data.",
+                        "schema": {
+                            "$ref": "#/definitions/EntitlementsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid or expired token."
+                    }
+                },
+                "x-ms-visibility": "advanced"
+            }
+        }
+    },
+    "definitions": {
+        "EnvironmentsResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Environment"
+                    },
+                    "description": "Array of environments."
+                }
+            }
+        },
+        "Environment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Environment ID."
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name of the environment."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of environment (Production, Sandbox, Trial, etc.)."
+                },
+                "state": {
+                    "type": "string",
+                    "description": "State of the environment."
+                },
+                "url": {
+                    "type": "string",
+                    "description": "URL of the environment."
+                },
+                "tenantId": {
+                    "type": "string",
+                    "description": "Tenant ID."
+                }
+            }
+        },
+        "CreditsResponse": {
+            "type": "object",
+            "properties": {
+                "environmentId": {
+                    "type": "string",
+                    "description": "Environment ID."
+                },
+                "tenantId": {
+                    "type": "string",
+                    "description": "Tenant ID."
+                },
+                "fromDate": {
+                    "type": "string",
+                    "description": "Start date of query range."
+                },
+                "toDate": {
+                    "type": "string",
+                    "description": "End date of query range."
+                },
+                "resourceCount": {
+                    "type": "integer",
+                    "description": "Number of resources returned."
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CreditResource"
+                    },
+                    "description": "Array of resources (agents) with credit consumption."
+                }
+            }
+        },
+        "CreditResource": {
+            "type": "object",
+            "properties": {
+                "resourceId": {
+                    "type": "string",
+                    "description": "Unique identifier for the agent/resource."
+                },
+                "resourceName": {
+                    "type": "string",
+                    "description": "Display name of the agent."
+                },
+                "productName": {
+                    "type": "string",
+                    "description": "Product name (e.g., Copilot Studio)."
+                },
+                "featureName": {
+                    "type": "string",
+                    "description": "Feature name (e.g., MCS Messages)."
+                },
+                "channelId": {
+                    "type": "string",
+                    "description": "Channel identifier for the agent."
+                },
+                "billedCredits": {
+                    "type": "number",
+                    "description": "Number of billed credits consumed."
+                },
+                "nonBilledCredits": {
+                    "type": "number",
+                    "description": "Number of non-billed credits consumed."
+                },
+                "unit": {
+                    "type": "string",
+                    "description": "Unit of measurement (typically MB for messages)."
+                },
+                "lastRefreshed": {
+                    "type": "string",
+                    "description": "Date when the data was last refreshed."
+                }
+            }
+        },
+        "EntitlementsResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Entitlement"
+                    },
+                    "description": "Array of entitlement data."
+                }
+            }
+        },
+        "Entitlement": {
+            "type": "object",
+            "properties": {
+                "entitlementType": {
+                    "type": "string",
+                    "description": "Type of entitlement."
+                },
+                "quantity": {
+                    "type": "number",
+                    "description": "Quantity of entitlement."
+                },
+                "unit": {
+                    "type": "string",
+                    "description": "Unit of measurement."
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://api.powerplatform.com/.default": "Access Power Platform API"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "https://api.powerplatform.com/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://admin.powerplatform.microsoft.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations;Business Management"
+        }
+    ]
+}

@@ -1,0 +1,89 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "token": {
+        "type": "oauthSetting",
+        "oAuthSettings": {
+          "identityProvider": "aadCertificateAuth",
+          "clientId": "{clientId}",
+          "clientSecret": "{clientSecret}",
+          "resourceUri": "https://management.core.windows.net/",
+          "scopes": [
+            "https://graph.microsoft.com/.default"
+          ],
+          "redirectMode": "GlobalPerConnector"
+        }
+      },
+      "apiVersion": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "API Version",
+          "description": "Select the Microsoft Graph API version for SharePoint Embedded operations",
+          "tooltip": "Choose v1.0 for stable production APIs or beta for latest features",
+          "constraints": {
+            "required": "true",
+            "allowedValues": [
+              {
+                "text": "v1.0 (Stable)",
+                "value": "v1.0"
+              },
+              {
+                "text": "beta (Latest)",
+                "value": "beta"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#da3b01",
+    "capabilities": [
+      "actions"
+    ],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "policyTemplateInstances": [
+      {
+        "templateId": "routerequesttoendpoint",
+        "title": "Route to correct API version endpoint",
+        "parameters": {
+          "x-ms-apimTemplate-operationName": [
+            "GetContainers",
+            "CreateContainer",
+            "GetContainer",
+            "UpdateContainer",
+            "DeleteContainer",
+            "GetContainerDrive",
+            "ListContainerItems",
+            "UploadFile",
+            "DeleteFile",
+            "RestoreContainer",
+            "ListContainerColumns",
+            "GetContainerColumn",
+            "CreateContainerColumn",
+            "UpdateContainerColumn",
+            "DeleteContainerColumn"
+          ],
+          "x-ms-apimTemplateParameter.newPath": "/storage/fileStorage@{triggerBody()['apiVersion']}",
+          "x-ms-apimTemplateParameter.httpMethod": "@{triggerBody()['httpMethod']}",
+          "x-ms-apimTemplateParameter.queryParameters": "@{triggerBody()['queryParameters']}"
+        }
+      },
+      {
+        "templateId": "setqueryparameter",
+        "title": "Set API version in query parameters",
+        "parameters": {
+          "x-ms-apimTemplate-operationName": [
+            "GetContainers",
+            "CreateContainer",
+            "GetContainer",
+            "UpdateContainer",
+            "DeleteContainer"
+          ],
+          "x-ms-apimTemplateParameter.parameterName": "$version",
+          "x-ms-apimTemplateParameter.parameterValue": "@{connection('apiVersion')}"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,3116 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft Users",
+        "description": "Manage user profiles, organizational hierarchy, presence, and people discovery via Microsoft Graph. Enhanced alternative to Microsoft's first-party User Profile MCP Server with additional capabilities like presence, photos, and people search.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "url": "https://github.com/troystaylor/SharingIsCaring"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/v1.0",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/me": {
+            "get": {
+                "operationId": "GetMyProfile",
+                "summary": "Get my profile",
+                "description": "Retrieve the profile details of the signed-in user (the caller). This endpoint always returns the profile of the current user context.",
+                "x-ms-summary": "Get my profile",
+                "tags": [
+                    "My Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/ExpandParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/manager": {
+            "get": {
+                "operationId": "GetMyManager",
+                "summary": "Get my manager",
+                "description": "Retrieve the manager of the signed-in user (the caller). This endpoint always returns the manager of the current user context.",
+                "x-ms-summary": "Get my manager",
+                "tags": [
+                    "My Profile",
+                    "Organizational Hierarchy"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Manager profile",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/directReports": {
+            "get": {
+                "operationId": "GetMyDirectReports",
+                "summary": "Get my direct reports",
+                "description": "List the direct reports of the signed-in user.",
+                "x-ms-summary": "Get my direct reports",
+                "tags": [
+                    "My Profile",
+                    "Organizational Hierarchy"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Direct reports",
+                        "schema": {
+                            "$ref": "#/definitions/UserCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/photo/$value": {
+            "get": {
+                "operationId": "GetMyPhoto",
+                "summary": "Get my photo",
+                "description": "Retrieve the profile photo of the signed-in user as binary image data.",
+                "x-ms-summary": "Get my photo",
+                "tags": [
+                    "My Profile",
+                    "Photos"
+                ],
+                "produces": [
+                    "image/jpeg",
+                    "image/png"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Photo binary data",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/presence": {
+            "get": {
+                "operationId": "GetMyPresence",
+                "summary": "Get my presence",
+                "description": "Get the presence information for the signed-in user, including availability and activity.",
+                "x-ms-summary": "Get my presence",
+                "tags": [
+                    "My Profile",
+                    "Presence"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Presence information",
+                        "schema": {
+                            "$ref": "#/definitions/Presence"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/people": {
+            "get": {
+                "operationId": "SearchPeople",
+                "summary": "Search people",
+                "description": "Search for people relevant to the signed-in user. Returns relevance-ranked results based on communication patterns, collaboration, and business relationships.",
+                "x-ms-summary": "Search people",
+                "tags": [
+                    "People"
+                ],
+                "parameters": [
+                    {
+                        "name": "$search",
+                        "in": "query",
+                        "description": "Free-text search query (e.g., \"John\" or \"Engineering\")",
+                        "type": "string",
+                        "x-ms-summary": "Search query"
+                    },
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SkipParam"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "description": "OData filter (e.g., personType/class eq 'Person')",
+                        "type": "string",
+                        "x-ms-summary": "Filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "People results",
+                        "schema": {
+                            "$ref": "#/definitions/PersonCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "operationId": "ListUsers",
+                "summary": "List users",
+                "description": "Retrieve a list of users in the organization. Supports $select, $filter, $top, $orderby, $search. ConsistencyLevel is set to eventual by default for advanced queries.",
+                "x-ms-summary": "List users",
+                "tags": [
+                    "User Profiles"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SkipParam"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "description": "OData filter (e.g., startswith(displayName,'A'))",
+                        "type": "string",
+                        "x-ms-summary": "Filter"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "description": "Order results (e.g., displayName)",
+                        "type": "string",
+                        "x-ms-summary": "Order by"
+                    },
+                    {
+                        "name": "$search",
+                        "in": "query",
+                        "description": "Free-text search (e.g., \"displayName:John\")",
+                        "type": "string",
+                        "x-ms-summary": "Search"
+                    },
+                    {
+                        "name": "$count",
+                        "in": "query",
+                        "description": "Include count of items",
+                        "type": "boolean",
+                        "x-ms-summary": "Include count"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users list",
+                        "schema": {
+                            "$ref": "#/definitions/UserCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}": {
+            "get": {
+                "operationId": "GetUserProfile",
+                "summary": "Get user profile",
+                "description": "Retrieve a specified user's profile in the directory. Provide the user's object ID (GUID) or userPrincipalName (UPN). Do not use 'me' - use Get My Profile instead.",
+                "x-ms-summary": "Get user profile",
+                "tags": [
+                    "User Profiles"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/ExpandParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/manager": {
+            "get": {
+                "operationId": "GetUsersManager",
+                "summary": "Get user's manager",
+                "description": "Retrieve the manager of a specified user. Provide the user's object ID (GUID) or userPrincipalName (UPN). Do not use 'me' - use Get My Manager instead.",
+                "x-ms-summary": "Get user's manager",
+                "tags": [
+                    "User Profiles",
+                    "Organizational Hierarchy"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Manager profile",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/directReports": {
+            "get": {
+                "operationId": "GetDirectReports",
+                "summary": "Get user's direct reports",
+                "description": "List the direct reports of a specified user. Provide the user's object ID (GUID) or userPrincipalName (UPN). Do not use 'me'.",
+                "x-ms-summary": "Get user's direct reports",
+                "tags": [
+                    "User Profiles",
+                    "Organizational Hierarchy"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Direct reports",
+                        "schema": {
+                            "$ref": "#/definitions/UserCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/photo/$value": {
+            "get": {
+                "operationId": "GetUserPhoto",
+                "summary": "Get user's photo",
+                "description": "Retrieve the profile photo of a specified user as binary image data.",
+                "x-ms-summary": "Get user's photo",
+                "tags": [
+                    "User Profiles",
+                    "Photos"
+                ],
+                "produces": [
+                    "image/jpeg",
+                    "image/png"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Photo binary data",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/presence": {
+            "get": {
+                "operationId": "GetUserPresence",
+                "summary": "Get user's presence",
+                "description": "Get the presence information for a specified user, including availability and activity.",
+                "x-ms-summary": "Get user's presence",
+                "tags": [
+                    "User Profiles",
+                    "Presence"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Presence information",
+                        "schema": {
+                            "$ref": "#/definitions/Presence"
+                        }
+                    }
+                }
+            }
+        },
+        "/communications/getPresencesByUserId": {
+            "post": {
+                "operationId": "GetBatchPresence",
+                "summary": "Get batch presence",
+                "description": "Get the presence information for multiple users at once. Provide an array of user IDs (up to 650).",
+                "x-ms-summary": "Get batch presence",
+                "tags": [
+                    "Presence"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PresenceBatchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Presence information for multiple users",
+                        "schema": {
+                            "$ref": "#/definitions/PresenceCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/calendar/getSchedule": {
+            "post": {
+                "operationId": "GetScheduleAvailability",
+                "summary": "Get schedule availability",
+                "description": "Get the free/busy availability information for a set of users, distributions lists, or resources for a specified time period.",
+                "x-ms-summary": "Get schedule availability",
+                "tags": [
+                    "Calendar"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ScheduleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Schedule information",
+                        "schema": {
+                            "$ref": "#/definitions/ScheduleResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/memberOf": {
+            "get": {
+                "operationId": "GetMyMemberships",
+                "summary": "Get my group memberships",
+                "description": "Get the groups, directory roles, and administrative units that the signed-in user is a member of.",
+                "x-ms-summary": "Get my group memberships",
+                "tags": [
+                    "My Profile",
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "description": "OData filter",
+                        "type": "string",
+                        "x-ms-summary": "Filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Group memberships",
+                        "schema": {
+                            "$ref": "#/definitions/DirectoryObjectCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/memberOf": {
+            "get": {
+                "operationId": "GetUserMemberships",
+                "summary": "Get user's group memberships",
+                "description": "Get the groups, directory roles, and administrative units that a user is a member of.",
+                "x-ms-summary": "Get user's group memberships",
+                "tags": [
+                    "User Profiles",
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "description": "OData filter",
+                        "type": "string",
+                        "x-ms-summary": "Filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Group memberships",
+                        "schema": {
+                            "$ref": "#/definitions/DirectoryObjectCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/licenseDetails": {
+            "get": {
+                "operationId": "GetMyLicenses",
+                "summary": "Get my licenses",
+                "description": "Retrieve a list of license details for the signed-in user, including Microsoft 365 and other subscriptions.",
+                "x-ms-summary": "Get my licenses",
+                "tags": [
+                    "My Profile",
+                    "Licenses"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "License details",
+                        "schema": {
+                            "$ref": "#/definitions/LicenseDetailsCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/licenseDetails": {
+            "get": {
+                "operationId": "GetUserLicenses",
+                "summary": "Get user's licenses",
+                "description": "Retrieve a list of license details for a user.",
+                "x-ms-summary": "Get user's licenses",
+                "tags": [
+                    "User Profiles",
+                    "Licenses"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "License details",
+                        "schema": {
+                            "$ref": "#/definitions/LicenseDetailsCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/getMailTips": {
+            "post": {
+                "operationId": "GetMailTips",
+                "summary": "Get mail tips",
+                "description": "Get the mail tips for one or more recipients. Includes out of office settings, mailbox full status, and more.",
+                "x-ms-summary": "Get mail tips",
+                "tags": [
+                    "My Profile"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MailTipsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mail tips",
+                        "schema": {
+                            "$ref": "#/definitions/MailTipsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/joinedTeams": {
+            "get": {
+                "operationId": "GetMyJoinedTeams",
+                "summary": "Get my joined Teams",
+                "description": "Get the Microsoft Teams teams that the signed-in user is a member of.",
+                "x-ms-summary": "Get my joined Teams",
+                "tags": [
+                    "My Profile",
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Teams list",
+                        "schema": {
+                            "$ref": "#/definitions/TeamCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/authentication/methods": {
+            "get": {
+                "operationId": "GetMyAuthMethods",
+                "summary": "Get my authentication methods",
+                "description": "Get the authentication methods registered for the signed-in user (phone, email, FIDO2 keys, etc.).",
+                "x-ms-summary": "Get my authentication methods",
+                "tags": [
+                    "My Profile"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication methods",
+                        "schema": {
+                            "$ref": "#/definitions/AuthMethodCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/ownedObjects": {
+            "get": {
+                "operationId": "GetMyOwnedObjects",
+                "summary": "Get my owned objects",
+                "description": "Get directory objects (applications, groups, service principals) owned by the signed-in user.",
+                "x-ms-summary": "Get my owned objects",
+                "tags": [
+                    "My Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Owned objects",
+                        "schema": {
+                            "$ref": "#/definitions/DirectoryObjectCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/ownedObjects": {
+            "get": {
+                "operationId": "GetUserOwnedObjects",
+                "summary": "Get user's owned objects",
+                "description": "Get directory objects (applications, groups, service principals) owned by a user.",
+                "x-ms-summary": "Get user's owned objects",
+                "tags": [
+                    "User Profiles"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/SelectParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Owned objects",
+                        "schema": {
+                            "$ref": "#/definitions/DirectoryObjectCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile": {
+            "get": {
+                "operationId": "GetMyFullProfile",
+                "summary": "Get my full profile (Beta)",
+                "description": "Get the complete profile of the signed-in user including all sections (skills, projects, certifications, awards, positions, etc.). Uses beta endpoint.",
+                "x-ms-summary": "Get my full profile (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Full profile",
+                        "schema": {
+                            "$ref": "#/definitions/Profile"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile": {
+            "get": {
+                "operationId": "GetUserFullProfile",
+                "summary": "Get user's full profile (Beta)",
+                "description": "Get the complete profile of a user including all sections. Uses beta endpoint.",
+                "x-ms-summary": "Get user's full profile (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Full profile",
+                        "schema": {
+                            "$ref": "#/definitions/Profile"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/skills": {
+            "get": {
+                "operationId": "GetMySkills",
+                "summary": "Get my skills (Beta)",
+                "description": "Get the skills listed in the signed-in user's profile. Uses beta endpoint.",
+                "x-ms-summary": "Get my skills (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skills",
+                        "schema": {
+                            "$ref": "#/definitions/SkillCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/skills": {
+            "get": {
+                "operationId": "GetUserSkills",
+                "summary": "Get user's skills (Beta)",
+                "description": "Get the skills listed in a user's profile. Uses beta endpoint.",
+                "x-ms-summary": "Get user's skills (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skills",
+                        "schema": {
+                            "$ref": "#/definitions/SkillCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/projects": {
+            "get": {
+                "operationId": "GetMyProjects",
+                "summary": "Get my projects (Beta)",
+                "description": "Get the projects the signed-in user has participated in. Uses beta endpoint.",
+                "x-ms-summary": "Get my projects (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Projects",
+                        "schema": {
+                            "$ref": "#/definitions/ProjectCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/projects": {
+            "get": {
+                "operationId": "GetUserProjects",
+                "summary": "Get user's projects (Beta)",
+                "description": "Get the projects a user has participated in. Uses beta endpoint.",
+                "x-ms-summary": "Get user's projects (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Projects",
+                        "schema": {
+                            "$ref": "#/definitions/ProjectCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/certifications": {
+            "get": {
+                "operationId": "GetMyCertifications",
+                "summary": "Get my certifications (Beta)",
+                "description": "Get the certifications the signed-in user has earned. Uses beta endpoint.",
+                "x-ms-summary": "Get my certifications (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Certifications",
+                        "schema": {
+                            "$ref": "#/definitions/CertificationCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/certifications": {
+            "get": {
+                "operationId": "GetUserCertifications",
+                "summary": "Get user's certifications (Beta)",
+                "description": "Get the certifications a user has earned. Uses beta endpoint.",
+                "x-ms-summary": "Get user's certifications (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Certifications",
+                        "schema": {
+                            "$ref": "#/definitions/CertificationCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/awards": {
+            "get": {
+                "operationId": "GetMyAwards",
+                "summary": "Get my awards (Beta)",
+                "description": "Get the awards the signed-in user has received. Uses beta endpoint.",
+                "x-ms-summary": "Get my awards (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Awards",
+                        "schema": {
+                            "$ref": "#/definitions/AwardCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/awards": {
+            "get": {
+                "operationId": "GetUserAwards",
+                "summary": "Get user's awards (Beta)",
+                "description": "Get the awards a user has received. Uses beta endpoint.",
+                "x-ms-summary": "Get user's awards (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Awards",
+                        "schema": {
+                            "$ref": "#/definitions/AwardCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/languages": {
+            "get": {
+                "operationId": "GetMyLanguages",
+                "summary": "Get my languages (Beta)",
+                "description": "Get the languages the signed-in user speaks. Uses beta endpoint.",
+                "x-ms-summary": "Get my languages (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Languages",
+                        "schema": {
+                            "$ref": "#/definitions/LanguageCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/languages": {
+            "get": {
+                "operationId": "GetUserLanguages",
+                "summary": "Get user's languages (Beta)",
+                "description": "Get the languages a user speaks. Uses beta endpoint.",
+                "x-ms-summary": "Get user's languages (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Languages",
+                        "schema": {
+                            "$ref": "#/definitions/LanguageCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/positions": {
+            "get": {
+                "operationId": "GetMyPositions",
+                "summary": "Get my work history (Beta)",
+                "description": "Get the work positions (job history) of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my work history (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work positions",
+                        "schema": {
+                            "$ref": "#/definitions/PositionCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/positions": {
+            "get": {
+                "operationId": "GetUserPositions",
+                "summary": "Get user's work history (Beta)",
+                "description": "Get the work positions (job history) of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's work history (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work positions",
+                        "schema": {
+                            "$ref": "#/definitions/PositionCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/educationalActivities": {
+            "get": {
+                "operationId": "GetMyEducation",
+                "summary": "Get my education (Beta)",
+                "description": "Get the educational activities (schools, degrees) of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my education (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Education",
+                        "schema": {
+                            "$ref": "#/definitions/EducationCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/educationalActivities": {
+            "get": {
+                "operationId": "GetUserEducation",
+                "summary": "Get user's education (Beta)",
+                "description": "Get the educational activities of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's education (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Education",
+                        "schema": {
+                            "$ref": "#/definitions/EducationCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/interests": {
+            "get": {
+                "operationId": "GetMyInterests",
+                "summary": "Get my interests (Beta)",
+                "description": "Get the interests of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my interests (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Interests",
+                        "schema": {
+                            "$ref": "#/definitions/InterestCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/interests": {
+            "get": {
+                "operationId": "GetUserInterests",
+                "summary": "Get user's interests (Beta)",
+                "description": "Get the interests of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's interests (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Interests",
+                        "schema": {
+                            "$ref": "#/definitions/InterestCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/webAccounts": {
+            "get": {
+                "operationId": "GetMyWebAccounts",
+                "summary": "Get my web accounts (Beta)",
+                "description": "Get the web accounts (social media, etc.) of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my web accounts (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Web accounts",
+                        "schema": {
+                            "$ref": "#/definitions/WebAccountCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/webAccounts": {
+            "get": {
+                "operationId": "GetUserWebAccounts",
+                "summary": "Get user's web accounts (Beta)",
+                "description": "Get the web accounts of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's web accounts (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Web accounts",
+                        "schema": {
+                            "$ref": "#/definitions/WebAccountCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/addresses": {
+            "get": {
+                "operationId": "GetMyAddresses",
+                "summary": "Get my addresses (Beta)",
+                "description": "Get the physical addresses of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my addresses (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Addresses",
+                        "schema": {
+                            "$ref": "#/definitions/AddressCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/addresses": {
+            "get": {
+                "operationId": "GetUserAddresses",
+                "summary": "Get user's addresses (Beta)",
+                "description": "Get the physical addresses of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's addresses (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Addresses",
+                        "schema": {
+                            "$ref": "#/definitions/AddressCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/websites": {
+            "get": {
+                "operationId": "GetMyWebsites",
+                "summary": "Get my websites (Beta)",
+                "description": "Get the websites of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my websites (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Websites",
+                        "schema": {
+                            "$ref": "#/definitions/WebsiteCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/websites": {
+            "get": {
+                "operationId": "GetUserWebsites",
+                "summary": "Get user's websites (Beta)",
+                "description": "Get the websites of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's websites (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Websites",
+                        "schema": {
+                            "$ref": "#/definitions/WebsiteCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/anniversaries": {
+            "get": {
+                "operationId": "GetMyAnniversaries",
+                "summary": "Get my anniversaries (Beta)",
+                "description": "Get the anniversaries (birthday, work anniversary, etc.) of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my anniversaries (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Anniversaries",
+                        "schema": {
+                            "$ref": "#/definitions/AnniversaryCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/anniversaries": {
+            "get": {
+                "operationId": "GetUserAnniversaries",
+                "summary": "Get user's anniversaries (Beta)",
+                "description": "Get the anniversaries (birthday, work anniversary, etc.) of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's anniversaries (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Anniversaries",
+                        "schema": {
+                            "$ref": "#/definitions/AnniversaryCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/profile/notes": {
+            "get": {
+                "operationId": "GetMyNotes",
+                "summary": "Get my notes (Beta)",
+                "description": "Get the profile notes/annotations of the signed-in user. Uses beta endpoint.",
+                "x-ms-summary": "Get my notes (Beta)",
+                "tags": [
+                    "My Profile",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notes",
+                        "schema": {
+                            "$ref": "#/definitions/NoteCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userIdentifier}/profile/notes": {
+            "get": {
+                "operationId": "GetUserNotes",
+                "summary": "Get user's notes (Beta)",
+                "description": "Get the profile notes/annotations of a user. Uses beta endpoint.",
+                "x-ms-summary": "Get user's notes (Beta)",
+                "tags": [
+                    "User Profiles",
+                    "Profile"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/UserIdentifierParam"
+                    },
+                    {
+                        "$ref": "#/parameters/TopParam"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notes",
+                        "schema": {
+                            "$ref": "#/definitions/NoteCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "MCP",
+                "summary": "MCP Protocol",
+                "description": "Model Context Protocol endpoint for Copilot Studio agent integration. Supports initialize, tools/list, and tools/call methods.",
+                "x-ms-summary": "MCP Protocol",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {
+        "UserIdentifierParam": {
+            "name": "userIdentifier",
+            "in": "path",
+            "description": "User's object ID (GUID) or userPrincipalName (UPN). Do not use 'me'.",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "User ID or UPN",
+            "x-ms-url-encoding": "single"
+        },
+        "SelectParam": {
+            "name": "$select",
+            "in": "query",
+            "description": "Comma-separated list of properties to return",
+            "type": "string",
+            "x-ms-summary": "Select properties"
+        },
+        "ExpandParam": {
+            "name": "$expand",
+            "in": "query",
+            "description": "Expand related entity (manager OR directReports). Only one per request.",
+            "type": "string",
+            "x-ms-summary": "Expand",
+            "enum": [
+                "manager",
+                "directReports"
+            ]
+        },
+        "TopParam": {
+            "name": "$top",
+            "in": "query",
+            "description": "Number of items to return",
+            "type": "integer",
+            "x-ms-summary": "Top"
+        },
+        "SkipParam": {
+            "name": "$skip",
+            "in": "query",
+            "description": "Number of items to skip",
+            "type": "integer",
+            "x-ms-summary": "Skip"
+        }
+    },
+    "definitions": {
+        "User": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique identifier (GUID)"
+                },
+                "userPrincipalName": {
+                    "type": "string",
+                    "description": "User principal name (email-like UPN)"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name"
+                },
+                "givenName": {
+                    "type": "string",
+                    "description": "First name"
+                },
+                "surname": {
+                    "type": "string",
+                    "description": "Last name"
+                },
+                "mail": {
+                    "type": "string",
+                    "description": "Email address"
+                },
+                "jobTitle": {
+                    "type": "string",
+                    "description": "Job title"
+                },
+                "department": {
+                    "type": "string",
+                    "description": "Department"
+                },
+                "officeLocation": {
+                    "type": "string",
+                    "description": "Office location"
+                },
+                "mobilePhone": {
+                    "type": "string",
+                    "description": "Mobile phone"
+                },
+                "businessPhones": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Business phone numbers"
+                },
+                "city": {
+                    "type": "string",
+                    "description": "City"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "State or province"
+                },
+                "country": {
+                    "type": "string",
+                    "description": "Country or region"
+                },
+                "postalCode": {
+                    "type": "string",
+                    "description": "Postal code"
+                },
+                "streetAddress": {
+                    "type": "string",
+                    "description": "Street address"
+                },
+                "companyName": {
+                    "type": "string",
+                    "description": "Company name"
+                },
+                "employeeId": {
+                    "type": "string",
+                    "description": "Employee ID"
+                },
+                "employeeType": {
+                    "type": "string",
+                    "description": "Employee type"
+                },
+                "accountEnabled": {
+                    "type": "boolean",
+                    "description": "Whether the account is enabled"
+                },
+                "manager": {
+                    "$ref": "#/definitions/User",
+                    "description": "User's manager (when expanded)"
+                },
+                "directReports": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/User"
+                    },
+                    "description": "User's direct reports (when expanded)"
+                }
+            }
+        },
+        "UserCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "@odata.count": {
+                    "type": "integer"
+                },
+                "@odata.nextLink": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/User"
+                    }
+                }
+            }
+        },
+        "Presence": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "User ID"
+                },
+                "availability": {
+                    "type": "string",
+                    "description": "Availability status",
+                    "enum": [
+                        "Available",
+                        "AvailableIdle",
+                        "Away",
+                        "BeRightBack",
+                        "Busy",
+                        "BusyIdle",
+                        "DoNotDisturb",
+                        "Offline",
+                        "PresenceUnknown"
+                    ]
+                },
+                "activity": {
+                    "type": "string",
+                    "description": "Activity status",
+                    "enum": [
+                        "Available",
+                        "Away",
+                        "BeRightBack",
+                        "Busy",
+                        "DoNotDisturb",
+                        "InACall",
+                        "InAConferenceCall",
+                        "Inactive",
+                        "InAMeeting",
+                        "Offline",
+                        "OffWork",
+                        "OutOfOffice",
+                        "PresenceUnknown",
+                        "Presenting",
+                        "UrgentInterruptionsOnly"
+                    ]
+                },
+                "statusMessage": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "outOfOfficeSettings": {
+                    "type": "object",
+                    "properties": {
+                        "isOutOfOffice": {
+                            "type": "boolean"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "PresenceCollection": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Presence"
+                    }
+                }
+            }
+        },
+        "PresenceBatchRequest": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "description": "Array of user IDs (up to 650)",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Person": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique identifier"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name"
+                },
+                "givenName": {
+                    "type": "string",
+                    "description": "First name"
+                },
+                "surname": {
+                    "type": "string",
+                    "description": "Last name"
+                },
+                "userPrincipalName": {
+                    "type": "string",
+                    "description": "User principal name"
+                },
+                "emailAddresses": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "address": {
+                                "type": "string"
+                            },
+                            "rank": {
+                                "type": "number"
+                            }
+                        }
+                    },
+                    "description": "Email addresses"
+                },
+                "jobTitle": {
+                    "type": "string",
+                    "description": "Job title"
+                },
+                "department": {
+                    "type": "string",
+                    "description": "Department"
+                },
+                "companyName": {
+                    "type": "string",
+                    "description": "Company name"
+                },
+                "officeLocation": {
+                    "type": "string",
+                    "description": "Office location"
+                },
+                "personType": {
+                    "type": "object",
+                    "properties": {
+                        "class": {
+                            "type": "string",
+                            "description": "Person or Group"
+                        },
+                        "subclass": {
+                            "type": "string",
+                            "description": "Subclass like OrganizationUser"
+                        }
+                    }
+                },
+                "phones": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "number": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "PersonCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "@odata.nextLink": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Person"
+                    }
+                }
+            }
+        },
+        "ScheduleRequest": {
+            "type": "object",
+            "required": [
+                "schedules",
+                "startTime",
+                "endTime"
+            ],
+            "properties": {
+                "schedules": {
+                    "type": "array",
+                    "description": "Email addresses or UPNs of users to get availability for",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "startTime": {
+                    "type": "object",
+                    "properties": {
+                        "dateTime": {
+                            "type": "string",
+                            "description": "Start date/time in ISO 8601 format"
+                        },
+                        "timeZone": {
+                            "type": "string",
+                            "description": "Time zone (e.g., 'Pacific Standard Time')"
+                        }
+                    }
+                },
+                "endTime": {
+                    "type": "object",
+                    "properties": {
+                        "dateTime": {
+                            "type": "string",
+                            "description": "End date/time in ISO 8601 format"
+                        },
+                        "timeZone": {
+                            "type": "string",
+                            "description": "Time zone"
+                        }
+                    }
+                },
+                "availabilityViewInterval": {
+                    "type": "integer",
+                    "description": "Duration of each time slot in minutes (default 30)"
+                }
+            }
+        },
+        "ScheduleResponse": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ScheduleInformation"
+                    }
+                }
+            }
+        },
+        "ScheduleInformation": {
+            "type": "object",
+            "properties": {
+                "scheduleId": {
+                    "type": "string",
+                    "description": "Email address of the user"
+                },
+                "availabilityView": {
+                    "type": "string",
+                    "description": "Merged view of availability (0=free, 1=tentative, 2=busy, 3=oof, 4=working elsewhere)"
+                },
+                "scheduleItems": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "free",
+                                    "tentative",
+                                    "busy",
+                                    "oof",
+                                    "workingElsewhere",
+                                    "unknown"
+                                ]
+                            },
+                            "start": {
+                                "type": "object",
+                                "properties": {
+                                    "dateTime": {
+                                        "type": "string"
+                                    },
+                                    "timeZone": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "end": {
+                                "type": "object",
+                                "properties": {
+                                    "dateTime": {
+                                        "type": "string"
+                                    },
+                                    "timeZone": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "subject": {
+                                "type": "string"
+                            },
+                            "location": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "workingHours": {
+                    "type": "object",
+                    "properties": {
+                        "daysOfWeek": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "startTime": {
+                            "type": "string"
+                        },
+                        "endTime": {
+                            "type": "string"
+                        },
+                        "timeZone": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "DirectoryObjectCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "@odata.nextLink": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DirectoryObject"
+                    }
+                }
+            }
+        },
+        "DirectoryObject": {
+            "type": "object",
+            "properties": {
+                "@odata.type": {
+                    "type": "string",
+                    "description": "Type (e.g., #microsoft.graph.group, #microsoft.graph.directoryRole)"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "mailEnabled": {
+                    "type": "boolean"
+                },
+                "mailNickname": {
+                    "type": "string"
+                },
+                "securityEnabled": {
+                    "type": "boolean"
+                },
+                "groupTypes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "visibility": {
+                    "type": "string"
+                }
+            }
+        },
+        "LicenseDetailsCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LicenseDetails"
+                    }
+                }
+            }
+        },
+        "LicenseDetails": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "skuId": {
+                    "type": "string",
+                    "description": "GUID of the SKU"
+                },
+                "skuPartNumber": {
+                    "type": "string",
+                    "description": "SKU name (e.g., ENTERPRISEPACK for E3)"
+                },
+                "servicePlans": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "servicePlanId": {
+                                "type": "string"
+                            },
+                            "servicePlanName": {
+                                "type": "string"
+                            },
+                            "provisioningStatus": {
+                                "type": "string"
+                            },
+                            "appliesTo": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "MailTipsRequest": {
+            "type": "object",
+            "required": [
+                "emailAddresses",
+                "mailTipsOptions"
+            ],
+            "properties": {
+                "emailAddresses": {
+                    "type": "array",
+                    "description": "Email addresses to get mail tips for",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "mailTipsOptions": {
+                    "type": "string",
+                    "description": "Types of mail tips: automaticReplies, customMailTip, deliveryRestriction, externalMemberCount, mailboxFullStatus, maxMessageSize, moderationStatus, recipientScope, recipientSuggestions, totalMemberCount",
+                    "enum": [
+                        "automaticReplies",
+                        "customMailTip",
+                        "deliveryRestriction",
+                        "externalMemberCount",
+                        "mailboxFullStatus",
+                        "maxMessageSize",
+                        "moderationStatus",
+                        "recipientScope",
+                        "recipientSuggestions",
+                        "totalMemberCount"
+                    ]
+                }
+            }
+        },
+        "MailTipsResponse": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MailTips"
+                    }
+                }
+            }
+        },
+        "MailTips": {
+            "type": "object",
+            "properties": {
+                "emailAddress": {
+                    "type": "object",
+                    "properties": {
+                        "address": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "automaticReplies": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "string"
+                        },
+                        "messageLanguage": {
+                            "type": "object",
+                            "properties": {
+                                "locale": {
+                                    "type": "string"
+                                },
+                                "displayName": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "scheduledStartTime": {
+                            "type": "object",
+                            "properties": {
+                                "dateTime": {
+                                    "type": "string"
+                                },
+                                "timeZone": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "scheduledEndTime": {
+                            "type": "object",
+                            "properties": {
+                                "dateTime": {
+                                    "type": "string"
+                                },
+                                "timeZone": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "mailboxFull": {
+                    "type": "boolean"
+                },
+                "customMailTip": {
+                    "type": "string"
+                },
+                "externalMemberCount": {
+                    "type": "integer"
+                },
+                "totalMemberCount": {
+                    "type": "integer"
+                },
+                "maxMessageSize": {
+                    "type": "integer"
+                },
+                "deliveryRestricted": {
+                    "type": "boolean"
+                },
+                "isModerated": {
+                    "type": "boolean"
+                },
+                "recipientScope": {
+                    "type": "string"
+                },
+                "recipientSuggestions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "emailAddress": {
+                                "type": "object",
+                                "properties": {
+                                    "address": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "TeamCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "@odata.count": {
+                    "type": "integer"
+                },
+                "@odata.nextLink": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Team"
+                    }
+                }
+            }
+        },
+        "Team": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "visibility": {
+                    "type": "string",
+                    "enum": [
+                        "public",
+                        "private"
+                    ]
+                },
+                "webUrl": {
+                    "type": "string"
+                },
+                "isArchived": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "AuthMethodCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AuthenticationMethod"
+                    }
+                }
+            }
+        },
+        "AuthenticationMethod": {
+            "type": "object",
+            "properties": {
+                "@odata.type": {
+                    "type": "string",
+                    "description": "Type of authentication method"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "phoneType": {
+                    "type": "string"
+                },
+                "emailAddress": {
+                    "type": "string"
+                },
+                "createdDateTime": {
+                    "type": "string"
+                }
+            }
+        },
+        "Profile": {
+            "type": "object",
+            "description": "Full user profile including all sections",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Skill"
+                    }
+                },
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Project"
+                    }
+                },
+                "certifications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Certification"
+                    }
+                },
+                "awards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Award"
+                    }
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Language"
+                    }
+                },
+                "positions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Position"
+                    }
+                },
+                "educationalActivities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EducationalActivity"
+                    }
+                },
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Interest"
+                    }
+                },
+                "webAccounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WebAccount"
+                    }
+                }
+            }
+        },
+        "Skill": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Name of the skill"
+                },
+                "proficiency": {
+                    "type": "string",
+                    "description": "Proficiency level",
+                    "enum": [
+                        "elementary",
+                        "limitedWorking",
+                        "generalProfessional",
+                        "advancedProfessional",
+                        "expert"
+                    ]
+                },
+                "webUrl": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "SkillCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Skill"
+                    }
+                }
+            }
+        },
+        "Project": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Project name"
+                },
+                "detail": {
+                    "type": "object",
+                    "properties": {
+                        "description": {
+                            "type": "string"
+                        },
+                        "company": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "startMonthYear": {
+                    "type": "string"
+                },
+                "endMonthYear": {
+                    "type": "string"
+                },
+                "client": {
+                    "type": "object",
+                    "properties": {
+                        "displayName": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "sponsors": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "displayName": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProjectCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Project"
+                    }
+                }
+            }
+        },
+        "Certification": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Certification name"
+                },
+                "certificationId": {
+                    "type": "string",
+                    "description": "Certification ID or number"
+                },
+                "issuedDate": {
+                    "type": "string"
+                },
+                "expirationDate": {
+                    "type": "string"
+                },
+                "issuingAuthority": {
+                    "type": "string",
+                    "description": "Organization that issued the certification"
+                },
+                "issuingCompany": {
+                    "type": "string"
+                },
+                "webUrl": {
+                    "type": "string"
+                },
+                "thumbnailUrl": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "CertificationCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Certification"
+                    }
+                }
+            }
+        },
+        "Award": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Award name"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "issuedDate": {
+                    "type": "string"
+                },
+                "issuingAuthority": {
+                    "type": "string"
+                },
+                "webUrl": {
+                    "type": "string"
+                },
+                "thumbnailUrl": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "AwardCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Award"
+                    }
+                }
+            }
+        },
+        "Language": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Language name"
+                },
+                "tag": {
+                    "type": "string",
+                    "description": "BCP 47 language tag (e.g., en-US)"
+                },
+                "proficiency": {
+                    "type": "string",
+                    "description": "Proficiency level",
+                    "enum": [
+                        "elementary",
+                        "conversational",
+                        "limitedWorking",
+                        "professionalWorking",
+                        "fullProfessional",
+                        "nativeOrBilingual"
+                    ]
+                },
+                "reading": {
+                    "type": "string"
+                },
+                "writing": {
+                    "type": "string"
+                },
+                "spoken": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "LanguageCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Language"
+                    }
+                }
+            }
+        },
+        "Position": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "isCurrent": {
+                    "type": "boolean"
+                },
+                "detail": {
+                    "type": "object",
+                    "properties": {
+                        "jobTitle": {
+                            "type": "string"
+                        },
+                        "role": {
+                            "type": "string"
+                        },
+                        "summary": {
+                            "type": "string"
+                        },
+                        "company": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string"
+                                },
+                                "department": {
+                                    "type": "string"
+                                },
+                                "webUrl": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "startMonthYear": {
+                    "type": "string"
+                },
+                "endMonthYear": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "PositionCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Position"
+                    }
+                }
+            }
+        },
+        "EducationalActivity": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "institution": {
+                    "type": "object",
+                    "properties": {
+                        "displayName": {
+                            "type": "string"
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "webUrl": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "program": {
+                    "type": "object",
+                    "properties": {
+                        "displayName": {
+                            "type": "string"
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "abbreviation": {
+                            "type": "string"
+                        },
+                        "grade": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "startMonthYear": {
+                    "type": "string"
+                },
+                "endMonthYear": {
+                    "type": "string"
+                },
+                "completionMonthYear": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "EducationCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EducationalActivity"
+                    }
+                }
+            }
+        },
+        "Interest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Interest name"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "webUrl": {
+                    "type": "string"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "InterestCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Interest"
+                    }
+                }
+            }
+        },
+        "WebAccount": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string",
+                    "description": "Username on the web service"
+                },
+                "webUrl": {
+                    "type": "string",
+                    "description": "URL to the profile"
+                },
+                "service": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Service name (e.g., LinkedIn, GitHub)"
+                        },
+                        "webUrl": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "WebAccountCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WebAccount"
+                    }
+                }
+            }
+        },
+        "ItemAddress": {
+            "type": "object",
+            "description": "Physical address from user profile",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Friendly name for the address"
+                },
+                "detail": {
+                    "type": "object",
+                    "description": "Physical address details",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": "Address type (home, business, other)"
+                        },
+                        "street": {
+                            "type": "string"
+                        },
+                        "city": {
+                            "type": "string"
+                        },
+                        "state": {
+                            "type": "string"
+                        },
+                        "countryOrRegion": {
+                            "type": "string"
+                        },
+                        "postalCode": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "geoCoordinates": {
+                    "type": "object",
+                    "properties": {
+                        "latitude": {
+                            "type": "number"
+                        },
+                        "longitude": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "AddressCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ItemAddress"
+                    }
+                }
+            }
+        },
+        "PersonWebsite": {
+            "type": "object",
+            "description": "Website from user profile",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Friendly name for the website"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Description of the website"
+                },
+                "webUrl": {
+                    "type": "string",
+                    "description": "URL of the website"
+                },
+                "categories": {
+                    "type": "array",
+                    "description": "Categories (e.g., personal, recipes)",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "WebsiteCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PersonWebsite"
+                    }
+                }
+            }
+        },
+        "PersonAnniversary": {
+            "type": "object",
+            "description": "Anniversary from user profile",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type of anniversary (birthday, wedding, work)",
+                    "enum": [
+                        "birthday",
+                        "wedding",
+                        "unknownFutureValue"
+                    ]
+                },
+                "date": {
+                    "type": "string",
+                    "description": "Date of the anniversary"
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "AnniversaryCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PersonAnniversary"
+                    }
+                }
+            }
+        },
+        "PersonAnnotation": {
+            "type": "object",
+            "description": "Note/annotation from user profile",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Friendly name for the note"
+                },
+                "detail": {
+                    "type": "object",
+                    "description": "Note content",
+                    "properties": {
+                        "contentType": {
+                            "type": "string",
+                            "description": "Content type (text, html)"
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "The note content"
+                        }
+                    }
+                },
+                "allowedAudiences": {
+                    "type": "string"
+                }
+            }
+        },
+        "NoteCollection": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PersonAnnotation"
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "User.Read": "Read your profile",
+                "User.ReadBasic.All": "Read basic profiles of all users",
+                "User.Read.All": "Read all users' full profiles",
+                "People.Read": "Read your relevant people list",
+                "Presence.Read": "Read your presence",
+                "Presence.Read.All": "Read presence of all users",
+                "Calendars.Read": "Read your calendars",
+                "Calendars.Read.Shared": "Read calendars you can access",
+                "MailboxSettings.Read": "Read your mailbox settings",
+                "Group.Read.All": "Read all groups",
+                "Directory.Read.All": "Read directory data",
+                "Team.ReadBasic.All": "Read basic Teams info",
+                "UserAuthenticationMethod.Read.All": "Read authentication methods"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2": [
+                "User.Read"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://graph.microsoft.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Collaboration;IT Operations"
+        }
+    ],
+    "tags": [
+        {
+            "name": "My Profile",
+            "description": "Operations for the signed-in user"
+        },
+        {
+            "name": "User Profiles",
+            "description": "Operations for any user by ID or UPN"
+        },
+        {
+            "name": "Organizational Hierarchy",
+            "description": "Manager and direct reports"
+        },
+        {
+            "name": "Presence",
+            "description": "User availability and activity status"
+        },
+        {
+            "name": "People",
+            "description": "People discovery and search"
+        },
+        {
+            "name": "Photos",
+            "description": "User profile photos"
+        },
+        {
+            "name": "Calendar",
+            "description": "Schedule and availability"
+        },
+        {
+            "name": "Groups",
+            "description": "Group and team membership"
+        },
+        {
+            "name": "Licenses",
+            "description": "User license information"
+        },
+        {
+            "name": "Profile",
+            "description": "Rich profile data: skills, projects, certifications, awards"
+        },
+        {
+            "name": "MCP",
+            "description": "Model Context Protocol for Copilot Studio"
+        }
+    ]
+}

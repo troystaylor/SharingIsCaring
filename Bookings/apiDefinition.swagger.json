@@ -1,0 +1,2544 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft Bookings MCP",
+        "description": "MCP-enabled connector for Microsoft Bookings (Microsoft Graph). Implements tools for managing booking businesses, services, staff members, customers, and appointments.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/v1.0",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Microsoft Bookings MCP",
+                "description": "Sends JSON-RPC requests to invoke Microsoft Bookings (Microsoft Graph) tools via MCP.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses": {
+            "get": {
+                "summary": "List Booking Businesses",
+                "description": "Get a collection of bookingBusiness objects that has been created for the tenant.",
+                "operationId": "ListBookingBusinesses",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to skip"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "description": "OData filter expression"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of booking businesses",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Booking Business",
+                "description": "Create a new Microsoft Bookings business in a tenant.",
+                "operationId": "CreateBookingBusiness",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Display name for the business"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email address for the business"
+                                },
+                                "phone": {
+                                    "type": "string",
+                                    "description": "Phone number for the business"
+                                },
+                                "businessType": {
+                                    "type": "string",
+                                    "description": "Type of business"
+                                },
+                                "webSiteUrl": {
+                                    "type": "string",
+                                    "description": "Business website URL"
+                                }
+                            },
+                            "required": [
+                                "displayName"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created booking business",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}": {
+            "get": {
+                "summary": "Get Booking Business",
+                "description": "Get the properties and relationships of a bookingBusiness object.",
+                "operationId": "GetBookingBusiness",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Booking business details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Booking Business",
+                "description": "Update the properties of a bookingBusiness object.",
+                "operationId": "UpdateBookingBusiness",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Display name for the business"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email address for the business"
+                                },
+                                "phone": {
+                                    "type": "string",
+                                    "description": "Phone number for the business"
+                                },
+                                "businessType": {
+                                    "type": "string",
+                                    "description": "Type of business"
+                                },
+                                "webSiteUrl": {
+                                    "type": "string",
+                                    "description": "Business website URL"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated booking business",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Booking Business",
+                "description": "Delete a bookingBusiness object.",
+                "operationId": "DeleteBookingBusiness",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/publish": {
+            "post": {
+                "summary": "Publish Booking Business",
+                "description": "Make the scheduling page available to external customers.",
+                "operationId": "PublishBookingBusiness",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully published"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/unpublish": {
+            "post": {
+                "summary": "Unpublish Booking Business",
+                "description": "Make the scheduling page unavailable to external customers.",
+                "operationId": "UnpublishBookingBusiness",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully unpublished"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/services": {
+            "get": {
+                "summary": "List Services",
+                "description": "Get a list of bookingService objects in the specified bookingBusiness.",
+                "operationId": "ListServices",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to skip"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of services",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Service",
+                "description": "Create a new bookingService for the specified bookingBusiness.",
+                "operationId": "CreateService",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Service name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Service description"
+                                },
+                                "defaultDuration": {
+                                    "type": "string",
+                                    "description": "Default duration in ISO 8601 format (e.g., PT1H)"
+                                },
+                                "defaultPrice": {
+                                    "type": "number",
+                                    "description": "Default price"
+                                },
+                                "defaultPriceType": {
+                                    "type": "string",
+                                    "description": "Price type: undefined, fixedPrice, startingAt, hourly, free, priceVaries, callUs, notSet"
+                                },
+                                "isLocationOnline": {
+                                    "type": "boolean",
+                                    "description": "Whether the service is held online"
+                                }
+                            },
+                            "required": [
+                                "displayName"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created service",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/services/{serviceId}": {
+            "get": {
+                "summary": "Get Service",
+                "description": "Get the properties and relationships of a bookingService object.",
+                "operationId": "GetService",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "serviceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the service"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Service",
+                "description": "Update the properties of a bookingService object.",
+                "operationId": "UpdateService",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "serviceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the service"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated service",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Service",
+                "description": "Delete a bookingService object.",
+                "operationId": "DeleteService",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "serviceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the service"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/staffMembers": {
+            "get": {
+                "summary": "List Staff Members",
+                "description": "Get a list of bookingStaffMember objects in the specified bookingBusiness.",
+                "operationId": "ListStaffMembers",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to skip"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of staff members",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Staff Member",
+                "description": "Create a new bookingStaffMember in the specified bookingBusiness.",
+                "operationId": "CreateStaffMember",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Staff member name"
+                                },
+                                "emailAddress": {
+                                    "type": "string",
+                                    "description": "Staff member email"
+                                },
+                                "role": {
+                                    "type": "string",
+                                    "description": "Role: administrator, viewer, externalGuest, unknownFutureValue, scheduler, teamMember"
+                                },
+                                "timeZone": {
+                                    "type": "string",
+                                    "description": "Staff member timezone"
+                                },
+                                "useBusinessHours": {
+                                    "type": "boolean",
+                                    "description": "Use business hours for availability"
+                                }
+                            },
+                            "required": [
+                                "displayName",
+                                "emailAddress"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created staff member",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/staffMembers/{staffMemberId}": {
+            "get": {
+                "summary": "Get Staff Member",
+                "description": "Get the properties and relationships of a bookingStaffMember.",
+                "operationId": "GetStaffMember",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "staffMemberId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the staff member"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Staff member details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Staff Member",
+                "description": "Update the properties of a bookingStaffMember.",
+                "operationId": "UpdateStaffMember",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "staffMemberId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the staff member"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated staff member",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Staff Member",
+                "description": "Delete a bookingStaffMember.",
+                "operationId": "DeleteStaffMember",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "staffMemberId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the staff member"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/customers": {
+            "get": {
+                "summary": "List Customers",
+                "description": "Get a list of bookingCustomer objects.",
+                "operationId": "ListCustomers",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to skip"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of customers",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Customer",
+                "description": "Create a new bookingCustomer object.",
+                "operationId": "CreateCustomer",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Customer name"
+                                },
+                                "emailAddress": {
+                                    "type": "string",
+                                    "description": "Customer email"
+                                },
+                                "phones": {
+                                    "type": "array",
+                                    "description": "Customer phone numbers",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "number": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "addresses": {
+                                    "type": "array",
+                                    "description": "Customer addresses",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "displayName",
+                                "emailAddress"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created customer",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/customers/{customerId}": {
+            "get": {
+                "summary": "Get Customer",
+                "description": "Get the properties and relationships of a bookingCustomer.",
+                "operationId": "GetCustomer",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "customerId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the customer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Customer",
+                "description": "Update the properties of a bookingCustomer.",
+                "operationId": "UpdateCustomer",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "customerId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the customer"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated customer",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Customer",
+                "description": "Delete a bookingCustomer.",
+                "operationId": "DeleteCustomer",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "customerId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the customer"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/appointments": {
+            "get": {
+                "summary": "List Appointments",
+                "description": "Get a list of bookingAppointment objects for the specified business.",
+                "operationId": "ListAppointments",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to skip"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "description": "OData filter expression"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of appointments",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Appointment",
+                "description": "Create a new bookingAppointment for the specified business.",
+                "operationId": "CreateAppointment",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "serviceId": {
+                                    "type": "string",
+                                    "description": "ID of the booking service"
+                                },
+                                "serviceName": {
+                                    "type": "string",
+                                    "description": "Name of the service"
+                                },
+                                "customerEmailAddress": {
+                                    "type": "string",
+                                    "description": "Customer email address"
+                                },
+                                "customerName": {
+                                    "type": "string",
+                                    "description": "Customer name"
+                                },
+                                "customerPhone": {
+                                    "type": "string",
+                                    "description": "Customer phone"
+                                },
+                                "customerTimeZone": {
+                                    "type": "string",
+                                    "description": "Customer timezone"
+                                },
+                                "startDateTime": {
+                                    "type": "object",
+                                    "description": "Start date and time",
+                                    "properties": {
+                                        "dateTime": {
+                                            "type": "string"
+                                        },
+                                        "timeZone": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "endDateTime": {
+                                    "type": "object",
+                                    "description": "End date and time",
+                                    "properties": {
+                                        "dateTime": {
+                                            "type": "string"
+                                        },
+                                        "timeZone": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "staffMemberIds": {
+                                    "type": "array",
+                                    "description": "IDs of staff members for this appointment",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "isLocationOnline": {
+                                    "type": "boolean",
+                                    "description": "Whether the appointment is online"
+                                },
+                                "serviceNotes": {
+                                    "type": "string",
+                                    "description": "Notes from staff"
+                                },
+                                "customerNotes": {
+                                    "type": "string",
+                                    "description": "Notes from customer"
+                                }
+                            },
+                            "required": [
+                                "serviceId",
+                                "startDateTime",
+                                "endDateTime"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created appointment",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/appointments/{appointmentId}": {
+            "get": {
+                "summary": "Get Appointment",
+                "description": "Get the properties and relationships of a bookingAppointment.",
+                "operationId": "GetAppointment",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "appointmentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the appointment"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Appointment",
+                "description": "Update the properties of a bookingAppointment.",
+                "operationId": "UpdateAppointment",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "appointmentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the appointment"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated appointment",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Appointment",
+                "description": "Delete a bookingAppointment.",
+                "operationId": "DeleteAppointment",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "appointmentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the appointment"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/appointments/{appointmentId}/cancel": {
+            "post": {
+                "summary": "Cancel Appointment",
+                "description": "Cancel the specified bookingAppointment.",
+                "operationId": "CancelAppointment",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "appointmentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the appointment"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "cancellationMessage": {
+                                    "type": "string",
+                                    "description": "Cancellation message to send"
+                                }
+                            },
+                            "required": [
+                                "cancellationMessage"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully cancelled"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/calendarView": {
+            "get": {
+                "summary": "Get Calendar View",
+                "description": "Get appointments in a specified date range.",
+                "operationId": "GetCalendarView",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Start date (ISO 8601 format)"
+                    },
+                    {
+                        "name": "end",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "End date (ISO 8601 format)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Calendar view of appointments",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/getStaffAvailability": {
+            "post": {
+                "summary": "Get Staff Availability",
+                "description": "Get availability information for staff members in a specified date range.",
+                "operationId": "GetStaffAvailability",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "staffIds": {
+                                    "type": "array",
+                                    "description": "IDs of staff members to check",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "startDateTime": {
+                                    "type": "object",
+                                    "properties": {
+                                        "dateTime": {
+                                            "type": "string"
+                                        },
+                                        "timeZone": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "endDateTime": {
+                                    "type": "object",
+                                    "properties": {
+                                        "dateTime": {
+                                            "type": "string"
+                                        },
+                                        "timeZone": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "required": [
+                                "staffIds",
+                                "startDateTime",
+                                "endDateTime"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Staff availability",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/customQuestions": {
+            "get": {
+                "summary": "List Custom Questions",
+                "description": "Get all custom questions for a booking business.",
+                "operationId": "ListCustomQuestions",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of custom questions",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Custom Question",
+                "description": "Create a new custom question for a booking business.",
+                "operationId": "CreateCustomQuestion",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Question text"
+                                },
+                                "answerInputType": {
+                                    "type": "string",
+                                    "description": "Answer type: text, radioButton, unknownFutureValue"
+                                },
+                                "answerOptions": {
+                                    "type": "array",
+                                    "description": "Answer options for radioButton type",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": ["displayName"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created custom question",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingBusinesses/{bookingBusinessId}/customQuestions/{customQuestionId}": {
+            "get": {
+                "summary": "Get Custom Question",
+                "description": "Get a specific custom question by ID.",
+                "operationId": "GetCustomQuestion",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "customQuestionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the custom question"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Custom question details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Custom Question",
+                "description": "Update a custom question.",
+                "operationId": "UpdateCustomQuestion",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "customQuestionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the custom question"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Question text"
+                                },
+                                "answerInputType": {
+                                    "type": "string",
+                                    "description": "Answer type"
+                                },
+                                "answerOptions": {
+                                    "type": "array",
+                                    "description": "Answer options",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated custom question",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Custom Question",
+                "description": "Delete a custom question.",
+                "operationId": "DeleteCustomQuestion",
+                "parameters": [
+                    {
+                        "name": "bookingBusinessId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the booking business"
+                    },
+                    {
+                        "name": "customQuestionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the custom question"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successfully deleted"
+                    }
+                }
+            }
+        },
+        "/solutions/bookingCurrencies": {
+            "get": {
+                "summary": "List Booking Currencies",
+                "description": "Get a list of booking currencies available for Microsoft Bookings.",
+                "operationId": "ListBookingCurrencies",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of items to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of currencies",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/solutions/bookingCurrencies/{currencyId}": {
+            "get": {
+                "summary": "Get Booking Currency",
+                "description": "Get a specific booking currency by ID.",
+                "operationId": "GetBookingCurrency",
+                "parameters": [
+                    {
+                        "name": "currencyId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The currency ID (e.g., USD, EUR)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Currency details",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dateTimeTimeZone": {
+            "type": "object",
+            "description": "Describes the date, time, and time zone of a point in time.",
+            "properties": {
+                "dateTime": {
+                    "type": "string",
+                    "description": "A single point of time in a combined date and time representation ({date}T{time}; for example, 2017-08-29T04:00:00.0000000)."
+                },
+                "timeZone": {
+                    "type": "string",
+                    "description": "Represents a time zone, for example, 'Pacific Standard Time'."
+                }
+            }
+        },
+        "physicalAddress": {
+            "type": "object",
+            "description": "Represents the street address of a resource such as a contact or event.",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "description": "The city."
+                },
+                "countryOrRegion": {
+                    "type": "string",
+                    "description": "The country or region. It's a free-format string value, for example, 'United States'."
+                },
+                "postalCode": {
+                    "type": "string",
+                    "description": "The postal code."
+                },
+                "state": {
+                    "type": "string",
+                    "description": "The state."
+                },
+                "street": {
+                    "type": "string",
+                    "description": "The street."
+                },
+                "postOfficeBox": {
+                    "type": "string",
+                    "description": "The post office box number."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The type of address.",
+                    "enum": [
+                        "unknown",
+                        "home",
+                        "business",
+                        "other"
+                    ]
+                }
+            }
+        },
+        "outlookGeoCoordinates": {
+            "type": "object",
+            "description": "The geographic coordinates, elevation, and their degree of accuracy for a physical location.",
+            "properties": {
+                "accuracy": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The accuracy of the latitude and longitude. As an example, the accuracy can be measured in meters, such as the latitude and longitude are accurate to within 50 meters."
+                },
+                "altitude": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The altitude of the location."
+                },
+                "altitudeAccuracy": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The accuracy of the altitude."
+                },
+                "latitude": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The latitude of the location."
+                },
+                "longitude": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The longitude of the location."
+                }
+            }
+        },
+        "location": {
+            "type": "object",
+            "description": "Represents location information for an event.",
+            "properties": {
+                "address": {
+                    "$ref": "#/definitions/physicalAddress"
+                },
+                "coordinates": {
+                    "$ref": "#/definitions/outlookGeoCoordinates"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The name associated with the location."
+                },
+                "locationEmailAddress": {
+                    "type": "string",
+                    "description": "Optional email address of the location."
+                },
+                "locationType": {
+                    "type": "string",
+                    "description": "The type of location.",
+                    "enum": [
+                        "default",
+                        "conferenceRoom",
+                        "homeAddress",
+                        "businessAddress",
+                        "geoCoordinates",
+                        "streetAddress",
+                        "hotel",
+                        "restaurant",
+                        "localBusiness",
+                        "postalAddress"
+                    ]
+                },
+                "locationUri": {
+                    "type": "string",
+                    "description": "Optional URI representing the location."
+                },
+                "uniqueId": {
+                    "type": "string",
+                    "description": "For internal use only."
+                },
+                "uniqueIdType": {
+                    "type": "string",
+                    "description": "For internal use only.",
+                    "enum": [
+                        "unknown",
+                        "locationStore",
+                        "directory",
+                        "private",
+                        "bing"
+                    ]
+                }
+            }
+        },
+        "bookingWorkTimeSlot": {
+            "type": "object",
+            "description": "Defines the start and end times for work.",
+            "properties": {
+                "start": {
+                    "type": "string",
+                    "description": "The time of the day when work starts. For example, 08:00:00.0000000."
+                },
+                "end": {
+                    "type": "string",
+                    "description": "The time of the day when work stops. For example, 17:00:00.0000000."
+                }
+            }
+        },
+        "bookingWorkHours": {
+            "type": "object",
+            "description": "Represents the set of working hours in a single day of the week.",
+            "properties": {
+                "day": {
+                    "$ref": "#/definitions/dayOfWeek"
+                },
+                "timeSlots": {
+                    "type": "array",
+                    "description": "A list of start/end times during a day.",
+                    "items": {
+                        "$ref": "#/definitions/bookingWorkTimeSlot"
+                    }
+                }
+            }
+        },
+        "dayOfWeek": {
+            "type": "string",
+            "description": "The day of the week.",
+            "enum": [
+                "sunday",
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday"
+            ]
+        },
+        "bookingReminder": {
+            "type": "object",
+            "description": "Represents when and to whom to send an e-mail reminder.",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "The message in the reminder."
+                },
+                "offset": {
+                    "type": "string",
+                    "description": "The amount of time before the start of an appointment that the reminder should be sent. It's denoted in ISO 8601 format."
+                },
+                "recipients": {
+                    "$ref": "#/definitions/bookingReminderRecipients"
+                }
+            }
+        },
+        "bookingReminderRecipients": {
+            "type": "string",
+            "description": "Specifies who should receive the reminder.",
+            "enum": [
+                "allAttendees",
+                "staff",
+                "customer",
+                "unknownFutureValue"
+            ]
+        },
+        "bookingSchedulingPolicy": {
+            "type": "object",
+            "description": "Represents the set of policies that determine how appointments can be created in a Booking Calendar.",
+            "properties": {
+                "allowStaffSelection": {
+                    "type": "boolean",
+                    "description": "True if to allow customers to choose a specific person for the booking."
+                },
+                "customAvailabilities": {
+                    "type": "array",
+                    "description": "Custom availability of the service in a given time frame.",
+                    "items": {
+                        "$ref": "#/definitions/bookingsAvailabilityWindow"
+                    }
+                },
+                "generalAvailability": {
+                    "$ref": "#/definitions/bookingsAvailability"
+                },
+                "isMeetingInviteToCustomersEnabled": {
+                    "type": "boolean",
+                    "description": "Indicates whether to send meeting invites to customers."
+                },
+                "maximumAdvance": {
+                    "type": "string",
+                    "description": "Maximum number of days in advance that a booking can be made. It follows the ISO 8601 format."
+                },
+                "minimumLeadTime": {
+                    "type": "string",
+                    "description": "The minimum amount of time before which bookings and cancellations must be made. It follows the ISO 8601 format."
+                },
+                "sendConfirmationsToOwner": {
+                    "type": "boolean",
+                    "description": "True to notify the business via email when a booking is created or changed."
+                },
+                "timeSlotInterval": {
+                    "type": "string",
+                    "description": "Duration of each time slot, denoted in ISO 8601 format."
+                }
+            }
+        },
+        "bookingsAvailability": {
+            "type": "object",
+            "description": "Represents the availability of a booking service.",
+            "properties": {
+                "availabilityType": {
+                    "$ref": "#/definitions/bookingsServiceAvailabilityType"
+                },
+                "businessHours": {
+                    "type": "array",
+                    "description": "The hours of operation in a week.",
+                    "items": {
+                        "$ref": "#/definitions/bookingWorkHours"
+                    }
+                }
+            }
+        },
+        "bookingsAvailabilityWindow": {
+            "type": "object",
+            "description": "Represents the availability of a booking service in a scheduling policy between two dates.",
+            "properties": {
+                "availabilityType": {
+                    "$ref": "#/definitions/bookingsServiceAvailabilityType"
+                },
+                "businessHours": {
+                    "type": "array",
+                    "description": "The hours of operation in a week.",
+                    "items": {
+                        "$ref": "#/definitions/bookingWorkHours"
+                    }
+                },
+                "endDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date of the availability window."
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date of the availability window."
+                }
+            }
+        },
+        "bookingsServiceAvailabilityType": {
+            "type": "string",
+            "description": "The availability type of the booking service.",
+            "enum": [
+                "bookWhenStaffAreFree",
+                "notBookable",
+                "customWeeklyHours",
+                "unknownFutureValue"
+            ]
+        },
+        "bookingPriceType": {
+            "type": "string",
+            "description": "Represents the type of pricing of a booking service.",
+            "enum": [
+                "undefined",
+                "fixedPrice",
+                "startingAt",
+                "hourly",
+                "free",
+                "priceVaries",
+                "callUs",
+                "notSet",
+                "unknownFutureValue"
+            ]
+        },
+        "bookingCustomQuestion": {
+            "type": "object",
+            "description": "Represents a custom question of the business.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The ID of the custom question."
+                },
+                "answerInputType": {
+                    "$ref": "#/definitions/answerInputType"
+                },
+                "answerOptions": {
+                    "type": "array",
+                    "description": "List of possible answer values.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The display name of the custom question."
+                }
+            }
+        },
+        "answerInputType": {
+            "type": "string",
+            "description": "The expected type of answer.",
+            "enum": [
+                "text",
+                "radioButton",
+                "unknownFutureValue"
+            ]
+        },
+        "bookingQuestionAssignment": {
+            "type": "object",
+            "description": "Contains the set of custom questions associated with a particular service.",
+            "properties": {
+                "isRequired": {
+                    "type": "boolean",
+                    "description": "Indicates whether it's mandatory to answer the custom question."
+                },
+                "questionId": {
+                    "type": "string",
+                    "description": "The ID of the custom question."
+                }
+            }
+        },
+        "availabilityItem": {
+            "type": "object",
+            "description": "Indicates the status of a staff member for a given time slot.",
+            "properties": {
+                "endDateTime": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                },
+                "serviceId": {
+                    "type": "string",
+                    "description": "Indicates the service ID for 1:n appointments. If the appointment is of type 1:n, this field is present, otherwise, null."
+                },
+                "status": {
+                    "$ref": "#/definitions/bookingsAvailabilityStatus"
+                },
+                "startDateTime": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                }
+            }
+        },
+        "bookingsAvailabilityStatus": {
+            "type": "string",
+            "description": "The availability status of a staff member.",
+            "enum": [
+                "available",
+                "busy",
+                "slotsAvailable",
+                "outOfOffice",
+                "unknownFutureValue"
+            ]
+        },
+        "phone": {
+            "type": "object",
+            "description": "Represents a phone number.",
+            "properties": {
+                "number": {
+                    "type": "string",
+                    "description": "The phone number."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The type of phone number.",
+                    "enum": [
+                        "home",
+                        "business",
+                        "mobile",
+                        "other",
+                        "assistant",
+                        "homeFax",
+                        "businessFax",
+                        "otherFax",
+                        "pager",
+                        "radio"
+                    ]
+                }
+            }
+        },
+        "bookingCustomerInformationBase": {
+            "type": "object",
+            "description": "Base type for customer information in a booking.",
+            "properties": {
+                "@odata.type": {
+                    "type": "string",
+                    "description": "The OData type of the customer information."
+                }
+            }
+        },
+        "bookingCustomerInformation": {
+            "type": "object",
+            "description": "Represents customer information for a booking.",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/bookingCustomerInformationBase"
+                }
+            ],
+            "properties": {
+                "customerId": {
+                    "type": "string",
+                    "description": "The ID of the bookingCustomer for this appointment."
+                },
+                "customQuestionAnswers": {
+                    "type": "array",
+                    "description": "Answers to custom questions.",
+                    "items": {
+                        "$ref": "#/definitions/bookingQuestionAnswer"
+                    }
+                },
+                "emailAddress": {
+                    "type": "string",
+                    "description": "The SMTP address of the customer."
+                },
+                "location": {
+                    "$ref": "#/definitions/location"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The customer's name."
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Notes from the customer."
+                },
+                "phone": {
+                    "type": "string",
+                    "description": "The customer's phone number."
+                },
+                "timeZone": {
+                    "type": "string",
+                    "description": "The customer's time zone."
+                }
+            }
+        },
+        "bookingQuestionAnswer": {
+            "type": "object",
+            "description": "Contains a custom question, the answer given by the customer, and other properties.",
+            "properties": {
+                "answer": {
+                    "type": "string",
+                    "description": "The answer given by the customer."
+                },
+                "answerInputType": {
+                    "$ref": "#/definitions/answerInputType"
+                },
+                "answerOptions": {
+                    "type": "array",
+                    "description": "The expected answer options.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "isRequired": {
+                    "type": "boolean",
+                    "description": "Whether the question is required."
+                },
+                "question": {
+                    "type": "string",
+                    "description": "The question text."
+                },
+                "questionId": {
+                    "type": "string",
+                    "description": "The ID of the custom question."
+                },
+                "selectedOptions": {
+                    "type": "array",
+                    "description": "The selected options from answerOptions.",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "bookingInvoiceStatus": {
+            "type": "string",
+            "description": "The status of the invoice.",
+            "enum": [
+                "draft",
+                "reviewing",
+                "open",
+                "canceled",
+                "paid",
+                "corrective",
+                "unknownFutureValue"
+            ]
+        },
+        "bookingStaffRole": {
+            "type": "string",
+            "description": "The role of a staff member.",
+            "enum": [
+                "guest",
+                "administrator",
+                "viewer",
+                "externalGuest",
+                "unknownFutureValue",
+                "scheduler",
+                "teamMember"
+            ]
+        },
+        "bookingStaffMembershipStatus": {
+            "type": "string",
+            "description": "The membership status of a staff member.",
+            "enum": [
+                "active",
+                "pendingAcceptance",
+                "rejectedByStaff",
+                "unknownFutureValue"
+            ]
+        },
+        "bookingAppointment": {
+            "type": "object",
+            "description": "Represents a booked appointment of a service by a customer in a business.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the booking appointment."
+                },
+                "additionalInformation": {
+                    "type": "string",
+                    "description": "Additional information sent to the customer when an appointment is confirmed."
+                },
+                "anonymousJoinWebUrl": {
+                    "type": "string",
+                    "description": "The URL of the meeting to join anonymously."
+                },
+                "appointmentLabel": {
+                    "type": "string",
+                    "description": "The custom label that can be stamped on this appointment by users."
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date, time, and time zone when the appointment was created."
+                },
+                "customerEmailAddress": {
+                    "type": "string",
+                    "description": "The SMTP address of the bookingCustomer who books the appointment."
+                },
+                "customerName": {
+                    "type": "string",
+                    "description": "The customer's name."
+                },
+                "customerNotes": {
+                    "type": "string",
+                    "description": "Notes from the customer associated with this appointment."
+                },
+                "customerPhone": {
+                    "type": "string",
+                    "description": "The customer's phone number."
+                },
+                "customerTimeZone": {
+                    "type": "string",
+                    "description": "The time zone of the customer."
+                },
+                "customers": {
+                    "type": "array",
+                    "description": "A collection of customer properties for an appointment.",
+                    "items": {
+                        "$ref": "#/definitions/bookingCustomerInformation"
+                    }
+                },
+                "endDateTime": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                },
+                "isCustomerAllowedToManageBooking": {
+                    "type": "boolean",
+                    "description": "Indicates that the customer can manage bookings created by the staff."
+                },
+                "isLocationOnline": {
+                    "type": "boolean",
+                    "description": "Indicates that the appointment is held online."
+                },
+                "joinWebUrl": {
+                    "type": "string",
+                    "description": "The URL of the online meeting for the appointment."
+                },
+                "lastUpdatedDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date, time, and time zone when the booking business was last updated."
+                },
+                "maximumAttendeesCount": {
+                    "type": "integer",
+                    "description": "The maximum number of customers allowed in an appointment."
+                },
+                "optOutOfCustomerEmail": {
+                    "type": "boolean",
+                    "description": "True indicates that the bookingCustomer for this appointment doesn't wish to receive a confirmation."
+                },
+                "postBuffer": {
+                    "type": "string",
+                    "description": "The amount of time to reserve after the appointment ends. ISO8601 format."
+                },
+                "preBuffer": {
+                    "type": "string",
+                    "description": "The amount of time to reserve before the appointment begins. ISO8601 format."
+                },
+                "price": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The regular price for an appointment for the specified bookingService."
+                },
+                "priceType": {
+                    "$ref": "#/definitions/bookingPriceType"
+                },
+                "reminders": {
+                    "type": "array",
+                    "description": "The collection of customer reminders sent for this appointment.",
+                    "items": {
+                        "$ref": "#/definitions/bookingReminder"
+                    }
+                },
+                "selfServiceAppointmentId": {
+                    "type": "string",
+                    "description": "Another tracking ID for the appointment, if created by the customer on the scheduling page."
+                },
+                "serviceId": {
+                    "type": "string",
+                    "description": "The ID of the bookingService associated with this appointment."
+                },
+                "serviceLocation": {
+                    "$ref": "#/definitions/location"
+                },
+                "serviceName": {
+                    "type": "string",
+                    "description": "The name of the bookingService associated with this appointment."
+                },
+                "serviceNotes": {
+                    "type": "string",
+                    "description": "Notes from a bookingStaffMember."
+                },
+                "smsNotificationsEnabled": {
+                    "type": "boolean",
+                    "description": "True indicates SMS notifications will be sent to the customers for the appointment."
+                },
+                "staffMemberIds": {
+                    "type": "array",
+                    "description": "The ID of each bookingStaffMember who is scheduled in this appointment.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "startDateTime": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                }
+            }
+        },
+        "bookingBusiness": {
+            "type": "object",
+            "description": "Represents a Microsoft Bookings business.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the bookingBusiness."
+                },
+                "address": {
+                    "$ref": "#/definitions/physicalAddress"
+                },
+                "businessHours": {
+                    "type": "array",
+                    "description": "The hours of operation for the business.",
+                    "items": {
+                        "$ref": "#/definitions/bookingWorkHours"
+                    }
+                },
+                "businessType": {
+                    "type": "string",
+                    "description": "The type of business."
+                },
+                "defaultCurrencyIso": {
+                    "type": "string",
+                    "description": "The code for the currency that the business operates in on Microsoft Bookings."
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The name of the business."
+                },
+                "email": {
+                    "type": "string",
+                    "description": "The email address for the business."
+                },
+                "isPublished": {
+                    "type": "boolean",
+                    "description": "The scheduling page has been made available to external customers."
+                },
+                "languageTag": {
+                    "type": "string",
+                    "description": "The language of the self-service booking page."
+                },
+                "phone": {
+                    "type": "string",
+                    "description": "The telephone number for the business."
+                },
+                "publicUrl": {
+                    "type": "string",
+                    "description": "The URL for the scheduling page."
+                },
+                "schedulingPolicy": {
+                    "$ref": "#/definitions/bookingSchedulingPolicy"
+                },
+                "webSiteUrl": {
+                    "type": "string",
+                    "description": "The URL of the business web site."
+                }
+            }
+        },
+        "bookingService": {
+            "type": "object",
+            "description": "Represents a particular service offered by a booking business.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the bookingService."
+                },
+                "additionalInformation": {
+                    "type": "string",
+                    "description": "Additional information that is sent to the customer when an appointment is confirmed."
+                },
+                "customQuestions": {
+                    "type": "array",
+                    "description": "Contains the set of custom questions associated with a particular service.",
+                    "items": {
+                        "$ref": "#/definitions/bookingQuestionAssignment"
+                    }
+                },
+                "defaultDuration": {
+                    "type": "string",
+                    "description": "The default length of the service, represented in numbers of days, hours, minutes, and seconds. ISO8601 format."
+                },
+                "defaultLocation": {
+                    "$ref": "#/definitions/location"
+                },
+                "defaultPrice": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The default monetary price for the service."
+                },
+                "defaultPriceType": {
+                    "$ref": "#/definitions/bookingPriceType"
+                },
+                "defaultReminders": {
+                    "type": "array",
+                    "description": "The default set of reminders for an appointment of this service.",
+                    "items": {
+                        "$ref": "#/definitions/bookingReminder"
+                    }
+                },
+                "description": {
+                    "type": "string",
+                    "description": "A text description for the service."
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "A service name."
+                },
+                "isAnonymousJoinEnabled": {
+                    "type": "boolean",
+                    "description": "True if the URL to join the appointment anonymously is generated for the appointment booked for this service."
+                },
+                "isCustomerAllowedToManageBooking": {
+                    "type": "boolean",
+                    "description": "Indicates that the customer can manage bookings created by the staff."
+                },
+                "isHiddenFromCustomers": {
+                    "type": "boolean",
+                    "description": "True means this service is not available to customers for booking."
+                },
+                "isLocationOnline": {
+                    "type": "boolean",
+                    "description": "True indicates that the appointments for the service will be held online."
+                },
+                "languageTag": {
+                    "type": "string",
+                    "description": "The language of the self-service booking page."
+                },
+                "maximumAttendeesCount": {
+                    "type": "integer",
+                    "description": "The maximum number of customers allowed in a service."
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Additional information about this service."
+                },
+                "postBuffer": {
+                    "type": "string",
+                    "description": "The time to buffer after an appointment for this service ends. ISO8601 format."
+                },
+                "preBuffer": {
+                    "type": "string",
+                    "description": "The time to buffer before an appointment for this service can start. ISO8601 format."
+                },
+                "schedulingPolicy": {
+                    "$ref": "#/definitions/bookingSchedulingPolicy"
+                },
+                "smsNotificationsEnabled": {
+                    "type": "boolean",
+                    "description": "True indicates SMS notifications can be sent to the customers for the appointment."
+                },
+                "staffMemberIds": {
+                    "type": "array",
+                    "description": "Represents those staff members who provide this service.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "webUrl": {
+                    "type": "string",
+                    "description": "The URL a customer uses to access the service."
+                }
+            }
+        },
+        "bookingStaffMember": {
+            "type": "object",
+            "description": "Represents a staff member who provides services in a business.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the bookingStaffMember."
+                },
+                "availabilityIsAffectedByPersonalCalendar": {
+                    "type": "boolean",
+                    "description": "True means that if the staff member is a Microsoft 365 user, the Bookings API would verify the staff member's availability in their personal calendar."
+                },
+                "colorIndex": {
+                    "type": "integer",
+                    "description": "Identifies a color to represent the staff member."
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date and time when the staff member was created."
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The name of the staff member."
+                },
+                "emailAddress": {
+                    "type": "string",
+                    "description": "The email address of the staff member."
+                },
+                "isEmailNotificationEnabled": {
+                    "type": "boolean",
+                    "description": "True indicates that a staff member will be notified via email when a booking assigned to them is created or changed."
+                },
+                "membershipStatus": {
+                    "$ref": "#/definitions/bookingStaffMembershipStatus"
+                },
+                "role": {
+                    "$ref": "#/definitions/bookingStaffRole"
+                },
+                "timeZone": {
+                    "type": "string",
+                    "description": "The time zone of the staff member."
+                },
+                "useBusinessHours": {
+                    "type": "boolean",
+                    "description": "True means the staff member's availability is as specified in the businessHours property of the business."
+                },
+                "workingHours": {
+                    "type": "array",
+                    "description": "The range of hours each day of the week that the staff member is available for booking.",
+                    "items": {
+                        "$ref": "#/definitions/bookingWorkHours"
+                    }
+                }
+            }
+        },
+        "bookingCustomer": {
+            "type": "object",
+            "description": "Represents a customer of a bookingBusiness.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the bookingCustomer."
+                },
+                "addresses": {
+                    "type": "array",
+                    "description": "Addresses associated with the customer.",
+                    "items": {
+                        "$ref": "#/definitions/physicalAddress"
+                    }
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date and time when the customer was created."
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The name of the customer."
+                },
+                "emailAddress": {
+                    "type": "string",
+                    "description": "The SMTP address of the customer."
+                },
+                "lastUpdatedDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date and time when the customer was last updated."
+                },
+                "phones": {
+                    "type": "array",
+                    "description": "Phone numbers associated with the customer.",
+                    "items": {
+                        "$ref": "#/definitions/phone"
+                    }
+                }
+            }
+        },
+        "bookingCurrency": {
+            "type": "object",
+            "description": "Represents a currency supported by a bookingBusiness.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The currency code. For example, USD for US dollar."
+                },
+                "symbol": {
+                    "type": "string",
+                    "description": "The currency symbol. For example, $ for US dollar."
+                }
+            }
+        },
+        "staffAvailabilityItem": {
+            "type": "object",
+            "description": "Represents the availability of a staff member for a given time slot.",
+            "properties": {
+                "availabilityItems": {
+                    "type": "array",
+                    "description": "Each item in this collection indicates a slot and the status of the staff member.",
+                    "items": {
+                        "$ref": "#/definitions/availabilityItem"
+                    }
+                },
+                "staffId": {
+                    "type": "string",
+                    "description": "The ID of the staff member."
+                }
+            }
+        },
+        "timeSlot": {
+            "type": "object",
+            "description": "Represents a time slot for a meeting.",
+            "properties": {
+                "start": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                },
+                "end": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                }
+            }
+        },
+        "bookingPageSettings": {
+            "type": "object",
+            "description": "Represents the settings of a published booking page.",
+            "properties": {
+                "accessControl": {
+                    "$ref": "#/definitions/bookingPageAccessControl"
+                },
+                "bookingPageColorCode": {
+                    "type": "string",
+                    "description": "Custom color for the booking page. The value should be in Hex format. For example, #123456."
+                },
+                "businessTimeZone": {
+                    "type": "string",
+                    "description": "The time zone of the customer."
+                },
+                "customerConsentMessage": {
+                    "type": "string",
+                    "description": "The personal data collection and usage consent message in the booking page."
+                },
+                "enforceOneTimePassword": {
+                    "type": "boolean",
+                    "description": "Determines whether the one-time password is required to create an appointment. The default value is false."
+                },
+                "isBusinessLogoDisplayEnabled": {
+                    "type": "boolean",
+                    "description": "Indicates whether the business logo is displayed on the booking page. The default value is false."
+                },
+                "isCustomerConsentEnabled": {
+                    "type": "boolean",
+                    "description": "Enables personal data collection and the usage consent toggle on the booking page. The default value is false."
+                },
+                "isSearchEngineIndexabilityDisabled": {
+                    "type": "boolean",
+                    "description": "Indicates whether web crawlers index this page. The defaults value is false."
+                },
+                "isTimeSlotTimeZoneSetToBusinessTimeZone": {
+                    "type": "boolean",
+                    "description": "Indicates whether the time zone of the time slot is set to the time zone of the business. The default value is false."
+                },
+                "privacyPolicyWebUrl": {
+                    "type": "string",
+                    "description": "URL of a webpage that provides the privacy policy of the business."
+                },
+                "termsAndConditionsWebUrl": {
+                    "type": "string",
+                    "description": "URL of a webpage that provides the terms and conditions of the business."
+                }
+            }
+        },
+        "bookingPageAccessControl": {
+            "type": "string",
+            "description": "Access control on a published booking page.",
+            "enum": [
+                "unrestricted",
+                "restrictedToOrganization",
+                "unknownFutureValue"
+            ]
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Bookings.Read.All Bookings.ReadWrite.All Bookings.Manage.All": "Manage Microsoft Bookings"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "Bookings.Read.All Bookings.ReadWrite.All Bookings.Manage.All"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Productivity;Business Management"
+        },
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://graph.microsoft.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        }
+    ]
+}

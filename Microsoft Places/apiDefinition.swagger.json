@@ -1,0 +1,1551 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Places",
+    "description": "Access Microsoft Places API for full CRUD management of physical spaces in your organization including buildings, floors, sections, rooms, workspaces, desks, and room lists.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "url": "https://github.com/troystaylor/SharingIsCaring"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/v1.0",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/places/microsoft.graph.building": {
+      "get": {
+        "operationId": "ListBuildings",
+        "summary": "List buildings",
+        "description": "Get all buildings defined in the tenant. Buildings represent physical structures with address, coordinates, and WiFi state.",
+        "tags": [
+          "Buildings"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/BuildingCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/microsoft.graph.floor": {
+      "get": {
+        "operationId": "ListFloors",
+        "summary": "List floors",
+        "description": "Get all floors defined in the tenant. Floors represent levels within buildings and can contain sections, rooms, and workspaces.",
+        "tags": [
+          "Floors"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          },
+          {
+            "$ref": "#/parameters/FilterParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/FloorCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/microsoft.graph.section": {
+      "get": {
+        "operationId": "ListSections",
+        "summary": "List sections",
+        "description": "Get all sections (neighborhoods/zones) defined in the tenant. Sections are groupings within floors that contain desks and workspaces.",
+        "tags": [
+          "Sections"
+        ],
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          },
+          {
+            "$ref": "#/parameters/FilterParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/SectionCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/microsoft.graph.room": {
+      "get": {
+        "operationId": "ListRooms",
+        "summary": "List rooms",
+        "description": "Get all rooms defined in the tenant. Rooms are meeting spaces with email addresses, capacity, and A/V device information.",
+        "tags": [
+          "Rooms"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          },
+          {
+            "$ref": "#/parameters/FilterParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/RoomCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/microsoft.graph.workspace": {
+      "get": {
+        "operationId": "ListWorkspaces",
+        "summary": "List workspaces",
+        "description": "Get all workspaces defined in the tenant. Workspaces are collections of desks with booking modes.",
+        "tags": [
+          "Workspaces"
+        ],
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          },
+          {
+            "$ref": "#/parameters/FilterParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/WorkspaceCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/microsoft.graph.roomlist": {
+      "get": {
+        "operationId": "ListRoomLists",
+        "summary": "List room lists",
+        "description": "Get all room lists defined in the tenant. Room lists are groups of rooms and workspaces used in Room Finder.",
+        "tags": [
+          "Room Lists"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/RoomListCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/microsoft.graph.desk": {
+      "get": {
+        "operationId": "ListDesks",
+        "summary": "List desks",
+        "description": "Get all desks defined in the tenant. Desks can be reservable, drop-in, or assigned to users.",
+        "tags": [
+          "Desks"
+        ],
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DeskCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/{placeId}": {
+      "get": {
+        "operationId": "GetPlace",
+        "summary": "Get place",
+        "description": "Get a specific place by ID or email address. Returns the derived type (building, room, workspace, desk, floor, section, or roomList).",
+        "tags": [
+          "Places"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Place ID",
+            "x-ms-url-encoding": "single",
+            "description": "The unique identifier or email address of the place"
+          },
+          {
+            "$ref": "#/parameters/SelectParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Place"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdatePlace",
+        "summary": "Update place",
+        "description": "Update properties of a place (building, floor, section, desk, room, workspace, or roomList). Requires Place.ReadWrite.All permission. Note: Cannot update id, placeId, emailAddress, displayName, or bookingType.",
+        "tags": [
+          "Places"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Place ID",
+            "x-ms-url-encoding": "single",
+            "description": "The unique identifier of the place to update"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Place properties to update. Include @odata.type to specify the place type.",
+            "schema": {
+              "$ref": "#/definitions/PlaceUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Place"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeletePlace",
+        "summary": "Delete place",
+        "description": "Delete a place (building, floor, section, or desk only). Note: Rooms, workspaces, and room lists cannot be deleted via this API.",
+        "tags": [
+          "Places"
+        ],
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Place ID",
+            "x-ms-url-encoding": "single",
+            "description": "The unique identifier of the place to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content - Successfully deleted"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/{roomListEmail}/microsoft.graph.roomlist/rooms": {
+      "get": {
+        "operationId": "ListRoomsInRoomList",
+        "summary": "List rooms in room list",
+        "description": "Get all rooms contained in a specific room list. Use the room list's email address to identify it.",
+        "tags": [
+          "Room Lists"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "roomListEmail",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Room List Email",
+            "x-ms-url-encoding": "single",
+            "description": "The email address of the room list (e.g., bldg1@contoso.com)"
+          },
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/RoomCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places/{roomListEmail}/microsoft.graph.roomlist/workspaces": {
+      "get": {
+        "operationId": "ListWorkspacesInRoomList",
+        "summary": "List workspaces in room list",
+        "description": "Get all workspaces contained in a specific room list. Use the room list's email address to identify it.",
+        "tags": [
+          "Room Lists"
+        ],
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "roomListEmail",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Room List Email",
+            "x-ms-url-encoding": "single",
+            "description": "The email address of the room list (e.g., bldg1@contoso.com)"
+          },
+          {
+            "$ref": "#/parameters/TopParam"
+          },
+          {
+            "$ref": "#/parameters/SkipParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/WorkspaceCollection"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/places": {
+      "post": {
+        "operationId": "CreatePlace",
+        "summary": "Create place",
+        "description": "Create a new place (building, floor, section, desk, room, or workspace). Requires Place.ReadWrite.All permission. Use @odata.type to specify the place type. Floors require parentId (building), sections require parentId (floor), desks/workspaces require parentId (section).",
+        "tags": [
+          "Places"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Place object to create. Required: @odata.type, displayName. For floors/sections/desks/workspaces: parentId is required.",
+            "schema": {
+              "$ref": "#/definitions/PlaceCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/Place"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/GraphError"
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "MCP",
+        "summary": "MCP Protocol Endpoint",
+        "description": "Model Context Protocol endpoint for Copilot Studio agent integration. Provides tools for listing buildings, rooms, workspaces, and finding available spaces.",
+        "tags": [
+          "MCP"
+        ],
+        "x-ms-visibility": "internal",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MCP Response",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  },
+  "parameters": {
+    "TopParam": {
+      "name": "$top",
+      "in": "query",
+      "type": "integer",
+      "required": false,
+      "x-ms-summary": "Top",
+      "description": "Number of items to return"
+    },
+    "SkipParam": {
+      "name": "$skip",
+      "in": "query",
+      "type": "integer",
+      "required": false,
+      "x-ms-summary": "Skip",
+      "description": "Number of items to skip for pagination"
+    },
+    "SelectParam": {
+      "name": "$select",
+      "in": "query",
+      "type": "string",
+      "required": false,
+      "x-ms-summary": "Select",
+      "description": "Properties to select (comma-separated)"
+    },
+    "FilterParam": {
+      "name": "$filter",
+      "in": "query",
+      "type": "string",
+      "required": false,
+      "x-ms-summary": "Filter",
+      "description": "OData filter expression (e.g., capacity ge 10)"
+    }
+  },
+  "definitions": {
+    "Place": {
+      "type": "object",
+      "description": "Base type for all place resources",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "description": "OData type of the place",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the place",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "description": "Alternative immutable identifier",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Name of the place",
+          "x-ms-summary": "Name"
+        },
+        "parentId": {
+          "type": "string",
+          "description": "ID of the parent place",
+          "x-ms-summary": "Parent ID"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "description": "User-defined description",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Custom tags for categorization",
+          "x-ms-summary": "Tags"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "description": "Whether wheelchair accessible",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "Building": {
+      "type": "object",
+      "description": "A physical building in the tenant",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "wifiState": {
+          "type": "string",
+          "description": "WiFi state: unknown, enabled, disabled",
+          "x-ms-summary": "WiFi State"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "Floor": {
+      "type": "object",
+      "description": "A floor within a building",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "parentId": {
+          "type": "string",
+          "description": "ID of the parent building",
+          "x-ms-summary": "Parent Building ID"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Sort order for display (0 = first)",
+          "x-ms-summary": "Sort Order"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "Section": {
+      "type": "object",
+      "description": "A section/neighborhood within a floor",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "parentId": {
+          "type": "string",
+          "description": "ID of the parent floor",
+          "x-ms-summary": "Parent Floor ID"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "Room": {
+      "type": "object",
+      "description": "A meeting room in the tenant",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "emailAddress": {
+          "type": "string",
+          "description": "Email address of the room",
+          "x-ms-summary": "Email"
+        },
+        "nickname": {
+          "type": "string",
+          "x-ms-summary": "Nickname"
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "Room capacity",
+          "x-ms-summary": "Capacity"
+        },
+        "building": {
+          "type": "string",
+          "x-ms-summary": "Building"
+        },
+        "floorNumber": {
+          "type": "integer",
+          "x-ms-summary": "Floor Number"
+        },
+        "floorLabel": {
+          "type": "string",
+          "x-ms-summary": "Floor Label"
+        },
+        "bookingType": {
+          "type": "string",
+          "description": "Booking type: unknown, standard, reserved",
+          "x-ms-summary": "Booking Type"
+        },
+        "audioDeviceName": {
+          "type": "string",
+          "x-ms-summary": "Audio Device"
+        },
+        "videoDeviceName": {
+          "type": "string",
+          "x-ms-summary": "Video Device"
+        },
+        "displayDeviceName": {
+          "type": "string",
+          "x-ms-summary": "Display Device"
+        },
+        "teamsEnabledState": {
+          "type": "string",
+          "x-ms-summary": "Teams Enabled"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "Workspace": {
+      "type": "object",
+      "description": "A workspace (collection of desks) in the tenant",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "emailAddress": {
+          "type": "string",
+          "x-ms-summary": "Email"
+        },
+        "nickname": {
+          "type": "string",
+          "x-ms-summary": "Nickname"
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "Maximum number of desks",
+          "x-ms-summary": "Capacity"
+        },
+        "displayDeviceName": {
+          "type": "string",
+          "x-ms-summary": "Display Device"
+        },
+        "mode": {
+          "type": "object",
+          "description": "Workspace mode (reservable, dropIn, unavailable)",
+          "x-ms-summary": "Mode"
+        },
+        "parentId": {
+          "type": "string",
+          "x-ms-summary": "Parent ID"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "RoomList": {
+      "type": "object",
+      "description": "A room list (group of rooms/workspaces) in the tenant",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "emailAddress": {
+          "type": "string",
+          "description": "Email address of the room list",
+          "x-ms-summary": "Email"
+        },
+        "parentId": {
+          "type": "string",
+          "x-ms-summary": "Parent ID"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "Desk": {
+      "type": "object",
+      "description": "An individual desk in the tenant",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "placeId": {
+          "type": "string",
+          "x-ms-summary": "Place ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "displayDeviceName": {
+          "type": "string",
+          "x-ms-summary": "Display Device"
+        },
+        "heightAdjustableState": {
+          "type": "string",
+          "description": "Height adjustable: unknown, enabled, disabled",
+          "x-ms-summary": "Height Adjustable"
+        },
+        "mode": {
+          "type": "object",
+          "description": "Desk mode (assigned, reservable, dropIn, unavailable)",
+          "x-ms-summary": "Mode"
+        },
+        "mailboxDetails": {
+          "type": "object",
+          "x-ms-summary": "Mailbox Details"
+        },
+        "parentId": {
+          "type": "string",
+          "x-ms-summary": "Parent ID"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "label": {
+          "type": "string",
+          "x-ms-summary": "Label"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Tags"
+        }
+      }
+    },
+    "PhysicalAddress": {
+      "type": "object",
+      "description": "Physical address",
+      "properties": {
+        "street": {
+          "type": "string",
+          "x-ms-summary": "Street"
+        },
+        "city": {
+          "type": "string",
+          "x-ms-summary": "City"
+        },
+        "state": {
+          "type": "string",
+          "x-ms-summary": "State"
+        },
+        "postalCode": {
+          "type": "string",
+          "x-ms-summary": "Postal Code"
+        },
+        "countryOrRegion": {
+          "type": "string",
+          "x-ms-summary": "Country"
+        }
+      }
+    },
+    "GeoCoordinates": {
+      "type": "object",
+      "description": "Geographic coordinates",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "x-ms-summary": "Latitude"
+        },
+        "longitude": {
+          "type": "number",
+          "x-ms-summary": "Longitude"
+        },
+        "altitude": {
+          "type": "number",
+          "x-ms-summary": "Altitude"
+        }
+      }
+    },
+    "BuildingCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Building"
+          },
+          "x-ms-summary": "Buildings"
+        }
+      }
+    },
+    "FloorCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Floor"
+          },
+          "x-ms-summary": "Floors"
+        }
+      }
+    },
+    "SectionCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Section"
+          },
+          "x-ms-summary": "Sections"
+        }
+      }
+    },
+    "RoomCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Room"
+          },
+          "x-ms-summary": "Rooms"
+        }
+      }
+    },
+    "WorkspaceCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Workspace"
+          },
+          "x-ms-summary": "Workspaces"
+        }
+      }
+    },
+    "RoomListCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RoomList"
+          },
+          "x-ms-summary": "Room Lists"
+        }
+      }
+    },
+    "DeskCollection": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Page URL"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Desk"
+          },
+          "x-ms-summary": "Desks"
+        }
+      }
+    },
+    "PlaceCreate": {
+      "type": "object",
+      "description": "Request body for creating a new place",
+      "required": [
+        "@odata.type",
+        "displayName"
+      ],
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "description": "Type of place to create: microsoft.graph.building, microsoft.graph.floor, microsoft.graph.section, microsoft.graph.desk, microsoft.graph.room, or microsoft.graph.workspace",
+          "x-ms-summary": "Place Type",
+          "enum": [
+            "microsoft.graph.building",
+            "microsoft.graph.floor",
+            "microsoft.graph.section",
+            "microsoft.graph.desk",
+            "microsoft.graph.room",
+            "microsoft.graph.workspace"
+          ]
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Name of the place",
+          "x-ms-summary": "Name"
+        },
+        "parentId": {
+          "type": "string",
+          "description": "ID of parent place. Required for floor (building), section (floor), desk/workspace (section), room (floor or section)",
+          "x-ms-summary": "Parent ID"
+        },
+        "label": {
+          "type": "string",
+          "description": "User-defined description",
+          "x-ms-summary": "Label"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Custom tags for categorization",
+          "x-ms-summary": "Tags"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Sort order for floors",
+          "x-ms-summary": "Sort Order"
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "Capacity for rooms/workspaces",
+          "x-ms-summary": "Capacity"
+        },
+        "bookingType": {
+          "type": "string",
+          "description": "Booking type for rooms: standard, reserved",
+          "x-ms-summary": "Booking Type"
+        },
+        "mode": {
+          "type": "object",
+          "description": "Mode for desks/workspaces. Use @odata.type: microsoft.graph.reservablePlaceMode, microsoft.graph.dropInPlaceMode, microsoft.graph.assignedPlaceMode, or microsoft.graph.unavailablePlaceMode",
+          "x-ms-summary": "Mode"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "PlaceUpdate": {
+      "type": "object",
+      "description": "Request body for updating a place. Include @odata.type to specify the place type.",
+      "required": [
+        "@odata.type"
+      ],
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "description": "Type of place being updated",
+          "x-ms-summary": "Place Type",
+          "enum": [
+            "microsoft.graph.building",
+            "microsoft.graph.floor",
+            "microsoft.graph.section",
+            "microsoft.graph.desk",
+            "microsoft.graph.room",
+            "microsoft.graph.workspace",
+            "microsoft.graph.roomList"
+          ]
+        },
+        "parentId": {
+          "type": "string",
+          "description": "ID of parent place (to move a place)",
+          "x-ms-summary": "Parent ID"
+        },
+        "label": {
+          "type": "string",
+          "description": "User-defined description",
+          "x-ms-summary": "Label"
+        },
+        "phone": {
+          "type": "string",
+          "x-ms-summary": "Phone"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Custom tags for categorization",
+          "x-ms-summary": "Tags"
+        },
+        "isWheelChairAccessible": {
+          "type": "boolean",
+          "x-ms-summary": "Wheelchair Accessible"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Sort order for floors",
+          "x-ms-summary": "Sort Order"
+        },
+        "capacity": {
+          "type": "integer",
+          "description": "Capacity for rooms/workspaces",
+          "x-ms-summary": "Capacity"
+        },
+        "nickname": {
+          "type": "string",
+          "description": "Nickname for rooms/workspaces",
+          "x-ms-summary": "Nickname"
+        },
+        "building": {
+          "type": "string",
+          "description": "Building name for rooms/workspaces",
+          "x-ms-summary": "Building"
+        },
+        "floorNumber": {
+          "type": "integer",
+          "description": "Floor number for rooms/workspaces",
+          "x-ms-summary": "Floor Number"
+        },
+        "floorLabel": {
+          "type": "string",
+          "description": "Floor label for rooms/workspaces",
+          "x-ms-summary": "Floor Label"
+        },
+        "mode": {
+          "type": "object",
+          "description": "Mode for desks/workspaces",
+          "x-ms-summary": "Mode"
+        },
+        "audioDeviceName": {
+          "type": "string",
+          "description": "Audio device for rooms",
+          "x-ms-summary": "Audio Device"
+        },
+        "videoDeviceName": {
+          "type": "string",
+          "description": "Video device for rooms",
+          "x-ms-summary": "Video Device"
+        },
+        "displayDeviceName": {
+          "type": "string",
+          "description": "Display device for rooms/workspaces/desks",
+          "x-ms-summary": "Display Device"
+        },
+        "address": {
+          "$ref": "#/definitions/PhysicalAddress"
+        },
+        "geoCoordinates": {
+          "$ref": "#/definitions/GeoCoordinates"
+        }
+      }
+    },
+    "GraphError": {
+      "type": "object",
+      "description": "Microsoft Graph API error response",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "x-ms-summary": "Error Code"
+            },
+            "message": {
+              "type": "string",
+              "x-ms-summary": "Error Message"
+            },
+            "innerError": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "Place.Read.All": "Read all places",
+        "Place.ReadWrite.All": "Read and write all places"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "Place.Read.All",
+        "Place.ReadWrite.All"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Buildings",
+      "description": "Physical buildings with address and coordinates"
+    },
+    {
+      "name": "Floors",
+      "description": "Floors within buildings"
+    },
+    {
+      "name": "Sections",
+      "description": "Sections/neighborhoods within floors"
+    },
+    {
+      "name": "Rooms",
+      "description": "Meeting rooms with email, capacity, and A/V devices"
+    },
+    {
+      "name": "Workspaces",
+      "description": "Desk collections with booking modes"
+    },
+    {
+      "name": "Room Lists",
+      "description": "Groups of rooms and workspaces for Room Finder"
+    },
+    {
+      "name": "Desks",
+      "description": "Individual desks (reservable, drop-in, assigned)"
+    },
+    {
+      "name": "Places",
+      "description": "Generic place operations (Create, Update, Delete)"
+    },
+    {
+      "name": "MCP",
+      "description": "Model Context Protocol for Copilot Studio"
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/graph/api/resources/places-api-overview"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Collaboration;Productivity"
+    }
+  ]
+}

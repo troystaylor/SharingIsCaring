@@ -1,0 +1,1 @@
+This custom code was need to fix the Airtable connector when the service moved from API key to OAuth 2.0 PKCE.

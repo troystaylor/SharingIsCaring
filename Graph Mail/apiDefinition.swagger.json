@@ -1,0 +1,55 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Outlook Mail MCP",
+    "description": "MCP-enabled connector for Outlook Mail (Microsoft Graph). Implements tools for listing messages, creating messages, and sending mail.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/v1.0",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Outlook Mail MCP",
+        "description": "Sends JSON-RPC requests to invoke Outlook Mail (Microsoft Graph) tools via MCP.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": { "description": "MCP response" }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "Mail.Read Mail.Send": "Read and send mail"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": ["Mail.Read Mail.Send"]
+    }
+  ],
+  "tags": [],
+  "x-ms-connector-metadata": [
+    { "propertyName": "Categories", "propertyValue": "Productivity" },
+    { "propertyName": "Website", "propertyValue": "https://graph.microsoft.com" },
+    { "propertyName": "Privacy policy", "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement" }
+  ]
+}

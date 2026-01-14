@@ -1,0 +1,1 @@
+Custom code for OKTA OAuth 2.0 client credentials authentication. Handles the token exchange from Basic Auth to Bearer token for OKTA API calls. Configure your OKTA domain and required scopes in the script variables.

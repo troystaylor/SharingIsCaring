@@ -1,0 +1,78 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "token": {
+        "type": "oauthSetting",
+        "oAuthSettings": {
+          "identityProvider": "aadcertificate",
+          "clientId": "7ab7862c-4c57-491e-8a45-d52a7e023983",
+          "scopes": [
+            "Files.Read.All",
+            "Sites.Read.All",
+            "ExternalItem.Read.All"
+          ],
+          "redirectMode": "Global",
+          "redirectUrl": "https://global.consent.azure-apim.net/redirect",
+          "properties": {
+            "IsFirstParty": "True",
+            "AzureActiveDirectoryResourceId": "https://graph.microsoft.com",
+            "IsOnbehalfofLoginSupported": true
+          },
+          "customParameters": {
+            "grantType": {
+              "value": "code"
+            },
+            "resourceUri": {
+              "value": "https://graph.microsoft.com"
+            },
+            "loginUriAAD": {
+              "value": "https://login.microsoftonline.com"
+            }
+          }
+        }
+      },
+      "api_version": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "API Version",
+          "description": "Select the Microsoft Graph API version to use. v1.0 is stable for production, beta includes preview features.",
+          "tooltip": "Choose v1.0 for stable production features or beta for preview features",
+          "constraints": {
+            "required": "true",
+            "allowedValues": [
+              {
+                "text": "v1.0 (Stable)",
+                "value": "v1.0"
+              },
+              {
+                "text": "beta (Preview)",
+                "value": "beta"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#da3b01",
+    "capabilities": [
+      "actions"
+    ],
+    "scriptOperations": [
+      "InvokeServer"
+    ],
+    "policyTemplateInstances": [
+      {
+        "templateId": "routerequesttoendpoint",
+        "title": "Route to API version",
+        "parameters": {
+          "x-ms-apimTemplateParameter.newPath": "/@connectionParameters('api_version')/copilot/retrieval",
+          "x-ms-apimTemplate-operationName": [
+            "RetrieveGroundingData"
+          ]
+        }
+      }
+    ],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft Corporation"
+  }
+}

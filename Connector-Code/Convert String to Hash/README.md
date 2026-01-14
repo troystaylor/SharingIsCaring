@@ -1,0 +1,1 @@
+This custom code converts a string to a hash using MD5, SHA1, SHA256, or SHA512 algorithms. The script takes a string and hash type as input and returns the hashed value.
