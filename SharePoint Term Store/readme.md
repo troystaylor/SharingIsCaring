@@ -1,6 +1,6 @@
 # SharePoint Term Store Connector
 
-Microsoft Graph termStore API connector for SharePoint taxonomy and managed metadata management, including term groups, term sets, and hierarchical terms.
+Microsoft Graph term store API connector for SharePoint taxonomy and managed metadata management, including term groups, term sets, and hierarchical terms.
 
 ## Publisher
 
@@ -167,3 +167,4 @@ paconn validate --api-def apiDefinition.swagger.json
 5. Enable custom code in the "Code" tab
 6. Paste contents of `script.csx`
 7. Create connection and test operations
+
