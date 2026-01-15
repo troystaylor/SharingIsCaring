@@ -7,7 +7,6 @@ Power MCP tool server exposing Microsoft Graph operations via Model Context Prot
 ### Core Capabilities
 - **Dynamic Discovery**: Uses MS Learn MCP Server to discover Graph API operations in real-time
 - **Chained MCP Architecture**: Acts as both MCP Server (for Copilot Studio) and MCP Client (calling MS Learn MCP)
-- **Delegated Authentication**: Uses OBO (On-Behalf-Of) with user's permissions
 - **User-Friendly Error Handling**: Permission errors clearly distinguish connector issues from org policy issues
 - **Comprehensive Graph Coverage**: Supports all Microsoft Graph v1.0 and beta endpoints
 
