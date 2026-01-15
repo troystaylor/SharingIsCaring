@@ -1,0 +1,1128 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "SharePoint Term Store",
+    "description": "Microsoft Graph Term Store API connector for SharePoint taxonomy management including term groups, sets, and hierarchical terms.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troytaylor@microsoft.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Term Store MCP",
+        "description": "Sends JSON-RPC requests to invoke SharePoint Term Store tools via MCP for taxonomy management.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore": {
+      "get": {
+        "summary": "Get Term Store",
+        "description": "Get the default term store for a SharePoint site.",
+        "operationId": "GetTermStore",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Term store details",
+            "schema": {
+              "$ref": "#/definitions/store"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/groups": {
+      "get": {
+        "summary": "List Term Groups",
+        "description": "Get all term groups in a site's term store.",
+        "operationId": "ListTermGroups",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of groups to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of term groups",
+            "schema": {
+              "$ref": "#/definitions/groupCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Term Group",
+        "description": "Create a new term group in the term store.",
+        "operationId": "CreateTermGroup",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/group"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created term group",
+            "schema": {
+              "$ref": "#/definitions/group"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/groups/{groupId}": {
+      "get": {
+        "summary": "Get Term Group",
+        "description": "Get a specific term group by ID.",
+        "operationId": "GetTermGroup",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term group ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Term group details",
+            "schema": {
+              "$ref": "#/definitions/group"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Term Group",
+        "description": "Update an existing term group.",
+        "operationId": "UpdateTermGroup",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term group ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/group"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated term group",
+            "schema": {
+              "$ref": "#/definitions/group"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Term Group",
+        "description": "Delete a term group from the term store.",
+        "operationId": "DeleteTermGroup",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term group ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Term group deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/groups/{groupId}/sets": {
+      "get": {
+        "summary": "List Term Sets",
+        "description": "Get all term sets in a term group.",
+        "operationId": "ListTermSets",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term group ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of sets to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of term sets",
+            "schema": {
+              "$ref": "#/definitions/setCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Term Set",
+        "description": "Create a new term set in a term group.",
+        "operationId": "CreateTermSet",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term group ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/set"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created term set",
+            "schema": {
+              "$ref": "#/definitions/set"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/sets/{setId}": {
+      "get": {
+        "summary": "Get Term Set",
+        "description": "Get a specific term set by ID.",
+        "operationId": "GetTermSet",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Term set details",
+            "schema": {
+              "$ref": "#/definitions/set"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Term Set",
+        "description": "Update an existing term set.",
+        "operationId": "UpdateTermSet",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/set"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated term set",
+            "schema": {
+              "$ref": "#/definitions/set"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Term Set",
+        "description": "Delete a term set from the term store.",
+        "operationId": "DeleteTermSet",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Term set deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/sets/{setId}/terms": {
+      "get": {
+        "summary": "List Terms",
+        "description": "Get all terms in a term set.",
+        "operationId": "ListTerms",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of terms to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of terms",
+            "schema": {
+              "$ref": "#/definitions/termCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Term",
+        "description": "Create a new term in a term set.",
+        "operationId": "CreateTerm",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created term",
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/sets/{setId}/terms/{termId}": {
+      "get": {
+        "summary": "Get Term",
+        "description": "Get a specific term by ID.",
+        "operationId": "GetTerm",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Term details",
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Term",
+        "description": "Update an existing term.",
+        "operationId": "UpdateTerm",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated term",
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Term",
+        "description": "Delete a term from the term store.",
+        "operationId": "DeleteTerm",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Term deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/sets/{setId}/terms/{termId}/children": {
+      "get": {
+        "summary": "List Child Terms",
+        "description": "Get all child terms of a parent term.",
+        "operationId": "ListChildTerms",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Parent term ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of child terms",
+            "schema": {
+              "$ref": "#/definitions/termCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Child Term",
+        "description": "Create a new child term under a parent term.",
+        "operationId": "CreateChildTerm",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Parent term ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created child term",
+            "schema": {
+              "$ref": "#/definitions/term"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/sets/{setId}/terms/{termId}/relations": {
+      "get": {
+        "summary": "List Term Relations",
+        "description": "Get all relations for a term.",
+        "operationId": "ListTermRelations",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of term relations",
+            "schema": {
+              "$ref": "#/definitions/relationCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Term Relation",
+        "description": "Create a new relation for a term (pinning or reuse).",
+        "operationId": "CreateTermRelation",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/relation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created term relation",
+            "schema": {
+              "$ref": "#/definitions/relation"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/sites/{siteId}/termStore/sets/{setId}/terms/{termId}/relations/{relationId}": {
+      "delete": {
+        "summary": "Delete Term Relation",
+        "description": "Delete a term relation.",
+        "operationId": "DeleteTermRelation",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "SharePoint site ID"
+          },
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term set ID"
+          },
+          {
+            "name": "termId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Term ID"
+          },
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Relation ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Term relation deleted"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "store": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the term store"
+        },
+        "defaultLanguageTag": {
+          "type": "string",
+          "description": "Default language (e.g., en-US)"
+        },
+        "languageTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of languages available"
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "description": {
+          "type": "string",
+          "description": "Group description"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Group display name"
+        },
+        "parentSiteId": {
+          "type": "string",
+          "description": "ID of the parent SharePoint site"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["global", "system", "siteCollection"],
+          "description": "Scope of the term group"
+        }
+      }
+    },
+    "groupCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/group"
+          }
+        }
+      }
+    },
+    "set": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "description": {
+          "type": "string",
+          "description": "Term set description"
+        },
+        "localizedNames": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/localizedName"
+          },
+          "description": "Localized names"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/keyValue"
+          },
+          "description": "Custom properties"
+        }
+      }
+    },
+    "setCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/set"
+          }
+        }
+      }
+    },
+    "term": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modified timestamp"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/localizedLabel"
+          },
+          "description": "Term labels"
+        },
+        "descriptions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/localizedDescription"
+          },
+          "description": "Term descriptions"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/keyValue"
+          },
+          "description": "Custom properties"
+        }
+      }
+    },
+    "termCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/term"
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "relationship": {
+          "type": "string",
+          "enum": ["pin", "reuse"],
+          "description": "Type of relation"
+        },
+        "fromTerm": {
+          "$ref": "#/definitions/term",
+          "description": "Source term"
+        },
+        "toTerm": {
+          "$ref": "#/definitions/term",
+          "description": "Target term"
+        },
+        "set": {
+          "$ref": "#/definitions/set",
+          "description": "Associated term set"
+        }
+      }
+    },
+    "relationCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/relation"
+          }
+        }
+      }
+    },
+    "localizedName": {
+      "type": "object",
+      "properties": {
+        "languageTag": {
+          "type": "string",
+          "description": "Language code (e.g., en-US)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Localized name value"
+        }
+      }
+    },
+    "localizedLabel": {
+      "type": "object",
+      "properties": {
+        "languageTag": {
+          "type": "string",
+          "description": "Language code (e.g., en-US)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Label value"
+        },
+        "isDefault": {
+          "type": "boolean",
+          "description": "Whether this is the default label"
+        }
+      }
+    },
+    "localizedDescription": {
+      "type": "object",
+      "properties": {
+        "languageTag": {
+          "type": "string",
+          "description": "Language code (e.g., en-US)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description value"
+        }
+      }
+    },
+    "keyValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Property key"
+        },
+        "value": {
+          "type": "string",
+          "description": "Property value"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+      "scopes": {
+        "TermStore.Read.All": "Read term store data",
+        "TermStore.ReadWrite.All": "Read and write term store data",
+        "Sites.Read.All": "Read SharePoint sites",
+        "Sites.ReadWrite.All": "Read and write SharePoint sites"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "TermStore.Read.All",
+        "TermStore.ReadWrite.All",
+        "Sites.Read.All",
+        "Sites.ReadWrite.All"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/graph/api/resources/termstore-store"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Content and Files;Collaboration"
+    }
+  ]
+}
