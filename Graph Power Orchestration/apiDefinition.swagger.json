@@ -1,0 +1,74 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Graph Power Orchestration",
+        "description": "Power MCP tool server exposing Microsoft Graph operations via Model Context Protocol for Copilot Studio agents. Features dynamic tool discovery via MS Learn MCP, delegated authentication (OBO), and comprehensive Graph API coverage.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/mcp",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "summary": "Invoke Graph Power Orchestration MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Graph operations via JSON-RPC 2.0 with dynamic discovery through MS Learn MCP.",
+                "operationId": "McpEndpoint",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://graph.microsoft.com/.default": "Access Microsoft Graph API"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://graph.microsoft.com/.default"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/graph/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Data;Productivity"
+        }
+    ]
+}
