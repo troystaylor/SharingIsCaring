@@ -555,4 +555,375 @@ public class Script : ScriptBase
             }
         }
 
-        return uniqueOps; }
+        return uniqueOps; 
+    }
+
+    private class EndpointMatch
+    {
+        public string Path { get; set; }
+        public string Method { get; set; }
+    }
+
+    // Extract endpoints like `GET /me/messages` or code blocks
+    private List<EndpointMatch> ExtractEndpointsFromContent(string content)
+    {
+        var matches = new List<EndpointMatch>();
+        var patterns = new[]
+        {
+            @"(GET|POST|PATCH|PUT|DELETE)\s+(/[\w\{\}/\-\.]+)",
+            @"(?:endpoint|path|url):\s*[`\"']?(/[\w\{\}/\-\.]+)[`\"']?",
+            @"```\s*(GET|POST|PATCH|PUT|DELETE)\s+(/[\w\{\}/\-\.]+)"
+        };
+        foreach (var pattern in patterns)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var regexMatches = regex.Matches(content);
+            foreach (System.Text.RegularExpressions.Match match in regexMatches)
+            {
+                if (match.Groups.Count >= 3)
+                {
+                    var method = match.Groups[1].Value.ToUpperInvariant();
+                    var path = match.Groups[2].Value;
+                    if (path.StartsWith("/") && !path.Contains("://"))
+                    {
+                        matches.Add(new EndpointMatch { Method = method, Path = path });
+                    }
+                }
+            }
+        }
+        return matches;
+    }
+
+    private string TruncateDescription(string text, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        if (text.Length <= maxLength) return text;
+        return text.Substring(0, maxLength - 3) + "...";
+    }
+
+    private void AddPermissionHints(JArray operations)
+    {
+        foreach (var op in operations)
+        {
+            var endpoint = op["endpoint"]?.ToString()?.ToLower() ?? "";
+            var method = op["method"]?.ToString()?.ToUpper() ?? "GET";
+            var permissions = InferPermissions(endpoint, method);
+            if (permissions.Count > 0)
+            {
+                op["requiredPermissions"] = new JArray(permissions);
+            }
+        }
+    }
+
+    private List<string> InferPermissions(string endpoint, string method)
+    {
+        var permissions = new List<string>();
+        var isWrite = method != "GET";
+        if (endpoint.Contains("/messages") || endpoint.Contains("/mailfolders") || endpoint.Contains("/sendmail"))
+        {
+            permissions.Add(isWrite ? "Mail.Send" : "Mail.Read");
+        }
+        else if (endpoint.Contains("/calendar") || endpoint.Contains("/events"))
+        {
+            permissions.Add(isWrite ? "Calendars.ReadWrite" : "Calendars.Read");
+        }
+        else if (endpoint.Contains("/users") || endpoint == "/me")
+        {
+            permissions.Add(isWrite ? "User.ReadWrite.All" : "User.Read.All");
+        }
+        else if (endpoint.Contains("/groups"))
+        {
+            permissions.Add(isWrite ? "Group.ReadWrite.All" : "Group.Read.All");
+        }
+        else if (endpoint.Contains("/teams") || endpoint.Contains("/channels"))
+        {
+            permissions.Add("Team.ReadBasic.All");
+        }
+        else if (endpoint.Contains("/drive") || endpoint.Contains("/items"))
+        {
+            permissions.Add(isWrite ? "Files.ReadWrite" : "Files.Read");
+        }
+        else if (endpoint.Contains("/sites"))
+        {
+            permissions.Add(isWrite ? "Sites.ReadWrite.All" : "Sites.Read.All");
+        }
+        else if (endpoint.Contains("/planner") || endpoint.Contains("/todo") || endpoint.Contains("/tasks"))
+        {
+            permissions.Add(isWrite ? "Tasks.ReadWrite" : "Tasks.Read");
+        }
+        return permissions;
+    }
+
+    // ========================================
+    // INVOKE IMPLEMENTATION
+    // ========================================
+    private async Task<JObject> ExecuteInvokeAsync(JObject args)
+    {
+        var method = RequireArgument(args, "method").ToUpperInvariant();
+        var endpoint = RequireArgument(args, "endpoint");
+        var baseUrl = args["baseUrl"]?.ToString() ?? GetConnectionParameter("baseUrl");
+        var queryParams = args["queryParams"] as JObject ?? new JObject();
+        var headers = args["headers"] as JObject ?? new JObject();
+        var body = args["body"] as JObject;
+        var useConnectorAuth = args["useConnectorAuth"]?.ToObject<bool?>() ?? true;
+
+        ValidateMethod(method);
+
+        var url = BuildInvokeUrl(endpoint, baseUrl, queryParams, method);
+        var request = new HttpRequestMessage(new HttpMethod(method), url);
+        ApplyHeaders(request, headers);
+
+        if (useConnectorAuth && this.Context.Request.Headers.Authorization != null)
+        {
+            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+        }
+
+        if (body != null && (method == "POST" || method == "PATCH" || method == "PUT"))
+        {
+            request.Content = new StringContent(body.ToString(Formatting.None), Encoding.UTF8, "application/json");
+        }
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorObj = TryParseJson(content) ?? new JObject { ["text"] = content };
+            return new JObject
+            {
+                ["success"] = false,
+                ["status"] = (int)response.StatusCode,
+                ["reason"] = response.ReasonPhrase,
+                ["details"] = errorObj
+            };
+        }
+
+        var parsed = TryParseJson(content);
+        return new JObject
+        {
+            ["success"] = true,
+            ["status"] = (int)response.StatusCode,
+            ["data"] = parsed ?? new JObject { ["text"] = content }
+        };
+    }
+
+    // ========================================
+    // BATCH INVOKE IMPLEMENTATION
+    // ========================================
+    private async Task<JObject> ExecuteBatchInvokeAsync(JObject args)
+    {
+        var requests = args["requests"] as JArray;
+        var baseUrl = args["baseUrl"]?.ToString() ?? GetConnectionParameter("baseUrl");
+        var useConnectorAuth = args["useConnectorAuth"]?.ToObject<bool?>() ?? true;
+
+        if (requests == null || requests.Count == 0)
+        {
+            throw new ArgumentException("'requests' array is required and must contain at least one request");
+        }
+        if (requests.Count > 20)
+        {
+            throw new ArgumentException("Batch requests limited to 20 items.");
+        }
+
+        var responses = new JArray();
+        foreach (var req in requests)
+        {
+            var id = req["id"]?.ToString() ?? Guid.NewGuid().ToString();
+            var method = req["method"]?.ToString()?.ToUpperInvariant() ?? "GET";
+            var endpoint = req["endpoint"]?.ToString();
+            var headers = req["headers"] as JObject ?? new JObject();
+            var body = req["body"] as JObject;
+
+            if (string.IsNullOrWhiteSpace(endpoint))
+            {
+                responses.Add(new JObject { ["id"] = id, ["success"] = false, ["error"] = "endpoint is required" });
+                continue;
+            }
+
+            try
+            {
+                ValidateMethod(method);
+                var url = BuildInvokeUrl(endpoint, baseUrl, null, method);
+                var request = new HttpRequestMessage(new HttpMethod(method), url);
+                ApplyHeaders(request, headers);
+                if (useConnectorAuth && this.Context.Request.Headers.Authorization != null)
+                {
+                    request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+                }
+                if (body != null && (method == "POST" || method == "PATCH" || method == "PUT"))
+                {
+                    request.Content = new StringContent(body.ToString(Formatting.None), Encoding.UTF8, "application/json");
+                }
+
+                var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var parsed = TryParseJson(content);
+
+                responses.Add(new JObject
+                {
+                    ["id"] = id,
+                    ["success"] = response.IsSuccessStatusCode,
+                    ["status"] = (int)response.StatusCode,
+                    ["data"] = parsed ?? new JObject { ["text"] = content }
+                });
+            }
+            catch (Exception ex)
+            {
+                responses.Add(new JObject { ["id"] = id, ["success"] = false, ["error"] = ex.Message });
+            }
+        }
+
+        return new JObject
+        {
+            ["success"] = responses.All(r => r["success"]?.ToObject<bool>() == true),
+            ["responses"] = responses
+        };
+    }
+
+    // ========================================
+    // HELPERS
+    // ========================================
+    private void ValidateMethod(string method)
+    {
+        var validMethods = new[] { "GET", "POST", "PATCH", "PUT", "DELETE" };
+        if (!validMethods.Contains(method))
+        {
+            throw new ArgumentException($"Invalid method: {method}. Must be one of: {string.Join(", ", validMethods)}");
+        }
+    }
+
+    private string BuildInvokeUrl(string endpoint, string baseUrl, JObject queryParams, string method)
+    {
+        var url = endpoint;
+        if (!IsAbsoluteUrl(endpoint))
+        {
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                throw new ArgumentException("baseUrl is required when endpoint is relative");
+            }
+            url = CombineUrl(baseUrl, endpoint);
+        }
+
+        if (queryParams != null && queryParams.Count > 0)
+        {
+            var sb = new StringBuilder(url);
+            sb.Append(url.Contains("?") ? "&" : "?");
+            var qp = string.Join("&", queryParams.Properties().Select(p => $"{Uri.EscapeDataString(p.Name)}={Uri.EscapeDataString(p.Value.ToString())}"));
+            sb.Append(qp);
+            url = sb.ToString();
+        }
+        return url;
+    }
+
+    private bool IsAbsoluteUrl(string url)
+    {
+        return Uri.TryCreate(url, UriKind.Absolute, out _);
+    }
+
+    private string CombineUrl(string baseUrl, string endpoint)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl)) return endpoint;
+        return baseUrl.TrimEnd('/') + "/" + endpoint.TrimStart('/');
+    }
+
+    private void ApplyHeaders(HttpRequestMessage request, JObject headers)
+    {
+        foreach (var prop in headers.Properties())
+        {
+            request.Headers.TryAddWithoutValidation(prop.Name, prop.Value.ToString());
+        }
+    }
+
+    private JObject TryParseJson(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        try
+        {
+            return JObject.Parse(content);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // ========================================
+    // TOOL DEFINITIONS
+    // ========================================
+    private JArray BuildToolsList()
+    {
+        return new JArray
+        {
+            new JObject
+            {
+                ["name"] = TOOL_DISCOVER,
+                ["description"] = "Discover API operations by searching documentation or custom endpoints.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["query"] = new JObject { ["type"] = "string", ["description"] = "Natural language description of the task." },
+                        ["category"] = new JObject { ["type"] = "string", ["description"] = "Optional category filter" },
+                        ["api"] = new JObject { ["type"] = "string", ["description"] = "API identifier (e.g., graph, custom)" }
+                    },
+                    ["required"] = new JArray { "query" }
+                },
+                ["annotations"] = new JObject { ["readOnlyHint"] = true, ["idempotentHint"] = true }
+            },
+            new JObject
+            {
+                ["name"] = TOOL_INVOKE,
+                ["description"] = "Invoke an API operation with optional baseUrl, headers, and body.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["method"] = new JObject { ["type"] = "string", ["enum"] = new JArray { "GET", "POST", "PATCH", "PUT", "DELETE" } },
+                        ["endpoint"] = new JObject { ["type"] = "string", ["description"] = "Relative path or absolute URL" },
+                        ["baseUrl"] = new JObject { ["type"] = "string", ["description"] = "Base URL for relative endpoints" },
+                        ["queryParams"] = new JObject { ["type"] = "object" },
+                        ["headers"] = new JObject { ["type"] = "object" },
+                        ["body"] = new JObject { ["type"] = "object" },
+                        ["useConnectorAuth"] = new JObject { ["type"] = "boolean", ["description"] = "Forward connector auth header" }
+                    },
+                    ["required"] = new JArray { "method", "endpoint" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = TOOL_BATCH_INVOKE,
+                ["description"] = "Batch invoke multiple API operations (max 20).",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["requests"] = new JObject
+                        {
+                            ["type"] = "array",
+                            ["maxItems"] = 20,
+                            ["items"] = new JObject
+                            {
+                                ["type"] = "object",
+                                ["properties"] = new JObject
+                                {
+                                    ["id"] = new JObject { ["type"] = "string" },
+                                    ["method"] = new JObject { ["type"] = "string", ["enum"] = new JArray { "GET", "POST", "PATCH", "PUT", "DELETE" } },
+                                    ["endpoint"] = new JObject { ["type"] = "string" },
+                                    ["headers"] = new JObject { ["type"] = "object" },
+                                    ["body"] = new JObject { ["type"] = "object" }
+                                },
+                                ["required"] = new JArray { "method", "endpoint" }
+                            }
+                        },
+                        ["baseUrl"] = new JObject { ["type"] = "string" },
+                        ["useConnectorAuth"] = new JObject { ["type"] = "boolean" }
+                    },
+                    ["required"] = new JArray { "requests" }
+                }
+            }
+        };
+    }
+}
