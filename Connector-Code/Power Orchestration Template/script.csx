@@ -571,7 +571,7 @@ public class Script : ScriptBase
         var patterns = new[]
         {
             @"(GET|POST|PATCH|PUT|DELETE)\s+(/[\w\{\}/\-\.]+)",
-            @"(?:endpoint|path|url):\s*[`\"']?(/[\w\{\}/\-\.]+)[`\"']?",
+            @"(?:endpoint|path|url):\s*[`""']?(/[\w\{\}/\-\.]+)[`""']?",
             @"```\s*(GET|POST|PATCH|PUT|DELETE)\s+(/[\w\{\}/\-\.]+)"
         };
         foreach (var pattern in patterns)
