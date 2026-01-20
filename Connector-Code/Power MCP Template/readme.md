@@ -181,14 +181,14 @@ private const string APP_INSIGHTS_CONNECTION_STRING =
   "schemes": [
     "https"
   ],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
   "paths": {
     "/": {
       "post": {
         "summary": "MCP Server Streamable HTTP",
         "x-ms-agentic-protocol": "mcp-streamable-1.0",
         "operationId": "InvokeMCP",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
         "responses": {
           "200": {
             "description": "Success"
@@ -264,86 +264,6 @@ Tool errors are returned as MCP tool results (not protocol errors) so the AI can
 
 - The swagger intentionally omits body parameters and response schemas; the MCP payload is forwarded by the connector runtime.
 - Keep `x-ms-agentic-protocol` set to `mcp-streamable-1.0`.
-- Keep `consumes`/`produces` as `application/json`.
-
-### Alternate: Classic HTTP (non-streamable)
-
-If you **must** expose a classic HTTP MCP endpoint (non-streamable), you can use this variant. Only use this when your client requires a request body schema.
-
-```json
-{
-  "swagger": "2.0",
-  "info": {
-    "title": "MCP Server (HTTP)",
-    "version": "1.0.0"
-  },
-  "host": "your-api-host.com",
-  "basePath": "/",
-  "schemes": ["https"],
-  "paths": {
-    "/mcp": {
-      "post": {
-        "operationId": "McpRequest",
-        "summary": "MCP Protocol Handler",
-        "consumes": ["application/json"],
-        "produces": ["application/json"],
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "MCP Response",
-            "schema": {
-              "type": "object"
-            }
-          }
-        }
-      }
-    }
-  },
-  "securityDefinitions": {}
-}
-```
-
-**apiProperties.json** (classic HTTP variant):
-
-```json
-{
-  "properties": {
-    "connectionParameters": {},
-    "policyTemplateInstances": [
-      {
-        "templateId": "routeRequestToCode",
-        "title": "MCP Handler",
-        "parameters": {
-          "x-ms-apimTemplate-operationName": ["McpRequest"]
-        }
-      }
-    ]
-  }
-}
-```
-
-> **Tip:** Prefer the streamable HTTP contract for Copilot Studio. Use the classic variant only when required by the hosting environment or non-streamable clients.
-
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [{"type": "text", "text": "Tool execution failed: reason"}],
-    "isError": true
-  }
-}
-```
 
 ## License
 
