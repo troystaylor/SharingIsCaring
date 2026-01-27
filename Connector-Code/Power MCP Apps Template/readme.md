@@ -13,7 +13,7 @@ A production-ready template for implementing [Model Context Protocol (MCP)](http
 ## Features
 
 ### Core MCP Protocol
-- **Full MCP Compliance**: Implements JSON-RPC 2.0 and MCP specification (2026-01-26)
+- **Full MCP Compliance**: Implements JSON-RPC 2.0 and MCP Apps specification (2026-01-26)
 - **Batch Request Support**: Process multiple JSON-RPC requests in a single call
 - **15+ MCP Methods**: initialize, tools/list, tools/call, resources/list, resources/read, resources/templates/list, prompts/list, prompts/get, logging/setLevel, and more
 - **Copilot Studio Compatible**: Tested and working with Microsoft Copilot Studio agents
@@ -856,3 +856,4 @@ MCP Apps UIs receive `structuredContent` directly without parsing JSON strings.
 ## License
 
 MIT License - feel free to use and modify for your projects.
+
