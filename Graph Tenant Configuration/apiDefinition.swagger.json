@@ -1,0 +1,1119 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Graph Tenant Configuration",
+    "description": "Microsoft Graph Unified Tenant Configuration Management (UTCM) API connector for monitoring tenant configuration drift, creating baselines, and extracting configuration snapshots. Uses the beta API.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troytaylor@microsoft.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Tenant Configuration MCP",
+        "description": "Sends JSON-RPC requests to invoke Tenant Configuration Management tools via MCP for Copilot Studio integration.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationMonitors": {
+      "get": {
+        "summary": "List Configuration Monitors",
+        "description": "Get a list of all configurationMonitor objects and their properties. Monitors run periodically to detect configuration drift.",
+        "operationId": "ListConfigurationMonitors",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of monitors to return",
+            "x-ms-summary": "Top"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "description": "Order results",
+            "x-ms-summary": "Order By"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of configuration monitors",
+            "schema": {
+              "$ref": "#/definitions/configurationMonitorCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Configuration Monitor",
+        "description": "Create a new configurationMonitor object that runs periodically in the background at a scheduled frequency (every 6 hours).",
+        "operationId": "CreateConfigurationMonitor",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/configurationMonitorCreate"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created monitor",
+            "schema": {
+              "$ref": "#/definitions/configurationMonitor"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationMonitors/{monitorId}": {
+      "get": {
+        "summary": "Get Configuration Monitor",
+        "description": "Get the properties and relationships of a specific configurationMonitor object.",
+        "operationId": "GetConfigurationMonitor",
+        "parameters": [
+          {
+            "name": "monitorId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration monitor",
+            "x-ms-summary": "Monitor ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "description": "Related entities to expand (e.g., baseline)",
+            "x-ms-summary": "Expand"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration monitor",
+            "schema": {
+              "$ref": "#/definitions/configurationMonitor"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Configuration Monitor",
+        "description": "Update the properties of a configurationMonitor object, including the monitor name, description, and baseline. Note: Updating baseline deletes all previous monitoring results and drifts.",
+        "operationId": "UpdateConfigurationMonitor",
+        "parameters": [
+          {
+            "name": "monitorId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration monitor",
+            "x-ms-summary": "Monitor ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/configurationMonitorUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated monitor",
+            "schema": {
+              "$ref": "#/definitions/configurationMonitor"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Configuration Monitor",
+        "description": "Permanently delete a configurationMonitor object and all its associated monitoring results and drifts.",
+        "operationId": "DeleteConfigurationMonitor",
+        "parameters": [
+          {
+            "name": "monitorId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration monitor",
+            "x-ms-summary": "Monitor ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Monitor deleted"
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationMonitors/{monitorId}/baseline": {
+      "get": {
+        "summary": "Get Monitor Baseline",
+        "description": "Read the properties and relationships of a configurationBaseline object attached to a specific monitor.",
+        "operationId": "GetMonitorBaseline",
+        "parameters": [
+          {
+            "name": "monitorId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration monitor",
+            "x-ms-summary": "Monitor ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration baseline",
+            "schema": {
+              "$ref": "#/definitions/configurationBaseline"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationDrifts": {
+      "get": {
+        "summary": "List Configuration Drifts",
+        "description": "Get a list of all configurationDrift objects and their properties. Shows all active drifts detected across all monitors.",
+        "operationId": "ListConfigurationDrifts",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of drifts to return",
+            "x-ms-summary": "Top"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression (e.g., status eq 'active')",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "description": "Order results",
+            "x-ms-summary": "Order By"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of configuration drifts",
+            "schema": {
+              "$ref": "#/definitions/configurationDriftCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationDrifts/{driftId}": {
+      "get": {
+        "summary": "Get Configuration Drift",
+        "description": "Get the properties and relationships of a specific configurationDrift object with detailed information about drifted properties.",
+        "operationId": "GetConfigurationDrift",
+        "parameters": [
+          {
+            "name": "driftId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration drift",
+            "x-ms-summary": "Drift ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration drift",
+            "schema": {
+              "$ref": "#/definitions/configurationDrift"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationSnapshotJobs": {
+      "get": {
+        "summary": "List Snapshot Jobs",
+        "description": "Get a list of all configurationSnapshotJob objects and their properties. A maximum of 12 snapshot jobs are visible.",
+        "operationId": "ListConfigurationSnapshotJobs",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of snapshot jobs to return",
+            "x-ms-summary": "Top"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "description": "Order results",
+            "x-ms-summary": "Order By"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of snapshot jobs",
+            "schema": {
+              "$ref": "#/definitions/configurationSnapshotJobCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationSnapshotJobs/{snapshotJobId}": {
+      "get": {
+        "summary": "Get Snapshot Job",
+        "description": "Read the properties and relationships of a specific configurationSnapshotJob object.",
+        "operationId": "GetConfigurationSnapshotJob",
+        "parameters": [
+          {
+            "name": "snapshotJobId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the snapshot job",
+            "x-ms-summary": "Snapshot Job ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot job",
+            "schema": {
+              "$ref": "#/definitions/configurationSnapshotJob"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Snapshot Job",
+        "description": "Delete a configurationSnapshotJob object. Use this to make room for new snapshots (max 12 visible).",
+        "operationId": "DeleteConfigurationSnapshotJob",
+        "parameters": [
+          {
+            "name": "snapshotJobId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the snapshot job",
+            "x-ms-summary": "Snapshot Job ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Snapshot job deleted"
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationMonitoringResults": {
+      "get": {
+        "summary": "List Monitoring Results",
+        "description": "Get a list of all configurationMonitoringResult objects and their properties. Shows results from all monitor runs.",
+        "operationId": "ListConfigurationMonitoringResults",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "description": "Number of results to return",
+            "x-ms-summary": "Top"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "description": "OData filter expression (e.g., monitorId eq 'guid')",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "description": "Order results (e.g., runInitiationDateTime desc)",
+            "x-ms-summary": "Order By"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of monitoring results",
+            "schema": {
+              "$ref": "#/definitions/configurationMonitoringResultCollectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationMonitoringResults/{resultId}": {
+      "get": {
+        "summary": "Get Monitoring Result",
+        "description": "Read the properties of a specific configurationMonitoringResult object including drift count and error details.",
+        "operationId": "GetConfigurationMonitoringResult",
+        "parameters": [
+          {
+            "name": "resultId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the monitoring result",
+            "x-ms-summary": "Result ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monitoring result",
+            "schema": {
+              "$ref": "#/definitions/configurationMonitoringResult"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationBaselines/{baselineId}": {
+      "get": {
+        "summary": "Get Configuration Baseline",
+        "description": "Read the properties and relationships of a configurationBaseline object including its resources and parameters.",
+        "operationId": "GetConfigurationBaseline",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration baseline",
+            "x-ms-summary": "Baseline ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "description": "Properties to include in response",
+            "x-ms-summary": "Select"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration baseline",
+            "schema": {
+              "$ref": "#/definitions/configurationBaseline"
+            }
+          }
+        }
+      }
+    },
+    "/beta/admin/configurationManagement/configurationBaselines/{baselineId}/createSnapshot": {
+      "post": {
+        "summary": "Create Snapshot from Baseline",
+        "description": "Create a configurationSnapshotJob asynchronously to extract current tenant configuration settings. Returns the job which can be polled for completion.",
+        "operationId": "CreateSnapshotFromBaseline",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the configuration baseline",
+            "x-ms-summary": "Baseline ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createSnapshotRequest"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Snapshot job created",
+            "schema": {
+              "$ref": "#/definitions/configurationSnapshotJob"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "configurationMonitor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Globally unique identifier (GUID) for the monitor"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User-friendly name given to the monitor"
+        },
+        "description": {
+          "type": "string",
+          "description": "User-friendly description of the monitor"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "unknownFutureValue"],
+          "description": "Status of the monitor"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["monitorOnly", "unknownFutureValue"],
+          "description": "Monitor mode in which the monitor runs"
+        },
+        "monitorRunFrequencyInHours": {
+          "type": "integer",
+          "description": "Frequency at which the monitor runs (default 6 hours)"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "GUID of the tenant for which the monitor runs"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the monitor was created"
+        },
+        "createdBy": {
+          "$ref": "#/definitions/identitySet",
+          "description": "The user who created the monitor"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the monitor was last modified"
+        },
+        "lastModifiedBy": {
+          "$ref": "#/definitions/identitySet",
+          "description": "The user who last modified the monitor"
+        },
+        "inactivationReason": {
+          "type": "string",
+          "description": "The reason for the monitor's inactivation"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Key-value pairs containing parameter values for the baseline"
+        },
+        "baseline": {
+          "$ref": "#/definitions/configurationBaseline",
+          "description": "The baseline attached to this monitor"
+        }
+      }
+    },
+    "configurationMonitorCreate": {
+      "type": "object",
+      "required": ["displayName", "baseline"],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "User-friendly name for the monitor",
+          "x-ms-summary": "Display Name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the monitor",
+          "x-ms-summary": "Description"
+        },
+        "baseline": {
+          "$ref": "#/definitions/configurationBaselineInput",
+          "description": "The baseline configuration to monitor"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Key-value pairs for baseline parameters"
+        }
+      }
+    },
+    "configurationMonitorUpdate": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "User-friendly name for the monitor",
+          "x-ms-summary": "Display Name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the monitor",
+          "x-ms-summary": "Description"
+        },
+        "baseline": {
+          "$ref": "#/definitions/configurationBaselineInput",
+          "description": "Updated baseline (warning: deletes previous results)"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Updated parameters"
+        }
+      }
+    },
+    "configurationMonitorCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/configurationMonitor"
+          }
+        }
+      }
+    },
+    "configurationDrift": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Globally unique identifier (GUID) of the drift"
+        },
+        "monitorId": {
+          "type": "string",
+          "description": "GUID of the monitor that detected this drift"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "GUID of the tenant"
+        },
+        "resourceType": {
+          "type": "string",
+          "description": "Resource type for which the drift is detected"
+        },
+        "baselineResourceDisplayName": {
+          "type": "string",
+          "description": "Resource instance for which drift is detected"
+        },
+        "resourceInstanceIdentifier": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Identifier to understand exactly where the drift is"
+        },
+        "driftedProperties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/driftedProperty"
+          },
+          "description": "Properties within resource instances where drift is detected"
+        },
+        "firstReportedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when drift was first detected"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "fixed", "unknownFutureValue"],
+          "description": "Status of the drift"
+        }
+      }
+    },
+    "driftedProperty": {
+      "type": "object",
+      "properties": {
+        "propertyName": {
+          "type": "string",
+          "description": "Name of the property that drifted"
+        },
+        "baselineValue": {
+          "type": "string",
+          "description": "Expected value from baseline"
+        },
+        "currentValue": {
+          "type": "string",
+          "description": "Current value detected"
+        }
+      }
+    },
+    "configurationDriftCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/configurationDrift"
+          }
+        }
+      }
+    },
+    "configurationSnapshotJob": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Globally unique identifier (GUID) of the snapshot job"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User-friendly name for the snapshot"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the snapshot"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["notStarted", "running", "succeeded", "failed", "unknownFutureValue", "partiallySuccessful"],
+          "description": "Status of the snapshot job"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "GUID of the tenant"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the job was created"
+        },
+        "createdBy": {
+          "$ref": "#/definitions/identitySet",
+          "description": "The user who triggered the snapshot"
+        },
+        "completedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the job completed"
+        },
+        "resourceLocation": {
+          "type": "string",
+          "description": "URL where the snapshot file resides"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of all resources included in the snapshot"
+        },
+        "errorDetails": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Error details if snapshot failed"
+        }
+      }
+    },
+    "configurationSnapshotJobCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/configurationSnapshotJob"
+          }
+        }
+      }
+    },
+    "configurationMonitoringResult": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Globally unique identifier (GUID) of the monitor run"
+        },
+        "monitorId": {
+          "type": "string",
+          "description": "GUID of the monitor"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "GUID of the tenant"
+        },
+        "runInitiationDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the monitor run initiated"
+        },
+        "runCompletionDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time when the monitor run completed"
+        },
+        "runStatus": {
+          "type": "string",
+          "enum": ["successful", "partiallySuccessful", "failed", "unknownFutureValue"],
+          "description": "Status of the monitor run"
+        },
+        "driftsCount": {
+          "type": "integer",
+          "description": "Number of drifts observed during this run"
+        },
+        "errorDetails": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/errorDetail"
+          },
+          "description": "Error details preventing successful completion"
+        }
+      }
+    },
+    "errorDetail": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Error code"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target of the error"
+        }
+      }
+    },
+    "configurationMonitoringResultCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/configurationMonitoringResult"
+          }
+        }
+      }
+    },
+    "configurationBaseline": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the baseline"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User-friendly name for the baseline"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the baseline"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/baselineResource"
+          },
+          "description": "Collection of resources and properties in the baseline"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/baselineParameter"
+          },
+          "description": "Collection of parameters for the baseline"
+        }
+      }
+    },
+    "configurationBaselineInput": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "User-friendly name for the baseline",
+          "x-ms-summary": "Baseline Name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the baseline",
+          "x-ms-summary": "Baseline Description"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/baselineResourceInput"
+          },
+          "description": "Resources to monitor"
+        }
+      }
+    },
+    "baselineResource": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Type of the resource"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the resource"
+        },
+        "resourceInstanceIdentifier": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Identifier for the resource instance"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/baselineProperty"
+          },
+          "description": "Properties to monitor on this resource"
+        }
+      }
+    },
+    "baselineResourceInput": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Type of the resource to monitor",
+          "x-ms-summary": "Resource Type"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name for the resource",
+          "x-ms-summary": "Resource Name"
+        },
+        "resourceInstanceIdentifier": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Identifier for the resource instance"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/baselinePropertyInput"
+          },
+          "description": "Properties to monitor"
+        }
+      }
+    },
+    "baselineProperty": {
+      "type": "object",
+      "properties": {
+        "propertyName": {
+          "type": "string",
+          "description": "Name of the property"
+        },
+        "value": {
+          "type": "string",
+          "description": "Expected value of the property"
+        }
+      }
+    },
+    "baselinePropertyInput": {
+      "type": "object",
+      "properties": {
+        "propertyName": {
+          "type": "string",
+          "description": "Name of the property to monitor",
+          "x-ms-summary": "Property Name"
+        },
+        "value": {
+          "type": "string",
+          "description": "Expected value",
+          "x-ms-summary": "Expected Value"
+        }
+      }
+    },
+    "baselineParameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Parameter name"
+        },
+        "value": {
+          "type": "string",
+          "description": "Parameter value"
+        }
+      }
+    },
+    "createSnapshotRequest": {
+      "type": "object",
+      "required": ["displayName"],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "Name for the snapshot job",
+          "x-ms-summary": "Snapshot Name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the snapshot",
+          "x-ms-summary": "Description"
+        }
+      }
+    },
+    "identitySet": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/identity"
+        },
+        "application": {
+          "$ref": "#/definitions/identity"
+        },
+        "device": {
+          "$ref": "#/definitions/identity"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the identity"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the identity"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+      "scopes": {
+        "ConfigurationMonitoring.Read.All": "Read configuration monitors and monitoring results",
+        "ConfigurationMonitoring.ReadWrite.All": "Create, update monitors and run configuration snapshots"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "ConfigurationMonitoring.Read.All",
+        "ConfigurationMonitoring.ReadWrite.All"
+      ]
+    }
+  ]
+}
