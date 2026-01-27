@@ -350,7 +350,7 @@ public class Script : ScriptBase
         {
             if (req is JObject reqObj)
             {
-                var singleBody = reqObj.ToString(Formatting.None);
+                var singleBody = reqObj.ToString(Newtonsoft.Json.Formatting.None);
                 // Recursively process each request
                 var singleResponse = await ProcessSingleRequestAsync(correlationId, singleBody).ConfigureAwait(false);
                 if (singleResponse != null)
@@ -375,7 +375,7 @@ public class Script : ScriptBase
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(responses.ToString(Formatting.None), Encoding.UTF8, "application/json")
+            Content = new StringContent(responses.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 
@@ -556,7 +556,7 @@ public class Script : ScriptBase
                     new JObject
                     {
                         ["type"] = "text",
-                        ["text"] = toolResult.ToString(Formatting.Indented)
+                        ["text"] = toolResult.ToString(Newtonsoft.Json.Formatting.Indented)
                     }
                 },
                 ["isError"] = false
@@ -675,7 +675,7 @@ public class Script : ScriptBase
 
         if (string.IsNullOrWhiteSpace(uri))
         {
-            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "Resource URI is required");
+            return Task.FromResult(CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "Resource URI is required"));
         }
 
         _ = LogToAppInsights("McpResourceRead", new
@@ -1131,7 +1131,7 @@ public class Script : ScriptBase
                 // Add body for POST, PUT, PATCH (not GET or DELETE)
                 if (body != null && (method == HttpMethod.Post || method.Method == "PATCH" || method.Method == "PUT"))
                 {
-                    request.Content = new StringContent(body.ToString(Formatting.None), Encoding.UTF8, "application/json");
+                    request.Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
                 }
 
                 var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
@@ -3072,18 +3072,21 @@ public class Script : ScriptBase
 
     /// <summary>
     /// Get a connection parameter by name
+    /// Note: Power Platform custom connectors access connection parameters via
+    /// the request headers or query parameters set up in apiProperties.json
+    /// This is a placeholder - implement based on your connector's auth setup
     /// </summary>
     private string GetConnectionParameter(string name)
     {
-        try
+        // Connection parameters are typically passed as headers in Power Platform
+        // Check if there's a custom header with this name
+        if (this.Context.Request.Headers.TryGetValues($"x-{name}", out var values))
         {
-            var raw = this.Context.ConnectionParameters[name]?.ToString();
-            return string.IsNullOrWhiteSpace(raw) ? null : raw;
+            return values.FirstOrDefault();
         }
-        catch
-        {
-            return null;
-        }
+        // Or check query parameters
+        var query = System.Web.HttpUtility.ParseQueryString(this.Context.Request.RequestUri.Query);
+        return query[name];
     }
 
     /// <summary>
@@ -3195,7 +3198,7 @@ public class Script : ScriptBase
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
+            Content = new StringContent(responseObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 
@@ -3221,7 +3224,7 @@ public class Script : ScriptBase
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
+            Content = new StringContent(responseObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 
