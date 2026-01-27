@@ -2,7 +2,13 @@
 
 A production-ready template for implementing [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers as Power Platform custom connectors. This enables AI agents in Copilot Studio to discover and use your connector's tools dynamically.
 
-**Now with MCP Apps support** - Tools can return interactive UI components (dashboards, forms, charts, visualizations) that render directly in the conversation.
+**Complete MCP Apps Reference Implementation** - All 5 UI components implement the full `@modelcontextprotocol/ext-apps` SDK including:
+- All notification handlers (`ontoolinput`, `ontoolinputpartial`, `ontoolresult`, `ontoolcancelled`, `onhostcontextchanged`, `onteardown`, `oncalltool`, `onlisttools`, `onerror`)
+- All SDK methods (`updateModelContext`, `sendMessage`, `callServerTool`, `requestDisplayMode`, `openLink`, `sendLog`, `sendSizeChanged`)
+- App-side tool registration via `oncalltool` and `onlisttools`
+- Theme support with CSS variables and `applyDocumentTheme()`
+- State persistence via `localStorage` and `onteardown`
+- Dark/light mode styling
 
 ## Features
 
@@ -17,10 +23,10 @@ A production-ready template for implementing [Model Context Protocol (MCP)](http
 - **Cancellation Support**: Track and cancel in-progress operations
 
 ### MCP Apps UI Components (5 Built-in)
-- **Color Picker**: Interactive color selection with visual preview
-- **Data Visualizer**: Chart.js-powered charts (bar, line, pie, doughnut)
-- **Form Input**: Dynamic forms with validation (text, email, textarea, select)
-- **Data Table**: Sortable tables with row selection and export
+- **Color Picker**: Interactive color selection with history, theme support, and all SDK methods
+- **Data Visualizer**: Chart.js-powered charts (bar, line, pie, doughnut) with click selection
+- **Form Input**: Dynamic forms with validation, draft persistence, and field manipulation
+- **Data Table**: Sortable/filterable tables with row selection and bulk export
 - **Confirmation Dialog**: Confirm/cancel dialogs with info/warning/danger variants
 
 ### Developer Experience
@@ -618,48 +624,87 @@ private string GetMyComponentUI()
 
 ### MCP Apps SDK Reference (@modelcontextprotocol/ext-apps)
 
-The `@modelcontextprotocol/ext-apps` SDK provides:
+The `@modelcontextprotocol/ext-apps` SDK provides bidirectional communication between UI components and MCP hosts. **All 5 UI components in this template implement the complete SDK.**
+
+#### App Initialization
+
+```javascript
+import { 
+    App,
+    applyDocumentTheme,
+    applyHostStyleVariables,
+    applyHostFonts
+} from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
+
+// Declare tool capability if app provides tools
+const app = new App(
+    { name: 'MyApp', version: '1.0.0' },
+    { tools: { listChanged: false } }  // Optional: enable app-side tools
+);
+```
 
 #### App Class Methods
 
-| Method | Description | Copilot Studio |
-|--------|-------------|----------------|
-| `app.connect()` | Initialize connection to host, establish handshake | ✅ Supported |
-| `app.getHostContext()` | Get theme, locale, displayMode, toolInfo | ⏳ Partial |
-| `app.getHostCapabilities()` | Get host capabilities (openLinks, styles, tools) | ⏳ Partial |
-| `app.getHostVersion()` | Get host implementation info (name, version) | ⏳ Partial |
-| `app.updateModelContext()` | Update context sent to model (no response triggered) | ✅ Supported |
-| `app.sendMessage()` | Send message to chat (triggers model response) | ⏳ Not yet |
-| `app.callServerTool()` | Call a tool on the MCP server from the UI | ⏳ Not yet |
-| `app.requestDisplayMode()` | Change display (inline/fullscreen/pip) | ⏳ Not yet |
-| `app.openLink()` | Request host to open external URL | ⏳ Not yet |
-| `app.sendLog()` | Send log to host for debugging | ⏳ Not yet |
-| `app.sendSizeChanged()` | Notify host of iframe size change | ⏳ Not yet |
+| Method | Description | Implemented |
+|--------|-------------|-------------|
+| `app.connect()` | Initialize connection to host, establish handshake | ✅ All UIs |
+| `app.getHostContext()` | Get theme, locale, displayMode, toolInfo | ✅ All UIs |
+| `app.getHostCapabilities()` | Get host capabilities (openLinks, styles, tools) | ✅ All UIs |
+| `app.getHostVersion()` | Get host implementation info (name, version) | ✅ All UIs |
+| `app.updateModelContext()` | Update context sent to model (no response triggered) | ✅ All UIs |
+| `app.sendMessage()` | Send message to chat (triggers model response) | ✅ All UIs |
+| `app.callServerTool()` | Call a tool on the MCP server from the UI | ✅ All UIs |
+| `app.requestDisplayMode()` | Change display (inline/fullscreen/pip) | ✅ Color Picker |
+| `app.openLink()` | Request host to open external URL | ✅ All UIs |
+| `app.sendLog()` | Send log to host for debugging | ✅ Color Picker |
+| `app.sendSizeChanged()` | Notify host of iframe size change | ✅ All UIs |
 
 #### Notification Handlers (set before connect)
 
-| Handler | Description | Copilot Studio |
-|---------|-------------|----------------|
-| `app.ontoolinput` | Complete tool arguments received (before result) | ✅ Supported |
-| `app.ontoolinputpartial` | Streaming partial tool arguments | ⏳ Not yet |
-| `app.ontoolresult` | Tool execution results from server | ✅ Supported |
-| `app.ontoolcancelled` | Tool execution was cancelled | ⏳ Not yet |
-| `app.onhostcontextchanged` | Theme/locale/displayMode changed | ⏳ Not yet |
-| `app.onteardown` | Graceful shutdown request | ⏳ Not yet |
-| `app.oncalltool` | Handle tool calls from host (app-side tools) | ⏳ Not yet |
-| `app.onlisttools` | Return available tools (app-side tools) | ⏳ Not yet |
-| `app.onerror` | Error handler | ✅ Supported |
+| Handler | Description | Implemented |
+|---------|-------------|-------------|
+| `app.ontoolinput` | Complete tool arguments received (before result) | ✅ All UIs |
+| `app.ontoolinputpartial` | Streaming partial tool arguments | ✅ All UIs |
+| `app.ontoolresult` | Tool execution results from server | ✅ All UIs |
+| `app.ontoolcancelled` | Tool execution was cancelled | ✅ All UIs |
+| `app.onhostcontextchanged` | Theme/locale/displayMode changed | ✅ All UIs |
+| `app.onteardown` | Graceful shutdown request, save state | ✅ All UIs |
+| `app.oncalltool` | Handle tool calls from host (app-side tools) | ✅ All UIs |
+| `app.onlisttools` | Return available tools (app-side tools) | ✅ All UIs |
+| `app.onerror` | Error handler | ✅ All UIs |
 
 #### Helper Functions
 
-| Function | Description | Copilot Studio |
-|----------|-------------|----------------|
-| `applyDocumentTheme()` | Apply theme ('light'/'dark') to document | ⏳ Not yet |
-| `applyHostStyleVariables()` | Apply CSS custom properties from host | ⏳ Not yet |
-| `applyHostFonts()` | Apply font CSS from host | ⏳ Not yet |
+| Function | Description | Implemented |
+|----------|-------------|-------------|
+| `applyDocumentTheme()` | Apply theme ('light'/'dark') to document | ✅ All UIs |
+| `applyHostStyleVariables()` | Apply CSS custom properties from host | ✅ All UIs |
+| `applyHostFonts()` | Apply font CSS from host | ✅ All UIs |
 | `buildAllowAttribute()` | Build iframe allow attribute | N/A (Host) |
 
-**Legend:** ✅ Supported = Works today | ⏳ Partial = Limited support | ⏳ Not yet = Future implementation
+### UI Component App-Side Tools
+
+Each UI component exposes tools that the host can call:
+
+| Component | Tools |
+|-----------|-------|
+| **Color Picker** | `get_current_color`, `set_color`, `get_color_history`, `clear_history` |
+| **Data Visualizer** | `get_chart_data`, `set_chart_type`, `add_data_point`, `get_selected_point` |
+| **Form Input** | `get_form_data`, `set_field_value`, `validate_form`, `clear_form` |
+| **Data Table** | `get_selected_rows`, `select_row`, `clear_selection`, `sort_by`, `filter` |
+| **Confirm Action** | `get_response`, `reset_dialog`, `set_variant` |
+
+### UI Features
+
+All UI components include:
+
+- **Dark/Light Theme Support**: CSS variables adapt to host theme via `onhostcontextchanged`
+- **State Persistence**: localStorage saves state between sessions via `onteardown`
+- **Size Notifications**: `sendSizeChanged()` called on content changes
+- **Interactive Demo Buttons**: Test SDK methods directly in the UI
+- **Streaming Support**: `ontoolinputpartial` for progressive rendering
+
+**Note:** Host support for SDK methods varies. Copilot Studio currently supports `connect()`, `ontoolinput`, `ontoolresult`, `updateModelContext()`, and `onerror`. Other methods are implemented and ready for when host support is enabled.
 
 ## Connector Setup
 
