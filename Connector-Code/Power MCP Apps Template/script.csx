@@ -1610,10 +1610,10 @@ public class Script : ScriptBase
 
     /// <summary>
     /// Color Picker UI - bundled HTML/JS using MCP Apps SDK
+    /// Complete reference implementation demonstrating ALL MCP Apps SDK methods
     /// </summary>
     private string GetColorPickerUI()
     {
-        // This example demonstrates all MCP Apps SDK methods with compatibility notes
         return @"<!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -1621,32 +1621,54 @@ public class Script : ScriptBase
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Color Picker</title>
     <script type=""module"">
-        import { App } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
+        import { 
+            App,
+            applyDocumentTheme,
+            applyHostStyleVariables,
+            applyHostFonts
+        } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
         
         // ========================================
-        // APP INITIALIZATION
+        // APP INITIALIZATION WITH TOOL CAPABILITY
         // ========================================
-        // Create App with implementation info and capabilities
-        // capabilities: { tools?: { listChanged?: boolean } } - declare if app provides tools
+        // Declare capabilities.tools if this app provides tools the host can call
         const app = new App(
             { name: 'ColorPickerApp', version: '1.0.0' },
-            {} // capabilities - empty means no app-side tools
+            { 
+                tools: { listChanged: false } // Declare app provides tools
+            }
         );
         
         let currentColor = '#3B82F6';
-        const log = (msg) => { console.log('[ColorPicker]', msg); logToUI(msg); };
-        const logToUI = (msg) => { 
+        let colorHistory = [];
+        let isLoading = false;
+        
+        const log = (msg) => { 
+            console.log('[ColorPicker]', msg); 
             const el = document.getElementById('log');
-            if (el) el.textContent = msg;
+            if (el) {
+                el.textContent = msg;
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        };
+        
+        const updateStatus = (msg, type = 'info') => {
+            const el = document.getElementById('status');
+            if (el) {
+                el.textContent = msg;
+                el.className = 'status ' + type;
+            }
         };
         
         // ========================================
         // NOTIFICATION HANDLERS (set BEFORE connect)
         // ========================================
         
-        // ✅ COPILOT STUDIO: ontoolinput - Complete tool arguments received
+        // ✅ ontoolinput - Complete tool arguments received BEFORE execution
         app.ontoolinput = (params) => {
             log('ontoolinput: ' + JSON.stringify(params.arguments));
+            isLoading = true;
+            updateStatus('Processing...', 'loading');
             if (params.arguments?.defaultColor) {
                 currentColor = params.arguments.defaultColor;
                 document.getElementById('colorInput').value = currentColor;
@@ -1654,18 +1676,35 @@ public class Script : ScriptBase
             }
         };
         
-        // ⏳ FUTURE: ontoolinputpartial - Streaming partial arguments (for progressive rendering)
+        // ✅ ontoolinputpartial - Streaming partial arguments for progressive rendering
         app.ontoolinputpartial = (params) => {
-            log('ontoolinputpartial: streaming...');
-            // Render loading state or partial UI while args stream in
+            log('ontoolinputpartial: streaming arguments...');
+            updateStatus('Receiving data...', 'loading');
+            // Progressively render as partial args stream in
+            if (params.arguments?.defaultColor) {
+                currentColor = params.arguments.defaultColor;
+                document.getElementById('colorInput').value = currentColor;
+                updatePreview();
+            }
         };
         
-        // ✅ COPILOT STUDIO: ontoolresult - Tool execution results from server
+        // ✅ ontoolresult - Tool execution results from server
         app.ontoolresult = (result) => {
             log('ontoolresult received');
-            const text = result.content?.find(c => c.type === 'text')?.text;
-            // Also check structuredContent for typed data
+            isLoading = false;
+            updateStatus('Ready', 'success');
+            
+            // Prefer structuredContent for typed data
             const structured = result.structuredContent;
+            if (structured?.defaultColor) {
+                currentColor = structured.defaultColor;
+                document.getElementById('colorInput').value = currentColor;
+                updatePreview();
+                return;
+            }
+            
+            // Fallback to parsing text content
+            const text = result.content?.find(c => c.type === 'text')?.text;
             if (text) {
                 try {
                     const data = JSON.parse(text);
@@ -1674,187 +1713,504 @@ public class Script : ScriptBase
                         document.getElementById('colorInput').value = currentColor;
                         updatePreview();
                     }
-                } catch (e) { /* not JSON, that's ok */ }
+                } catch (e) { /* not JSON */ }
             }
         };
         
-        // ⏳ FUTURE: ontoolcancelled - Tool was cancelled by user or host
+        // ✅ ontoolcancelled - Tool was cancelled by user or host
         app.ontoolcancelled = (params) => {
-            log('ontoolcancelled: ' + params.reason);
+            log('ontoolcancelled: ' + (params.reason || 'no reason'));
+            isLoading = false;
+            updateStatus('Cancelled', 'warning');
         };
         
-        // ⏳ FUTURE: onhostcontextchanged - Theme/locale/displayMode changed
+        // ✅ onhostcontextchanged - Theme/locale/displayMode changed
         app.onhostcontextchanged = (ctx) => {
-            log('onhostcontextchanged: ' + (ctx.theme || 'no theme'));
-            // Could apply theme: if (ctx.theme === 'dark') document.body.classList.add('dark');
+            log('onhostcontextchanged: ' + JSON.stringify(ctx));
+            
+            // Apply theme automatically using SDK helper
+            if (ctx.theme) {
+                applyDocumentTheme(ctx.theme);
+                document.body.classList.remove('light', 'dark');
+                document.body.classList.add(ctx.theme);
+            }
+            
+            // Apply host style variables if provided
+            if (ctx.styles?.variables) {
+                applyHostStyleVariables(ctx.styles.variables);
+            }
+            
+            // Apply host fonts if provided
+            if (ctx.styles?.fonts) {
+                applyHostFonts(ctx.styles.fonts);
+            }
+            
+            // Handle display mode changes
+            if (ctx.displayMode) {
+                document.body.setAttribute('data-display-mode', ctx.displayMode);
+            }
+            
+            // Handle locale changes
+            if (ctx.locale) {
+                document.documentElement.lang = ctx.locale;
+            }
         };
         
-        // ⏳ FUTURE: onteardown - Graceful shutdown, save state before unmount
+        // ✅ onteardown - Graceful shutdown, save state before unmount
         app.onteardown = async (params) => {
-            log('onteardown: cleaning up...');
-            // Save state, close connections, etc.
-            return {}; // Return empty object when ready
+            log('onteardown: saving state...');
+            
+            // Save any unsaved state (e.g., to localStorage for next session)
+            try {
+                localStorage.setItem('colorPicker_lastColor', currentColor);
+                localStorage.setItem('colorPicker_history', JSON.stringify(colorHistory));
+            } catch (e) { /* localStorage not available */ }
+            
+            // Close any open connections, timers, etc.
+            // Return empty object to signal ready for unmount
+            return {};
         };
         
-        // ✅ COPILOT STUDIO: onerror - Error handler
+        // ✅ onerror - Error handler
         app.onerror = (error) => {
             log('onerror: ' + error.message);
             console.error('[ColorPicker] Error:', error);
+            updateStatus('Error: ' + error.message, 'error');
         };
         
-        // ⏳ FUTURE: oncalltool - Handle tool calls from host (if app declares tools)
-        // app.oncalltool = async (params, extra) => {
-        //     if (params.name === 'get_selected_color') {
-        //         return { content: [{ type: 'text', text: currentColor }] };
-        //     }
-        //     throw new Error('Unknown tool: ' + params.name);
-        // };
+        // ✅ oncalltool - Handle tool calls from host (app-side tool execution)
+        app.oncalltool = async (params, extra) => {
+            log('oncalltool: ' + params.name);
+            
+            switch (params.name) {
+                case 'get_current_color':
+                    return { 
+                        content: [{ type: 'text', text: currentColor }],
+                        structuredContent: { color: currentColor, format: 'hex' }
+                    };
+                    
+                case 'set_color':
+                    if (params.arguments?.color) {
+                        currentColor = params.arguments.color;
+                        document.getElementById('colorInput').value = currentColor;
+                        updatePreview();
+                        addToHistory(currentColor);
+                    }
+                    return { 
+                        content: [{ type: 'text', text: 'Color set to ' + currentColor }],
+                        structuredContent: { success: true, color: currentColor }
+                    };
+                    
+                case 'get_color_history':
+                    return {
+                        content: [{ type: 'text', text: 'Color history: ' + colorHistory.join(', ') }],
+                        structuredContent: { history: colorHistory }
+                    };
+                    
+                case 'clear_history':
+                    colorHistory = [];
+                    renderHistory();
+                    return { 
+                        content: [{ type: 'text', text: 'History cleared' }],
+                        structuredContent: { success: true }
+                    };
+                    
+                default:
+                    throw new Error('Unknown tool: ' + params.name);
+            }
+        };
         
-        // ⏳ FUTURE: onlisttools - Return available tools (if app declares tools)
-        // app.onlisttools = async () => {
-        //     return { tools: [{ name: 'get_selected_color', description: '...', inputSchema: {...} }] };
-        // };
+        // ✅ onlisttools - Return available tools this app provides
+        app.onlisttools = async () => {
+            return {
+                tools: [
+                    {
+                        name: 'get_current_color',
+                        description: 'Get the currently selected color in hex format',
+                        inputSchema: { type: 'object', properties: {} }
+                    },
+                    {
+                        name: 'set_color',
+                        description: 'Set the color picker to a specific color',
+                        inputSchema: {
+                            type: 'object',
+                            properties: {
+                                color: { type: 'string', description: 'Color in hex format (e.g., #FF5500)' }
+                            },
+                            required: ['color']
+                        }
+                    },
+                    {
+                        name: 'get_color_history',
+                        description: 'Get the list of previously selected colors',
+                        inputSchema: { type: 'object', properties: {} }
+                    },
+                    {
+                        name: 'clear_history',
+                        description: 'Clear the color selection history',
+                        inputSchema: { type: 'object', properties: {} }
+                    }
+                ]
+            };
+        };
         
         // ========================================
-        // UI FUNCTIONS
+        // UI HELPER FUNCTIONS
         // ========================================
         
         window.updatePreview = function() {
             currentColor = document.getElementById('colorInput').value;
             document.getElementById('preview').style.backgroundColor = currentColor;
             document.getElementById('hexValue').textContent = currentColor;
+            
+            // Calculate RGB values
+            const r = parseInt(currentColor.slice(1, 3), 16);
+            const g = parseInt(currentColor.slice(3, 5), 16);
+            const b = parseInt(currentColor.slice(5, 7), 16);
+            document.getElementById('rgbValue').textContent = `rgb(${r}, ${g}, ${b})`;
+            
+            // Notify host of size change (in case content changed)
+            notifySizeChanged();
         };
         
+        function addToHistory(color) {
+            if (!colorHistory.includes(color)) {
+                colorHistory.unshift(color);
+                if (colorHistory.length > 8) colorHistory.pop();
+                renderHistory();
+            }
+        }
+        
+        function renderHistory() {
+            const container = document.getElementById('history');
+            container.innerHTML = '';
+            colorHistory.forEach(color => {
+                const swatch = document.createElement('div');
+                swatch.className = 'history-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.title = color;
+                swatch.onclick = () => {
+                    currentColor = color;
+                    document.getElementById('colorInput').value = color;
+                    updatePreview();
+                };
+                container.appendChild(swatch);
+            });
+        }
+        
         // ========================================
-        // APP METHODS
+        // MCP APPS SDK METHODS - ALL IMPLEMENTED
         // ========================================
         
-        // ✅ COPILOT STUDIO: updateModelContext - Update context sent to model
+        // ✅ updateModelContext - Update context sent to model
         window.selectColor = async function() {
             try {
+                addToHistory(currentColor);
                 await app.updateModelContext({
-                    // Option 1: content array (text, image, etc.)
                     content: [{ type: 'text', text: `User selected color: ${currentColor}` }],
-                    // Option 2: structuredContent for typed data (also works)
-                    // structuredContent: { selectedColor: currentColor }
+                    structuredContent: { 
+                        selectedColor: currentColor,
+                        rgb: hexToRgb(currentColor),
+                        timestamp: new Date().toISOString()
+                    }
                 });
-                document.getElementById('status').textContent = 'Color selected!';
+                updateStatus('Color selected!', 'success');
                 log('updateModelContext: sent ' + currentColor);
             } catch (e) {
+                updateStatus('Failed to send', 'error');
                 log('updateModelContext failed: ' + e.message);
             }
         };
         
-        // ⏳ FUTURE: sendMessage - Send message to chat (triggers model response)
+        function hexToRgb(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return { r, g, b };
+        }
+        
+        // ✅ sendMessage - Send message to chat (triggers model response)
         window.sendMessageDemo = async function() {
             try {
                 await app.sendMessage({
-                    role: 'user', // or 'assistant'
-                    content: [{ type: 'text', text: `Apply color ${currentColor} to my project` }]
+                    role: 'user',
+                    content: [{ type: 'text', text: `Apply color ${currentColor} to my project theme` }]
                 });
+                updateStatus('Message sent!', 'success');
                 log('sendMessage: sent');
             } catch (e) {
-                log('sendMessage not supported yet: ' + e.message);
+                updateStatus('sendMessage not available', 'warning');
+                log('sendMessage: ' + e.message);
             }
         };
         
-        // ⏳ FUTURE: callServerTool - Call a tool on the MCP server
+        // ✅ callServerTool - Call a tool on the MCP server
         window.callServerToolDemo = async function() {
             try {
                 const result = await app.callServerTool({
                     name: 'echo',
-                    arguments: { message: 'Hello from UI!' }
+                    arguments: { message: 'Color selected: ' + currentColor }
                 });
-                log('callServerTool result: ' + JSON.stringify(result));
+                updateStatus('Server tool called!', 'success');
+                log('callServerTool result: ' + JSON.stringify(result.content?.[0]?.text || result));
             } catch (e) {
-                log('callServerTool not supported yet: ' + e.message);
+                updateStatus('callServerTool not available', 'warning');
+                log('callServerTool: ' + e.message);
             }
         };
         
-        // ⏳ FUTURE: requestDisplayMode - Change display mode
-        window.requestFullscreen = async function() {
+        // ✅ requestDisplayMode - Change display mode
+        window.requestDisplayMode = async function(mode) {
             try {
                 const ctx = app.getHostContext();
-                if (ctx?.availableDisplayModes?.includes('fullscreen')) {
-                    const result = await app.requestDisplayMode({ mode: 'fullscreen' });
-                    log('displayMode changed to: ' + result.mode);
-                } else {
-                    log('fullscreen not available');
+                const available = ctx?.availableDisplayModes || [];
+                
+                if (available.length === 0) {
+                    log('No display modes available');
+                    return;
                 }
+                
+                // Cycle through modes or use specified mode
+                if (!mode) {
+                    const current = ctx?.displayMode || 'embedded';
+                    const idx = available.indexOf(current);
+                    mode = available[(idx + 1) % available.length];
+                }
+                
+                const result = await app.requestDisplayMode({ mode });
+                updateStatus('Display: ' + result.mode, 'success');
+                log('requestDisplayMode: ' + result.mode);
             } catch (e) {
-                log('requestDisplayMode not supported yet: ' + e.message);
+                updateStatus('requestDisplayMode not available', 'warning');
+                log('requestDisplayMode: ' + e.message);
             }
         };
         
-        // ⏳ FUTURE: openLink - Open external URL
+        // ✅ openLink - Open external URL
         window.openLinkDemo = async function() {
             try {
-                const result = await app.openLink({ url: 'https://modelcontextprotocol.io' });
-                if (result.isError) log('openLink blocked by host');
-                else log('openLink: opened');
+                const result = await app.openLink({ 
+                    url: 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Colors' 
+                });
+                if (result.isError) {
+                    updateStatus('Link blocked by host', 'warning');
+                    log('openLink: blocked');
+                } else {
+                    updateStatus('Link opened!', 'success');
+                    log('openLink: opened');
+                }
             } catch (e) {
-                log('openLink not supported yet: ' + e.message);
+                updateStatus('openLink not available', 'warning');
+                log('openLink: ' + e.message);
             }
         };
         
-        // ⏳ FUTURE: sendLog - Send log to host
+        // ✅ sendLog - Send log to host for debugging
         window.sendLogDemo = async function() {
             try {
-                app.sendLog({ level: 'info', data: 'Test log from ColorPicker', logger: 'ColorPickerApp' });
+                app.sendLog({ 
+                    level: 'info', 
+                    data: { 
+                        message: 'User interacting with color picker',
+                        currentColor,
+                        historyCount: colorHistory.length
+                    },
+                    logger: 'ColorPickerApp'
+                });
+                updateStatus('Log sent!', 'success');
                 log('sendLog: sent');
             } catch (e) {
-                log('sendLog not supported yet: ' + e.message);
+                updateStatus('sendLog not available', 'warning');
+                log('sendLog: ' + e.message);
             }
+        };
+        
+        // ✅ sendSizeChanged - Notify host of preferred iframe size
+        function notifySizeChanged() {
+            try {
+                const container = document.querySelector('.picker-container');
+                if (container) {
+                    app.sendSizeChanged({ 
+                        width: container.offsetWidth,
+                        height: container.offsetHeight
+                    });
+                }
+            } catch (e) {
+                // Size change notification not critical
+            }
+        }
+        
+        // ========================================
+        // HOST CONTEXT ACCESSORS
+        // ========================================
+        
+        window.showHostInfo = function() {
+            const ctx = app.getHostContext();
+            const caps = app.getHostCapabilities();
+            const version = app.getHostVersion();
+            
+            const info = [
+                'Host: ' + (version?.name || 'unknown'),
+                'Version: ' + (version?.version || 'unknown'),
+                'Theme: ' + (ctx?.theme || 'none'),
+                'Display: ' + (ctx?.displayMode || 'embedded'),
+                'Locale: ' + (ctx?.locale || navigator.language),
+                'Tools: ' + (caps?.tools ? 'Yes' : 'No'),
+                'Messages: ' + (caps?.messages ? 'Yes' : 'No'),
+                'OpenLink: ' + (caps?.openLink ? 'Yes' : 'No')
+            ];
+            
+            alert(info.join('\\n'));
+            log('Host info displayed');
         };
         
         // ========================================
         // CONNECT TO HOST
         // ========================================
+        
+        // Restore saved state before connecting
+        try {
+            const savedColor = localStorage.getItem('colorPicker_lastColor');
+            const savedHistory = localStorage.getItem('colorPicker_history');
+            if (savedColor) currentColor = savedColor;
+            if (savedHistory) colorHistory = JSON.parse(savedHistory);
+        } catch (e) { /* localStorage not available */ }
+        
         await app.connect();
         
-        // After connect, we can access host context
-        const ctx = app.getHostContext();  // ⏳ PARTIAL: May not have all fields in Copilot Studio
-        const caps = app.getHostCapabilities(); // ⏳ PARTIAL: Check what's supported
-        const hostInfo = app.getHostVersion(); // ⏳ PARTIAL: Host implementation info
+        // Apply initial theme from host context
+        const ctx = app.getHostContext();
+        if (ctx?.theme) {
+            applyDocumentTheme(ctx.theme);
+            document.body.classList.add(ctx.theme);
+        }
+        if (ctx?.styles?.variables) {
+            applyHostStyleVariables(ctx.styles.variables);
+        }
         
-        log('Connected! Host: ' + (hostInfo?.name || 'unknown'));
-        if (ctx?.theme) log('Theme: ' + ctx.theme);
-        if (ctx?.toolInfo) log('Tool: ' + ctx.toolInfo.tool.name);
+        // Initialize UI
+        document.getElementById('colorInput').value = currentColor;
+        updatePreview();
+        renderHistory();
+        
+        const hostInfo = app.getHostVersion();
+        log('Connected to: ' + (hostInfo?.name || 'host'));
+        updateStatus('Ready', 'success');
+        
+        // Notify initial size
+        setTimeout(notifySizeChanged, 100);
     </script>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 20px; max-width: 320px; margin: 0 auto; }
-        .picker-container { display: flex; flex-direction: column; gap: 12px; }
-        #preview { width: 100%; height: 80px; border-radius: 8px; border: 1px solid #e5e7eb; }
-        input[type=""color""] { width: 100%; height: 44px; cursor: pointer; border: none; }
-        #hexValue { font-family: monospace; font-size: 16px; text-align: center; }
-        #status { font-size: 12px; color: #10B981; text-align: center; min-height: 16px; }
-        #log { font-size: 11px; color: #6B7280; text-align: center; min-height: 16px; word-break: break-all; }
-        .btn { background: #3B82F6; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; width: 100%; }
-        .btn:hover { background: #2563EB; }
-        .btn.secondary { background: #6B7280; font-size: 12px; padding: 8px; }
+        :root {
+            --primary: #3B82F6;
+            --primary-hover: #2563EB;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --bg: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6B7280;
+            --border: #e5e7eb;
+        }
+        
+        body.dark {
+            --bg: #1f2937;
+            --text: #f9fafb;
+            --text-secondary: #9CA3AF;
+            --border: #374151;
+        }
+        
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 16px; 
+            max-width: 340px; 
+            margin: 0 auto;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.2s, color 0.2s;
+        }
+        
+        .picker-container { display: flex; flex-direction: column; gap: 10px; }
+        #preview { width: 100%; height: 70px; border-radius: 8px; border: 1px solid var(--border); transition: background-color 0.15s; }
+        input[type=""color""] { width: 100%; height: 40px; cursor: pointer; border: none; border-radius: 6px; }
+        .color-values { display: flex; justify-content: space-between; font-family: monospace; font-size: 13px; }
+        #hexValue, #rgbValue { color: var(--text-secondary); }
+        
+        .status { font-size: 12px; text-align: center; min-height: 16px; padding: 4px; border-radius: 4px; }
+        .status.success { color: var(--success); }
+        .status.warning { color: var(--warning); }
+        .status.error { color: var(--error); }
+        .status.loading { color: var(--primary); }
+        
+        #log { font-size: 10px; color: var(--text-secondary); text-align: center; min-height: 14px; word-break: break-all; }
+        
+        .btn { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 10px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            width: 100%;
+            transition: background 0.15s;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { transform: scale(0.98); }
+        .btn.secondary { background: #6B7280; font-size: 11px; padding: 7px; }
         .btn.secondary:hover { background: #4B5563; }
-        .btn-row { display: flex; gap: 6px; }
+        
+        .btn-row { display: flex; gap: 5px; }
         .btn-row .btn { flex: 1; }
-        h4 { margin: 16px 0 8px 0; font-size: 12px; color: #374151; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+        
+        .section-label { 
+            margin: 12px 0 6px 0; 
+            font-size: 11px; 
+            color: var(--text-secondary); 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-top: 1px solid var(--border); 
+            padding-top: 10px; 
+        }
+        
+        #history { display: flex; gap: 4px; flex-wrap: wrap; min-height: 24px; }
+        .history-swatch { 
+            width: 24px; 
+            height: 24px; 
+            border-radius: 4px; 
+            border: 1px solid var(--border); 
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .history-swatch:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
     <div class=""picker-container"">
         <div id=""preview"" style=""background-color: #3B82F6;""></div>
-        <input type=""color"" id=""colorInput"" value=""#3B82F6"" onchange=""updatePreview()"">
-        <div id=""hexValue"">#3B82F6</div>
-        <button class=""btn"" onclick=""selectColor()"">✅ Select Color (updateModelContext)</button>
-        <div id=""status""></div>
+        <input type=""color"" id=""colorInput"" value=""#3B82F6"" onchange=""updatePreview()"" oninput=""updatePreview()"">
+        <div class=""color-values"">
+            <span id=""hexValue"">#3B82F6</span>
+            <span id=""rgbValue"">rgb(59, 130, 246)</span>
+        </div>
+        <button class=""btn"" onclick=""selectColor()"">Select Color</button>
+        <div id=""status"" class=""status""></div>
         
-        <h4>⏳ Future Methods (Not Yet in Copilot Studio)</h4>
+        <div class=""section-label"">Recent Colors</div>
+        <div id=""history""></div>
+        
+        <div class=""section-label"">SDK Methods</div>
         <div class=""btn-row"">
             <button class=""btn secondary"" onclick=""sendMessageDemo()"">sendMessage</button>
             <button class=""btn secondary"" onclick=""callServerToolDemo()"">callServerTool</button>
         </div>
         <div class=""btn-row"">
-            <button class=""btn secondary"" onclick=""requestFullscreen()"">fullscreen</button>
+            <button class=""btn secondary"" onclick=""requestDisplayMode()"">displayMode</button>
             <button class=""btn secondary"" onclick=""openLinkDemo()"">openLink</button>
+        </div>
+        <div class=""btn-row"">
             <button class=""btn secondary"" onclick=""sendLogDemo()"">sendLog</button>
+            <button class=""btn secondary"" onclick=""showHostInfo()"">hostInfo</button>
         </div>
         <div id=""log""></div>
     </div>
@@ -1863,12 +2219,11 @@ public class Script : ScriptBase
     }
 
     /// <summary>
-    /// Data Visualizer UI - demonstrates helper functions and chart rendering
-    /// Shows: ontoolinput (args before result), sendSizeChanged, structuredContent
+    /// Data Visualizer UI - Complete MCP Apps SDK implementation with charts
+    /// Demonstrates all SDK methods for data visualization scenarios
     /// </summary>
     private string GetDataVisualizerUI()
     {
-        // This example focuses on practical chart visualization patterns
         return @"<!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -1877,57 +2232,70 @@ public class Script : ScriptBase
     <title>Data Visualizer</title>
     <script src=""https://cdn.jsdelivr.net/npm/chart.js""></script>
     <script type=""module"">
-        // ========================================
-        // MCP APPS SDK HELPER FUNCTIONS DEMO
-        // ========================================
-        // In addition to the App class, the SDK provides helper functions
-        // for common UI operations (theme, fonts, styles)
-        
         import { 
             App,
-            // ⏳ FUTURE: Helper functions (not yet in Copilot Studio)
-            // applyDocumentTheme,    // Apply 'light' or 'dark' theme
-            // applyHostStyleVariables, // Apply CSS custom properties
-            // applyHostFonts          // Apply font CSS to document
+            applyDocumentTheme,
+            applyHostStyleVariables,
+            applyHostFonts
         } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
         
+        // ========================================
+        // APP INITIALIZATION WITH TOOL CAPABILITY
+        // ========================================
         const app = new App(
             { name: 'DataVisualizerApp', version: '1.0.0' },
-            {} // capabilities
+            { tools: { listChanged: false } }
         );
         
         let chart = null;
         let chartConfig = { chartType: 'bar', title: 'Data Visualization', data: [] };
-        const log = (msg) => document.getElementById('log').textContent = msg;
+        let selectedDataPoint = null;
+        
+        const log = (msg) => {
+            console.log('[DataVisualizer]', msg);
+            const el = document.getElementById('log');
+            if (el) el.textContent = msg;
+        };
+        
+        const updateStatus = (msg, type = 'info') => {
+            const el = document.getElementById('status');
+            if (el) {
+                el.textContent = msg;
+                el.className = 'status ' + type;
+            }
+        };
         
         // ========================================
-        // HANDLERS - ontoolinput vs ontoolresult
+        // ALL NOTIFICATION HANDLERS
         // ========================================
         
-        // ✅ COPILOT STUDIO: ontoolinput - Called with args BEFORE tool executes
-        // Use this for immediate UI setup from input parameters
+        // ontoolinput - Called with args BEFORE tool executes
         app.ontoolinput = (params) => {
             log('ontoolinput: preparing chart...');
-            // Can render loading state or preliminary UI based on input
-            if (params.arguments?.chartType) {
-                chartConfig.chartType = params.arguments.chartType;
-            }
+            updateStatus('Loading...', 'loading');
+            if (params.arguments?.chartType) chartConfig.chartType = params.arguments.chartType;
             if (params.arguments?.title) {
                 chartConfig.title = params.arguments.title;
                 document.getElementById('title').textContent = chartConfig.title;
             }
-            // Show loading until ontoolresult fires
-            document.getElementById('status').textContent = 'Loading data...';
         };
         
-        // ✅ COPILOT STUDIO: ontoolresult - Called with result AFTER tool executes
-        // Use this for data that comes from the server
+        // ontoolinputpartial - Streaming partial arguments
+        app.ontoolinputpartial = (params) => {
+            log('ontoolinputpartial: streaming...');
+            updateStatus('Receiving data...', 'loading');
+            // Progressively update UI as data streams in
+            if (params.arguments?.data && Array.isArray(params.arguments.data)) {
+                chartConfig.data = params.arguments.data;
+                renderChart();
+            }
+        };
+        
+        // ontoolresult - Called with result AFTER tool executes
         app.ontoolresult = (result) => {
             log('ontoolresult: rendering chart');
-            document.getElementById('status').textContent = '';
+            updateStatus('Ready', 'success');
             
-            // MCP Apps supports both 'content' array and 'structuredContent' object
-            // structuredContent is better for typed data:
             const structured = result.structuredContent;
             if (structured?.data) {
                 chartConfig = { ...chartConfig, ...structured };
@@ -1935,7 +2303,6 @@ public class Script : ScriptBase
                 return;
             }
             
-            // Fallback: parse from text content
             const text = result.content?.find(c => c.type === 'text')?.text;
             if (text) {
                 try {
@@ -1946,9 +2313,105 @@ public class Script : ScriptBase
             }
         };
         
+        // ontoolcancelled - Tool was cancelled
+        app.ontoolcancelled = (params) => {
+            log('ontoolcancelled: ' + (params.reason || 'unknown'));
+            updateStatus('Cancelled', 'warning');
+        };
+        
+        // onhostcontextchanged - Theme/locale/displayMode changed
+        app.onhostcontextchanged = (ctx) => {
+            log('onhostcontextchanged');
+            if (ctx.theme) {
+                applyDocumentTheme(ctx.theme);
+                document.body.classList.remove('light', 'dark');
+                document.body.classList.add(ctx.theme);
+                // Re-render chart with theme-appropriate colors
+                renderChart();
+            }
+            if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+            if (ctx.styles?.fonts) applyHostFonts(ctx.styles.fonts);
+        };
+        
+        // onteardown - Graceful shutdown
+        app.onteardown = async (params) => {
+            log('onteardown: saving state...');
+            try {
+                localStorage.setItem('dataVisualizer_config', JSON.stringify(chartConfig));
+            } catch (e) {}
+            return {};
+        };
+        
+        // onerror - Error handler
+        app.onerror = (error) => {
+            log('onerror: ' + error.message);
+            updateStatus('Error: ' + error.message, 'error');
+        };
+        
+        // oncalltool - Handle tool calls from host
+        app.oncalltool = async (params, extra) => {
+            log('oncalltool: ' + params.name);
+            
+            switch (params.name) {
+                case 'get_chart_data':
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify(chartConfig.data) }],
+                        structuredContent: { data: chartConfig.data, chartType: chartConfig.chartType }
+                    };
+                    
+                case 'set_chart_type':
+                    if (params.arguments?.chartType) {
+                        chartConfig.chartType = params.arguments.chartType;
+                        renderChart();
+                    }
+                    return {
+                        content: [{ type: 'text', text: 'Chart type set to ' + chartConfig.chartType }],
+                        structuredContent: { success: true, chartType: chartConfig.chartType }
+                    };
+                    
+                case 'add_data_point':
+                    if (params.arguments?.label && params.arguments?.value !== undefined) {
+                        chartConfig.data.push({ label: params.arguments.label, value: params.arguments.value });
+                        renderChart();
+                    }
+                    return {
+                        content: [{ type: 'text', text: 'Data point added' }],
+                        structuredContent: { success: true, dataCount: chartConfig.data.length }
+                    };
+                    
+                case 'get_selected_point':
+                    return {
+                        content: [{ type: 'text', text: selectedDataPoint ? JSON.stringify(selectedDataPoint) : 'No selection' }],
+                        structuredContent: { selection: selectedDataPoint }
+                    };
+                    
+                default:
+                    throw new Error('Unknown tool: ' + params.name);
+            }
+        };
+        
+        // onlisttools - Return available tools
+        app.onlisttools = async () => {
+            return {
+                tools: [
+                    { name: 'get_chart_data', description: 'Get current chart data', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'set_chart_type', description: 'Change chart type', inputSchema: { type: 'object', properties: { chartType: { type: 'string', enum: ['bar', 'line', 'pie', 'doughnut'] } }, required: ['chartType'] } },
+                    { name: 'add_data_point', description: 'Add a data point', inputSchema: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'number' } }, required: ['label', 'value'] } },
+                    { name: 'get_selected_point', description: 'Get currently selected data point', inputSchema: { type: 'object', properties: {} } }
+                ]
+            };
+        };
+        
         // ========================================
         // CHART RENDERING
         // ========================================
+        
+        function getChartColors() {
+            const isDark = document.body.classList.contains('dark');
+            return isDark
+                ? ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#22D3EE', '#F472B6']
+                : ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'];
+        }
         
         function renderChart() {
             const ctx = document.getElementById('chart').getContext('2d');
@@ -1956,6 +2419,9 @@ public class Script : ScriptBase
             
             const labels = chartConfig.data?.map(d => d.label) || ['A', 'B', 'C'];
             const values = chartConfig.data?.map(d => d.value) || [10, 20, 30];
+            const colors = getChartColors();
+            
+            const isDark = document.body.classList.contains('dark');
             
             chart = new Chart(ctx, {
                 type: chartConfig.chartType || 'bar',
@@ -1964,101 +2430,205 @@ public class Script : ScriptBase
                     datasets: [{
                         label: chartConfig.title || 'Data',
                         data: values,
-                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'],
-                        borderWidth: 1
+                        backgroundColor: colors,
+                        borderWidth: 1,
+                        borderColor: isDark ? '#374151' : '#e5e7eb'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    plugins: { legend: { position: 'top' } },
+                    plugins: { 
+                        legend: { 
+                            position: 'top',
+                            labels: { color: isDark ? '#f9fafb' : '#1f2937' }
+                        }
+                    },
+                    scales: chartConfig.chartType !== 'pie' && chartConfig.chartType !== 'doughnut' ? {
+                        y: { ticks: { color: isDark ? '#9CA3AF' : '#6B7280' }, grid: { color: isDark ? '#374151' : '#e5e7eb' } },
+                        x: { ticks: { color: isDark ? '#9CA3AF' : '#6B7280' }, grid: { color: isDark ? '#374151' : '#e5e7eb' } }
+                    } : undefined,
                     onClick: handleChartClick
                 }
             });
-            document.getElementById('title').textContent = chartConfig.title || 'Data Visualization';
             
-            // ⏳ FUTURE: Notify host of size change after render
-            notifySizeChange();
+            document.getElementById('title').textContent = chartConfig.title || 'Data Visualization';
+            notifySizeChanged();
         }
         
-        // Handle clicks on chart segments
         function handleChartClick(evt, elements) {
             if (elements.length > 0) {
                 const idx = elements[0].index;
                 const label = chartConfig.data?.[idx]?.label || 'Unknown';
                 const value = chartConfig.data?.[idx]?.value || 0;
+                selectedDataPoint = { label, value, index: idx };
                 
-                // ✅ COPILOT STUDIO: Update context with selection
                 app.updateModelContext({
                     content: [{ type: 'text', text: `User clicked: ${label} = ${value}` }],
-                    // ⏳ FUTURE: structuredContent for typed data
-                    // structuredContent: { selection: { label, value, index: idx } }
+                    structuredContent: { selection: selectedDataPoint }
                 });
-                log(`Selected: ${label} = ${value}`);
+                updateStatus(`Selected: ${label} = ${value}`, 'success');
+                log(`Selected: ${label}`);
             }
         }
         
-        // ⏳ FUTURE: sendSizeChanged - Tells host optimal iframe size
-        function notifySizeChange() {
+        // ========================================
+        // SDK METHODS
+        // ========================================
+        
+        function notifySizeChanged() {
             try {
                 const container = document.querySelector('.chart-container');
-                // app.sendSizeChanged would notify host of preferred height
-                // app.sendSizeChanged({ width: container.offsetWidth, height: container.offsetHeight + 40 });
-            } catch (e) { /* not supported yet */ }
+                if (container) {
+                    app.sendSizeChanged({ width: container.offsetWidth, height: container.offsetHeight });
+                }
+            } catch (e) {}
         }
-        
-        // ========================================
-        // EXPORT FUNCTION
-        // ========================================
         
         window.exportSummary = async function() {
             const summary = {
                 title: chartConfig.title,
                 chartType: chartConfig.chartType,
                 dataPoints: chartConfig.data?.length || 0,
-                total: chartConfig.data?.reduce((sum, d) => sum + (d.value || 0), 0) || 0
+                total: chartConfig.data?.reduce((sum, d) => sum + (d.value || 0), 0) || 0,
+                average: chartConfig.data?.length ? (chartConfig.data.reduce((sum, d) => sum + (d.value || 0), 0) / chartConfig.data.length).toFixed(2) : 0
             };
             
-            await app.updateModelContext({
-                content: [{ 
-                    type: 'text', 
-                    text: `Chart Summary:\n- Title: ${summary.title}\n- Type: ${summary.chartType}\n- Points: ${summary.dataPoints}\n- Total: ${summary.total}`
-                }]
-            });
-            log('Summary sent!');
+            try {
+                await app.updateModelContext({
+                    content: [{ type: 'text', text: `Chart Summary:\n- Title: ${summary.title}\n- Type: ${summary.chartType}\n- Points: ${summary.dataPoints}\n- Total: ${summary.total}\n- Average: ${summary.average}` }],
+                    structuredContent: summary
+                });
+                updateStatus('Summary exported!', 'success');
+                log('Summary sent');
+            } catch (e) {
+                updateStatus('Export failed', 'error');
+                log('Export failed: ' + e.message);
+            }
+        };
+        
+        window.changeChartType = async function(type) {
+            chartConfig.chartType = type;
+            renderChart();
+            log('Chart type: ' + type);
+        };
+        
+        window.sendMessageDemo = async function() {
+            try {
+                await app.sendMessage({
+                    role: 'user',
+                    content: [{ type: 'text', text: `Analyze this ${chartConfig.chartType} chart with ${chartConfig.data?.length || 0} data points` }]
+                });
+                updateStatus('Message sent!', 'success');
+            } catch (e) {
+                updateStatus('sendMessage not available', 'warning');
+                log('sendMessage: ' + e.message);
+            }
+        };
+        
+        window.callServerToolDemo = async function() {
+            try {
+                const result = await app.callServerTool({
+                    name: 'echo',
+                    arguments: { message: 'Chart has ' + chartConfig.data?.length + ' data points' }
+                });
+                updateStatus('Server tool called!', 'success');
+                log('callServerTool: ' + (result.content?.[0]?.text || 'done'));
+            } catch (e) {
+                updateStatus('callServerTool not available', 'warning');
+                log('callServerTool: ' + e.message);
+            }
+        };
+        
+        window.openDocsDemo = async function() {
+            try {
+                const result = await app.openLink({ url: 'https://www.chartjs.org/docs/latest/' });
+                if (result.isError) updateStatus('Link blocked', 'warning');
+                else updateStatus('Docs opened!', 'success');
+            } catch (e) {
+                updateStatus('openLink not available', 'warning');
+                log('openLink: ' + e.message);
+            }
         };
         
         // ========================================
         // CONNECT AND INITIALIZE
         // ========================================
         
+        // Restore saved config
+        try {
+            const saved = localStorage.getItem('dataVisualizer_config');
+            if (saved) chartConfig = { ...chartConfig, ...JSON.parse(saved) };
+        } catch (e) {}
+        
         await app.connect();
         
-        // After connect, check host capabilities
-        // const caps = app.getHostCapabilities();
-        // if (caps?.styles?.variables) {
-        //     applyHostStyleVariables(caps.styles.variables);
-        // }
+        // Apply initial theme
+        const ctx = app.getHostContext();
+        if (ctx?.theme) {
+            applyDocumentTheme(ctx.theme);
+            document.body.classList.add(ctx.theme);
+        }
+        if (ctx?.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
         
-        log('Connected - waiting for data...');
+        renderChart();
+        log('Connected - ready');
+        updateStatus('Ready', 'success');
     </script>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; padding: 16px; margin: 0; }
-        .chart-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 500px; }
-        h2 { margin: 0 0 12px 0; color: #1f2937; font-size: 18px; }
-        #chart { max-height: 300px; }
-        #status { font-size: 12px; color: #6B7280; min-height: 16px; margin-top: 8px; }
-        #log { font-size: 11px; color: #9CA3AF; margin-top: 4px; }
-        .btn { background: #3B82F6; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 12px; }
+        :root {
+            --bg: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6B7280;
+            --border: #e5e7eb;
+            --surface: #f9fafb;
+        }
+        body.dark {
+            --bg: #1f2937;
+            --text: #f9fafb;
+            --text-secondary: #9CA3AF;
+            --border: #374151;
+            --surface: #111827;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 16px; margin: 0; background: var(--bg); color: var(--text); }
+        .chart-container { background: var(--bg); padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 500px; }
+        h2 { margin: 0 0 12px 0; font-size: 18px; }
+        #chart { max-height: 280px; }
+        .status { font-size: 12px; min-height: 16px; margin-top: 8px; }
+        .status.success { color: #10B981; }
+        .status.warning { color: #F59E0B; }
+        .status.error { color: #EF4444; }
+        .status.loading { color: #3B82F6; }
+        #log { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+        .btn-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .btn { background: #3B82F6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .btn:hover { background: #2563EB; }
+        .btn.secondary { background: #6B7280; }
+        .btn.secondary:hover { background: #4B5563; }
+        .chart-types { display: flex; gap: 4px; margin: 10px 0; }
+        .chart-types button { padding: 6px 10px; font-size: 11px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 4px; cursor: pointer; }
+        .chart-types button:hover { background: var(--border); }
     </style>
 </head>
 <body>
     <div class=""chart-container"">
         <h2 id=""title"">Data Visualization</h2>
         <canvas id=""chart""></canvas>
-        <div id=""status""></div>
-        <button class=""btn"" onclick=""exportSummary()"">✅ Export Summary</button>
+        <div class=""chart-types"">
+            <button onclick=""changeChartType('bar')"">Bar</button>
+            <button onclick=""changeChartType('line')"">Line</button>
+            <button onclick=""changeChartType('pie')"">Pie</button>
+            <button onclick=""changeChartType('doughnut')"">Donut</button>
+        </div>
+        <div id=""status"" class=""status""></div>
+        <div class=""btn-row"">
+            <button class=""btn"" onclick=""exportSummary()"">Export Summary</button>
+            <button class=""btn secondary"" onclick=""sendMessageDemo()"">sendMessage</button>
+        </div>
+        <div class=""btn-row"">
+            <button class=""btn secondary"" onclick=""callServerToolDemo()"">callServerTool</button>
+            <button class=""btn secondary"" onclick=""openDocsDemo()"">openLink</button>
+        </div>
         <div id=""log""></div>
     </div>
 </body>
@@ -2078,25 +2648,67 @@ public class Script : ScriptBase
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Form Input</title>
     <script type=""module"">
-        import { App } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
+        import { 
+            App,
+            applyDocumentTheme,
+            applyHostStyleVariables,
+            applyHostFonts
+        } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
         
-        const app = new App({ name: 'FormInputApp', version: '1.0.0' }, {});
+        // ========================================
+        // APP INITIALIZATION WITH TOOL CAPABILITY
+        // ========================================
+        const app = new App(
+            { name: 'FormInputApp', version: '1.0.0' },
+            { tools: { listChanged: false } }
+        );
         
         let formConfig = { title: 'Input Form', submitLabel: 'Submit', fields: [] };
-        const log = (msg) => document.getElementById('log').textContent = msg;
+        let formData = {};
+        let isDirty = false;
         
-        // ✅ COPILOT STUDIO: ontoolinput - Setup form from input args
+        const log = (msg) => {
+            console.log('[FormInput]', msg);
+            const el = document.getElementById('log');
+            if (el) el.textContent = msg;
+        };
+        
+        const updateStatus = (msg, type = 'info') => {
+            const el = document.getElementById('status');
+            if (el) {
+                el.textContent = msg;
+                el.className = 'status ' + type;
+            }
+        };
+        
+        // ========================================
+        // ALL NOTIFICATION HANDLERS
+        // ========================================
+        
+        // ontoolinput - Setup form from input args BEFORE execution
         app.ontoolinput = (params) => {
             log('ontoolinput: configuring form...');
+            updateStatus('Loading...', 'loading');
             if (params.arguments?.title) formConfig.title = params.arguments.title;
             if (params.arguments?.submitLabel) formConfig.submitLabel = params.arguments.submitLabel;
             document.getElementById('formTitle').textContent = formConfig.title;
             document.getElementById('submitBtn').textContent = formConfig.submitLabel;
         };
         
-        // ✅ COPILOT STUDIO: ontoolresult - Render form fields from result
+        // ontoolinputpartial - Streaming form config
+        app.ontoolinputpartial = (params) => {
+            log('ontoolinputpartial: streaming...');
+            // Progressively build form as fields stream in
+            if (params.arguments?.fields) {
+                formConfig.fields = params.arguments.fields;
+                renderForm();
+            }
+        };
+        
+        // ontoolresult - Render form fields from result
         app.ontoolresult = (result) => {
             log('ontoolresult: building form');
+            updateStatus('', 'info');
             const structured = result.structuredContent;
             if (structured) {
                 formConfig = { ...formConfig, ...structured };
@@ -2109,7 +2721,105 @@ public class Script : ScriptBase
             renderForm();
         };
         
-        app.onerror = (error) => log('Error: ' + error.message);
+        // ontoolcancelled - Tool was cancelled
+        app.ontoolcancelled = (params) => {
+            log('ontoolcancelled: ' + (params.reason || 'unknown'));
+            updateStatus('Cancelled', 'warning');
+        };
+        
+        // onhostcontextchanged - Theme/locale/displayMode changed
+        app.onhostcontextchanged = (ctx) => {
+            log('onhostcontextchanged');
+            if (ctx.theme) {
+                applyDocumentTheme(ctx.theme);
+                document.body.classList.remove('light', 'dark');
+                document.body.classList.add(ctx.theme);
+            }
+            if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+            if (ctx.styles?.fonts) applyHostFonts(ctx.styles.fonts);
+        };
+        
+        // onteardown - Graceful shutdown, save form state
+        app.onteardown = async (params) => {
+            log('onteardown: saving state...');
+            try {
+                // Save current form data in case user needs to restore
+                const currentData = collectFormData();
+                localStorage.setItem('formInput_draft', JSON.stringify(currentData));
+                localStorage.setItem('formInput_config', JSON.stringify(formConfig));
+            } catch (e) {}
+            return {};
+        };
+        
+        // onerror - Error handler
+        app.onerror = (error) => {
+            log('onerror: ' + error.message);
+            updateStatus('Error: ' + error.message, 'error');
+        };
+        
+        // oncalltool - Handle tool calls from host
+        app.oncalltool = async (params, extra) => {
+            log('oncalltool: ' + params.name);
+            
+            switch (params.name) {
+                case 'get_form_data':
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify(collectFormData()) }],
+                        structuredContent: { formData: collectFormData(), isDirty }
+                    };
+                    
+                case 'set_field_value':
+                    if (params.arguments?.fieldName && params.arguments?.value !== undefined) {
+                        const el = document.getElementById(params.arguments.fieldName);
+                        if (el) {
+                            el.value = params.arguments.value;
+                            isDirty = true;
+                        }
+                    }
+                    return { content: [{ type: 'text', text: 'Field updated' }], structuredContent: { success: true } };
+                    
+                case 'validate_form':
+                    const form = document.getElementById('dynamicForm');
+                    const isValid = form.checkValidity();
+                    return {
+                        content: [{ type: 'text', text: isValid ? 'Form is valid' : 'Form has validation errors' }],
+                        structuredContent: { isValid, formData: collectFormData() }
+                    };
+                    
+                case 'clear_form':
+                    document.getElementById('dynamicForm').reset();
+                    isDirty = false;
+                    return { content: [{ type: 'text', text: 'Form cleared' }], structuredContent: { success: true } };
+                    
+                default:
+                    throw new Error('Unknown tool: ' + params.name);
+            }
+        };
+        
+        // onlisttools - Return available tools
+        app.onlisttools = async () => {
+            return {
+                tools: [
+                    { name: 'get_form_data', description: 'Get current form values', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'set_field_value', description: 'Set a field value', inputSchema: { type: 'object', properties: { fieldName: { type: 'string' }, value: { type: 'string' } }, required: ['fieldName', 'value'] } },
+                    { name: 'validate_form', description: 'Check if form is valid', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'clear_form', description: 'Clear all form fields', inputSchema: { type: 'object', properties: {} } }
+                ]
+            };
+        };
+        
+        // ========================================
+        // FORM RENDERING
+        // ========================================
+        
+        function collectFormData() {
+            const data = {};
+            (formConfig.fields || []).forEach(field => {
+                const el = document.getElementById(field.name);
+                if (el) data[field.name] = el.value;
+            });
+            return data;
+        }
         
         function renderForm() {
             document.getElementById('formTitle').textContent = formConfig.title;
@@ -2149,10 +2859,26 @@ public class Script : ScriptBase
                 input.placeholder = field.placeholder || '';
                 if (field.required) input.required = true;
                 if (field.value) input.value = field.value;
+                input.oninput = () => { isDirty = true; };
                 
                 fieldDiv.appendChild(input);
                 container.appendChild(fieldDiv);
             });
+            
+            notifySizeChanged();
+        }
+        
+        // ========================================
+        // SDK METHODS
+        // ========================================
+        
+        function notifySizeChanged() {
+            try {
+                const container = document.querySelector('.form-container');
+                if (container) {
+                    app.sendSizeChanged({ width: container.offsetWidth, height: container.offsetHeight });
+                }
+            } catch (e) {}
         }
         
         window.submitForm = async function() {
@@ -2162,54 +2888,115 @@ public class Script : ScriptBase
                 return;
             }
             
-            const formData = {};
-            (formConfig.fields || []).forEach(field => {
-                const el = document.getElementById(field.name);
-                if (el) formData[field.name] = el.value;
-            });
+            const data = collectFormData();
             
             try {
                 await app.updateModelContext({
-                    content: [{ type: 'text', text: 'Form submitted: ' + JSON.stringify(formData, null, 2) }],
-                    structuredContent: { formData, submitted: true, timestamp: new Date().toISOString() }
+                    content: [{ type: 'text', text: 'Form submitted: ' + JSON.stringify(data, null, 2) }],
+                    structuredContent: { formData: data, submitted: true, timestamp: new Date().toISOString() }
                 });
-                document.getElementById('status').textContent = '✅ Form submitted!';
-                document.getElementById('status').className = 'status success';
+                updateStatus('Form submitted!', 'success');
+                isDirty = false;
                 log('updateModelContext: form data sent');
             } catch (e) {
-                document.getElementById('status').textContent = '❌ Submit failed';
-                document.getElementById('status').className = 'status error';
+                updateStatus('Submit failed', 'error');
                 log('Error: ' + e.message);
             }
         };
         
         window.resetForm = function() {
             document.getElementById('dynamicForm').reset();
-            document.getElementById('status').textContent = '';
+            isDirty = false;
+            updateStatus('', 'info');
             log('Form reset');
         };
         
+        window.sendMessageDemo = async function() {
+            try {
+                const data = collectFormData();
+                await app.sendMessage({
+                    role: 'user',
+                    content: [{ type: 'text', text: 'Process this form data: ' + JSON.stringify(data) }]
+                });
+                updateStatus('Message sent!', 'success');
+            } catch (e) {
+                updateStatus('sendMessage not available', 'warning');
+                log('sendMessage: ' + e.message);
+            }
+        };
+        
+        window.callServerToolDemo = async function() {
+            try {
+                const result = await app.callServerTool({
+                    name: 'echo',
+                    arguments: { message: 'Fields: ' + formConfig.fields.map(f => f.name).join(', ') }
+                });
+                updateStatus('Server tool called!', 'success');
+            } catch (e) {
+                updateStatus('callServerTool not available', 'warning');
+                log('callServerTool: ' + e.message);
+            }
+        };
+        
+        // ========================================
+        // CONNECT AND INITIALIZE
+        // ========================================
+        
+        // Restore saved draft
+        try {
+            const savedDraft = localStorage.getItem('formInput_draft');
+            const savedConfig = localStorage.getItem('formInput_config');
+            if (savedConfig) formConfig = { ...formConfig, ...JSON.parse(savedConfig) };
+        } catch (e) {}
+        
         await app.connect();
+        
+        // Apply initial theme
+        const ctx = app.getHostContext();
+        if (ctx?.theme) {
+            applyDocumentTheme(ctx.theme);
+            document.body.classList.add(ctx.theme);
+        }
+        if (ctx?.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+        
         log('Connected - waiting for form config...');
     </script>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 20px; margin: 0; max-width: 400px; }
-        .form-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        h2 { margin: 0 0 16px 0; color: #1f2937; font-size: 18px; }
-        .field { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 4px; font-size: 14px; color: #374151; font-weight: 500; }
-        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-        .btn-row { display: flex; gap: 8px; margin-top: 16px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        :root {
+            --bg: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6B7280;
+            --border: #d1d5db;
+            --input-bg: #ffffff;
+            --focus: #3B82F6;
+        }
+        body.dark {
+            --bg: #1f2937;
+            --text: #f9fafb;
+            --text-secondary: #9CA3AF;
+            --border: #4B5563;
+            --input-bg: #374151;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 16px; margin: 0; max-width: 400px; background: var(--bg); color: var(--text); }
+        .form-container { background: var(--bg); padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { margin: 0 0 14px 0; font-size: 18px; }
+        .field { margin-bottom: 14px; }
+        label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box; background: var(--input-bg); color: var(--text); }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .btn-row { display: flex; gap: 6px; margin-top: 14px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
         .btn.primary { background: #3B82F6; color: white; }
         .btn.primary:hover { background: #2563EB; }
-        .btn.secondary { background: #f3f4f6; color: #374151; }
-        .btn.secondary:hover { background: #e5e7eb; }
-        .status { font-size: 12px; text-align: center; margin-top: 12px; min-height: 16px; }
+        .btn.secondary { background: var(--border); color: var(--text); }
+        .btn.secondary:hover { opacity: 0.8; }
+        .status { font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; }
         .status.success { color: #10B981; }
+        .status.warning { color: #F59E0B; }
         .status.error { color: #EF4444; }
-        #log { font-size: 11px; color: #9CA3AF; text-align: center; margin-top: 8px; }
+        .status.loading { color: #3B82F6; }
+        #log { font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 6px; }
+        .section-label { font-size: 11px; color: var(--text-secondary); margin: 12px 0 6px 0; border-top: 1px solid var(--border); padding-top: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -2223,6 +3010,11 @@ public class Script : ScriptBase
             </div>
         </form>
         <div id=""status"" class=""status""></div>
+        <div class=""section-label"">SDK Methods</div>
+        <div class=""btn-row"">
+            <button type=""button"" class=""btn secondary"" onclick=""sendMessageDemo()"">sendMessage</button>
+            <button type=""button"" class=""btn secondary"" onclick=""callServerToolDemo()"">callServerTool</button>
+        </div>
         <div id=""log""></div>
     </div>
 </body>
@@ -2242,29 +3034,69 @@ public class Script : ScriptBase
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Data Table</title>
     <script type=""module"">
-        import { App } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
+        import { 
+            App,
+            applyDocumentTheme,
+            applyHostStyleVariables,
+            applyHostFonts
+        } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
         
-        const app = new App({ name: 'DataTableApp', version: '1.0.0' }, {});
+        // ========================================
+        // APP INITIALIZATION WITH TOOL CAPABILITY
+        // ========================================
+        const app = new App(
+            { name: 'DataTableApp', version: '1.0.0' },
+            { tools: { listChanged: false } }
+        );
         
         let tableConfig = { title: 'Data Table', columns: [], rows: [], selectable: true };
         let selectedRows = new Set();
         let sortColumn = null;
         let sortDirection = 'asc';
+        let filterText = '';
         
-        const log = (msg) => document.getElementById('log').textContent = msg;
+        const log = (msg) => {
+            console.log('[DataTable]', msg);
+            const el = document.getElementById('log');
+            if (el) el.textContent = msg;
+        };
         
-        // ✅ COPILOT STUDIO: ontoolinput
+        const updateStatus = (msg, type = 'info') => {
+            const el = document.getElementById('status');
+            if (el) {
+                el.textContent = msg;
+                el.className = 'status ' + type;
+            }
+        };
+        
+        // ========================================
+        // ALL NOTIFICATION HANDLERS
+        // ========================================
+        
+        // ontoolinput - Args before execution
         app.ontoolinput = (params) => {
             log('ontoolinput: preparing table...');
+            updateStatus('Loading...', 'loading');
             if (params.arguments?.title) {
                 tableConfig.title = params.arguments.title;
                 document.getElementById('tableTitle').textContent = tableConfig.title;
             }
         };
         
-        // ✅ COPILOT STUDIO: ontoolresult
+        // ontoolinputpartial - Streaming rows
+        app.ontoolinputpartial = (params) => {
+            log('ontoolinputpartial: streaming...');
+            // Progressively add rows as they stream in
+            if (params.arguments?.rows) {
+                tableConfig.rows = params.arguments.rows;
+                renderTable();
+            }
+        };
+        
+        // ontoolresult - Result after execution
         app.ontoolresult = (result) => {
             log('ontoolresult: rendering table');
+            updateStatus('', 'info');
             const structured = result.structuredContent;
             if (structured) {
                 tableConfig = { ...tableConfig, ...structured };
@@ -2277,12 +3109,102 @@ public class Script : ScriptBase
             renderTable();
         };
         
-        app.onerror = (error) => log('Error: ' + error.message);
+        // ontoolcancelled - Cancelled
+        app.ontoolcancelled = (params) => {
+            log('ontoolcancelled: ' + (params.reason || 'unknown'));
+            updateStatus('Cancelled', 'warning');
+        };
+        
+        // onhostcontextchanged - Theme/locale changed
+        app.onhostcontextchanged = (ctx) => {
+            log('onhostcontextchanged');
+            if (ctx.theme) {
+                applyDocumentTheme(ctx.theme);
+                document.body.classList.remove('light', 'dark');
+                document.body.classList.add(ctx.theme);
+            }
+            if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+            if (ctx.styles?.fonts) applyHostFonts(ctx.styles.fonts);
+        };
+        
+        // onteardown - Graceful shutdown
+        app.onteardown = async (params) => {
+            log('onteardown: saving state...');
+            try {
+                localStorage.setItem('dataTable_sort', JSON.stringify({ column: sortColumn, direction: sortDirection }));
+                localStorage.setItem('dataTable_selection', JSON.stringify([...selectedRows]));
+            } catch (e) {}
+            return {};
+        };
+        
+        // onerror - Error handler
+        app.onerror = (error) => {
+            log('onerror: ' + error.message);
+            updateStatus('Error: ' + error.message, 'error');
+        };
+        
+        // oncalltool - Handle tool calls from host
+        app.oncalltool = async (params, extra) => {
+            log('oncalltool: ' + params.name);
+            
+            switch (params.name) {
+                case 'get_selected_rows':
+                    const selected = [...selectedRows].map(idx => tableConfig.rows[idx]);
+                    return {
+                        content: [{ type: 'text', text: JSON.stringify(selected) }],
+                        structuredContent: { selectedRows: selected, count: selected.length }
+                    };
+                    
+                case 'select_row':
+                    if (params.arguments?.index !== undefined) {
+                        selectedRows.add(params.arguments.index);
+                        renderTable();
+                    }
+                    return { content: [{ type: 'text', text: 'Row selected' }], structuredContent: { success: true } };
+                    
+                case 'clear_selection':
+                    selectedRows.clear();
+                    renderTable();
+                    return { content: [{ type: 'text', text: 'Selection cleared' }], structuredContent: { success: true } };
+                    
+                case 'sort_by':
+                    if (params.arguments?.column) {
+                        sortColumn = params.arguments.column;
+                        sortDirection = params.arguments.direction || 'asc';
+                        renderTable();
+                    }
+                    return { content: [{ type: 'text', text: 'Sorted by ' + sortColumn }], structuredContent: { success: true } };
+                    
+                case 'filter':
+                    filterText = params.arguments?.text || '';
+                    renderTable();
+                    return { content: [{ type: 'text', text: 'Filter applied' }], structuredContent: { success: true, filterText } };
+                    
+                default:
+                    throw new Error('Unknown tool: ' + params.name);
+            }
+        };
+        
+        // onlisttools - Return available tools
+        app.onlisttools = async () => {
+            return {
+                tools: [
+                    { name: 'get_selected_rows', description: 'Get currently selected row data', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'select_row', description: 'Select a row by index', inputSchema: { type: 'object', properties: { index: { type: 'number' } }, required: ['index'] } },
+                    { name: 'clear_selection', description: 'Clear all row selections', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'sort_by', description: 'Sort table by column', inputSchema: { type: 'object', properties: { column: { type: 'string' }, direction: { type: 'string', enum: ['asc', 'desc'] } }, required: ['column'] } },
+                    { name: 'filter', description: 'Filter rows by text', inputSchema: { type: 'object', properties: { text: { type: 'string' } } } }
+                ]
+            };
+        };
+        
+        // ========================================
+        // TABLE RENDERING
+        // ========================================
         
         function renderTable() {
             document.getElementById('tableTitle').textContent = tableConfig.title;
             
-            // Render header
             const thead = document.getElementById('tableHead');
             thead.innerHTML = '';
             const headerRow = document.createElement('tr');
@@ -2311,8 +3233,16 @@ public class Script : ScriptBase
             });
             thead.appendChild(headerRow);
             
-            // Sort rows if needed
+            // Filter rows
             let rows = [...tableConfig.rows];
+            if (filterText) {
+                const lower = filterText.toLowerCase();
+                rows = rows.filter(row => 
+                    Object.values(row).some(v => String(v).toLowerCase().includes(lower))
+                );
+            }
+            
+            // Sort rows
             if (sortColumn) {
                 rows.sort((a, b) => {
                     const aVal = a[sortColumn] || '';
@@ -2322,21 +3252,21 @@ public class Script : ScriptBase
                 });
             }
             
-            // Render body
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
             rows.forEach((row, idx) => {
+                const origIdx = tableConfig.rows.indexOf(row);
                 const tr = document.createElement('tr');
-                tr.className = selectedRows.has(idx) ? 'selected' : '';
+                tr.className = selectedRows.has(origIdx) ? 'selected' : '';
                 
                 if (tableConfig.selectable) {
                     const td = document.createElement('td');
                     td.className = 'checkbox-col';
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
-                    checkbox.checked = selectedRows.has(idx);
-                    checkbox.onchange = () => toggleRow(idx);
+                    checkbox.checked = selectedRows.has(origIdx);
+                    checkbox.onchange = () => toggleRow(origIdx);
                     td.appendChild(checkbox);
                     tr.appendChild(td);
                 }
@@ -2351,6 +3281,7 @@ public class Script : ScriptBase
             });
             
             updateSelectionInfo();
+            notifySizeChanged();
         }
         
         function sortBy(column) {
@@ -2364,78 +3295,162 @@ public class Script : ScriptBase
         }
         
         function toggleRow(idx) {
-            if (selectedRows.has(idx)) {
-                selectedRows.delete(idx);
-            } else {
-                selectedRows.add(idx);
-            }
+            if (selectedRows.has(idx)) selectedRows.delete(idx);
+            else selectedRows.add(idx);
             renderTable();
         }
         
         function toggleAllRows(checked) {
-            if (checked) {
-                tableConfig.rows.forEach((_, idx) => selectedRows.add(idx));
-            } else {
-                selectedRows.clear();
-            }
+            if (checked) tableConfig.rows.forEach((_, idx) => selectedRows.add(idx));
+            else selectedRows.clear();
             renderTable();
         }
         
         function updateSelectionInfo() {
             const info = document.getElementById('selectionInfo');
             if (selectedRows.size > 0) {
-                info.textContent = `${selectedRows.size} row(s) selected`;
+                info.textContent = selectedRows.size + ' row(s) selected';
             } else {
-                info.textContent = '';
+                info.textContent = tableConfig.rows.length + ' rows';
             }
+        }
+        
+        // ========================================
+        // SDK METHODS
+        // ========================================
+        
+        function notifySizeChanged() {
+            try {
+                const container = document.querySelector('.table-container');
+                if (container) app.sendSizeChanged({ width: container.offsetWidth, height: container.offsetHeight });
+            } catch (e) {}
         }
         
         window.exportSelection = async function() {
             const selected = [...selectedRows].map(idx => tableConfig.rows[idx]);
             if (selected.length === 0) {
-                log('No rows selected');
+                updateStatus('No rows selected', 'warning');
                 return;
             }
             
             try {
                 await app.updateModelContext({
-                    content: [{ type: 'text', text: `Selected ${selected.length} row(s):\n${JSON.stringify(selected, null, 2)}` }],
+                    content: [{ type: 'text', text: 'Selected ' + selected.length + ' row(s):\\n' + JSON.stringify(selected, null, 2) }],
                     structuredContent: { selectedRows: selected, count: selected.length }
                 });
-                log('Selection exported: ' + selected.length + ' rows');
+                updateStatus('Exported ' + selected.length + ' rows', 'success');
             } catch (e) {
-                log('Error: ' + e.message);
+                updateStatus('Export failed', 'error');
             }
         };
         
+        window.filterTable = function(text) {
+            filterText = text;
+            renderTable();
+        };
+        
+        window.sendMessageDemo = async function() {
+            try {
+                const selected = [...selectedRows].map(idx => tableConfig.rows[idx]);
+                await app.sendMessage({
+                    role: 'user',
+                    content: [{ type: 'text', text: 'Analyze these ' + selected.length + ' selected rows' }]
+                });
+                updateStatus('Message sent!', 'success');
+            } catch (e) {
+                updateStatus('sendMessage not available', 'warning');
+            }
+        };
+        
+        window.callServerToolDemo = async function() {
+            try {
+                const result = await app.callServerTool({
+                    name: 'echo',
+                    arguments: { message: 'Table has ' + tableConfig.rows.length + ' rows, ' + selectedRows.size + ' selected' }
+                });
+                updateStatus('Server tool called!', 'success');
+            } catch (e) {
+                updateStatus('callServerTool not available', 'warning');
+            }
+        };
+        
+        // ========================================
+        // CONNECT AND INITIALIZE
+        // ========================================
+        
+        // Restore saved state
+        try {
+            const savedSort = localStorage.getItem('dataTable_sort');
+            if (savedSort) {
+                const { column, direction } = JSON.parse(savedSort);
+                sortColumn = column;
+                sortDirection = direction;
+            }
+        } catch (e) {}
+        
         await app.connect();
+        
+        const ctx = app.getHostContext();
+        if (ctx?.theme) {
+            applyDocumentTheme(ctx.theme);
+            document.body.classList.add(ctx.theme);
+        }
+        if (ctx?.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+        
         log('Connected - waiting for table data...');
     </script>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 16px; margin: 0; }
-        .table-container { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; max-width: 600px; }
-        .table-header { padding: 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-        h2 { margin: 0; color: #1f2937; font-size: 18px; }
+        :root {
+            --bg: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
+            --surface: #f9fafb;
+            --hover: #f3f4f6;
+            --selected: #eff6ff;
+        }
+        body.dark {
+            --bg: #1f2937;
+            --text: #f9fafb;
+            --text-secondary: #9CA3AF;
+            --border: #374151;
+            --surface: #111827;
+            --hover: #374151;
+            --selected: #1e3a5f;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 16px; margin: 0; background: var(--bg); color: var(--text); }
+        .table-container { background: var(--bg); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; max-width: 600px; }
+        .table-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+        h2 { margin: 0; font-size: 16px; }
+        .filter-input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; background: var(--bg); color: var(--text); }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        th { background: #f9fafb; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #6b7280; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--surface); font-weight: 600; font-size: 11px; text-transform: uppercase; color: var(--text-secondary); }
         th.sortable { cursor: pointer; user-select: none; }
-        th.sortable:hover { background: #f3f4f6; }
-        .checkbox-col { width: 40px; text-align: center; }
-        tr:hover { background: #f9fafb; }
-        tr.selected { background: #eff6ff; }
-        .table-footer { padding: 12px 16px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-        #selectionInfo { font-size: 13px; color: #6b7280; }
-        .btn { background: #3B82F6; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        th.sortable:hover { background: var(--hover); }
+        .checkbox-col { width: 36px; text-align: center; }
+        tr:hover { background: var(--hover); }
+        tr.selected { background: var(--selected); }
+        .table-footer { padding: 10px 16px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        #selectionInfo { font-size: 12px; color: var(--text-secondary); }
+        .status { font-size: 11px; }
+        .status.success { color: #10B981; }
+        .status.warning { color: #F59E0B; }
+        .status.error { color: #EF4444; }
+        .status.loading { color: #3B82F6; }
+        .btn { background: #3B82F6; color: white; border: none; padding: 7px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; }
         .btn:hover { background: #2563EB; }
-        .btn:disabled { background: #9CA3AF; cursor: not-allowed; }
-        #log { font-size: 11px; color: #9CA3AF; padding: 8px 16px; }
+        .btn.secondary { background: #6B7280; font-size: 11px; padding: 5px 8px; }
+        .btn.secondary:hover { background: #4B5563; }
+        .btn-row { display: flex; gap: 6px; }
+        #log { font-size: 10px; color: var(--text-secondary); padding: 8px 16px; }
     </style>
 </head>
 <body>
     <div class=""table-container"">
         <div class=""table-header"">
             <h2 id=""tableTitle"">Data Table</h2>
+            <input type=""text"" class=""filter-input"" placeholder=""Filter..."" oninput=""filterTable(this.value)"">
         </div>
         <table>
             <thead id=""tableHead""></thead>
@@ -2443,8 +3458,13 @@ public class Script : ScriptBase
         </table>
         <div class=""table-footer"">
             <span id=""selectionInfo""></span>
-            <button class=""btn"" onclick=""exportSelection()"">Export Selection</button>
+            <div class=""btn-row"">
+                <button class=""btn"" onclick=""exportSelection()"">Export</button>
+                <button class=""btn secondary"" onclick=""sendMessageDemo()"">sendMessage</button>
+                <button class=""btn secondary"" onclick=""callServerToolDemo()"">callServerTool</button>
+            </div>
         </div>
+        <div id=""status"" class=""status""></div>
         <div id=""log""></div>
     </div>
 </body>
@@ -2464,21 +3484,50 @@ public class Script : ScriptBase
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Confirm Action</title>
     <script type=""module"">
-        import { App } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
+        import { 
+            App,
+            applyDocumentTheme,
+            applyHostStyleVariables,
+            applyHostFonts
+        } from 'https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1';
         
-        const app = new App({ name: 'ConfirmActionApp', version: '1.0.0' }, {});
+        // ========================================
+        // APP INITIALIZATION WITH TOOL CAPABILITY
+        // ========================================
+        const app = new App(
+            { name: 'ConfirmActionApp', version: '1.0.0' },
+            { tools: { listChanged: false } }
+        );
         
         let dialogConfig = {
             title: 'Confirm Action',
             message: 'Are you sure you want to proceed?',
             confirmLabel: 'Confirm',
             cancelLabel: 'Cancel',
-            variant: 'warning'
+            variant: 'warning',
+            details: null
+        };
+        let userResponse = null;
+        
+        const log = (msg) => {
+            console.log('[ConfirmAction]', msg);
+            const el = document.getElementById('log');
+            if (el) el.textContent = msg;
         };
         
-        const log = (msg) => document.getElementById('log').textContent = msg;
+        const updateStatus = (msg, type = 'info') => {
+            const el = document.getElementById('status');
+            if (el) {
+                el.textContent = msg;
+                el.className = 'status ' + type;
+            }
+        };
         
-        // ✅ COPILOT STUDIO: ontoolinput
+        // ========================================
+        // ALL NOTIFICATION HANDLERS
+        // ========================================
+        
+        // ontoolinput - Configure dialog from args BEFORE execution
         app.ontoolinput = (params) => {
             log('ontoolinput: configuring dialog...');
             if (params.arguments) {
@@ -2487,7 +3536,16 @@ public class Script : ScriptBase
             }
         };
         
-        // ✅ COPILOT STUDIO: ontoolresult
+        // ontoolinputpartial - Streaming args
+        app.ontoolinputpartial = (params) => {
+            log('ontoolinputpartial: streaming...');
+            if (params.arguments) {
+                dialogConfig = { ...dialogConfig, ...params.arguments };
+                renderDialog();
+            }
+        };
+        
+        // ontoolresult - Update dialog from result
         app.ontoolresult = (result) => {
             log('ontoolresult: updating dialog');
             const structured = result.structuredContent;
@@ -2502,13 +3560,96 @@ public class Script : ScriptBase
             renderDialog();
         };
         
-        app.onerror = (error) => log('Error: ' + error.message);
+        // ontoolcancelled - Cancelled
+        app.ontoolcancelled = (params) => {
+            log('ontoolcancelled: ' + (params.reason || 'unknown'));
+            updateStatus('Cancelled', 'warning');
+        };
+        
+        // onhostcontextchanged - Theme/locale changed
+        app.onhostcontextchanged = (ctx) => {
+            log('onhostcontextchanged');
+            if (ctx.theme) {
+                applyDocumentTheme(ctx.theme);
+                document.body.classList.remove('light', 'dark');
+                document.body.classList.add(ctx.theme);
+            }
+            if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+            if (ctx.styles?.fonts) applyHostFonts(ctx.styles.fonts);
+        };
+        
+        // onteardown - Graceful shutdown
+        app.onteardown = async (params) => {
+            log('onteardown: cleanup...');
+            return {};
+        };
+        
+        // onerror - Error handler
+        app.onerror = (error) => {
+            log('onerror: ' + error.message);
+            updateStatus('Error: ' + error.message, 'error');
+        };
+        
+        // oncalltool - Handle tool calls from host
+        app.oncalltool = async (params, extra) => {
+            log('oncalltool: ' + params.name);
+            
+            switch (params.name) {
+                case 'get_response':
+                    return {
+                        content: [{ type: 'text', text: userResponse ? (userResponse.confirmed ? 'Confirmed' : 'Cancelled') : 'No response yet' }],
+                        structuredContent: { response: userResponse }
+                    };
+                    
+                case 'reset_dialog':
+                    userResponse = null;
+                    document.getElementById('confirmBtn').disabled = false;
+                    document.getElementById('cancelBtn').disabled = false;
+                    document.getElementById('result').textContent = '';
+                    document.getElementById('result').className = 'result';
+                    return { content: [{ type: 'text', text: 'Dialog reset' }], structuredContent: { success: true } };
+                    
+                case 'set_variant':
+                    if (params.arguments?.variant) {
+                        dialogConfig.variant = params.arguments.variant;
+                        renderDialog();
+                    }
+                    return { content: [{ type: 'text', text: 'Variant changed' }], structuredContent: { success: true, variant: dialogConfig.variant } };
+                    
+                default:
+                    throw new Error('Unknown tool: ' + params.name);
+            }
+        };
+        
+        // onlisttools - Return available tools
+        app.onlisttools = async () => {
+            return {
+                tools: [
+                    { name: 'get_response', description: 'Get current user response', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'reset_dialog', description: 'Reset dialog to allow new response', inputSchema: { type: 'object', properties: {} } },
+                    { name: 'set_variant', description: 'Change dialog variant', inputSchema: { type: 'object', properties: { variant: { type: 'string', enum: ['info', 'warning', 'danger'] } }, required: ['variant'] } }
+                ]
+            };
+        };
+        
+        // ========================================
+        // DIALOG RENDERING
+        // ========================================
         
         function renderDialog() {
             document.getElementById('dialogTitle').textContent = dialogConfig.title;
             document.getElementById('dialogMessage').textContent = dialogConfig.message;
             document.getElementById('confirmBtn').textContent = dialogConfig.confirmLabel;
             document.getElementById('cancelBtn').textContent = dialogConfig.cancelLabel;
+            
+            // Show details if provided
+            const detailsEl = document.getElementById('details');
+            if (dialogConfig.details) {
+                detailsEl.textContent = dialogConfig.details;
+                detailsEl.style.display = 'block';
+            } else {
+                detailsEl.style.display = 'none';
+            }
             
             // Set variant styling
             const dialog = document.getElementById('dialog');
@@ -2517,26 +3658,34 @@ public class Script : ScriptBase
             // Set icon based on variant
             const iconEl = document.getElementById('icon');
             switch (dialogConfig.variant) {
-                case 'danger':
-                    iconEl.textContent = '⛔';
-                    break;
-                case 'info':
-                    iconEl.textContent = 'ℹ️';
-                    break;
-                case 'warning':
-                default:
-                    iconEl.textContent = '⚠️';
-                    break;
+                case 'danger': iconEl.textContent = '⛔'; break;
+                case 'info': iconEl.textContent = 'ℹ️'; break;
+                case 'warning': default: iconEl.textContent = '⚠️'; break;
             }
+            
+            notifySizeChanged();
         }
         
-        window.confirm = async function() {
+        // ========================================
+        // SDK METHODS
+        // ========================================
+        
+        function notifySizeChanged() {
+            try {
+                const dialog = document.getElementById('dialog');
+                if (dialog) app.sendSizeChanged({ width: dialog.offsetWidth, height: dialog.offsetHeight });
+            } catch (e) {}
+        }
+        
+        window.confirmAction = async function() {
+            userResponse = { confirmed: true, action: dialogConfig.title, timestamp: new Date().toISOString() };
+            
             try {
                 await app.updateModelContext({
-                    content: [{ type: 'text', text: `User confirmed: ${dialogConfig.title}` }],
-                    structuredContent: { confirmed: true, action: dialogConfig.title, timestamp: new Date().toISOString() }
+                    content: [{ type: 'text', text: 'User confirmed: ' + dialogConfig.title }],
+                    structuredContent: userResponse
                 });
-                document.getElementById('result').textContent = '✅ Confirmed';
+                document.getElementById('result').textContent = 'Confirmed';
                 document.getElementById('result').className = 'result confirmed';
                 disableButtons();
                 log('Action confirmed');
@@ -2545,13 +3694,15 @@ public class Script : ScriptBase
             }
         };
         
-        window.cancel = async function() {
+        window.cancelAction = async function() {
+            userResponse = { confirmed: false, action: dialogConfig.title, timestamp: new Date().toISOString() };
+            
             try {
                 await app.updateModelContext({
-                    content: [{ type: 'text', text: `User cancelled: ${dialogConfig.title}` }],
-                    structuredContent: { confirmed: false, action: dialogConfig.title, timestamp: new Date().toISOString() }
+                    content: [{ type: 'text', text: 'User cancelled: ' + dialogConfig.title }],
+                    structuredContent: userResponse
                 });
-                document.getElementById('result').textContent = '❌ Cancelled';
+                document.getElementById('result').textContent = 'Cancelled';
                 document.getElementById('result').className = 'result cancelled';
                 disableButtons();
                 log('Action cancelled');
@@ -2565,36 +3716,91 @@ public class Script : ScriptBase
             document.getElementById('cancelBtn').disabled = true;
         }
         
+        window.sendMessageDemo = async function() {
+            try {
+                await app.sendMessage({
+                    role: 'user',
+                    content: [{ type: 'text', text: 'I ' + (userResponse?.confirmed ? 'confirmed' : 'cancelled') + ' the action: ' + dialogConfig.title }]
+                });
+                updateStatus('Message sent!', 'success');
+            } catch (e) {
+                updateStatus('sendMessage not available', 'warning');
+            }
+        };
+        
+        window.openDocsDemo = async function() {
+            try {
+                const result = await app.openLink({ url: 'https://modelcontextprotocol.io/docs/apps' });
+                if (result.isError) updateStatus('Link blocked', 'warning');
+                else updateStatus('Docs opened!', 'success');
+            } catch (e) {
+                updateStatus('openLink not available', 'warning');
+            }
+        };
+        
+        // ========================================
+        // CONNECT AND INITIALIZE
+        // ========================================
+        
         await app.connect();
+        
+        const ctx = app.getHostContext();
+        if (ctx?.theme) {
+            applyDocumentTheme(ctx.theme);
+            document.body.classList.add(ctx.theme);
+        }
+        if (ctx?.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+        
         renderDialog();
         log('Connected - awaiting user response...');
     </script>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 40px); background: #f3f4f6; }
-        .dialog { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; width: 100%; overflow: hidden; }
-        .dialog-header { padding: 20px 20px 0 20px; text-align: center; }
-        #icon { font-size: 48px; margin-bottom: 12px; display: block; }
-        h2 { margin: 0 0 8px 0; color: #1f2937; font-size: 20px; }
-        .dialog-body { padding: 0 20px 20px 20px; text-align: center; }
-        #dialogMessage { color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0; }
-        .dialog-footer { padding: 16px 20px; background: #f9fafb; display: flex; gap: 12px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.15s; }
+        :root {
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #6b7280;
+            --border: #d1d5db;
+            --footer-bg: #f9fafb;
+        }
+        body.dark {
+            --bg: #111827;
+            --surface: #1f2937;
+            --text: #f9fafb;
+            --text-secondary: #9CA3AF;
+            --border: #374151;
+            --footer-bg: #374151;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 16px; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: calc(100vh - 32px); background: var(--bg); color: var(--text); }
+        .dialog { background: var(--surface); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 380px; width: 100%; overflow: hidden; }
+        .dialog-header { padding: 18px 18px 0 18px; text-align: center; }
+        #icon { font-size: 42px; margin-bottom: 10px; display: block; }
+        h2 { margin: 0 0 6px 0; font-size: 18px; }
+        .dialog-body { padding: 0 18px 16px 18px; text-align: center; }
+        #dialogMessage { color: var(--text-secondary); font-size: 13px; line-height: 1.5; margin: 0; }
+        #details { font-size: 11px; color: var(--text-secondary); background: var(--bg); padding: 8px; border-radius: 6px; margin-top: 10px; text-align: left; font-family: monospace; white-space: pre-wrap; display: none; }
+        .dialog-footer { padding: 14px 18px; background: var(--footer-bg); display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        #cancelBtn { background: white; color: #374151; border: 1px solid #d1d5db; }
-        #cancelBtn:hover:not(:disabled) { background: #f9fafb; }
-        
-        /* Variant-specific confirm button styles */
+        #cancelBtn { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        #cancelBtn:hover:not(:disabled) { background: var(--bg); }
         .dialog.warning #confirmBtn { background: #F59E0B; color: white; }
         .dialog.warning #confirmBtn:hover:not(:disabled) { background: #D97706; }
         .dialog.danger #confirmBtn { background: #EF4444; color: white; }
         .dialog.danger #confirmBtn:hover:not(:disabled) { background: #DC2626; }
         .dialog.info #confirmBtn { background: #3B82F6; color: white; }
         .dialog.info #confirmBtn:hover:not(:disabled) { background: #2563EB; }
-        
-        .result { text-align: center; padding: 12px; font-weight: 500; }
+        .result { text-align: center; padding: 10px; font-weight: 500; min-height: 16px; }
         .result.confirmed { color: #10B981; }
-        .result.cancelled { color: #6B7280; }
-        #log { font-size: 11px; color: #9CA3AF; text-align: center; padding: 8px; }
+        .result.cancelled { color: var(--text-secondary); }
+        .status { font-size: 11px; text-align: center; }
+        .status.success { color: #10B981; }
+        .status.warning { color: #F59E0B; }
+        .status.error { color: #EF4444; }
+        #log { font-size: 10px; color: var(--text-secondary); text-align: center; padding: 6px; }
+        .sdk-section { margin-top: 12px; display: flex; gap: 6px; justify-content: center; }
+        .btn.secondary { background: #6B7280; color: white; padding: 6px 10px; font-size: 11px; flex: none; }
+        .btn.secondary:hover { background: #4B5563; }
     </style>
 </head>
 <body>
@@ -2605,12 +3811,18 @@ public class Script : ScriptBase
         </div>
         <div class=""dialog-body"">
             <p id=""dialogMessage"">Are you sure you want to proceed?</p>
+            <div id=""details""></div>
         </div>
         <div class=""dialog-footer"">
-            <button id=""cancelBtn"" class=""btn"" onclick=""cancel()"">Cancel</button>
-            <button id=""confirmBtn"" class=""btn"" onclick=""confirm()"">Confirm</button>
+            <button id=""cancelBtn"" class=""btn"" onclick=""cancelAction()"">Cancel</button>
+            <button id=""confirmBtn"" class=""btn"" onclick=""confirmAction()"">Confirm</button>
         </div>
         <div id=""result"" class=""result""></div>
+        <div class=""sdk-section"">
+            <button class=""btn secondary"" onclick=""sendMessageDemo()"">sendMessage</button>
+            <button class=""btn secondary"" onclick=""openDocsDemo()"">openLink</button>
+        </div>
+        <div id=""status"" class=""status""></div>
         <div id=""log""></div>
     </div>
 </body>
