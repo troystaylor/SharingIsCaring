@@ -145,20 +145,6 @@ This connector provides **58 operations** covering the full Azure Cost Managemen
 | Download Billing Account Price Sheet By Period | Get prices for billing period |
 | Download Billing Account Price Sheet By Invoice | Get prices for invoice |
 
-## Configuration
-
-### App Registration
-
-An app registration has been pre-configured:
-
-| Property | Value |
-|----------|-------|
-| **App Name** | Azure Cost Management Connector |
-| **Client ID** | `c2205975-75ed-4c64-b0f0-00dc1e95ae38` |
-| **Sign-in Audience** | Multi-tenant |
-| **Redirect URI** | `https://global.consent.azure-apim.net/redirect` |
-| **API Permission** | Azure Service Management - user_impersonation |
-
 ### Deploy the Connector
 
 Use the Power Platform CLI to deploy:
@@ -411,3 +397,4 @@ The Cost Management API has rate limits. If you encounter 429 errors, implement 
 ## Support
 
 For issues with this connector, please open an issue in the repository or contact the publisher.
+
