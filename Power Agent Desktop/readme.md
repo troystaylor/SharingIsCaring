@@ -1,6 +1,6 @@
 # Power Agent Desktop
 
-A native Windows desktop client for Microsoft Copilot Studio agents with voice-enabled AI interactions. Built with Electron and the M365 Agents SDK, it provides a rich conversational experience with adaptive cards, speech-to-text input, text-to-speech responses, and hands-free "Hey Copilot" wake word activation. Supports the Model Context Protocol (MCP) for integration with other AI tools and can be packaged as MSIX for enterprise deployment.
+A native Windows desktop client for Microsoft Copilot Studio agents with voice-enabled AI interactions. Built with Electron and the M365 Agents SDK, it provides a rich conversational experience with adaptive cards, speech-to-text input, and text-to-speech responses. Supports the Model Context Protocol (MCP) for integration with other local AI clients and can be packaged as MSIX for enterprise deployment.
 
 ![App Screenshot](docs/images/app-screenshot.png)
 
@@ -434,3 +434,4 @@ src/
 - [Copilot Studio Documentation](https://learn.microsoft.com/microsoft-copilot-studio/)
 - [WinApp CLI](https://github.com/microsoft/WinAppCli)
 - [Electron Documentation](https://www.electronjs.org/docs)
+
