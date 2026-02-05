@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 desktop rescap">
+
+  <Identity
+    Name="PowerAgentDesktop.App"
+    Publisher="CN=PowerAgentDesktop"
+    Version="1.0.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Power Agent Desktop</DisplayName>
+    <PublisherDisplayName>Power Agent Desktop</PublisherDisplayName>
+    <Logo>assets\logo-50.png</Logo>
+    <Description>A native Windows client for Microsoft Copilot Studio agents with voice, MCP, and MSIX packaging.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="PowerAgentDesktop" Executable="power-agent.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Power Agent Desktop"
+        Description="Native Windows client for Copilot Studio agents"
+        BackgroundColor="transparent"
+        Square150x150Logo="assets\logo-150.png"
+        Square44x44Logo="assets\logo-44.png">
+        <uap:DefaultTile Wide310x150Logo="assets\logo-310x150.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- Protocol handler for poweragent:// URIs -->
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="poweragent">
+            <uap:DisplayName>Power Agent Desktop Protocol</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+
+        <!-- App execution alias for CLI invocation -->
+        <uap3:Extension Category="windows.appExecutionAlias">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="power-agent.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+
+        <!-- MCP Server registration (for system-wide MCP discovery) -->
+        <uap:Extension Category="windows.appService">
+          <uap:AppService Name="MCPServer" />
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- Network access for MCP communication -->
+    <Capability Name="internetClient" />
+    <Capability Name="privateNetworkClientServer" />
+    
+    <!-- Required for on-device AI APIs (Phi Silica, etc.) -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+</Package>

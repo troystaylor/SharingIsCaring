@@ -1,0 +1,3517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://unpkg.com https://cdn.jsdelivr.net https://alcdn.msauth.net https://aka.ms; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; media-src 'self' blob:; connect-src 'self' https://*.powerplatform.com https://*.cognitiveservices.azure.com wss://*.stt.speech.microsoft.com wss://*.tts.speech.microsoft.com https://login.microsoftonline.com https://*.dynamics.com https://*.microsoftonline.com https://graph.microsoft.com; frame-src 'self' blob: https://login.microsoftonline.com; worker-src 'self' data: blob:;">
+  <title>Power Agent Desktop</title>
+  
+  <!-- Fluent UI Web Components -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@fluentui/web-components@2.6.1/dist/web-components.min.js"></script>
+  
+  <!-- Adaptive Cards -->
+  <script src="https://cdn.jsdelivr.net/npm/adaptivecards@3.0.5/dist/adaptivecards.min.js"></script>
+  
+  <!-- Marked for Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <!-- Azure Speech SDK for high-quality TTS -->
+  <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+
+  <style>
+    /* Fluent 2 Design Tokens - Dark Theme */
+    :root {
+      /* Neutral backgrounds */
+      --colorNeutralBackground1: #292929;
+      --colorNeutralBackground2: #1f1f1f;
+      --colorNeutralBackground3: #141414;
+      --colorNeutralBackground4: #0a0a0a;
+      --colorNeutralBackgroundDisabled: #141414;
+      
+      /* Neutral foregrounds */
+      --colorNeutralForeground1: #ffffff;
+      --colorNeutralForeground2: #d6d6d6;
+      --colorNeutralForeground3: #adadad;
+      --colorNeutralForeground4: #737373;
+      --colorNeutralForegroundDisabled: #5c5c5c;
+      
+      /* Brand colors */
+      --colorBrandBackground: #0f6cbd;
+      --colorBrandBackgroundHover: #115ea3;
+      --colorBrandBackgroundPressed: #0e4775;
+      --colorBrandForeground1: #479ef5;
+      --colorBrandForeground2: #62abf5;
+      
+      /* Stroke/border colors */
+      --colorNeutralStroke1: #666666;
+      --colorNeutralStroke2: #525252;
+      --colorNeutralStroke3: #3d3d3d;
+      --colorNeutralStrokeAccessible: #adadad;
+      
+      /* Status colors */
+      --colorStatusSuccessBackground1: #052505;
+      --colorStatusSuccessForeground1: #54b054;
+      --colorStatusWarningBackground1: #4a1e04;
+      --colorStatusWarningForeground1: #f7a93b;
+      --colorStatusDangerBackground1: #3b0509;
+      --colorStatusDangerForeground1: #e37d80;
+      
+      /* Subtle backgrounds */
+      --colorSubtleBackground: transparent;
+      --colorSubtleBackgroundHover: #383838;
+      --colorSubtleBackgroundPressed: #2e2e2e;
+      
+      /* Typography */
+      --fontFamilyBase: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      --fontSizeBase100: 10px;
+      --fontSizeBase200: 12px;
+      --fontSizeBase300: 14px;
+      --fontSizeBase400: 16px;
+      --fontSizeBase500: 20px;
+      --fontSizeBase600: 24px;
+      --fontWeightRegular: 400;
+      --fontWeightMedium: 500;
+      --fontWeightSemibold: 600;
+      --lineHeightBase100: 14px;
+      --lineHeightBase200: 16px;
+      --lineHeightBase300: 20px;
+      --lineHeightBase400: 22px;
+      
+      /* Spacing */
+      --spacingHorizontalXXS: 2px;
+      --spacingHorizontalXS: 4px;
+      --spacingHorizontalSNudge: 6px;
+      --spacingHorizontalS: 8px;
+      --spacingHorizontalMNudge: 10px;
+      --spacingHorizontalM: 12px;
+      --spacingHorizontalL: 16px;
+      --spacingHorizontalXL: 20px;
+      --spacingHorizontalXXL: 24px;
+      --spacingVerticalXXS: 2px;
+      --spacingVerticalXS: 4px;
+      --spacingVerticalS: 8px;
+      --spacingVerticalM: 12px;
+      --spacingVerticalL: 16px;
+      --spacingVerticalXL: 20px;
+      
+      /* Border radius */
+      --borderRadiusNone: 0;
+      --borderRadiusSmall: 2px;
+      --borderRadiusMedium: 4px;
+      --borderRadiusLarge: 6px;
+      --borderRadiusXLarge: 8px;
+      --borderRadiusCircular: 10000px;
+      
+      /* Shadows */
+      --shadow2: 0px 1px 2px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+      --shadow4: 0px 2px 4px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+      --shadow8: 0px 4px 8px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+      --shadow16: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+      --shadow28: 0px 14px 28px rgba(0, 0, 0, 0.24), 0px 0px 8px rgba(0, 0, 0, 0.2);
+      
+      /* Durations */
+      --durationFast: 100ms;
+      --durationNormal: 200ms;
+      --durationSlow: 300ms;
+      --curveEasyEase: cubic-bezier(0.33, 0, 0.67, 1);
+    }
+
+    /* Fluent 2 Design Tokens - Light Theme */
+    [data-theme="light"] {
+      --colorNeutralBackground1: #ffffff;
+      --colorNeutralBackground2: #fafafa;
+      --colorNeutralBackground3: #f5f5f5;
+      --colorNeutralBackground4: #ebebeb;
+      --colorNeutralBackgroundDisabled: #f0f0f0;
+      
+      --colorNeutralForeground1: #242424;
+      --colorNeutralForeground2: #424242;
+      --colorNeutralForeground3: #616161;
+      --colorNeutralForeground4: #707070;
+      --colorNeutralForegroundDisabled: #bdbdbd;
+      
+      --colorBrandBackground: #0f6cbd;
+      --colorBrandBackgroundHover: #115ea3;
+      --colorBrandBackgroundPressed: #0e4775;
+      --colorBrandForeground1: #0f6cbd;
+      --colorBrandForeground2: #115ea3;
+      
+      --colorNeutralStroke1: #d1d1d1;
+      --colorNeutralStroke2: #e0e0e0;
+      --colorNeutralStroke3: #ebebeb;
+      --colorNeutralStrokeAccessible: #616161;
+      
+      --colorStatusSuccessBackground1: #dff6dd;
+      --colorStatusSuccessForeground1: #0e700e;
+      --colorStatusWarningBackground1: #fff4ce;
+      --colorStatusWarningForeground1: #835b00;
+      --colorStatusDangerBackground1: #fde7e9;
+      --colorStatusDangerForeground1: #b10e1c;
+      
+      --colorSubtleBackgroundHover: #f5f5f5;
+      --colorSubtleBackgroundPressed: #e0e0e0;
+      
+      --shadow2: 0px 1px 2px rgba(0, 0, 0, 0.08), 0px 0px 2px rgba(0, 0, 0, 0.06);
+      --shadow4: 0px 2px 4px rgba(0, 0, 0, 0.08), 0px 0px 2px rgba(0, 0, 0, 0.06);
+      --shadow8: 0px 4px 8px rgba(0, 0, 0, 0.08), 0px 0px 2px rgba(0, 0, 0, 0.06);
+      --shadow16: 0px 8px 16px rgba(0, 0, 0, 0.08), 0px 0px 2px rgba(0, 0, 0, 0.06);
+      --shadow28: 0px 14px 28px rgba(0, 0, 0, 0.12), 0px 0px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--fontFamilyBase);
+      font-size: var(--fontSizeBase300);
+      line-height: var(--lineHeightBase300);
+      background-color: var(--colorNeutralBackground3);
+      color: var(--colorNeutralForeground1);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Accessibility: Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* Accessibility: Focus Styles */
+    :focus-visible {
+      outline: 2px solid var(--colorBrandForeground1);
+      outline-offset: 2px;
+    }
+
+    /* Accessibility: High Contrast Mode (Windows) */
+    @media (forced-colors: active) {
+      /* Ensure borders and outlines are visible */
+      .icon-button,
+      .send-btn,
+      .voice-btn,
+      .account-button,
+      .fluent-button {
+        border: 1px solid ButtonText;
+      }
+
+      .icon-button:hover,
+      .send-btn:hover,
+      .voice-btn:hover {
+        border-color: Highlight;
+        background-color: Highlight;
+        color: HighlightText;
+      }
+
+      .icon-button:focus-visible,
+      .send-btn:focus-visible,
+      .voice-btn:focus-visible {
+        outline: 2px solid Highlight;
+      }
+
+      /* Status indicators */
+      .status-dot {
+        border: 2px solid ButtonText;
+      }
+
+      .status-dot.connecting {
+        border-style: dashed;
+      }
+
+      .status-dot.disconnected {
+        background-color: transparent;
+        border-color: LinkText;
+      }
+
+      /* Messages */
+      .message {
+        border: 1px solid ButtonText;
+      }
+
+      .message.user {
+        border-color: Highlight;
+      }
+
+      /* Input */
+      #messageInput {
+        border: 1px solid ButtonText;
+      }
+
+      #messageInput:focus {
+        border-color: Highlight;
+      }
+
+      /* Links */
+      a {
+        color: LinkText;
+        text-decoration: underline;
+      }
+
+      /* Settings panel */
+      .settings-panel {
+        border: 2px solid ButtonText;
+      }
+    }
+
+    /* Skip Link for Keyboard Navigation */
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--colorBrandBackground);
+      color: #ffffff;
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      border-radius: var(--borderRadiusMedium);
+      z-index: 10000;
+      text-decoration: none;
+      font-weight: var(--fontWeightSemibold);
+    }
+
+    .skip-link:focus {
+      top: var(--spacingVerticalM);
+    }
+
+    /* Screen Reader Only (visually hidden but accessible) */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Live region for announcements */
+    .sr-announcements {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Header - Fluent 2 Navigation Bar */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      background-color: var(--colorNeutralBackground1);
+      border-bottom: 1px solid var(--colorNeutralStroke2);
+      -webkit-app-region: drag;
+      min-height: 48px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalS);
+    }
+
+    .header-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--colorBrandForeground1);
+    }
+
+    .header-icon-img {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--borderRadiusCircular);
+      object-fit: cover;
+    }
+
+    .header-title {
+      font-size: var(--fontSizeBase400);
+      font-weight: var(--fontWeightSemibold);
+      color: var(--colorNeutralForeground1);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXS);
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground3);
+      margin-left: var(--spacingHorizontalL);
+      padding-left: var(--spacingHorizontalL);
+      border-left: 1px solid var(--colorNeutralStroke3);
+    }
+
+    .header-status .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--borderRadiusCircular);
+      background-color: var(--colorStatusSuccessForeground1);
+    }
+
+    .header-status .status-dot.disconnected {
+      background-color: var(--colorStatusDangerForeground1);
+    }
+
+    .header-status .status-dot.connecting {
+      background-color: var(--colorStatusWarningForeground1);
+      animation: pulse 1s infinite;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXS);
+      -webkit-app-region: no-drag;
+    }
+
+    /* Fluent 2 Icon Button */
+    .icon-button {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--borderRadiusMedium);
+      border: none;
+      background-color: var(--colorSubtleBackground);
+      color: var(--colorNeutralForeground1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .icon-button:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    .icon-button:active {
+      background-color: var(--colorSubtleBackgroundPressed);
+    }
+
+    .icon-button svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Text button variant */
+    .text-button {
+      height: 44px;
+      padding: 0 var(--spacingHorizontalM);
+      border-radius: var(--borderRadiusMedium);
+      border: none;
+      background-color: var(--colorSubtleBackground);
+      color: var(--colorNeutralForeground1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXS);
+      font-size: var(--fontSizeBase200);
+      font-weight: var(--fontWeightSemibold);
+      transition: background-color var(--durationFast) var(--curveEasyEase);
+      white-space: nowrap;
+    }
+
+    .text-button:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    .text-button:active {
+      background-color: var(--colorSubtleBackgroundPressed);
+    }
+
+    .text-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Account Button */
+    .account-button {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--borderRadiusCircular);
+      border: none;
+      background-color: var(--colorSubtleBackground);
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .account-button:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    .account-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--borderRadiusCircular);
+      background-color: var(--colorBrandBackground);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .account-avatar span {
+      color: #ffffff;
+      font-size: var(--fontSizeBase200);
+      font-weight: var(--fontWeightSemibold);
+    }
+
+    .account-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Chat Container */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: var(--spacingHorizontalL);
+      background-color: var(--colorNeutralBackground2);
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: var(--spacingHorizontalS);
+    }
+
+    .message {
+      display: flex;
+      margin-bottom: var(--spacingVerticalL);
+      animation: fadeIn var(--durationNormal) var(--curveEasyEase);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 75%;
+    }
+
+    .message.user .message-wrapper {
+      align-items: flex-end;
+    }
+
+    .message-content {
+      padding: var(--spacingVerticalM) var(--spacingHorizontalL);
+      border-radius: var(--borderRadiusXLarge);
+      line-height: var(--lineHeightBase300);
+    }
+
+    .message.user .message-content {
+      background-color: var(--colorBrandBackground);
+      color: #ffffff;
+      border-bottom-right-radius: var(--borderRadiusSmall);
+    }
+
+    .message.agent .message-content {
+      background-color: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      border-bottom-left-radius: var(--borderRadiusSmall);
+      box-shadow: var(--shadow2);
+    }
+
+    /* Message Timestamp */
+    .message-timestamp {
+      font-size: var(--fontSizeBase100);
+      color: var(--colorNeutralForeground4);
+      margin-top: var(--spacingVerticalXS);
+      padding: 0 var(--spacingHorizontalS);
+    }
+
+    .message.user .message-timestamp {
+      text-align: right;
+    }
+
+    /* Citations */
+    .message-citations {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacingHorizontalXS);
+      margin-top: var(--spacingVerticalS);
+      padding: 0 var(--spacingHorizontalS);
+    }
+
+    /* Inline citation superscripts */
+    sup.citation {
+      font-size: 0.75em;
+      vertical-align: super;
+      line-height: 0;
+    }
+
+    sup.citation a {
+      color: var(--colorBrandForeground1);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    sup.citation a:hover {
+      text-decoration: underline;
+    }
+
+    .citation-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXXS);
+      padding: var(--spacingVerticalXXS) var(--spacingHorizontalS);
+      background-color: var(--colorNeutralBackground3);
+      border-radius: var(--borderRadiusMedium);
+      font-size: var(--fontSizeBase100);
+      color: var(--colorBrandForeground1);
+      text-decoration: underline;
+      transition: background-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .citation-link:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    .citation-link svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Adaptive Card Container */
+    .adaptive-card-container {
+      background-color: var(--colorNeutralBackground1);
+      border-radius: var(--borderRadiusXLarge);
+      padding: var(--spacingVerticalM);
+      margin-top: var(--spacingVerticalS);
+      box-shadow: var(--shadow4);
+    }
+
+    /* Input Area - Fluent 2 Compose Box */
+    .input-area {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalM);
+      padding: var(--spacingVerticalM) var(--spacingHorizontalL);
+      background-color: var(--colorNeutralBackground1);
+      border-top: 1px solid var(--colorNeutralStroke2);
+    }
+
+    .voice-controls {
+      display: flex;
+      gap: var(--spacingHorizontalXS);
+    }
+
+    .voice-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--borderRadiusCircular);
+      border: none;
+      background-color: var(--colorNeutralBackground3);
+      color: var(--colorNeutralForeground1);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: all var(--durationFast) var(--curveEasyEase);
+      position: relative;
+    }
+
+    .voice-btn:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    .voice-btn.recording {
+      background-color: var(--colorStatusDangerForeground1);
+      color: #ffffff;
+      animation: pulse 1s infinite;
+    }
+
+    /* Mic button off state - black slash when not recording (Teams style) */
+    #micBtn:not(.recording)::after {
+      content: '';
+      position: absolute;
+      width: 28px;
+      height: 2px;
+      background-color: var(--colorNeutralForeground1);
+      transform: rotate(45deg);
+      border-radius: 1px;
+    }
+
+    .voice-btn.tts-enabled {
+      background-color: var(--colorBrandBackground);
+      color: #ffffff;
+    }
+
+    /* TTS disabled state - black line through speaker (Teams style) */
+    .voice-btn.tts-disabled {
+      position: relative;
+    }
+
+    .voice-btn.tts-disabled::after {
+      content: '';
+      position: absolute;
+      width: 28px;
+      height: 2px;
+      background-color: var(--colorNeutralForeground1);
+      transform: rotate(45deg);
+      border-radius: 1px;
+    }
+
+    .voice-btn .wake-indicator {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 10px;
+      height: 10px;
+      border-radius: var(--borderRadiusCircular);
+      background-color: var(--colorStatusSuccessForeground1);
+      border: 2px solid var(--colorNeutralBackground1);
+      display: none;
+    }
+
+    .voice-btn.wake-listening .wake-indicator {
+      display: block;
+      animation: wake-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes wake-pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 124, 16, 0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(16, 124, 16, 0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+
+    .input-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      background-color: var(--colorNeutralBackground3);
+      border: 1px solid var(--colorNeutralStroke1);
+      border-radius: var(--borderRadiusXLarge);
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      transition: border-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--colorBrandForeground1);
+      outline: 2px solid var(--colorBrandForeground1);
+      outline-offset: -1px;
+    }
+
+    .input-wrapper input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--colorNeutralForeground1);
+      font-family: var(--fontFamilyBase);
+      font-size: var(--fontSizeBase300);
+    }
+
+    .input-wrapper input::placeholder {
+      color: var(--colorNeutralForeground4);
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--borderRadiusCircular);
+      border: none;
+      background-color: var(--colorBrandBackground);
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: background-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .send-btn:hover {
+      background-color: var(--colorBrandBackgroundHover);
+    }
+
+    .send-btn:active {
+      background-color: var(--colorBrandBackgroundPressed);
+    }
+
+    .send-btn:disabled {
+      background-color: var(--colorNeutralBackgroundDisabled);
+      color: var(--colorNeutralForegroundDisabled);
+      cursor: not-allowed;
+    }
+
+    /* Settings Panel - Drawer Style */
+    .settings-panel {
+      position: fixed;
+      top: 60px;
+      right: 0;
+      bottom: 0;
+      width: 380px;
+      max-width: 100vw;
+      background-color: var(--colorNeutralBackground1);
+      border-left: 1px solid var(--colorNeutralStroke2);
+      box-shadow: -8px 0 16px rgba(0, 0, 0, 0.14);
+      padding: var(--spacingVerticalL);
+      overflow-y: auto;
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform var(--durationNormal) var(--curveEasyEase);
+    }
+
+    .settings-panel:not(.hidden) {
+      transform: translateX(0);
+    }
+
+    .settings-panel.hidden {
+      pointer-events: none;
+    }
+
+    .settings-panel h3 {
+      font-size: var(--fontSizeBase400);
+      font-weight: var(--fontWeightSemibold);
+      color: var(--colorNeutralForeground1);
+      margin: 0 0 var(--spacingVerticalM) 0;
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalS);
+    }
+
+    .settings-panel h3 svg {
+      color: var(--colorBrandForeground1);
+    }
+
+    .settings-section {
+      margin-bottom: var(--spacingVerticalL);
+    }
+
+    .settings-section h4 {
+      font-size: var(--fontSizeBase300);
+      font-weight: var(--fontWeightSemibold);
+      color: var(--colorNeutralForeground1);
+      margin: 0 0 var(--spacingVerticalS) 0;
+    }
+
+    .settings-section p {
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground2);
+      margin: 0 0 var(--spacingVerticalS) 0;
+      line-height: 1.5;
+    }
+
+    .settings-code {
+      background-color: var(--colorNeutralBackground3);
+      border-radius: var(--borderRadiusSmall);
+      padding: var(--spacingVerticalS) var(--spacingHorizontalM);
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground1);
+      overflow-x: auto;
+      white-space: pre;
+      margin: var(--spacingVerticalS) 0;
+      border: 1px solid var(--colorNeutralStroke2);
+    }
+
+    .settings-copy-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXS);
+      padding: var(--spacingVerticalXS) var(--spacingHorizontalS);
+      background-color: var(--colorSubtleBackground);
+      border: 1px solid var(--colorNeutralStroke1);
+      border-radius: var(--borderRadiusSmall);
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground1);
+      cursor: pointer;
+      margin-top: var(--spacingVerticalS);
+    }
+
+    .settings-copy-btn:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    .settings-close-btn {
+      position: absolute;
+      top: var(--spacingVerticalS);
+      right: var(--spacingHorizontalS);
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      border-radius: var(--borderRadiusSmall);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--colorNeutralForeground2);
+    }
+
+    .settings-close-btn:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    /* Toggle Switch - Fluent 2 Style */
+    .settings-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacingVerticalS) 0;
+    }
+
+    .settings-toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .settings-toggle-label span:first-child {
+      font-size: var(--fontSizeBase300);
+      font-weight: var(--fontWeightSemibold);
+      color: var(--colorNeutralForeground1);
+    }
+
+    .settings-toggle-label span:last-child {
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground2);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--colorNeutralBackground5);
+      border: 1px solid var(--colorNeutralStroke1);
+      border-radius: 10px;
+      transition: background-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: var(--colorNeutralForeground3);
+      border-radius: 50%;
+      transition: transform var(--durationFast) var(--curveEasyEase), background-color var(--durationFast) var(--curveEasyEase);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--colorBrandBackground2);
+      border-color: var(--colorBrandStroke1);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+      background-color: var(--colorBrandBackground);
+    }
+
+    .toggle-switch input:focus-visible + .toggle-slider {
+      outline: 2px solid var(--colorStrokeFocus2);
+      outline-offset: 2px;
+    }
+
+    /* Modal - Fluent 2 Dialog */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      background-color: var(--colorNeutralBackground1);
+      border-radius: var(--borderRadiusXLarge);
+      padding: var(--spacingVerticalXL) var(--spacingHorizontalXXL);
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: var(--shadow28);
+    }
+
+    .modal h2 {
+      font-size: var(--fontSizeBase500);
+      font-weight: var(--fontWeightSemibold);
+      margin-bottom: var(--spacingVerticalL);
+      color: var(--colorNeutralForeground1);
+    }
+
+    .modal p {
+      color: var(--colorNeutralForeground2);
+      margin-bottom: var(--spacingVerticalL);
+      line-height: var(--lineHeightBase300);
+    }
+
+    /* Fluent 2 Buttons */
+    .fluent-button {
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      border-radius: var(--borderRadiusMedium);
+      border: none;
+      font-family: var(--fontFamilyBase);
+      font-size: var(--fontSizeBase300);
+      font-weight: var(--fontWeightSemibold);
+      cursor: pointer;
+      transition: all var(--durationFast) var(--curveEasyEase);
+      min-width: 80px;
+      margin: var(--spacingVerticalXS);
+    }
+
+    .fluent-button.primary {
+      background-color: var(--colorBrandBackground);
+      color: #ffffff;
+    }
+
+    .fluent-button.primary:hover {
+      background-color: var(--colorBrandBackgroundHover);
+    }
+
+    .fluent-button.primary:active {
+      background-color: var(--colorBrandBackgroundPressed);
+    }
+
+    .fluent-button.secondary {
+      background-color: var(--colorNeutralBackground3);
+      color: var(--colorNeutralForeground1);
+      border: 1px solid var(--colorNeutralStroke1);
+    }
+
+    .fluent-button.secondary:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXS);
+      padding: var(--spacingVerticalM) var(--spacingHorizontalL);
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--borderRadiusCircular);
+      background-color: var(--colorNeutralForeground4);
+      animation: typingBounce 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: scale(0.8); }
+      40% { transform: scale(1.2); }
+    }
+
+    /* Custom Scrollbar - Fluent 2 Style */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background-color: var(--colorNeutralStroke1);
+      border-radius: var(--borderRadiusMedium);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: var(--colorNeutralForeground4);
+    }
+
+    /* Markdown Styles - Fluent 2 Typography */
+    .message-content a {
+      color: var(--colorBrandForeground1);
+      text-decoration: underline;
+    }
+
+    .message-content a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    .message-content code {
+      background-color: var(--colorNeutralBackground3);
+      padding: 2px var(--spacingHorizontalXS);
+      border-radius: var(--borderRadiusSmall);
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: var(--fontSizeBase200);
+    }
+
+    .message-content pre {
+      background-color: var(--colorNeutralBackground3);
+      padding: var(--spacingVerticalM);
+      border-radius: var(--borderRadiusMedium);
+      overflow-x: auto;
+      margin: var(--spacingVerticalS) 0;
+    }
+
+    .message-content pre code {
+      background: none;
+      padding: 0;
+    }
+
+    /* Headings */
+    .message-content h1,
+    .message-content h2,
+    .message-content h3,
+    .message-content h4,
+    .message-content h5,
+    .message-content h6 {
+      margin: var(--spacingVerticalM) 0 var(--spacingVerticalS) 0;
+      font-weight: var(--fontWeightSemibold);
+      line-height: 1.3;
+    }
+
+    .message-content h1 { font-size: var(--fontSizeBase600); }
+    .message-content h2 { font-size: var(--fontSizeBase500); }
+    .message-content h3 { font-size: var(--fontSizeBase400); }
+    .message-content h4 { font-size: var(--fontSizeBase300); }
+    .message-content h5,
+    .message-content h6 { font-size: var(--fontSizeBase200); }
+
+    .message-content h1:first-child,
+    .message-content h2:first-child,
+    .message-content h3:first-child {
+      margin-top: 0;
+    }
+
+    /* Lists */
+    .message-content ul,
+    .message-content ol {
+      margin: var(--spacingVerticalS) 0;
+      padding-left: var(--spacingHorizontalXXL);
+    }
+
+    .message-content li {
+      margin: var(--spacingVerticalXS) 0;
+      line-height: 1.5;
+    }
+
+    .message-content li > ul,
+    .message-content li > ol {
+      margin: var(--spacingVerticalXXS) 0;
+    }
+
+    .message-content ul {
+      list-style-type: disc;
+    }
+
+    .message-content ul ul {
+      list-style-type: circle;
+    }
+
+    .message-content ul ul ul {
+      list-style-type: square;
+    }
+
+    .message-content ol {
+      list-style-type: decimal;
+    }
+
+    /* Blockquotes */
+    .message-content blockquote {
+      margin: var(--spacingVerticalM) 0;
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      border-left: 4px solid var(--colorBrandStroke1);
+      background-color: var(--colorNeutralBackground2);
+      border-radius: 0 var(--borderRadiusMedium) var(--borderRadiusMedium) 0;
+      font-style: italic;
+      color: var(--colorNeutralForeground2);
+    }
+
+    .message-content blockquote p {
+      margin: 0;
+    }
+
+    /* Tables */
+    .message-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--spacingVerticalM) 0;
+      font-size: var(--fontSizeBase200);
+    }
+
+    .message-content th,
+    .message-content td {
+      padding: var(--spacingVerticalS) var(--spacingHorizontalM);
+      text-align: left;
+      border: 1px solid var(--colorNeutralStroke2);
+    }
+
+    .message-content th {
+      background-color: var(--colorNeutralBackground3);
+      font-weight: var(--fontWeightSemibold);
+    }
+
+    .message-content tr:nth-child(even) {
+      background-color: var(--colorNeutralBackground2);
+    }
+
+    /* Horizontal Rule */
+    .message-content hr {
+      border: none;
+      height: 1px;
+      background-color: var(--colorNeutralStroke2);
+      margin: var(--spacingVerticalL) 0;
+    }
+
+    /* Paragraphs */
+    .message-content p {
+      margin: 0 0 var(--spacingVerticalS) 0;
+    }
+
+    .message-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Bold and Italic */
+    .message-content strong {
+      font-weight: var(--fontWeightSemibold);
+    }
+
+    .message-content em {
+      font-style: italic;
+    }
+
+    /* Strikethrough */
+    .message-content del {
+      text-decoration: line-through;
+      color: var(--colorNeutralForeground4);
+    }
+
+    /* Images */
+    .message-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--borderRadiusMedium);
+      margin: var(--spacingVerticalS) 0;
+    }
+
+    /* Citation superscripts */
+    .message-content sup {
+      font-size: var(--fontSizeBase100);
+      color: var(--colorBrandForeground1);
+      font-weight: var(--fontWeightSemibold);
+      vertical-align: super;
+      margin-left: 1px;
+    }
+
+    /* Suggestion Buttons */
+    .suggestions-container {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacingHorizontalS);
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      background: transparent;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .suggestions-container::-webkit-scrollbar {
+      display: none;
+    }
+    .suggestions-container:empty {
+      display: none;
+    }
+    .suggestion-btn {
+      padding: var(--spacingVerticalXS) var(--spacingHorizontalM);
+      border-radius: var(--borderRadiusMedium);
+      border: 1px solid var(--colorNeutralStroke1);
+      background-color: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      font-size: var(--fontSizeBase200);
+      font-family: var(--fontFamilyBase);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all var(--durationFast) var(--curveEasyEase);
+      box-shadow: var(--shadow2);
+    }
+    .suggestion-btn:hover {
+      background-color: var(--colorSubtleBackgroundHover);
+      border-color: var(--colorNeutralStroke1Hover);
+    }
+    .suggestion-btn:active {
+      background-color: var(--colorSubtleBackgroundPressed);
+    }
+
+    .settings-section {
+      margin-bottom: var(--spacingVerticalXL);
+    }
+
+    .settings-section h3 {
+      font-size: var(--fontSizeBase200);
+      font-weight: var(--fontWeightSemibold);
+      margin-bottom: var(--spacingVerticalM);
+      color: var(--colorNeutralForeground3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacingVerticalS) 0;
+    }
+
+    /* Account Menu - Fluent 2 Dropdown */
+    .account-menu {
+      position: fixed;
+      top: 52px;
+      right: var(--spacingHorizontalL);
+      width: 280px;
+      background-color: var(--colorNeutralBackground1);
+      border: 1px solid var(--colorNeutralStroke2);
+      border-radius: var(--borderRadiusLarge);
+      box-shadow: var(--shadow16);
+      z-index: 200;
+      padding: var(--spacingVerticalM) 0;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px);
+      transition: opacity var(--durationFast) var(--curveEasyEase),
+                  transform var(--durationFast) var(--curveEasyEase),
+                  visibility var(--durationFast);
+    }
+
+    .account-menu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .account-menu-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalM);
+      padding: var(--spacingVerticalM) var(--spacingHorizontalL);
+      border-bottom: 1px solid var(--colorNeutralStroke2);
+      margin-bottom: var(--spacingVerticalS);
+    }
+
+    .account-menu-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--borderRadiusCircular);
+      background-color: var(--colorBrandBackground);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--fontWeightSemibold);
+      color: #ffffff;
+      font-size: var(--fontSizeBase400);
+      overflow: hidden;
+    }
+
+    .account-menu-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .account-menu-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .account-menu-name {
+      font-weight: var(--fontWeightSemibold);
+      font-size: var(--fontSizeBase300);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-menu-email {
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-menu-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalM);
+      width: 100%;
+      padding: var(--spacingVerticalS) var(--spacingHorizontalL);
+      border: none;
+      background: transparent;
+      color: var(--colorNeutralForeground1);
+      font-size: var(--fontSizeBase300);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .account-menu-item:hover {
+      background-color: var(--colorNeutralBackground1Hover);
+    }
+
+    .account-menu-item:focus-visible {
+      outline: 2px solid var(--colorBrandForeground1);
+      outline-offset: -2px;
+    }
+
+    .account-menu-item svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* MCP Apps Container */
+    .mcp-app-container {
+      position: relative;
+      width: 100%;
+      margin: var(--spacingVerticalM) 0;
+      border-radius: var(--borderRadiusLarge);
+      overflow: hidden;
+      background: var(--colorNeutralBackground3);
+      box-shadow: var(--shadow4);
+    }
+
+    .mcp-app-container.loading::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--colorNeutralBackground3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mcp-app-frame {
+      width: 100%;
+      border: none;
+      background: transparent;
+      display: block;
+    }
+
+    .mcp-app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacingVerticalXS) var(--spacingHorizontalM);
+      background: var(--colorNeutralBackground4);
+      border-bottom: 1px solid var(--colorNeutralStroke3);
+      font-size: var(--fontSizeBase200);
+      color: var(--colorNeutralForeground3);
+    }
+
+    .mcp-app-header .app-name {
+      display: flex;
+      align-items: center;
+      gap: var(--spacingHorizontalXS);
+    }
+
+    .mcp-app-header .app-name svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.7;
+    }
+
+    .mcp-app-close {
+      background: none;
+      border: none;
+      color: var(--colorNeutralForeground3);
+      cursor: pointer;
+      padding: var(--spacingVerticalXXS) var(--spacingHorizontalXS);
+      border-radius: var(--borderRadiusSmall);
+      transition: background-color var(--durationFast);
+    }
+
+    .mcp-app-close:hover {
+      background: var(--colorSubtleBackgroundHover);
+      color: var(--colorNeutralForeground1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Skip Link for Keyboard Navigation -->
+  <a href="#messageInput" class="skip-link">Skip to message input</a>
+
+  <!-- Screen Reader Announcements (Live Region) -->
+  <div id="srAnnouncements" class="sr-announcements" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div class="header-left">
+      <img id="agentIcon" class="header-icon-img" src="" alt="Agent icon" style="display: none;">
+      <svg class="header-icon" id="agentIconFallback" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.75 3A3.25 3.25 0 0 1 21 6.25v11.5A3.25 3.25 0 0 1 17.75 21H6.25A3.25 3.25 0 0 1 3 17.75V6.25A3.25 3.25 0 0 1 6.25 3h11.5Zm0 1.5H6.25A1.75 1.75 0 0 0 4.5 6.25v11.5c0 .966.784 1.75 1.75 1.75h11.5a1.75 1.75 0 0 0 1.75-1.75V6.25a1.75 1.75 0 0 0-1.75-1.75ZM8.75 13a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm6.5 0a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm-6.5-5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm6.5 0a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
+      </svg>
+      <h1 class="header-title" id="agentName">Power Agent Desktop</h1>
+      <div class="header-status" role="status" aria-live="polite">
+        <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+        <span id="statusText">Initializing...</span>
+      </div>
+    </div>
+    <nav class="header-actions" role="navigation" aria-label="Main actions">
+      <button class="text-button" id="newChatBtn" title="New conversation" aria-label="Start new conversation">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 2a.5.5 0 0 1 .5.5V7h4.5a.5.5 0 0 1 0 1H8.5v4.5a.5.5 0 0 1-1 0V8H3a.5.5 0 0 1 0-1h4.5V2.5A.5.5 0 0 1 8 2z"/></svg>
+        New chat
+      </button>
+      <button class="icon-button" id="saveConversationBtn" title="Download conversation" aria-label="Download current conversation">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+      </button>
+      <button class="icon-button" id="themeToggle" title="Toggle theme" aria-label="Toggle light and dark theme" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" id="themeIcon" aria-hidden="true"><path d="M6 0.278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/></svg>
+      </button>
+      <button class="icon-button" id="settingsBtn" title="Settings & MCP" aria-label="Settings and MCP server information">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+      </button>
+      <button class="account-button" id="accountBtn" title="Account" aria-label="Account settings and user profile">
+        <div class="account-avatar" id="accountAvatar" aria-hidden="true">
+          <span id="accountInitials">?</span>
+          <img id="accountPhoto" src="" alt="User profile photo" style="display: none;">
+        </div>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Chat Container -->
+  <main class="chat-container" role="main" aria-label="Conversation">
+    <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Chat messages" tabindex="0">
+    </div>
+  </main>
+
+  <!-- Suggestion Buttons -->
+  <div class="suggestions-container" id="suggestionsContainer" aria-label="Suggested responses"></div>
+
+  <!-- Input Area -->
+  <div class="input-area" role="form" aria-label="Message input">
+    <button class="voice-btn" id="micBtn" title="Voice input (Alt+M)" aria-label="Voice input, press Alt+M" aria-pressed="false">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.5 5a4.5 4.5 0 1 1 9 0v3a4.5 4.5 0 1 1-9 0V5zm4.5-3.5A3.5 3.5 0 0 0 4.5 5v3a3.5 3.5 0 1 0 7 0V5A3.5 3.5 0 0 0 8 1.5z"/><path d="M10.5 5v3a2.5 2.5 0 0 1-5 0V5a2.5 2.5 0 0 1 5 0zM8.5 12.975V15h-1v-2.025a5.5 5.5 0 0 1-5-5.475h1a4.5 4.5 0 0 0 9 0h1a5.5 5.5 0 0 1-5 5.475z"/></svg>
+      <span class="wake-indicator" aria-hidden="true"></span>
+    </button>
+    <button class="voice-btn tts-disabled" id="ttsBtn" title="Text-to-speech (Alt+T)" aria-label="Toggle text-to-speech for agent responses, press Alt+T" aria-pressed="false">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.026 8c0 2.071-.84 3.946-2.198 5.303l.708.707z"/><path d="M10.121 12.596A6.48 6.48 0 0 0 12.026 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.026 8a5.483 5.483 0 0 1-1.61 3.889l.706.707z"/><path d="M8.707 11.182A4.486 4.486 0 0 0 10.026 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.026 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.525 10.23H1.5A.5.5 0 0 1 1 9.73v-3.5a.5.5 0 0 1 .5-.5h2.025l2.663-2.178a.5.5 0 0 1 .529-.051z"/></svg>
+    </button>
+    <div class="input-wrapper">
+      <label for="messageInput" class="sr-only">Type your message</label>
+      <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off" aria-label="Type your message to the agent">
+    </div>
+    <button class="send-btn" id="sendBtn" title="Send message" aria-label="Send message">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11zm-12.2 7.238 3.892 1.945a.5.5 0 0 1 .167.167l1.945 3.892 4.536-11.34-10.54 5.336z"/></svg>
+    </button>
+  </div>
+
+
+
+  <!-- Account Menu -->
+  <div class="account-menu" id="accountMenu" role="menu" aria-labelledby="accountBtn" aria-hidden="true">
+    <div class="account-menu-header">
+      <div class="account-menu-avatar" id="menuAvatar">
+        <span id="menuInitials">?</span>
+        <img id="menuPhoto" src="" alt="" style="display: none;">
+      </div>
+      <div class="account-menu-info">
+        <div class="account-menu-name" id="menuUserName">Not signed in</div>
+        <div class="account-menu-email" id="menuUserEmail"></div>
+      </div>
+    </div>
+    <button class="account-menu-item" id="signOutBtn" role="menuitem" aria-label="Sign out of your account">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 3.25c0-.966.784-1.75 1.75-1.75h5.5a.75.75 0 0 1 0 1.5h-5.5a.25.25 0 0 0-.25.25v13.5c0 .138.112.25.25.25h5.5a.75.75 0 0 1 0 1.5h-5.5A1.75 1.75 0 0 1 3 16.75V3.25Zm9.994 9.5 2.47-2.47a.75.75 0 0 0-1.06-1.06l-2.47 2.47V7.5a.75.75 0 0 0-1.5 0v4.19l-2.47-2.47a.75.75 0 0 0-1.06 1.06l3.25 3.25a.75.75 0 0 0 1.06 0l3.25-3.25a.75.75 0 0 0-1.06-1.06l-2.47 2.47V12a.75.75 0 0 0 1.5 0v.75Z" transform="rotate(-90 10 10)"/></svg>
+      Sign out
+    </button>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="settings-panel hidden" id="settingsPanel" role="dialog" aria-labelledby="settingsPanelTitle">
+    <button class="settings-close-btn" id="settingsCloseBtn" aria-label="Close settings">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+    </button>
+    <h3 id="settingsPanelTitle">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M1.91 6.99a8 8 0 0 1 15.18 0l.46-.16-.45.17a1.94 1.94 0 0 1 1.85 1.59c.21 1.05-.33 2.02-1.21 2.48l.23.43-.24-.42a1.94 1.94 0 0 0-.4 2.33 8 8 0 0 1-13.66 0c-.55-.92-.44-2.04.4-2.75l-.32-.38.33.37c.83-.7 1.1-1.83.77-2.86A1.94 1.94 0 0 1 1.91 7zM10 3a7 7 0 0 0-6.3 3.96l-.01.03a.94.94 0 0 0 .4 1.15c.6.35.99 1.05.99 1.86s-.4 1.51-1 1.86a.94.94 0 0 0-.38 1.18A7 7 0 0 0 10 17a7 7 0 0 0 6.3-3.96.94.94 0 0 0-.39-1.18A2.1 2.1 0 0 1 15 10c0-.81.4-1.51 1-1.86a.94.94 0 0 0 .38-1.18A7 7 0 0 0 10 3zm0 5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm1 2a1 1 0 1 0-2 0 1 1 0 0 0 2 0z"/></svg>
+      Settings
+    </h3>
+
+    <div class="settings-section">
+      <h4>Keyboard Shortcuts</h4>
+      <p style="margin: 0 0 var(--spacingVerticalS) 0;">
+        <strong>Alt+M</strong> - Toggle microphone for voice input
+      </p>
+      <p style="margin: 0;">
+        <strong>Alt+T</strong> - Toggle text-to-speech
+      </p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--colorNeutralStroke2); margin: var(--spacingVerticalL) 0;">
+
+    <div class="settings-section">
+      <h4>App Settings</h4>
+      
+      <div class="settings-toggle">
+        <div class="settings-toggle-label">
+          <span>Auto-save on new chat</span>
+          <span>Automatically download conversation when starting a new chat</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="autoSaveConversation">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle">
+        <div class="settings-toggle-label">
+          <span>Require login on startup</span>
+          <span>Always prompt for sign-in when the app opens</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="forceLoginOnStart">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle">
+        <div class="settings-toggle-label">
+          <span>Enable app logging</span>
+          <span>Log debug info to console for troubleshooting</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="enableAppLogging">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid var(--colorNeutralStroke2); margin: var(--spacingVerticalL) 0;">
+    
+    <div class="settings-section">
+      <h4>Connect from VS Code / GitHub Copilot</h4>
+      <p>Add this to your VS Code <code>settings.json</code> or MCP config file to connect:</p>
+      <div class="settings-code" id="mcpConfigCode">{
+  "mcpServers": {
+    "power-agent-desktop": {
+      "command": "node",
+      "args": ["src/dist/mcp-server/index.js"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}</div>
+      <button class="settings-copy-btn" id="copyMcpConfig">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
+        Copy to clipboard
+      </button>
+    </div>
+
+    <div class="settings-section" style="margin-bottom: 0;">
+      <h4>Available MCP Tools</h4>
+      <p>Once connected, these tools become available:</p>
+      <ul style="font-size: var(--fontSizeBase200); color: var(--colorNeutralForeground2); margin: 0; padding-left: var(--spacingHorizontalL);">
+        <li><code>chat_with_agent</code> - Send messages to the Copilot Studio agent</li>
+        <li><code>start_conversation</code> - Begin a new conversation session</li>
+        <li><code>get_agent_capabilities</code> - Query agent capabilities</li>
+        <li><code>render_adaptive_card</code> - Display Adaptive Cards</li>
+        <li><code>render_mcp_app</code> - Render interactive MCP App UIs</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Auth Configuration (custom PKCE flow for Electron)
+    const authConfig = {
+      clientId: '',
+      tenantId: '',
+      authority: '',
+      redirectUri: 'http://localhost'
+    };
+
+    const loginRequest = {
+      scopes: ['https://api.powerplatform.com/CopilotStudio.Copilots.Invoke', 'openid', 'profile', 'email', 'offline_access']
+    };
+
+    const speechLoginRequest = {
+      scopes: ['https://cognitiveservices.azure.com/.default']
+    };
+
+    let currentAccount = null;
+    let accessToken = null;
+
+    // State
+    let conversationId = null;
+    let isRecording = false;
+    let isTtsEnabled = false;
+    let currentTheme = 'dark';
+    let speechRecognizer = null;
+    let speechRetryCount = 0;
+    let lastSpeechError = null;
+    let speechSynthesizer = null;
+    let currentAzureSynthesizer = null;
+    let currentAudioPlayer = null;
+    let isSpeaking = false;
+    let isAuthenticated = false;
+
+    // DOM Elements
+    const messagesContainer = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const micBtn = document.getElementById('micBtn');
+    const ttsBtn = document.getElementById('ttsBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const themeToggle = document.getElementById('themeToggle');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const saveConversationBtn = document.getElementById('saveConversationBtn');
+    const accountBtn = document.getElementById('accountBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+    const copyMcpConfigBtn = document.getElementById('copyMcpConfig');
+    const autoSaveToggle = document.getElementById('autoSaveConversation');
+    const forceLoginToggle = document.getElementById('forceLoginOnStart');
+    const loggingToggle = document.getElementById('enableAppLogging');
+    
+    // App settings
+    let appSettings = {
+      autoSaveConversation: true,
+      forceLoginOnStart: false,
+      enableAppLogging: false
+    };
+    
+    // Custom logging function
+    function appLog(...args) {
+      if (appSettings.enableAppLogging) {
+        console.log('[PowerAgent]', new Date().toISOString(), ...args);
+      }
+    }
+    
+    function loadSettings() {
+      try {
+        const saved = localStorage.getItem('appSettings');
+        if (saved) {
+          appSettings = { ...appSettings, ...JSON.parse(saved) };
+        }
+        // Always sync checkboxes with current appSettings (including defaults)
+        autoSaveToggle.checked = appSettings.autoSaveConversation;
+        forceLoginToggle.checked = appSettings.forceLoginOnStart;
+        loggingToggle.checked = appSettings.enableAppLogging;
+      } catch (e) {
+        console.warn('Failed to load settings:', e);
+      }
+    }
+    
+    function saveSettings() {
+      appSettings.autoSaveConversation = autoSaveToggle.checked;
+      appSettings.forceLoginOnStart = forceLoginToggle.checked;
+      appSettings.enableAppLogging = loggingToggle.checked;
+      localStorage.setItem('appSettings', JSON.stringify(appSettings));
+    }
+    
+    autoSaveToggle.addEventListener('change', saveSettings);
+    forceLoginToggle.addEventListener('change', saveSettings);
+    loggingToggle.addEventListener('change', saveSettings);
+    const accountAvatar = document.getElementById('accountAvatar');
+    const accountInitials = document.getElementById('accountInitials');
+    const accountPhoto = document.getElementById('accountPhoto');
+    const agentNameEl = document.getElementById('agentName');
+    const signOutBtn = document.getElementById('signOutBtn');
+    
+    // Account menu elements
+    const accountMenu = document.getElementById('accountMenu');
+    const menuAvatar = document.getElementById('menuAvatar');
+    const menuInitials = document.getElementById('menuInitials');
+    const menuPhoto = document.getElementById('menuPhoto');
+    const menuUserName = document.getElementById('menuUserName');
+    const menuUserEmail = document.getElementById('menuUserEmail');
+
+    // Configure marked.js for better markdown rendering
+    marked.setOptions({
+      gfm: true,           // GitHub Flavored Markdown
+      breaks: true,        // Convert \n to <br>
+      headerIds: false,    // Don't add IDs to headers
+      mangle: false,       // Don't escape autolinked emails
+      smartLists: true,    // Better list handling
+      smartypants: true    // Smart quotes and dashes
+    });
+
+    // IndexedDB for conversation history
+    const DB_NAME = 'PowerAgentDesktopDB';
+    const DB_VERSION = 1;
+    let db = null;
+
+    async function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          db = request.result;
+          resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('conversations')) {
+            db.createObjectStore('conversations', { keyPath: 'id', autoIncrement: true });
+          }
+          if (!db.objectStoreNames.contains('messages')) {
+            const messagesStore = db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+            messagesStore.createIndex('conversationId', 'conversationId', { unique: false });
+          }
+        };
+      });
+    }
+
+    // Add message to UI
+    function addMessage(content, sender = 'agent', isCard = false, citations = null) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}`;
+      
+      const messageWrapper = document.createElement('div');
+      messageWrapper.className = 'message-wrapper';
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      
+      if (isCard) {
+        contentDiv.innerHTML = content;
+      } else if (sender === 'agent') {
+        // First parse markdown
+        let html = marked.parse(content);
+        // Format citation links as superscripts - marked.js converts [1]: url "title" 
+        // reference links to <a href="url" title="title">1</a>
+        html = html.replace(/<a\s+href="([^"]+)"\s+title="([^"]+)">(\d+)<\/a>/g, 
+          '<sup class="citation"><a href="$1" title="$2">[$3]</a></sup>');
+        contentDiv.innerHTML = html;
+      } else {
+        contentDiv.textContent = content;
+      }
+      
+      messageWrapper.appendChild(contentDiv);
+      
+      // Add timestamp
+      const timestamp = document.createElement('div');
+      timestamp.className = 'message-timestamp';
+      timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      messageWrapper.appendChild(timestamp);
+      
+      // Add citations if provided
+      if (citations && citations.length > 0) {
+        const citationsDiv = document.createElement('div');
+        citationsDiv.className = 'message-citations';
+        citations.forEach((citation, index) => {
+          const link = document.createElement('a');
+          link.className = 'citation-link';
+          link.href = citation.url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1.002 1.002 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4.018 4.018 0 0 1-.128-1.287z"/><path d="M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243L6.586 4.672z"/></svg>${citation.title || 'Source ' + (index + 1)}`;
+          citationsDiv.appendChild(link);
+        });
+        messageWrapper.appendChild(citationsDiv);
+      }
+      
+      messageDiv.appendChild(messageWrapper);
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+      // TTS for agent messages
+      if (sender === 'agent' && isTtsEnabled && !isCard) {
+        speakText(content);
+      }
+    }
+
+    // Display suggested action buttons
+    function displaySuggestions(suggestions) {
+      console.log('[UI] displaySuggestions called with:', suggestions);
+      const container = document.getElementById('suggestionsContainer');
+      container.innerHTML = '';
+      
+      if (!suggestions || suggestions.length === 0) {
+        console.log('[UI] No suggestions to display');
+        return;
+      }
+      
+      console.log('[UI] Creating', suggestions.length, 'suggestion buttons');
+      suggestions.forEach(suggestion => {
+        const btn = document.createElement('button');
+        btn.className = 'suggestion-btn';
+        btn.textContent = suggestion.title || suggestion.text || suggestion;
+        btn.addEventListener('click', () => {
+          const text = suggestion.value || suggestion.title || suggestion.text || suggestion;
+          container.innerHTML = ''; // Clear suggestions immediately
+          sendMessage(text); // Send directly to chat
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    // Clear suggestions when user starts typing
+    messageInput.addEventListener('input', () => {
+      document.getElementById('suggestionsContainer').innerHTML = '';
+    });
+
+    // Show typing indicator
+    function showTypingIndicator() {
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'message agent';
+      typingDiv.id = 'typing-indicator';
+      typingDiv.innerHTML = `
+        <div class="typing-indicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      `;
+      messagesContainer.appendChild(typingDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+      const typing = document.getElementById('typing-indicator');
+      if (typing) typing.remove();
+    }
+
+    // Render Adaptive Card
+    function renderAdaptiveCard(cardPayload) {
+      try {
+        const adaptiveCard = new AdaptiveCards.AdaptiveCard();
+        adaptiveCard.hostConfig = new AdaptiveCards.HostConfig({
+          fontFamily: 'Segoe UI, system-ui, sans-serif',
+          containerStyles: {
+            default: {
+              backgroundColor: 'transparent',
+              foregroundColors: {
+                default: { default: '#ffffff' }
+              }
+            }
+          }
+        });
+        
+        adaptiveCard.parse(cardPayload);
+        const renderedCard = adaptiveCard.render();
+        
+        const container = document.createElement('div');
+        container.className = 'adaptive-card-container';
+        container.appendChild(renderedCard);
+        
+        return container.outerHTML;
+      } catch (error) {
+        console.error('Card render error:', error);
+        return null;
+      }
+    }
+
+    // MCP Apps Support
+    const mcpApps = new Map(); // Track active MCP App instances
+
+    /**
+     * Render an MCP App in a sandboxed iframe
+     * @param {Object} uiResource - The UI resource from MCP server
+     * @param {string} uiResource.uri - The ui:// URI
+     * @param {string} uiResource.name - Display name for the app
+     * @param {string} uiResource.html - HTML content to render
+     * @param {Object} uiResource.data - Initial data to pass to the app
+     * @param {number} uiResource.height - Optional height in pixels
+     */
+    function renderMcpApp(uiResource) {
+      try {
+        const appId = `mcp-app-${Date.now()}`;
+        const height = uiResource.height || 400;
+        
+        // Create container
+        const container = document.createElement('div');
+        container.className = 'mcp-app-container loading';
+        container.id = appId;
+        
+        // Create header with app name and close button
+        const header = document.createElement('div');
+        header.className = 'mcp-app-header';
+        header.innerHTML = `
+          <span class="app-name">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-7zM2 3.5A2.5 2.5 0 0 1 4.5 1h7A2.5 2.5 0 0 1 14 3.5v9a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 12.5v-9z"/></svg>
+            ${uiResource.name || 'MCP App'}
+          </span>
+          <button class="mcp-app-close" title="Close app">✕</button>
+        `;
+        container.appendChild(header);
+        
+        // Create sandboxed iframe
+        const iframe = document.createElement('iframe');
+        iframe.className = 'mcp-app-frame';
+        iframe.style.height = `${height}px`;
+        iframe.sandbox = 'allow-scripts allow-forms allow-popups allow-same-origin';
+        
+        // Build HTML content with MCP Apps bridge
+        const appHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              :root {
+                --colorNeutralBackground1: ${getComputedStyle(document.documentElement).getPropertyValue('--colorNeutralBackground1')};
+                --colorNeutralForeground1: ${getComputedStyle(document.documentElement).getPropertyValue('--colorNeutralForeground1')};
+                --colorBrandBackground: ${getComputedStyle(document.documentElement).getPropertyValue('--colorBrandBackground')};
+                --fontFamilyBase: ${getComputedStyle(document.documentElement).getPropertyValue('--fontFamilyBase')};
+              }
+              body {
+                margin: 0;
+                padding: 16px;
+                font-family: var(--fontFamilyBase);
+                background: var(--colorNeutralBackground1);
+                color: var(--colorNeutralForeground1);
+              }
+            </style>
+          </head>
+          <body>
+            ${uiResource.html || ''}
+            <script>
+              // MCP Apps Bridge for iframe communication
+              const mcpAppBridge = {
+                hostWindow: window.parent,
+                appId: '${appId}',
+                data: ${JSON.stringify(uiResource.data || {})},
+                
+                // Send message to host
+                sendToHost(type, payload) {
+                  this.hostWindow.postMessage({
+                    source: 'mcp-app',
+                    appId: this.appId,
+                    type,
+                    payload
+                  }, '*');
+                },
+                
+                // Call an MCP tool via the host
+                callTool(toolName, args) {
+                  return new Promise((resolve, reject) => {
+                    const callId = Date.now().toString();
+                    const handler = (event) => {
+                      if (event.data?.source === 'mcp-host' && event.data?.callId === callId) {
+                        window.removeEventListener('message', handler);
+                        if (event.data.error) reject(new Error(event.data.error));
+                        else resolve(event.data.result);
+                      }
+                    };
+                    window.addEventListener('message', handler);
+                    this.sendToHost('tool-call', { callId, toolName, args });
+                  });
+                },
+                
+                // Request to close this app
+                close() {
+                  this.sendToHost('close', {});
+                },
+                
+                // Get initial data passed to app
+                getData() {
+                  return this.data;
+                }
+              };
+              
+              // Expose to app scripts
+              window.mcpApp = mcpAppBridge;
+              
+              // Signal ready
+              mcpAppBridge.sendToHost('ready', {});
+            <\/script>
+          </body>
+          </html>
+        `;
+        
+        // Load content via blob URL
+        const blob = new Blob([appHtml], { type: 'text/html' });
+        iframe.src = URL.createObjectURL(blob);
+        
+        // Handle iframe load
+        iframe.onload = () => {
+          container.classList.remove('loading');
+          URL.revokeObjectURL(iframe.src); // Clean up blob URL
+        };
+        
+        container.appendChild(iframe);
+        
+        // Store reference
+        mcpApps.set(appId, { container, iframe, uiResource });
+        
+        // Setup close button
+        header.querySelector('.mcp-app-close').addEventListener('click', () => {
+          closeMcpApp(appId);
+        });
+        
+        return container.outerHTML;
+      } catch (error) {
+        console.error('MCP App render error:', error);
+        return null;
+      }
+    }
+
+    // Close and cleanup an MCP App
+    function closeMcpApp(appId) {
+      const app = mcpApps.get(appId);
+      if (app) {
+        app.container.remove();
+        mcpApps.delete(appId);
+      }
+    }
+
+    // Handle messages from MCP Apps
+    window.addEventListener('message', async (event) => {
+      if (event.data?.source !== 'mcp-app') return;
+      
+      const { appId, type, payload } = event.data;
+      const app = mcpApps.get(appId);
+      if (!app) return;
+      
+      switch (type) {
+        case 'ready':
+          console.log(`MCP App ${appId} ready`);
+          break;
+          
+        case 'close':
+          closeMcpApp(appId);
+          break;
+          
+        case 'tool-call':
+          // Forward tool call to MCP server via Electron IPC
+          try {
+            const result = await window.electronAPI.callMcpTool(payload.toolName, payload.args);
+            app.iframe.contentWindow.postMessage({
+              source: 'mcp-host',
+              callId: payload.callId,
+              result
+            }, '*');
+          } catch (error) {
+            app.iframe.contentWindow.postMessage({
+              source: 'mcp-host',
+              callId: payload.callId,
+              error: error.message
+            }, '*');
+          }
+          break;
+      }
+    });
+
+    // Send message
+    async function sendMessage(text) {
+      if (!text.trim()) return;
+      
+      addMessage(text, 'user');
+      messageInput.value = '';
+      sendBtn.disabled = true;
+      showTypingIndicator();
+
+      try {
+        // Send message via IPC to main process -> Copilot Studio
+        const response = await window.electronAPI.sendMessageToAgent(text, accessToken);
+        console.log('[UI] Full response from agent:', JSON.stringify(response, null, 2));
+        
+        hideTypingIndicator();
+
+        // Handle response
+        if (response.cards && response.cards.length > 0) {
+          for (const card of response.cards) {
+            const cardHtml = renderAdaptiveCard(card);
+            if (cardHtml) addMessage(cardHtml, 'agent', true);
+          }
+        }
+        if (response.text) {
+          addMessage(response.text, 'agent');
+        }
+        if (response.agentName) {
+          agentNameEl.textContent = response.agentName;
+        }
+        // Display suggested actions as buttons
+        displaySuggestions(response.suggestedActions);
+      } catch (error) {
+        console.error('Send error:', error);
+        hideTypingIndicator();
+        addMessage(`Error: ${error.message || 'Failed to send message'}. Please try again.`, 'agent');
+      }
+
+      sendBtn.disabled = false;
+    }
+
+    // Speech synthesis - Azure Neural TTS with browser fallback
+    let femaleVoice = null;
+    let speechRegion = null;
+    let speechResourceId = null;
+    
+    // Initialize Azure Speech config
+    async function initAzureSpeech() {
+      console.log('[TTS] Initializing Azure Speech...');
+      if (window.electronAPI && window.electronAPI.getConfig) {
+        const config = await window.electronAPI.getConfig();
+        console.log('[TTS] Config received:', { speechRegion: config.speechRegion, hasResourceId: !!config.speechResourceId });
+        if (config.speechRegion) {
+          speechRegion = config.speechRegion;
+          console.log('[TTS] Speech region set to:', speechRegion);
+        }
+        if (config.speechResourceId) {
+          speechResourceId = config.speechResourceId;
+          console.log('[TTS] Speech resource ID set');
+        }
+        // Also set authConfig early so getSpeechToken can use it
+        if (config.clientId) {
+          authConfig.clientId = config.clientId;
+        }
+        if (config.tenantId) {
+          authConfig.tenantId = config.tenantId;
+          authConfig.authority = `https://login.microsoftonline.com/${config.tenantId}`;
+        }
+      } else {
+        console.log('[TTS] electronAPI.getConfig not available');
+      }
+    }
+    
+    // Fetch agent icon from Dataverse bots table
+    async function fetchAgentIcon() {
+      console.log('[Icon] Fetching agent icon from Dataverse...');
+      const agentIconEl = document.getElementById('agentIcon');
+      const agentIconFallback = document.getElementById('agentIconFallback');
+      
+      try {
+        const config = await window.electronAPI.getConfig();
+        if (!config.directConnectUrl) {
+          console.log('[Icon] No directConnectUrl configured');
+          return;
+        }
+        
+        // Parse environment ID and bot schema name from directConnectUrl
+        // Format: https://{envId}.{region}.environment.api.powerplatform.com/copilotstudio/dataverse-backed/authenticated/bots/{schemaName}/conversations
+        const url = config.directConnectUrl;
+        console.log('[Icon] Parsing URL:', url);
+        
+        const urlMatch = url.match(/https:\/\/([^\.]+)\.[^\/]+\/copilotstudio\/dataverse-backed\/authenticated\/bots\/([^\/]+)/i);
+        if (!urlMatch) {
+          console.log('[Icon] Could not parse URL');
+          return;
+        }
+        
+        const envIdFromUrl = urlMatch[1];  // e.g., "c4f149b09f42e8c497d8bc69b59f97"
+        const schemaName = urlMatch[2];
+        console.log('[Icon] Environment ID:', envIdFromUrl, 'Schema:', schemaName);
+        
+        // Get stored refresh token
+        const storedTokens = JSON.parse(localStorage.getItem('auth_tokens') || '{}');
+        if (!storedTokens.refreshToken) {
+          console.log('[Icon] No refresh token available');
+          return;
+        }
+        
+        // Step 1: Get token for Global Discovery
+        console.log('[Icon] Getting Global Discovery token...');
+        const discoTokenResponse = await fetch(`https://login.microsoftonline.com/${authConfig.tenantId}/oauth2/v2.0/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: authConfig.clientId,
+            scope: 'https://globaldisco.crm.dynamics.com/.default',
+            grant_type: 'refresh_token',
+            refresh_token: storedTokens.refreshToken
+          })
+        });
+        
+        if (!discoTokenResponse.ok) {
+          console.log('[Icon] Failed to get discovery token:', discoTokenResponse.status);
+          return;
+        }
+        
+        const discoTokenData = await discoTokenResponse.json();
+        const discoToken = discoTokenData.access_token;
+        
+        // Step 2: Call Global Discovery to find Dataverse URL
+        console.log('[Icon] Calling Global Discovery...');
+        const discoResponse = await fetch('https://globaldisco.crm.dynamics.com/api/discovery/v2.0/Instances', {
+          headers: {
+            'Authorization': `Bearer ${discoToken}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!discoResponse.ok) {
+          console.log('[Icon] Discovery failed:', discoResponse.status);
+          return;
+        }
+        
+        const discoData = await discoResponse.json();
+        console.log('[Icon] Found', discoData.value?.length || 0, 'instances');
+        
+        // Find the matching environment - match by environment ID
+        // The EnvironmentId in discovery might be in GUID format with dashes
+        let dataverseUrl = null;
+        for (const instance of discoData.value || []) {
+          // Compare environment IDs (removing dashes for comparison)
+          const instanceEnvId = (instance.EnvironmentId || '').replace(/-/g, '').toLowerCase();
+          if (instanceEnvId === envIdFromUrl.toLowerCase() || 
+              envIdFromUrl.toLowerCase().includes(instanceEnvId) ||
+              instanceEnvId.includes(envIdFromUrl.toLowerCase())) {
+            dataverseUrl = instance.ApiUrl;
+            console.log('[Icon] Matched environment:', instance.FriendlyName, '-> URL:', dataverseUrl);
+            break;
+          }
+        }
+        
+        if (!dataverseUrl) {
+          console.log('[Icon] Could not find matching Dataverse environment');
+          console.log('[Icon] Looking for env ID:', envIdFromUrl);
+          console.log('[Icon] Available environments:', discoData.value?.map(i => ({ name: i.FriendlyName, id: i.EnvironmentId })));
+          return;
+        }
+        
+        // Step 3: Get token for Dataverse
+        console.log('[Icon] Getting Dataverse token for:', dataverseUrl);
+        // Ensure URL ends with slash for proper scope format
+        const dvBaseUrl = dataverseUrl.endsWith('/') ? dataverseUrl : dataverseUrl + '/';
+        const dvTokenResponse = await fetch(`https://login.microsoftonline.com/${authConfig.tenantId}/oauth2/v2.0/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: authConfig.clientId,
+            scope: `${dvBaseUrl}user_impersonation`,
+            grant_type: 'refresh_token',
+            refresh_token: storedTokens.refreshToken
+          })
+        });
+        
+        if (!dvTokenResponse.ok) {
+          const errText = await dvTokenResponse.text();
+          console.log('[Icon] Failed to get Dataverse token:', dvTokenResponse.status, errText);
+          return;
+        }
+        
+        const dvTokenData = await dvTokenResponse.json();
+        const dvToken = dvTokenData.access_token;
+        
+        // Step 4: Query bots table for iconbase64
+        // Query by schemaname (schema name includes publisher prefix like 'tst_')
+        const botsQuery = `${dvBaseUrl}api/data/v9.2/bots?$select=name,schemaname,iconbase64&$filter=schemaname eq '${schemaName}'`;
+        console.log('[Icon] Querying bots table:', botsQuery);
+        
+        const botsResponse = await fetch(botsQuery, {
+          headers: {
+            'Authorization': `Bearer ${dvToken}`,
+            'Accept': 'application/json',
+            'OData-MaxVersion': '4.0',
+            'OData-Version': '4.0'
+          }
+        });
+        
+        if (!botsResponse.ok) {
+          console.log('[Icon] Bots query failed:', botsResponse.status, await botsResponse.text());
+          return;
+        }
+        
+        const botsData = await botsResponse.json();
+        console.log('[Icon] Found', botsData.value?.length || 0, 'bots');
+        
+        if (botsData.value && botsData.value.length > 0) {
+          const bot = botsData.value[0];
+          console.log('[Icon] Bot name:', bot.name, 'Has icon:', !!bot.iconbase64);
+          
+          if (bot.iconbase64) {
+            // iconbase64 is stored as base64 PNG
+            agentIconEl.src = bot.iconbase64.startsWith('data:') ? bot.iconbase64 : `data:image/png;base64,${bot.iconbase64}`;
+            agentIconEl.style.display = 'block';
+            agentIconFallback.style.display = 'none';
+            agentIconEl.onerror = () => {
+              console.log('[Icon] Icon load error, using fallback');
+              agentIconEl.style.display = 'none';
+              agentIconFallback.style.display = 'block';
+            };
+            console.log('[Icon] Successfully loaded bot icon from Dataverse');
+            return;
+          }
+        }
+        
+        console.log('[Icon] No icon found, using default');
+      } catch (e) {
+        console.log('[Icon] Error:', e.message, e.stack);
+      }
+    }
+    
+    // Get speech token using AAD auth
+    async function getSpeechToken() {
+      console.log('[TTS] Getting speech token...');
+      if (!speechRegion) {
+        console.log('[TTS] No speech region configured');
+        return null;
+      }
+      
+      try {
+        const storedTokens = JSON.parse(localStorage.getItem('auth_tokens') || '{}');
+        console.log('[TTS] Has refresh token:', !!storedTokens.refreshToken);
+        if (!storedTokens.refreshToken) return null;
+        
+        console.log('[TTS] Requesting cognitive services token...');
+        const tokenResponse = await fetch(`https://login.microsoftonline.com/${authConfig.tenantId}/oauth2/v2.0/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: authConfig.clientId,
+            scope: 'https://cognitiveservices.azure.com/.default',
+            grant_type: 'refresh_token',
+            refresh_token: storedTokens.refreshToken
+          })
+        });
+        
+        console.log('[TTS] Token response status:', tokenResponse.status);
+        if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          console.log('[TTS] Token error:', errorText);
+          return null;
+        }
+        
+        const tokenData = await tokenResponse.json();
+        console.log('[TTS] Got access token:', !!tokenData.access_token);
+        return tokenData.access_token;
+      } catch (e) {
+        console.log('[TTS] Could not get speech token:', e);
+        return null;
+      }
+    }
+    
+    // Load browser voices
+    function loadVoices() {
+      const voices = window.speechSynthesis.getVoices();
+      femaleVoice = voices.find(v => 
+        v.name.includes('Zira') || 
+        v.name.includes('Aria') ||
+        v.name.includes('Jenny') ||
+        v.name.includes('Female') ||
+        v.name.includes('Samantha') ||
+        (v.name.includes('Google') && v.name.includes('Female'))
+      ) || voices.find(v => 
+        v.lang.startsWith('en') && v.name.toLowerCase().includes('female')
+      ) || voices.find(v => 
+        v.lang.startsWith('en')
+      );
+    }
+    
+    if ('speechSynthesis' in window) {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    // Stop any ongoing speech
+    function stopSpeech() {
+      console.log('[TTS] Stopping speech...');
+      isSpeaking = false;
+      
+      // Stop Azure TTS audio player first (this actually stops the audio)
+      if (currentAudioPlayer) {
+        try {
+          currentAudioPlayer.pause();
+          currentAudioPlayer.close();
+          console.log('[TTS] Audio player stopped');
+        } catch (e) {
+          console.log('[TTS] Error stopping audio player:', e);
+        }
+        currentAudioPlayer = null;
+      }
+      
+      // Then close Azure synthesizer
+      if (currentAzureSynthesizer) {
+        try {
+          currentAzureSynthesizer.close();
+          console.log('[TTS] Synthesizer closed');
+        } catch (e) {
+          console.log('[TTS] Error closing synthesizer:', e);
+        }
+        currentAzureSynthesizer = null;
+      }
+      
+      // Stop browser TTS
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    async function speakText(text) {
+      // Stop any existing speech first
+      stopSpeech();
+      
+      // Clean markdown and citations
+      const cleanText = text
+        .replace(/\[\d+\]/g, '') // Remove citation brackets
+        .replace(/[#*`\[\]]/g, '')
+        .replace(/\n+/g, '. ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      isSpeaking = true;
+      
+      // Debug: Log TTS status
+      console.log('[TTS] SpeechSDK available:', typeof SpeechSDK !== 'undefined');
+      console.log('[TTS] speechRegion:', speechRegion);
+      
+      // Try Azure Neural TTS first for high quality
+      if (typeof SpeechSDK !== 'undefined' && speechRegion && speechResourceId) {
+        try {
+          console.log('[TTS] Attempting Azure Neural TTS...');
+          const token = await getSpeechToken();
+          console.log('[TTS] Token obtained:', !!token);
+          if (token) {
+            // AAD tokens require format: aad#<resourceId>#<token>
+            const authToken = `aad#${speechResourceId}#${token}`;
+            const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(authToken, speechRegion);
+            speechConfig.speechSynthesisVoiceName = 'en-US-JennyNeural'; // Natural female voice
+            
+            // Use SpeakerAudioDestination for stoppable audio playback
+            const player = new SpeechSDK.SpeakerAudioDestination();
+            currentAudioPlayer = player;
+            
+            player.onAudioEnd = () => {
+              console.log('[TTS] Audio playback ended');
+              isSpeaking = false;
+              currentAudioPlayer = null;
+              currentAzureSynthesizer = null;
+            };
+            
+            const audioConfig = SpeechSDK.AudioConfig.fromSpeakerOutput(player);
+            const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
+            currentAzureSynthesizer = synthesizer;
+            
+            console.log('[TTS] Using Azure Neural voice: en-US-JennyNeural');
+            synthesizer.speakTextAsync(
+              cleanText,
+              result => {
+                console.log('[TTS] Azure result reason:', result.reason);
+                if (result.reason === SpeechSDK.ResultReason.Canceled) {
+                  const cancellation = SpeechSDK.CancellationDetails.fromResult(result);
+                  console.log('[TTS] Azure TTS canceled:', cancellation.reason, cancellation.errorDetails);
+                  isSpeaking = false;
+                  currentAudioPlayer = null;
+                  currentAzureSynthesizer = null;
+                  synthesizer.close();
+                  speakWithBrowserTTS(cleanText);
+                }
+              },
+              error => {
+                console.log('[TTS] Azure TTS error:', error);
+                isSpeaking = false;
+                currentAudioPlayer = null;
+                currentAzureSynthesizer = null;
+                synthesizer.close();
+                speakWithBrowserTTS(cleanText);
+              }
+            );
+            return;
+          } else {
+            console.log('[TTS] No token available, using browser TTS');
+          }
+        } catch (e) {
+          console.log('[TTS] Azure TTS failed, falling back to browser:', e);
+        }
+      } else {
+        console.log('[TTS] Azure TTS not available - SDK:', typeof SpeechSDK !== 'undefined', 'Region:', speechRegion, 'ResourceId:', !!speechResourceId);
+      }
+      
+      // Fallback to browser TTS
+      console.log('[TTS] Using browser TTS fallback');
+      speakWithBrowserTTS(cleanText);
+    }
+    
+    // Browser TTS with improved settings
+    function speakWithBrowserTTS(text) {
+      if (!('speechSynthesis' in window)) return;
+      
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      isSpeaking = true;
+      
+      // Break into sentences for more natural speech
+      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      
+      let delay = 0;
+      const lastIndex = sentences.length - 1;
+      sentences.forEach((sentence, index) => {
+        const utterance = new SpeechSynthesisUtterance(sentence.trim() + '.');
+        if (femaleVoice) {
+          utterance.voice = femaleVoice;
+        }
+        utterance.rate = 0.92; // Slightly slower for clarity
+        utterance.pitch = 1.05; // Slightly higher pitch
+        
+        // Track when finished speaking
+        if (index === lastIndex) {
+          utterance.onend = () => { isSpeaking = false; };
+        }
+        
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, delay);
+        delay += 150; // Small gap between sentences
+      });
+    }
+
+    // Initialize Azure speech recognition
+    let azureRecognizer = null;
+    
+    async function initSpeechRecognition() {
+      // Debug: Check Azure STT prerequisites
+      console.log('[STT] Init check - SDK:', typeof SpeechSDK !== 'undefined', 'Region:', speechRegion, 'ResourceId:', !!speechResourceId);
+      
+      // Azure Speech SDK for high-quality recognition
+      if (typeof SpeechSDK !== 'undefined' && speechRegion && speechResourceId) {
+        try {
+          const token = await getSpeechToken();
+          console.log('[STT] Got speech token:', !!token);
+          if (token) {
+            const authToken = `aad#${speechResourceId}#${token}`;
+            const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(authToken, speechRegion);
+            speechConfig.speechRecognitionLanguage = 'en-US';
+            
+            const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+            speechRecognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+            azureRecognizer = speechRecognizer;
+            
+            // Handle interim results (don't show in message box)
+            speechRecognizer.recognizing = (s, e) => {
+              // Optionally log interim results for debugging
+            };
+            
+            // Handle final results
+            speechRecognizer.recognized = (s, e) => {
+              if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                let transcript = e.result.text;
+                speechRetryCount = 0;
+                
+                console.log('[STT] Raw transcript:', transcript);
+                
+                // Strip "copilot" prefix variations (case-insensitive)
+                const originalTranscript = transcript;
+                transcript = transcript.replace(/^(hey,?\s*|a\s*)?copilot[,.:!?\s]*/i, '').trim();
+                
+                if (originalTranscript !== transcript) {
+                  console.log('[STT] Filtered transcript:', transcript);
+                }
+                
+                if (transcript && transcript.length > 0) {
+                  console.log('[STT] Sending:', transcript);
+                  if (isRecording) {
+                    sendMessage(transcript);
+                    // Keep listening - don't stop recording
+                    // User must click button or press Alt+M to stop
+                  }
+                } else {
+                  console.log('[STT] Transcript was empty after filtering, ignoring');
+                }
+              } else if (e.result.reason === SpeechSDK.ResultReason.NoMatch) {
+                // No speech detected - continue listening
+              }
+            };
+            
+            // Handle session stopped
+            speechRecognizer.sessionStopped = (s, e) => {
+              // Session ended
+            };
+            
+            // Handle errors
+            speechRecognizer.canceled = (s, e) => {
+              if (e.reason === SpeechSDK.CancellationReason.Error) {
+                console.warn('Speech recognition error:', e.errorDetails);
+                speechRetryCount = Math.min(speechRetryCount + 1, 5);
+              }
+            };
+            
+            console.log('[STT] Azure Speech recognition initialized');
+            return;
+          }
+        } catch (e) {
+          console.warn('[STT] Azure Speech init failed, trying Web Speech API:', e);
+        }
+      }
+      
+      // Fallback to Web Speech API
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        console.log('[STT] Using Web Speech API fallback');
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        speechRecognizer = new SpeechRecognition();
+        speechRecognizer.continuous = true;
+        speechRecognizer.interimResults = true;
+        speechRecognizer.lang = 'en-US';
+
+        speechRecognizer.onresult = (event) => {
+          speechRetryCount = 0;
+          lastSpeechError = null;
+          
+          // Process only the latest result
+          const lastResult = event.results[event.results.length - 1];
+          let transcript = lastResult[0].transcript;
+          if (lastResult.isFinal) {
+            console.log('[STT-Web] Raw transcript:', transcript);
+            
+            // Strip "copilot" prefix variations (case-insensitive)
+            const originalTranscript = transcript;
+            transcript = transcript.replace(/^(hey,?\s*|a\s*)?copilot[,.:!?\s]*/i, '').trim();
+            
+            if (originalTranscript !== transcript) {
+              console.log('[STT-Web] Filtered transcript:', transcript);
+            }
+            
+            if (transcript && transcript.length > 0) {
+              console.log('[STT-Web] Sending:', transcript);
+              if (isRecording) {
+                sendMessage(transcript);
+                // Keep listening - don't stop recording
+                // User must click button or press Alt+M to stop
+              }
+            } else {
+              console.log('[STT-Web] Transcript was empty after filtering, ignoring');
+            }
+          } else {
+            // Don't show interim results in message box
+          }
+        };
+
+        speechRecognizer.onend = () => {
+          if (isRecording) {
+            const delay = Math.min(100 * Math.pow(2, speechRetryCount), 5000);
+            setTimeout(() => {
+              try {
+                speechRecognizer.start();
+              } catch (e) {}
+            }, delay);
+          }
+        };
+
+        speechRecognizer.onerror = (event) => {
+          if (event.error !== lastSpeechError) {
+            console.warn('Speech recognition:', event.error);
+            lastSpeechError = event.error;
+          }
+          
+          if (event.error === 'network' || event.error === 'service-not-allowed') {
+            speechRetryCount = Math.min(speechRetryCount + 1, 5);
+            stopRecording();
+          } else if (event.error !== 'not-allowed' && event.error !== 'no-speech') {
+            stopRecording();
+          }
+        };
+      }
+    }
+
+    function startRecording() {
+      if (speechRecognizer) {
+        isRecording = true;
+        micBtn.classList.add('recording');
+        micBtn.setAttribute('aria-pressed', 'true');
+        
+        if (azureRecognizer) {
+          // Azure: use single-shot recognition
+          speechRecognizer.recognizeOnceAsync();
+        } else {
+          // Web Speech API
+          speechRecognizer.start();
+        }
+        announceToScreenReader('Voice input started. Speak now.');
+      }
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      micBtn.classList.remove('recording');
+      micBtn.setAttribute('aria-pressed', 'false');
+      if (speechRecognizer) {
+        try {
+          if (azureRecognizer) {
+            speechRecognizer.stopContinuousRecognitionAsync();
+          } else {
+            speechRecognizer.stop();
+          }
+        } catch {}
+      }
+      announceToScreenReader('Voice input stopped');
+    }
+
+    // Authentication with custom PKCE flow for Electron
+    async function initAuth(clientId, tenantId) {
+      authConfig.clientId = clientId;
+      authConfig.tenantId = tenantId;
+      authConfig.authority = `https://login.microsoftonline.com/${tenantId}`;
+      
+      // Check for stored tokens
+      const storedTokens = localStorage.getItem('auth_tokens');
+      if (storedTokens) {
+        try {
+          const tokenData = JSON.parse(storedTokens);
+          
+          // Check if token is still valid (with 5 min buffer)
+          if (tokenData.expiresAt > Date.now() + 300000) {
+            accessToken = tokenData.accessToken;
+            currentAccount = tokenData.account;
+            isAuthenticated = true;
+            updateAccountUI(currentAccount);
+            return accessToken;
+          }
+          
+          // Token expired - try to refresh it
+          if (tokenData.refreshToken) {
+            try {
+              const newToken = await refreshAccessToken(tokenData.refreshToken, clientId, tenantId);
+              if (newToken) {
+                return newToken;
+              }
+            } catch (refreshError) {
+              console.log('Token refresh failed, need re-login');
+              localStorage.removeItem('auth_tokens');
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing stored tokens:', e);
+          localStorage.removeItem('auth_tokens');
+        }
+      }
+      
+      return null;
+    }
+    
+    async function refreshAccessToken(refreshToken, clientId, tenantId) {
+      const tokenEndpoint = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+      
+      const body = new URLSearchParams({
+        client_id: clientId,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        scope: loginRequest.scopes.join(' ')
+      });
+      
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+      
+      const tokenResponse = await response.json();
+      
+      accessToken = tokenResponse.access_token;
+      currentAccount = parseJwt(tokenResponse.id_token);
+      isAuthenticated = true;
+      
+      // Update stored tokens
+      const tokenData = {
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token || refreshToken,
+        expiresAt: Date.now() + (tokenResponse.expires_in * 1000),
+        account: currentAccount
+      };
+      localStorage.setItem('auth_tokens', JSON.stringify(tokenData));
+      updateAccountUI(currentAccount);
+      
+      return accessToken;
+    }
+
+    async function loginPopup(forcePrompt = false) {
+      try {
+        updateStatus('connecting', 'Signing in...');
+        
+        // Build authorization URL for Electron IPC auth flow
+        const clientId = authConfig.clientId;
+        const tenantId = authConfig.tenantId;
+        const redirectUri = encodeURIComponent('http://localhost');
+        const scope = encodeURIComponent(loginRequest.scopes.join(' '));
+        
+        // Generate PKCE code verifier and challenge
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        
+        // Generate state for security
+        const state = crypto.randomUUID();
+        
+        let authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?` +
+          `client_id=${clientId}` +
+          `&response_type=code` +
+          `&redirect_uri=${redirectUri}` +
+          `&scope=${scope}` +
+          `&response_mode=query` +
+          `&state=${state}` +
+          `&code_challenge=${codeChallenge}` +
+          `&code_challenge_method=S256`;
+        
+        // Force account selection when signing out to prevent SSO auto-login
+        if (forcePrompt) {
+          authUrl += '&prompt=select_account';
+        }
+        
+        // Open auth window via Electron IPC
+        const result = await window.electronAPI.openAuthWindow(authUrl);
+        
+        // Parse the authorization code from the redirect URL
+        const urlParams = new URLSearchParams(result.search || result.url.split('?')[1]);
+        const code = urlParams.get('code');
+        const returnedState = urlParams.get('state');
+        
+        // Verify state
+        if (returnedState !== state) {
+          throw new Error('State mismatch - potential CSRF attack');
+        }
+        
+        if (!code) {
+          throw new Error('No authorization code received');
+        }
+        
+        // Exchange code for tokens
+        const tokenResponse = await exchangeCodeForToken(code, codeVerifier, clientId, tenantId);
+        
+        accessToken = tokenResponse.access_token;
+        isAuthenticated = true;
+        
+        // Store account info from ID token
+        currentAccount = parseJwt(tokenResponse.id_token);
+        
+        // Store tokens for persistence
+        const tokenData = {
+          accessToken: tokenResponse.access_token,
+          refreshToken: tokenResponse.refresh_token,
+          expiresAt: Date.now() + (tokenResponse.expires_in * 1000),
+          account: currentAccount
+        };
+        localStorage.setItem('auth_tokens', JSON.stringify(tokenData));
+        
+        updateStatus('', 'Connected');
+        updateAccountUI(currentAccount);
+        
+        return accessToken;
+      } catch (error) {
+        console.error('Login failed:', error);
+        updateStatus('disconnected', 'Sign-in failed');
+        addMessage(`Sign-in failed: ${error.message}. Please restart the app to try again.`, 'agent');
+        return null;
+      }
+    }
+    
+    // PKCE helpers
+    function generateCodeVerifier() {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return btoa(String.fromCharCode.apply(null, array))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+    
+    async function generateCodeChallenge(verifier) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(verifier);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(hash)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+    }
+    
+    async function exchangeCodeForToken(code, codeVerifier, clientId, tenantId) {
+      const tokenEndpoint = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+      
+      const body = new URLSearchParams({
+        client_id: clientId,
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: 'http://localhost',
+        code_verifier: codeVerifier,
+        scope: loginRequest.scopes.join(' ')
+      });
+      
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error_description || 'Token exchange failed');
+      }
+      
+      return await response.json();
+    }
+    
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(jsonPayload);
+      } catch {
+        return {};
+      }
+    }
+
+    // Get a Microsoft Graph token using the refresh token
+    async function getGraphToken() {
+      try {
+        console.log('getGraphToken: Starting...');
+        const storedTokens = localStorage.getItem('auth_tokens');
+        if (!storedTokens) {
+          console.log('getGraphToken: No stored tokens');
+          return null;
+        }
+        
+        const tokenData = JSON.parse(storedTokens);
+        console.log('getGraphToken: Has refresh token?', !!tokenData.refreshToken);
+        if (!tokenData.refreshToken) {
+          console.log('getGraphToken: No refresh token available');
+          return null;
+        }
+        
+        console.log('getGraphToken: Requesting Graph token from Azure AD...');
+        const tokenEndpoint = `https://login.microsoftonline.com/${authConfig.tenantId}/oauth2/v2.0/token`;
+        
+        const body = new URLSearchParams({
+          client_id: authConfig.clientId,
+          grant_type: 'refresh_token',
+          refresh_token: tokenData.refreshToken,
+          scope: 'https://graph.microsoft.com/User.Read'
+        });
+        
+        const response = await fetch(tokenEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+        
+        console.log('getGraphToken: Response status', response.status);
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('getGraphToken: Failed -', errorData.error, errorData.error_description);
+          return null;
+        }
+        
+        const graphTokenResponse = await response.json();
+        console.log('getGraphToken: Success!');
+        return graphTokenResponse.access_token;
+      } catch (error) {
+        console.error('Failed to get Graph token:', error);
+        return null;
+      }
+    }
+
+    // Fetch user photo from Microsoft Graph
+    async function fetchUserPhoto() {
+      try {
+        console.log('fetchUserPhoto: Starting...');
+        const graphToken = await getGraphToken();
+        if (!graphToken) {
+          console.log('fetchUserPhoto: Could not get Graph token, using initials');
+          return;
+        }
+        
+        console.log('fetchUserPhoto: Got Graph token, fetching photo...');
+        const photoResponse = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+          headers: {
+            'Authorization': `Bearer ${graphToken}`
+          }
+        });
+        
+        if (photoResponse.ok) {
+          const blob = await photoResponse.blob();
+          const photoUrl = URL.createObjectURL(blob);
+          
+          // Update header avatar
+          accountPhoto.src = photoUrl;
+          accountPhoto.style.display = 'block';
+          accountInitials.style.display = 'none';
+          
+          // Update menu avatar
+          menuPhoto.src = photoUrl;
+          menuPhoto.style.display = 'block';
+          menuInitials.style.display = 'none';
+          
+          console.log('User photo loaded successfully');
+        } else if (photoResponse.status === 404) {
+          console.log('User has no profile photo, using initials');
+        } else {
+          console.log('Photo fetch failed with status:', photoResponse.status);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user photo:', error);
+        // Silently fail - initials will remain displayed
+      }
+    }
+
+    async function logout() {
+      // Clear stored tokens
+      localStorage.removeItem('auth_tokens');
+      
+      currentAccount = null;
+      accessToken = null;
+      isAuthenticated = false;
+      
+      updateStatus('disconnected', 'Signed out');
+      updateAccountUI(null);
+    }
+
+    async function getAccessToken() {
+      // Check if we have a valid token
+      if (accessToken && isAuthenticated) {
+        return accessToken;
+      }
+      
+      // Try to get from stored tokens
+      const storedTokens = localStorage.getItem('auth_tokens');
+      if (storedTokens) {
+        const tokenData = JSON.parse(storedTokens);
+        if (tokenData.expiresAt > Date.now() + 300000) {
+          accessToken = tokenData.accessToken;
+          return accessToken;
+        }
+      }
+      
+      // Need interactive login
+      return await loginPopup();
+    }
+
+    // Update status
+    function updateStatus(status, text) {
+      statusDot.className = `status-dot ${status}`;
+      statusText.textContent = text;
+      
+      // Announce significant status changes to screen readers
+      if (status === 'connected' || status === 'disconnected' || status === 'error') {
+        announceToScreenReader(text);
+      }
+    }
+
+    // Update account UI with user info
+    function updateAccountUI(account) {
+      if (account && account.name) {
+        // Get initials from name
+        const nameParts = account.name.split(' ');
+        const initials = nameParts.length > 1 
+          ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+          : nameParts[0].substring(0, 2).toUpperCase();
+        
+        // Update header avatar
+        accountInitials.textContent = initials;
+        accountPhoto.style.display = 'none';
+        accountInitials.style.display = 'block';
+        
+        // Update menu avatar and info
+        menuInitials.textContent = initials;
+        menuPhoto.style.display = 'none';
+        menuInitials.style.display = 'flex';
+        menuUserName.textContent = account.name;
+        // Azure AD JWT uses preferred_username for email
+        menuUserEmail.textContent = account.preferred_username || account.email || account.username || '';
+        
+        // Update alt text with user's name for accessibility
+        accountPhoto.alt = `Profile photo for ${account.name}`;
+        menuPhoto.alt = `Profile photo for ${account.name}`;
+        accountBtn.setAttribute('aria-label', `Account menu for ${account.name}`);
+        
+        // Try to fetch user photo from Microsoft Graph
+        fetchUserPhoto();
+      } else {
+        accountInitials.textContent = '?';
+        accountInitials.style.display = 'block';
+        accountPhoto.style.display = 'none';
+        menuInitials.textContent = '?';
+        menuInitials.style.display = 'flex';
+        menuPhoto.style.display = 'none';
+        menuUserName.textContent = 'Not signed in';
+        menuUserEmail.textContent = '';
+        accountPhoto.alt = 'User profile photo';
+        accountBtn.setAttribute('aria-label', 'Account menu');
+      }
+    }
+
+    // Download current conversation as a file
+    async function saveConversation() {
+      const messages = Array.from(messagesContainer.querySelectorAll('.message')).map(msg => ({
+        sender: msg.classList.contains('user') ? 'user' : 'agent',
+        content: msg.querySelector('.message-content')?.textContent || msg.textContent,
+        timestamp: msg.querySelector('.message-timestamp')?.textContent || ''
+      }));
+      
+      if (messages.length === 0) {
+        alert('No messages to download.');
+        return;
+      }
+      
+      // Format as markdown
+      const agentName = agentNameEl.textContent || 'Agent';
+      let md = `# Conversation with ${agentName}\n\n`;
+      md += `*Exported: ${new Date().toLocaleString()}*\n\n---\n\n`;
+      
+      for (const msg of messages) {
+        const sender = msg.sender === 'user' ? '**You**' : `**${agentName}**`;
+        const time = msg.timestamp ? ` *(${msg.timestamp})*` : '';
+        md += `${sender}${time}\n\n${msg.content}\n\n---\n\n`;
+      }
+      
+      // Create and trigger download
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversation-${new Date().toISOString().slice(0,10)}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', currentTheme);
+      const themeIcon = document.getElementById('themeIcon');
+      themeIcon.innerHTML = currentTheme === 'dark' 
+        ? '<path d="M6 0.278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>'
+        : '<path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>';
+      localStorage.setItem('theme', currentTheme);
+      themeToggle.setAttribute('aria-pressed', currentTheme === 'dark' ? 'true' : 'false');
+      announceToScreenReader(`Theme switched to ${currentTheme} mode`);
+    }
+
+    // Event Listeners
+    sendBtn.addEventListener('click', () => sendMessage(messageInput.value));
+    
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage(messageInput.value);
+      }
+    });
+
+    micBtn.addEventListener('click', () => {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    });
+
+    ttsBtn.addEventListener('click', () => {
+      isTtsEnabled = !isTtsEnabled;
+      ttsBtn.classList.toggle('tts-enabled', isTtsEnabled);
+      ttsBtn.classList.toggle('tts-disabled', !isTtsEnabled);
+      ttsBtn.setAttribute('aria-pressed', isTtsEnabled.toString());
+      ttsBtn.title = `Text-to-speech ${isTtsEnabled ? 'on' : 'off'} (Alt+T)`;
+      announceToScreenReader(`Text-to-speech ${isTtsEnabled ? 'enabled' : 'disabled'}`);
+      
+      // Stop any ongoing speech when TTS is disabled
+      if (!isTtsEnabled) {
+        stopSpeech();
+      }
+    });
+
+    themeToggle.addEventListener('click', toggleTheme);
+
+    saveConversationBtn.addEventListener('click', saveConversation);
+
+    // Settings panel event listeners
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settingsPanel.classList.toggle('hidden');
+      closeAccountMenu();
+    });
+
+    settingsCloseBtn.addEventListener('click', () => {
+      settingsPanel.classList.add('hidden');
+    });
+
+    copyMcpConfigBtn.addEventListener('click', async () => {
+      const configText = document.getElementById('mcpConfigCode').textContent;
+      try {
+        await navigator.clipboard.writeText(configText);
+        copyMcpConfigBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
+          Copied!
+        `;
+        setTimeout(() => {
+          copyMcpConfigBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
+            Copy to clipboard
+          `;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+
+    accountBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleAccountMenu();
+      settingsPanel.classList.add('hidden');
+    });
+
+    // Keyboard navigation - Escape to close account menu
+    document.addEventListener('keydown', (e) => {
+      // Alt+M to toggle microphone
+      if (e.altKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        if (isRecording) {
+          stopRecording();
+        } else {
+          startRecording();
+        }
+        return;
+      }
+      // Alt+T to toggle TTS
+      if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        ttsBtn.click();
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (!settingsPanel.classList.contains('hidden')) {
+          settingsPanel.classList.add('hidden');
+        }
+        if (accountMenu.classList.contains('open')) {
+          closeAccountMenu();
+          accountBtn.focus();
+        }
+      }
+    });
+
+    // Account menu functions
+    function openAccountMenu() {
+      accountMenu.classList.add('open');
+      accountMenu.setAttribute('aria-hidden', 'false');
+      accountBtn.setAttribute('aria-expanded', 'true');
+      // Focus sign out button
+      signOutBtn.focus();
+      announceToScreenReader('Account menu opened');
+    }
+
+    function closeAccountMenu() {
+      accountMenu.classList.remove('open');
+      accountMenu.setAttribute('aria-hidden', 'true');
+      accountBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleAccountMenu() {
+      if (accountMenu.classList.contains('open')) {
+        closeAccountMenu();
+      } else {
+        openAccountMenu();
+      }
+    }
+
+    newChatBtn.addEventListener('click', async () => {
+      // Auto-save current conversation if setting is enabled and there are messages
+      if (appSettings.autoSaveConversation && messagesContainer.children.length > 0) {
+        await saveConversation();
+      }
+      conversationId = null;
+      messagesContainer.innerHTML = '';
+      document.getElementById('suggestionsContainer').innerHTML = '';
+      updateStatus('connecting', 'Starting new conversation...');
+      await startAgentConversation();
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+      if (confirm('Are you sure you want to sign out?')) {
+        closeAccountMenu();
+        await logout();
+        updateStatus('disconnected', 'Signed out');
+        messagesContainer.innerHTML = '';
+        addMessage('👋 You have been signed out. Restarting sign-in...', 'agent');
+        // Automatically start login again with forced prompt to prevent SSO auto-login
+        const newToken = await loginPopup(true);
+        if (newToken) {
+          // Clear the sign-out message and start conversation
+          messagesContainer.innerHTML = '';
+          updateStatus('connecting', 'Connecting to agent...');
+          await startAgentConversation();
+        }
+      }
+    });
+
+    // Close account menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!accountMenu.contains(e.target) && e.target !== accountBtn && !accountBtn.contains(e.target)) {
+        closeAccountMenu();
+      }
+      if (!settingsPanel.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
+        settingsPanel.classList.add('hidden');
+      }
+    });
+
+    // Screen reader announcement helper
+    function announceToScreenReader(message) {
+      const announcer = document.getElementById('srAnnouncements');
+      if (announcer) {
+        announcer.textContent = message;
+        // Clear after announcement so same message can be repeated
+        setTimeout(() => { announcer.textContent = ''; }, 1000);
+      }
+    }
+
+    // Initialize
+    async function init() {
+      try {
+        // Load app settings
+        loadSettings();
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme !== currentTheme) toggleTheme();
+
+        // Initialize IndexedDB
+        await initDB();
+
+        // Initialize speech (Azure TTS/STT first, then speech recognition)
+        await initAzureSpeech();
+        await initSpeechRecognition();
+
+        // Update status
+        updateStatus('connecting', 'Initializing...');
+
+        // Get config from Electron or use defaults
+        let clientId, tenantId;
+        if (window.electronAPI && window.electronAPI.getConfig) {
+          const config = await window.electronAPI.getConfig();
+          clientId = config.clientId;
+          tenantId = config.tenantId;
+        } else {
+          // Fallback: try to get from localStorage or prompt
+          clientId = localStorage.getItem('AZURE_CLIENT_ID') || '3294cbc6-5b2b-49b5-81eb-b46dabcf98c5';
+          tenantId = localStorage.getItem('AZURE_TENANT_ID') || 'fe69ead4-dc67-4951-85c2-a5e6505fec7d';
+        }
+
+        // Check force login setting - skip cached token
+        if (appSettings.forceLoginOnStart) {
+          updateStatus('connecting', 'Signing in...');
+          await initAuth(clientId, tenantId); // Still init auth but don't use cached token
+          const newToken = await loginPopup(true); // Force prompt
+          if (newToken) {
+            updateStatus('connecting', 'Connecting to agent...');
+            isAuthenticated = true;
+            await startAgentConversation();
+          }
+        } else {
+          // Normal flow - Initialize Auth
+          const token = await initAuth(clientId, tenantId);
+          
+          if (token) {
+            // Already authenticated - start conversation (which fetches icon)
+            updateStatus('connecting', 'Connecting to agent...');
+            isAuthenticated = true;
+            await startAgentConversation();
+          } else {
+            // Need to sign in - launch login directly
+            updateStatus('connecting', 'Signing in...');
+            const newToken = await loginPopup();
+            if (newToken) {
+              // Now start conversation (which fetches icon)
+              updateStatus('connecting', 'Connecting to agent...');
+              await startAgentConversation();
+            }
+          }
+        }
+
+        // Handle new conversation from tray
+        if (window.electronAPI) {
+          window.electronAPI.onNewConversation(() => {
+            newChatBtn.click();
+          });
+        }
+
+      } catch (error) {
+        console.error('Init error:', error);
+        updateStatus('disconnected', `Error: ${error.message || 'initializing'}`);
+        addMessage(`Initialization failed: ${error.message}. Check console for details.`, 'agent');
+      }
+    }
+
+    // Start conversation with Copilot Studio agent
+    async function startAgentConversation() {
+      try {
+        // Run conversation start and icon fetch in parallel
+        const [result] = await Promise.all([
+          window.electronAPI.startConversation(accessToken),
+          fetchAgentIcon()  // Fetch icon in parallel
+        ]);
+        
+        if (result.conversationId) {
+          conversationId = result.conversationId;
+        }
+        if (result.agentName) {
+          agentNameEl.textContent = result.agentName;
+        }
+        
+        updateStatus('', 'Connected');
+        
+        // Show initial greeting if there's text
+        if (result.text) {
+          addMessage(result.text, 'agent');
+        }
+        // Show any adaptive cards
+        if (result.cards && result.cards.length > 0) {
+          for (const card of result.cards) {
+            const cardHtml = renderAdaptiveCard(card);
+            if (cardHtml) addMessage(cardHtml, 'agent', true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to start conversation:', error);
+        updateStatus('disconnected', 'Agent connection failed');
+        addMessage(`Failed to connect to agent: ${error.message}`, 'agent');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

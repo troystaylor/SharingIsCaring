@@ -1,0 +1,47 @@
+{
+  "name": "power-agent-desktop",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/mcp-server/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:desktop": "tsc -p tsconfig.desktop.json && npx shx cp desktop/index.html dist/desktop/index.html && npx shx cp desktop/package.json dist/desktop/package.json",
+    "build:all": "npm run build && npm run build:desktop",
+    "start": "node dist/mcp-server/index.js",
+    "start:desktop": "electron dist/desktop/main.js",
+    "build:installer": "electron-builder --win"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.16.3",
+    "@fluentui/web-components": "^2.6.1",
+    "@microsoft/agents-copilotstudio-client": "^1.2.3",
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "adaptivecards": "^3.0.5",
+    "dotenv": "^16.4.7",
+    "electron-updater": "^6.3.9",
+    "keytar": "^7.9.0",
+    "marked": "^15.0.6",
+    "microsoft-cognitiveservices-speech-sdk": "^1.42.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "shx": "^0.4.0",
+    "typescript": "^5.7.3"
+  },
+  "build": {
+    "appId": "com.poweragent.desktop",
+    "productName": "Power Agent Desktop",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/logo-150.png"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ]
+  }
+}

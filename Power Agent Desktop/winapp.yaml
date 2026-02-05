@@ -1,0 +1,59 @@
+# WinApp CLI Configuration for Copilot Studio Agent MCP Package
+# See: https://github.com/microsoft/WinAppCli/blob/main/docs/usage.md
+
+# Package identity information
+identity:
+  name: "PowerAgentDesktop"
+  publisher: "CN=YourPublisher"
+  version: "1.0.0.0"
+  
+# SDK configuration
+sdk:
+  windowsSdk: "10.0.26100.0"
+  windowsAppSdk: "1.6"
+
+# Application manifest options
+manifest:
+  displayName: "Power Agent Desktop"
+  description: "Native Windows client for Microsoft Copilot Studio agents with voice, MCP, and MSIX packaging"
+  
+  # Capabilities required for MCP hosting
+  capabilities:
+    - internetClient
+    - privateNetworkClientServer
+    
+  # Protocol handler for poweragent:// invocation
+  protocols:
+    - name: "poweragent"
+      displayName: "Power Agent Desktop Protocol"
+      
+  # App execution alias for CLI invocation
+  executionAlias:
+    - alias: "power-agent"
+      executable: "power-agent.exe"
+
+# Entry point configuration
+entryPoint:
+  executable: "node.exe"
+  arguments: "dist/mcp-server/index.js"
+
+# Assets configuration
+assets:
+  logo: "assets/logo.png"
+  outputPath: "assets"
+  
+# Certificate configuration for development
+certificate:
+  path: "./certs/dev.pfx"
+  # Password stored in environment variable for security
+  passwordEnvVar: "WINAPP_CERT_PASSWORD"
+
+# Build output directory
+output:
+  path: "./dist/msix"
+  
+# Node.js specific configuration for MCP server
+node:
+  # Include Node.js runtime in package
+  includeRuntime: true
+  nodeVersion: "20"
