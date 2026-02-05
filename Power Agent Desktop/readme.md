@@ -59,7 +59,6 @@ Built to [Microsoft Accessibility Guidelines](https://learn.microsoft.com/en-us/
 
 ### Input Flexibility
 - **Voice Input** - Speech-to-text with Azure Speech SDK
-- **Wake Word** - "Hey Copilot" hands-free activation
 - **Text-to-Speech** - Agent responses read aloud
 
 ## Settings Panel
@@ -242,7 +241,6 @@ Voice input and text-to-speech are powered by **Azure Speech SDK**.
 ### Features
 
 - 🎤 **Speech-to-Text**: Click the microphone button to dictate messages
-- 🗣️ **Wake Word**: Say "Hey Copilot" to activate voice input hands-free
 - 🔊 **Text-to-Speech**: Toggle TTS to hear agent responses read aloud
 - 🔐 **Azure Speech Auth**: Uses Entra ID auth tokens for Speech SDK
 - 🎛️ **Smart Mic Selection**: Automatically prefers raw microphones over virtual audio devices (Elgato Wave Link, VB-Audio, etc.)
@@ -434,4 +432,5 @@ src/
 - [Copilot Studio Documentation](https://learn.microsoft.com/microsoft-copilot-studio/)
 - [WinApp CLI](https://github.com/microsoft/WinAppCli)
 - [Electron Documentation](https://www.electronjs.org/docs)
+
 
