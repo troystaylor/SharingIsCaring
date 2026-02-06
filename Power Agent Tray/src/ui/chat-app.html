@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Response</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #0078d4;
+      --accent-hover: #106ebe;
+      --card-bg: #f9fafb;
+      --card-border: #e5e7eb;
+      --code-bg: #f3f4f6;
+      --radius: 8px;
+      --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1e;
+        --fg: #d4d4d4;
+        --muted: #9ca3af;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --card-bg: #2d2d2d;
+        --card-border: #404040;
+        --code-bg: #2d2d2d;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 16px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .agent-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .conversation-id {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .response-body {
+      margin-bottom: 16px;
+    }
+
+    .response-body p { margin-bottom: 8px; }
+
+    .response-body h1, .response-body h2, .response-body h3 {
+      margin-top: 16px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .response-body h1 { font-size: 20px; }
+    .response-body h2 { font-size: 17px; }
+    .response-body h3 { font-size: 15px; }
+
+    .response-body ul, .response-body ol {
+      padding-left: 20px;
+      margin-bottom: 8px;
+    }
+
+    .response-body li { margin-bottom: 4px; }
+
+    .response-body code {
+      font-family: var(--mono);
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .response-body pre {
+      background: var(--code-bg);
+      padding: 12px;
+      border-radius: var(--radius);
+      overflow-x: auto;
+      margin-bottom: 8px;
+    }
+
+    .response-body pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .response-body a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .response-body a:hover { text-decoration: underline; }
+
+    .response-body strong { font-weight: 600; }
+
+    .response-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    .response-body th, .response-body td {
+      border: 1px solid var(--card-border);
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .response-body th {
+      background: var(--card-bg);
+      font-weight: 600;
+    }
+
+    .suggested-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .action-btn {
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 6px 14px;
+      border: 1px solid var(--accent);
+      border-radius: 16px;
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    .cards-section {
+      margin-top: 12px;
+    }
+
+    .adaptive-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .loading {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .error {
+      color: #ef4444;
+      padding: 8px 12px;
+      background: #fef2f2;
+      border-radius: var(--radius);
+      border: 1px solid #fecaca;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .error {
+        background: #451a1a;
+        border-color: #7f1d1d;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <p class="loading">Waiting for agent response\u2026</p>
+  </div>
+    <script type="module" src="./chat-app.ts"></script>
+</body>
+</html>

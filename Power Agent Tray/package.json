@@ -1,0 +1,70 @@
+{
+  "name": "power-agent-tray",
+  "version": "1.0.0",
+  "description": "System tray application exposing Copilot Studio agents via MCP protocol",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc && vite build",
+    "build:server": "tsc",
+    "build:ui": "vite build",
+    "start": "npm run build && electron .",
+    "dev": "tsc && vite build && electron .",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "install:deps": "npm install"
+  },
+  "build": {
+    "appId": "com.troytaylor.power-agent-tray",
+    "productName": "Power Agent Tray",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      ".env"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/electron.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": "."
+      }
+    ]
+  },
+  "keywords": [
+    "copilot-studio",
+    "mcp",
+    "electron",
+    "tray",
+    "microsoft-agents"
+  ],
+  "author": "Troy Taylor",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/msal-node": "^2.16.2",
+    "@azure/msal-node-extensions": "^5.0.3",
+    "@microsoft/agents-copilotstudio-client": "^1.2.3",
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "electron": "^33.2.0",
+    "electron-builder": "^26.7.0",
+    "shx": "^0.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^7.3.1",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}
