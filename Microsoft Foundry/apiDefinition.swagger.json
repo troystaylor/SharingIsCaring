@@ -1,0 +1,243 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry",
+    "description": "Connect to Microsoft Foundry for model inference, AI Agents, Speech (transcription/translation/TTS/batch), Translator, Language (sentiment/NER/entity linking), Document Intelligence, Content Safety, Vision (analysis/OCR), AI Evaluation, Speaker Recognition, Custom Vision, Personalizer, AI Search, and MCP protocol support.",
+    "version": "1.0.0"
+  },
+  "host": "placeholder.services.ai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/models/chat/completions": {
+      "post": {
+        "operationId": "ChatCompletion",
+        "summary": "Chat Completion",
+        "description": "Generate a chat completion response from the AI model. Supports multi-turn conversations with system, user, and assistant messages.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "extra-parameters",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "description": "Controls handling of extra parameters not defined by the API (error, drop, pass-through).",
+            "x-ms-summary": "Extra Parameters",
+            "x-ms-visibility": "advanced",
+            "enum": [
+              "error",
+              "drop",
+              "pass-through"
+            ]
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "description": "The collection of context messages for the chat completions request.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "The role of the message author.",
+                        "x-ms-summary": "Role",
+                        "enum": [
+                          "system",
+                          "user",
+                          "assistant",
+                          "tool"
+                        ]
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "The content of the message.",
+                        "x-ms-summary": "Content"
+                      }
+                    },
+                    "required": [
+                      "role",
+                      "content"
+                    ]
+                  }
+                },
+                "model": {
+                  "type": "string",
+                  "description": "ID of the specific AI model to use, if more than one model is available on the endpoint.",
+                  "x-ms-summary": "Model"
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Higher values increase randomness. Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "top_p": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Nucleus sampling probability mass (0-1). Default: 1.",
+                  "x-ms-summary": "Top P",
+                  "x-ms-visibility": "advanced",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The maximum number of tokens to generate.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "minimum": 0
+                },
+                "frequency_penalty": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Penalizes tokens based on cumulative frequency (-2 to 2). Default: 0.",
+                  "x-ms-summary": "Frequency Penalty",
+                  "x-ms-visibility": "advanced",
+                  "minimum": -2,
+                  "maximum": 2
+                },
+                "presence_penalty": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Penalizes tokens already present in text (-2 to 2). Default: 0.",
+                  "x-ms-summary": "Presence Penalty",
+                  "x-ms-visibility": "advanced",
+                  "minimum": -2,
+                  "maximum": 2
+                },
+                "stop": {
+                  "type": "array",
+                  "description": "Sequences that will stop completions generation.",
+                  "x-ms-summary": "Stop Sequences",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "stream": {
+                  "type": "boolean",
+                  "description": "Whether to stream the response.",
+                  "x-ms-summary": "Stream",
+                  "x-ms-visibility": "advanced"
+                },
+                "seed": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Seed for deterministic sampling. Same seed with same parameters should return same result.",
+                  "x-ms-summary": "Seed",
+                  "x-ms-visibility": "advanced"
+                },
+                "response_format": {
+                  "type": "object",
+                  "description": "Specifies the output format the model must use (text, json_object, or json_schema).",
+                  "x-ms-summary": "Response Format",
+                  "x-ms-visibility": "advanced",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "The response format type.",
+                      "x-ms-summary": "Format Type",
+                      "enum": [
+                        "text",
+                        "json_object",
+                        "json_schema"
+                      ]
+                    }
+                  }
+                },
+                "tools": {
+                  "type": "array",
+                  "description": "A list of tools (functions) the model may call.",
+                  "x-ms-summary": "Tools",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "description": "The type of tool.",
+                        "x-ms-summary": "Tool Type",
+                        "enum": [
+                          "function"
+                        ]
+                      },
+                      "function": {
+                        "type": "object",
+                        "description": "The function definition.",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "The name of the function to call.",
+                            "x-ms-summary": "Function Name"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "A description of what the function does.",
+                            "x-ms-summary": "Function Description"
+                          },
+                          "parameters": {
+                            "type": "object",
+                            "description": "The function parameters as JSON Schema."
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "tool_choice": {
+                  "type": "string",
+                  "description": "Controls which tool the model uses (none, auto, or a function name).",
+                  "x-ms-summary": "Tool Choice",
+                  "x-ms-visibility": "advanced"
+                }
+              },
+              "required": [
+                "messages"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful chat completion response.",
+            "schema": {
+              "$ref": "#/definitions/ChatCompletionResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

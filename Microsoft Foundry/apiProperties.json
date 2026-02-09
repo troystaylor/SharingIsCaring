@@ -1,0 +1,154 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "resourceName": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Resource Name",
+          "description": "Your Microsoft Foundry resource name.",
+          "tooltip": "Enter just the resource name, not the full URL.",
+          "constraints": {
+            "tabIndex": 1,
+            "required": "true"
+          }
+        }
+      },
+      "api-key": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "API Key",
+          "description": "The API key for your Microsoft Foundry endpoint.",
+          "tooltip": "Enter the API key from your Microsoft Foundry resource.",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      },
+      "region": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Region",
+          "description": "Azure region for your resource (e.g., 'eastus2', 'westus2').",
+          "tooltip": "Enter the Azure region where your Foundry resource is deployed.",
+          "constraints": {
+            "tabIndex": 3,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#0078D4",
+    "capabilities": [],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set AI Services Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName').services.ai.azure.com"
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set OpenAI Host for Assistants and Speech",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName').openai.azure.com",
+          "x-ms-apimTemplate-operationName": [
+            "ListAssistants",
+            "CreateAssistant",
+            "GetAssistant",
+            "DeleteAssistant",
+            "CreateThread",
+            "GetThread",
+            "DeleteThread",
+            "ListMessages",
+            "CreateMessage",
+            "ListRuns",
+            "CreateRun",
+            "GetRun",
+            "CreateThreadAndRun",
+            "TranscribeAudio",
+            "TranslateAudio"
+          ]
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Translator Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://api.cognitive.microsofttranslator.com",
+          "x-ms-apimTemplate-operationName": [
+            "TranslateText",
+            "TransliterateText",
+            "DetectLanguageTranslator"
+          ]
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Cognitive Services Host for Language and Document Intelligence",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName').cognitiveservices.azure.com",
+          "x-ms-apimTemplate-operationName": [
+            "AnalyzeTextLanguage",
+            "AnalyzeDocument",
+            "GetDocumentAnalysisResult",
+            "ChatCompletionOpenAI",
+            "QueryKnowledgeBase",
+            "AnalyzeConversation",
+            "DetectLastAnomaly",
+            "DetectEntireSeriesAnomalies",
+            "DetectFaces",
+            "AnalyzeTextHealthcare",
+            "GetHealthcareAnalysisResult",
+            "CreateSpeakerProfile",
+            "VerifySpeaker",
+            "EnrollSpeaker",
+            "ClassifyImage",
+            "DetectObjects",
+            "PersonalizerRank",
+            "PersonalizerReward",
+            "ReadText",
+            "GetReadResult",
+            "CreateBatchTranscription",
+            "GetBatchTranscription",
+            "GetBatchTranscriptionFiles"
+          ]
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Speech Host for TTS",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('region').tts.speech.microsoft.com",
+          "x-ms-apimTemplate-operationName": [
+            "SynthesizeSpeech"
+          ]
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set AI Search Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName').search.windows.net",
+          "x-ms-apimTemplate-operationName": [
+            "SearchIndex"
+          ]
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set API Key Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "api-key",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('api-key')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ]
+  }
+}
