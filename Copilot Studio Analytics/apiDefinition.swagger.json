@@ -1,0 +1,1138 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Copilot Studio Analytics",
+        "description": "Access Copilot Studio analytics from Dataverse including conversation transcripts, agent sessions, and usage metrics.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "placeholder.crm.dynamics.com",
+    "basePath": "/api/data/v9.2",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/bots": {
+            "get": {
+                "operationId": "ListBots",
+                "summary": "List Agents",
+                "description": "Retrieves all Copilot Studio agents in the environment.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select Columns",
+                        "description": "Columns to return (comma-separated).",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression.",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of records to return.",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Column to sort by (e.g., 'createdon desc').",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/BotListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bots({botid})": {
+            "get": {
+                "operationId": "GetBot",
+                "summary": "Get Agent",
+                "description": "Retrieves a specific Copilot Studio agent by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "botid",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Agent ID",
+                        "description": "The unique identifier of the agent.",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListBots",
+                            "value-path": "botid",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select Columns",
+                        "description": "Columns to return (comma-separated).",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/Bot"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversationtranscripts": {
+            "get": {
+                "operationId": "ListConversationTranscripts",
+                "summary": "List Conversation Transcripts",
+                "description": "Retrieves conversation transcripts from Copilot Studio agents.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select Columns",
+                        "description": "Columns to return (comma-separated).",
+                        "x-ms-visibility": "advanced",
+                        "default": "conversationtranscriptid,name,createdon,schematype,_bot_value"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression (e.g., \"_bot_value eq 'bot-id'\").",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of records to return.",
+                        "default": 50
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Column to sort by.",
+                        "default": "createdon desc",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$expand",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Expand",
+                        "description": "Related entities to expand.",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/ConversationTranscriptListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/conversationtranscripts({conversationtranscriptid})": {
+            "get": {
+                "operationId": "GetConversationTranscript",
+                "summary": "Get Conversation Transcript",
+                "description": "Retrieves a specific conversation transcript with full content.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "conversationtranscriptid",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Transcript ID",
+                        "description": "The unique identifier of the conversation transcript."
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select Columns",
+                        "description": "Columns to return (comma-separated).",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/ConversationTranscript"
+                        }
+                    }
+                }
+            }
+        },
+        "/botcomponents": {
+            "get": {
+                "operationId": "ListBotComponents",
+                "summary": "List Agent Components",
+                "description": "Retrieves agent components (topics, entities, variables) for a Copilot Studio agent.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select Columns",
+                        "description": "Columns to return (comma-separated).",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression (e.g., \"componenttype eq 1\" for topics).",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of records to return.",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Column to sort by.",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/BotComponentListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/botcomponents({botcomponentid})": {
+            "get": {
+                "operationId": "GetBotComponent",
+                "summary": "Get Agent Component",
+                "description": "Retrieves a specific agent component (topic, entity, variable).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "botcomponentid",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Component ID",
+                        "description": "The unique identifier of the agent component."
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select Columns",
+                        "description": "Columns to return (comma-separated).",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/BotComponent"
+                        }
+                    }
+                }
+            }
+        },
+        "/GetBotConversationAnalytics": {
+            "post": {
+                "operationId": "GetBotConversationAnalytics",
+                "summary": "Get Agent Conversation Analytics",
+                "description": "Retrieves aggregated conversation analytics for an agent within a date range.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "botId"
+                            ],
+                            "properties": {
+                                "botId": {
+                                    "type": "string",
+                                    "description": "The agent ID to get analytics for.",
+                                    "x-ms-summary": "Agent ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBots",
+                                        "value-path": "botid",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "startDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Start date for analytics (defaults to 30 days ago).",
+                                    "x-ms-summary": "Start Date"
+                                },
+                                "endDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "End date for analytics (defaults to now).",
+                                    "x-ms-summary": "End Date"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/ConversationAnalytics"
+                        }
+                    }
+                }
+            }
+        },
+        "/GetTopicAnalytics": {
+            "post": {
+                "operationId": "GetTopicAnalytics",
+                "summary": "Get Topic Analytics",
+                "description": "Retrieves analytics for topics including trigger counts and escalation rates.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "botId"
+                            ],
+                            "properties": {
+                                "botId": {
+                                    "type": "string",
+                                    "description": "The agent ID to get topic analytics for.",
+                                    "x-ms-summary": "Agent ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBots",
+                                        "value-path": "botid",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "startDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Start date for analytics.",
+                                    "x-ms-summary": "Start Date"
+                                },
+                                "endDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "End date for analytics.",
+                                    "x-ms-summary": "End Date"
+                                },
+                                "top": {
+                                    "type": "integer",
+                                    "description": "Number of top topics to return.",
+                                    "x-ms-summary": "Top N Topics",
+                                    "default": 10
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/TopicAnalytics"
+                        }
+                    }
+                }
+            }
+        },
+        "/ParseTranscriptContent": {
+            "post": {
+                "operationId": "ParseTranscriptContent",
+                "summary": "Parse Transcript Content",
+                "description": "Parses the JSON content of a conversation transcript into a structured format.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "transcriptId"
+                            ],
+                            "properties": {
+                                "transcriptId": {
+                                    "type": "string",
+                                    "description": "The conversation transcript ID to parse.",
+                                    "x-ms-summary": "Transcript ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/ParsedTranscript"
+                        }
+                    }
+                }
+            }
+        },
+        "/GetSessionAnalytics": {
+            "post": {
+                "operationId": "GetSessionAnalytics",
+                "summary": "Get Session Analytics",
+                "description": "Retrieves session-level analytics including outcomes, durations, and daily trends.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "botId"
+                            ],
+                            "properties": {
+                                "botId": {
+                                    "type": "string",
+                                    "description": "The agent ID to get session analytics for.",
+                                    "x-ms-summary": "Agent ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBots",
+                                        "value-path": "botid",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "startDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Start date for analytics (defaults to 30 days ago).",
+                                    "x-ms-summary": "Start Date"
+                                },
+                                "endDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "End date for analytics (defaults to now).",
+                                    "x-ms-summary": "End Date"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SessionAnalytics"
+                        }
+                    }
+                }
+            }
+        },
+        "/GetCSATAnalytics": {
+            "post": {
+                "operationId": "GetCSATAnalytics",
+                "summary": "Get CSAT Analytics",
+                "description": "Retrieves customer satisfaction analytics including average ratings, distribution, and recent feedback.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "botId"
+                            ],
+                            "properties": {
+                                "botId": {
+                                    "type": "string",
+                                    "description": "The agent ID to get CSAT analytics for.",
+                                    "x-ms-summary": "Agent ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBots",
+                                        "value-path": "botid",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "startDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Start date for analytics (defaults to 30 days ago).",
+                                    "x-ms-summary": "Start Date"
+                                },
+                                "endDate": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "End date for analytics (defaults to now).",
+                                    "x-ms-summary": "End Date"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/CSATAnalytics"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for analytics tools.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Bot": {
+            "type": "object",
+            "properties": {
+                "botid": {
+                    "type": "string",
+                    "description": "Unique identifier for the agent.",
+                    "x-ms-summary": "Agent ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Display name of the agent.",
+                    "x-ms-summary": "Name"
+                },
+                "schemaname": {
+                    "type": "string",
+                    "description": "Schema name of the agent.",
+                    "x-ms-summary": "Schema Name"
+                },
+                "createdon": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date the agent was created.",
+                    "x-ms-summary": "Created On"
+                },
+                "modifiedon": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date the agent was last modified.",
+                    "x-ms-summary": "Modified On"
+                },
+                "statecode": {
+                    "type": "integer",
+                    "description": "State of the agent (0=Active, 1=Inactive).",
+                    "x-ms-summary": "State"
+                },
+                "statuscode": {
+                    "type": "integer",
+                    "description": "Status reason code.",
+                    "x-ms-summary": "Status"
+                },
+                "language": {
+                    "type": "integer",
+                    "description": "Primary language of the agent.",
+                    "x-ms-summary": "Language"
+                },
+                "_ownerid_value": {
+                    "type": "string",
+                    "description": "Owner ID.",
+                    "x-ms-summary": "Owner ID"
+                },
+                "iconbase64": {
+                    "type": "string",
+                    "description": "Agent icon as base64.",
+                    "x-ms-summary": "Icon"
+                }
+            }
+        },
+        "BotListResponse": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string",
+                    "x-ms-summary": "OData Context"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Bot"
+                    },
+                    "x-ms-summary": "Agents"
+                }
+            }
+        },
+        "ConversationTranscript": {
+            "type": "object",
+            "properties": {
+                "conversationtranscriptid": {
+                    "type": "string",
+                    "description": "Unique identifier for the transcript.",
+                    "x-ms-summary": "Transcript ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name/title of the transcript.",
+                    "x-ms-summary": "Name"
+                },
+                "createdon": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date the conversation occurred.",
+                    "x-ms-summary": "Created On"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "JSON content of the conversation.",
+                    "x-ms-summary": "Content (JSON)"
+                },
+                "schematype": {
+                    "type": "string",
+                    "description": "Schema type of the transcript.",
+                    "x-ms-summary": "Schema Type"
+                },
+                "_bot_value": {
+                    "type": "string",
+                    "description": "Associated agent ID.",
+                    "x-ms-summary": "Agent ID"
+                },
+                "conversationstarttime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the conversation started.",
+                    "x-ms-summary": "Start Time"
+                },
+                "metadata": {
+                    "type": "string",
+                    "description": "Additional metadata JSON.",
+                    "x-ms-summary": "Metadata"
+                }
+            }
+        },
+        "ConversationTranscriptListResponse": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string",
+                    "x-ms-summary": "OData Context"
+                },
+                "@odata.count": {
+                    "type": "integer",
+                    "x-ms-summary": "Total Count"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConversationTranscript"
+                    },
+                    "x-ms-summary": "Transcripts"
+                }
+            }
+        },
+        "BotComponent": {
+            "type": "object",
+            "properties": {
+                "botcomponentid": {
+                    "type": "string",
+                    "description": "Unique identifier for the component.",
+                    "x-ms-summary": "Component ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the component.",
+                    "x-ms-summary": "Name"
+                },
+                "schemaname": {
+                    "type": "string",
+                    "description": "Schema name.",
+                    "x-ms-summary": "Schema Name"
+                },
+                "componenttype": {
+                    "type": "integer",
+                    "description": "Type of component (1=Topic, 2=Entity, etc.)..",
+                    "x-ms-summary": "Component Type"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Component definition (JSON/YAML).",
+                    "x-ms-summary": "Content"
+                },
+                "createdon": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date created.",
+                    "x-ms-summary": "Created On"
+                },
+                "_parentbotid_value": {
+                    "type": "string",
+                    "description": "Parent agent ID.",
+                    "x-ms-summary": "Parent agent ID"
+                }
+            }
+        },
+        "BotComponentListResponse": {
+            "type": "object",
+            "properties": {
+                "@odata.context": {
+                    "type": "string",
+                    "x-ms-summary": "OData Context"
+                },
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BotComponent"
+                    },
+                    "x-ms-summary": "Components"
+                }
+            }
+        },
+        "ConversationAnalytics": {
+            "type": "object",
+            "properties": {
+                "botId": {
+                    "type": "string",
+                    "description": "Agent ID.",
+                    "x-ms-summary": "Agent ID"
+                },
+                "botName": {
+                    "type": "string",
+                    "description": "Agent name.",
+                    "x-ms-summary": "Agent Name"
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Analytics start date.",
+                    "x-ms-summary": "Start Date"
+                },
+                "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Analytics end date.",
+                    "x-ms-summary": "End Date"
+                },
+                "totalConversations": {
+                    "type": "integer",
+                    "description": "Total number of conversations.",
+                    "x-ms-summary": "Total Conversations"
+                },
+                "averageMessagesPerConversation": {
+                    "type": "number",
+                    "description": "Average messages per conversation.",
+                    "x-ms-summary": "Avg Messages/Conversation"
+                },
+                "averageUserMessagesPerConversation": {
+                    "type": "number",
+                    "description": "Average user messages per conversation.",
+                    "x-ms-summary": "Avg User Messages/Conversation"
+                },
+                "averageDurationSeconds": {
+                    "type": "number",
+                    "description": "Average conversation duration in seconds.",
+                    "x-ms-summary": "Avg Duration (sec)"
+                },
+                "escalationRate": {
+                    "type": "number",
+                    "description": "Percentage of conversations that were escalated.",
+                    "x-ms-summary": "Escalation Rate (%)"
+                },
+                "escalatedCount": {
+                    "type": "integer",
+                    "description": "Number of escalated conversations.",
+                    "x-ms-summary": "Escalated Count"
+                },
+                "conversationsByDay": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "date": {
+                                "type": "string",
+                                "format": "date",
+                                "x-ms-summary": "Date"
+                            },
+                            "count": {
+                                "type": "integer",
+                                "x-ms-summary": "Count"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Conversations by Day"
+                }
+            }
+        },
+        "TopicAnalytics": {
+            "type": "object",
+            "properties": {
+                "botId": {
+                    "type": "string",
+                    "description": "Agent ID.",
+                    "x-ms-summary": "Agent ID"
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Start Date"
+                },
+                "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "End Date"
+                },
+                "topics": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "topicName": {
+                                "type": "string",
+                                "x-ms-summary": "Topic Name"
+                            },
+                            "triggerCount": {
+                                "type": "integer",
+                                "x-ms-summary": "Trigger Count"
+                            },
+                            "completionRate": {
+                                "type": "number",
+                                "x-ms-summary": "Completion Rate"
+                            },
+                            "escalationRate": {
+                                "type": "number",
+                                "x-ms-summary": "Escalation Rate"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Topics"
+                }
+            }
+        },
+        "ParsedTranscript": {
+            "type": "object",
+            "properties": {
+                "transcriptId": {
+                    "type": "string",
+                    "x-ms-summary": "Transcript ID"
+                },
+                "botId": {
+                    "type": "string",
+                    "x-ms-summary": "Agent ID"
+                },
+                "startTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Start Time"
+                },
+                "endTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "End Time"
+                },
+                "messageCount": {
+                    "type": "integer",
+                    "x-ms-summary": "Message Count"
+                },
+                "userMessageCount": {
+                    "type": "integer",
+                    "x-ms-summary": "User Messages"
+                },
+                "botMessageCount": {
+                    "type": "integer",
+                    "x-ms-summary": "Agent Messages"
+                },
+                "topicsTriggered": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "x-ms-summary": "Topics Triggered"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "format": "date-time",
+                                "x-ms-summary": "Timestamp"
+                            },
+                            "role": {
+                                "type": "string",
+                                "x-ms-summary": "Role"
+                            },
+                            "text": {
+                                "type": "string",
+                                "x-ms-summary": "Text"
+                            },
+                            "topicName": {
+                                "type": "string",
+                                "x-ms-summary": "Topic Name"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Messages"
+                },
+                "wasEscalated": {
+                    "type": "boolean",
+                    "x-ms-summary": "Was Escalated"
+                },
+                "sessionOutcome": {
+                    "type": "string",
+                    "x-ms-summary": "Session Outcome"
+                }
+            }
+        },
+        "SessionAnalytics": {
+            "type": "object",
+            "properties": {
+                "botId": {
+                    "type": "string",
+                    "x-ms-summary": "Agent ID"
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Start Date"
+                },
+                "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "End Date"
+                },
+                "totalSessions": {
+                    "type": "integer",
+                    "x-ms-summary": "Total Sessions"
+                },
+                "averageSessionDurationSeconds": {
+                    "type": "number",
+                    "x-ms-summary": "Avg Session Duration (sec)"
+                },
+                "outcomeBreakdown": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "outcome": {
+                                "type": "string",
+                                "x-ms-summary": "Outcome"
+                            },
+                            "count": {
+                                "type": "integer",
+                                "x-ms-summary": "Count"
+                            },
+                            "percentage": {
+                                "type": "number",
+                                "x-ms-summary": "Percentage"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Outcome Breakdown"
+                },
+                "sessionsByDay": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "date": {
+                                "type": "string",
+                                "format": "date",
+                                "x-ms-summary": "Date"
+                            },
+                            "count": {
+                                "type": "integer",
+                                "x-ms-summary": "Count"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Sessions by Day"
+                }
+            }
+        },
+        "CSATAnalytics": {
+            "type": "object",
+            "properties": {
+                "botId": {
+                    "type": "string",
+                    "x-ms-summary": "Agent ID"
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Start Date"
+                },
+                "endDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "End Date"
+                },
+                "totalResponses": {
+                    "type": "integer",
+                    "x-ms-summary": "Total Responses"
+                },
+                "averageRating": {
+                    "type": "number",
+                    "x-ms-summary": "Average Rating"
+                },
+                "csatScore": {
+                    "type": "number",
+                    "description": "Percentage of responses with rating 4 or 5",
+                    "x-ms-summary": "CSAT Score (%)"
+                },
+                "ratingDistribution": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "rating": {
+                                "type": "integer",
+                                "x-ms-summary": "Rating"
+                            },
+                            "count": {
+                                "type": "integer",
+                                "x-ms-summary": "Count"
+                            },
+                            "percentage": {
+                                "type": "number",
+                                "x-ms-summary": "Percentage"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Rating Distribution"
+                },
+                "recentFeedback": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "transcriptId": {
+                                "type": "string",
+                                "x-ms-summary": "Transcript ID"
+                            },
+                            "rating": {
+                                "type": "integer",
+                                "x-ms-summary": "Rating"
+                            },
+                            "comment": {
+                                "type": "string",
+                                "x-ms-summary": "Comment"
+                            }
+                        }
+                    },
+                    "x-ms-summary": "Recent Feedback"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://copilotstudio.microsoft.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Business Intelligence"
+        }
+    ]
+}
