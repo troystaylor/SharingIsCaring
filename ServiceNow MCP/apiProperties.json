@@ -1,0 +1,89 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "instance": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "ServiceNow Instance",
+          "description": "Your ServiceNow instance name (e.g., dev12345 for dev12345.service-now.com)",
+          "tooltip": "Enter only the instance name, not the full URL",
+          "constraints": {
+            "required": "true"
+          }
+        }
+      },
+      "token": {
+        "type": "oauthSetting",
+        "oAuthSettings": {
+          "identityProvider": "oauth2generic",
+          "clientId": "[REPLACE_WITH_CLIENT_ID]",
+          "scopes": [],
+          "redirectMode": "Global",
+          "redirectUrl": "https://global.consent.azure-apim.net/redirect",
+          "properties": {
+            "IsFirstParty": "False",
+            "IsOnbehalfofLoginSupported": false
+          },
+          "customParameters": {
+            "authorizationUrlTemplate": {
+              "value": "https://{instance}.service-now.com/oauth_auth.do"
+            },
+            "authorizationUrlQueryStringTemplate": {
+              "value": "response_type=code&client_id={ClientId}&redirect_uri={RedirectUrl}&state={State}"
+            },
+            "tokenUrlTemplate": {
+              "value": "https://{instance}.service-now.com/oauth_token.do"
+            },
+            "tokenBodyTemplate": {
+              "value": "grant_type=authorization_code&code={Code}&redirect_uri={RedirectUrl}&client_id={ClientId}&client_secret={ClientSecret}"
+            },
+            "refreshUrlTemplate": {
+              "value": "https://{instance}.service-now.com/oauth_token.do"
+            },
+            "refreshBodyTemplate": {
+              "value": "grant_type=refresh_token&refresh_token={RefreshToken}&client_id={ClientId}&client_secret={ClientSecret}"
+            }
+          }
+        },
+        "uiDefinition": {
+          "displayName": "OAuth 2.0 Authentication",
+          "description": "OAuth 2.0 authentication with your ServiceNow instance"
+        }
+      }
+    },
+    "policyTemplateInstances": [
+      {
+        "templateId": "setheader",
+        "title": "Set Content-Type Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "Content-Type",
+          "x-ms-apimTemplateParameter.value": "application/json",
+          "x-ms-apimTemplateParameter.existsAction": "skip",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Accept Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "Accept",
+          "x-ms-apimTemplateParameter.value": "application/json",
+          "x-ms-apimTemplateParameter.existsAction": "skip",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Dynamic Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('instance').service-now.com/api"
+        }
+      }
+    ],
+    "iconBrandColor": "#293E40",
+    "scriptOperations": ["InvokeMCP", "GetTableSchema"],
+    "capabilities": [],
+    "publisher": "ServiceNow",
+    "stackOwner": "ServiceNow"
+  }
+}
