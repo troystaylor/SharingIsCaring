@@ -1,0 +1,2200 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Salesforce MCP",
+        "version": "1.0.0",
+        "description": "Comprehensive Salesforce connector covering Core REST API (SOQL, sObject CRUD, Search), Composite API, Reports & Dashboards, and Connect/Chatter APIs. MCP-enabled for Copilot Studio integration with dynamic sObject schema support.",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "instance.my.salesforce.com",
+    "basePath": "/services/data/v66.0",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/query": {
+            "get": {
+                "operationId": "Query",
+                "summary": "Execute SOQL Query",
+                "description": "Executes a SOQL query and returns matching records. Use for retrieving data from any Salesforce object.",
+                "tags": [
+                    "Query"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "SOQL query string (e.g., SELECT Id, Name FROM Account WHERE Industry = 'Technology')",
+                        "x-ms-summary": "SOQL Query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalSize": {
+                                    "type": "integer",
+                                    "description": "Total records matching query"
+                                },
+                                "done": {
+                                    "type": "boolean",
+                                    "description": "True if all records returned"
+                                },
+                                "nextRecordsUrl": {
+                                    "type": "string",
+                                    "description": "URL for next batch if done=false"
+                                },
+                                "records": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "attributes": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "url": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "Id": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed query"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/query/{nextRecordsUrl}": {
+            "get": {
+                "operationId": "QueryMore",
+                "summary": "Get More Query Results",
+                "description": "Retrieves the next batch of records for a query that returned done=false.",
+                "tags": [
+                    "Query"
+                ],
+                "parameters": [
+                    {
+                        "name": "nextRecordsUrl",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Query locator from previous response",
+                        "x-ms-summary": "Next Records URL",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalSize": {
+                                    "type": "integer"
+                                },
+                                "done": {
+                                    "type": "boolean"
+                                },
+                                "nextRecordsUrl": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "operationId": "Search",
+                "summary": "Execute SOSL Search",
+                "description": "Executes a SOSL search across multiple objects. Use for full-text search.",
+                "tags": [
+                    "Query"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "SOSL search string (e.g., FIND {Acme} IN ALL FIELDS RETURNING Account(Id, Name))",
+                        "x-ms-summary": "SOSL Search"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "searchRecords": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "attributes": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "url": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "Id": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed search"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/sobjects": {
+            "get": {
+                "operationId": "DescribeGlobal",
+                "summary": "List All Objects",
+                "description": "Returns a list of all available sObjects in the org.",
+                "tags": [
+                    "Metadata"
+                ],
+                "x-ms-visibility": "advanced",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "encoding": {
+                                    "type": "string"
+                                },
+                                "maxBatchSize": {
+                                    "type": "integer"
+                                },
+                                "sobjects": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "API name of the object"
+                                            },
+                                            "label": {
+                                                "type": "string",
+                                                "description": "Display label"
+                                            },
+                                            "labelPlural": {
+                                                "type": "string"
+                                            },
+                                            "keyPrefix": {
+                                                "type": "string"
+                                            },
+                                            "queryable": {
+                                                "type": "boolean"
+                                            },
+                                            "searchable": {
+                                                "type": "boolean"
+                                            },
+                                            "createable": {
+                                                "type": "boolean"
+                                            },
+                                            "updateable": {
+                                                "type": "boolean"
+                                            },
+                                            "deletable": {
+                                                "type": "boolean"
+                                            },
+                                            "custom": {
+                                                "type": "boolean"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/sobjects/{sObject}/describe": {
+            "get": {
+                "operationId": "DescribeObject",
+                "summary": "Describe Object",
+                "description": "Returns detailed metadata about a specific sObject including fields, relationships, and record types.",
+                "tags": [
+                    "Metadata"
+                ],
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "API name of the sObject (e.g., Account, Contact, Lead)",
+                        "x-ms-summary": "Object Name",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                },
+                                "keyPrefix": {
+                                    "type": "string"
+                                },
+                                "queryable": {
+                                    "type": "boolean"
+                                },
+                                "fields": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "label": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "length": {
+                                                "type": "integer"
+                                            },
+                                            "nillable": {
+                                                "type": "boolean"
+                                            },
+                                            "createable": {
+                                                "type": "boolean"
+                                            },
+                                            "updateable": {
+                                                "type": "boolean"
+                                            },
+                                            "defaultValue": {
+                                                "type": "string"
+                                            },
+                                            "picklistValues": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "value": {
+                                                            "type": "string"
+                                                        },
+                                                        "label": {
+                                                            "type": "string"
+                                                        },
+                                                        "active": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "recordTypeInfos": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "recordTypeId": {
+                                                "type": "string"
+                                            },
+                                            "available": {
+                                                "type": "boolean"
+                                            },
+                                            "defaultRecordTypeMapping": {
+                                                "type": "boolean"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Object not found"
+                    }
+                }
+            }
+        },
+        "/sobjects/{sObject}": {
+            "post": {
+                "operationId": "CreateRecord",
+                "summary": "Create Record",
+                "description": "Creates a new record in the specified sObject.",
+                "tags": [
+                    "Records"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "API name of the sObject",
+                        "x-ms-summary": "Object Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetObjectSchema",
+                                "parameters": {
+                                    "sObject": {
+                                        "parameter": "sObject"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        },
+                        "description": "Record field values"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "ID of created record"
+                                },
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "errors": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid field or value"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/sobjects/{sObject}/{id}": {
+            "get": {
+                "operationId": "GetRecord",
+                "summary": "Get Record",
+                "description": "Retrieves a single record by ID.",
+                "tags": [
+                    "Records"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "API name of the sObject",
+                        "x-ms-summary": "Object Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Salesforce record ID (15 or 18 character)",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return",
+                        "x-ms-summary": "Fields"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "attributes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "url": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "Id": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Record not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateRecord",
+                "summary": "Update Record",
+                "description": "Updates fields on an existing record.",
+                "tags": [
+                    "Records"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "API name of the sObject",
+                        "x-ms-summary": "Object Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Salesforce record ID",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetObjectSchema",
+                                "parameters": {
+                                    "sObject": {
+                                        "parameter": "sObject"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        },
+                        "description": "Fields to update"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - No Content"
+                    },
+                    "400": {
+                        "description": "Invalid field or value"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Record not found"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteRecord",
+                "summary": "Delete Record",
+                "description": "Deletes a record by ID.",
+                "tags": [
+                    "Records"
+                ],
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "API name of the sObject",
+                        "x-ms-summary": "Object Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Salesforce record ID",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - Record deleted"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Record not found"
+                    }
+                }
+            }
+        },
+        "/sobjects/{sObject}/schema": {
+            "get": {
+                "operationId": "GetObjectSchema",
+                "summary": "Get Object Schema",
+                "description": "Returns JSON Schema for an sObject. Used internally for dynamic field population.",
+                "tags": [
+                    "Metadata"
+                ],
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "API name of the sObject",
+                        "x-ms-summary": "Object Name",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/limits": {
+            "get": {
+                "operationId": "GetLimits",
+                "summary": "Get Org Limits",
+                "description": "Returns the org's API limits and current usage.",
+                "tags": [
+                    "Metadata"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "DailyApiRequests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "Max": {
+                                            "type": "integer"
+                                        },
+                                        "Remaining": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "DailyAsyncApexExecutions": {
+                                    "type": "object",
+                                    "properties": {
+                                        "Max": {
+                                            "type": "integer"
+                                        },
+                                        "Remaining": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "DailyBulkApiRequests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "Max": {
+                                            "type": "integer"
+                                        },
+                                        "Remaining": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "DataStorageMB": {
+                                    "type": "object",
+                                    "properties": {
+                                        "Max": {
+                                            "type": "integer"
+                                        },
+                                        "Remaining": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/composite": {
+            "post": {
+                "operationId": "Composite",
+                "summary": "Execute Composite Request",
+                "description": "Executes multiple API requests in a single call. Supports references between requests.",
+                "tags": [
+                    "Composite"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "allOrNone": {
+                                    "type": "boolean",
+                                    "description": "If true, all requests roll back on any failure",
+                                    "default": false
+                                },
+                                "collateSubrequests": {
+                                    "type": "boolean",
+                                    "description": "If true, independent requests execute in parallel",
+                                    "default": false
+                                },
+                                "compositeRequest": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "method": {
+                                                "type": "string",
+                                                "description": "HTTP method (GET, POST, PATCH, DELETE)"
+                                            },
+                                            "url": {
+                                                "type": "string",
+                                                "description": "Request URL (relative to base)"
+                                            },
+                                            "referenceId": {
+                                                "type": "string",
+                                                "description": "Reference ID for this request"
+                                            },
+                                            "body": {
+                                                "type": "object",
+                                                "description": "Request body for POST/PATCH"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "Composite request payload"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "compositeResponse": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "body": {
+                                                "type": "object"
+                                            },
+                                            "httpHeaders": {
+                                                "type": "object"
+                                            },
+                                            "httpStatusCode": {
+                                                "type": "integer"
+                                            },
+                                            "referenceId": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/composite/batch": {
+            "post": {
+                "operationId": "CompositeBatch",
+                "summary": "Execute Batch Request",
+                "description": "Executes up to 25 independent subrequests in a single call.",
+                "tags": [
+                    "Composite"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "haltOnError": {
+                                    "type": "boolean",
+                                    "description": "Stop processing on first error",
+                                    "default": false
+                                },
+                                "batchRequests": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "method": {
+                                                "type": "string"
+                                            },
+                                            "url": {
+                                                "type": "string"
+                                            },
+                                            "richInput": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "hasErrors": {
+                                    "type": "boolean"
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "statusCode": {
+                                                "type": "integer"
+                                            },
+                                            "result": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/composite/tree/{sObject}": {
+            "post": {
+                "operationId": "CompositeTree",
+                "summary": "Create Record Tree",
+                "description": "Creates a parent record and related child records in a single request.",
+                "tags": [
+                    "Composite"
+                ],
+                "parameters": [
+                    {
+                        "name": "sObject",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Parent sObject type",
+                        "x-ms-summary": "Parent Object",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "records": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "attributes": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "referenceId": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "hasErrors": {
+                                    "type": "boolean"
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "referenceId": {
+                                                "type": "string"
+                                            },
+                                            "id": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/composite/graph": {
+            "post": {
+                "operationId": "CompositeGraph",
+                "summary": "Execute Graph Request",
+                "description": "Executes complex composite operations with dependencies between graphs.",
+                "tags": [
+                    "Composite"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "graphs": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "graphId": {
+                                                "type": "string"
+                                            },
+                                            "compositeRequest": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "method": {
+                                                            "type": "string"
+                                                        },
+                                                        "url": {
+                                                            "type": "string"
+                                                        },
+                                                        "referenceId": {
+                                                            "type": "string"
+                                                        },
+                                                        "body": {
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "graphs": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "graphId": {
+                                                "type": "string"
+                                            },
+                                            "graphResponse": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "compositeResponse": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "isSuccessful": {
+                                                "type": "boolean"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/analytics/reports": {
+            "get": {
+                "operationId": "ListReports",
+                "summary": "List Reports",
+                "description": "Returns a list of reports available in the org.",
+                "tags": [
+                    "Analytics"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "describeUrl": {
+                                        "type": "string"
+                                    },
+                                    "instancesUrl": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/analytics/reports/{reportId}": {
+            "get": {
+                "operationId": "GetReport",
+                "summary": "Get Report Metadata",
+                "description": "Returns metadata for a specific report.",
+                "tags": [
+                    "Analytics"
+                ],
+                "parameters": [
+                    {
+                        "name": "reportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Report ID",
+                        "x-ms-summary": "Report ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "reportMetadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "reportType": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string"
+                                                },
+                                                "label": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "reportFormat": {
+                                            "type": "string"
+                                        },
+                                        "detailColumns": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Report not found"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "RunReport",
+                "summary": "Run Report",
+                "description": "Executes a report and returns the results.",
+                "tags": [
+                    "Analytics"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "reportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Report ID",
+                        "x-ms-summary": "Report ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "reportMetadata": {
+                                    "type": "object",
+                                    "properties": {
+                                        "reportFilters": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "column": {
+                                                        "type": "string"
+                                                    },
+                                                    "operator": {
+                                                        "type": "string"
+                                                    },
+                                                    "value": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "description": "Optional report filters"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "attributes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "allData": {
+                                    "type": "boolean"
+                                },
+                                "factMap": {
+                                    "type": "object"
+                                },
+                                "groupingsDown": {
+                                    "type": "object",
+                                    "properties": {
+                                        "groupings": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                },
+                                "hasDetailRows": {
+                                    "type": "boolean"
+                                },
+                                "reportExtendedMetadata": {
+                                    "type": "object"
+                                },
+                                "reportMetadata": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Report not found"
+                    }
+                }
+            }
+        },
+        "/analytics/dashboards": {
+            "get": {
+                "operationId": "ListDashboards",
+                "summary": "List Dashboards",
+                "description": "Returns a list of dashboards available in the org.",
+                "tags": [
+                    "Analytics"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "dashboards": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "statusUrl": {
+                                                "type": "string"
+                                            },
+                                            "folderId": {
+                                                "type": "string"
+                                            },
+                                            "folderName": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/analytics/dashboards/{dashboardId}": {
+            "get": {
+                "operationId": "GetDashboard",
+                "summary": "Get Dashboard",
+                "description": "Returns dashboard metadata and current component data.",
+                "tags": [
+                    "Analytics"
+                ],
+                "parameters": [
+                    {
+                        "name": "dashboardId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Dashboard ID",
+                        "x-ms-summary": "Dashboard ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "folderId": {
+                                    "type": "string"
+                                },
+                                "components": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "componentId": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "reportId": {
+                                                "type": "string"
+                                            },
+                                            "status": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Dashboard not found"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "RefreshDashboard",
+                "summary": "Refresh Dashboard",
+                "description": "Refreshes all dashboard components to show current data.",
+                "tags": [
+                    "Analytics"
+                ],
+                "parameters": [
+                    {
+                        "name": "dashboardId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Dashboard ID",
+                        "x-ms-summary": "Dashboard ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "components": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/feeds/{feedType}/feed-elements": {
+            "get": {
+                "operationId": "GetFeed",
+                "summary": "Get Chatter Feed",
+                "description": "Returns feed elements for a specified feed type.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "feedType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "news",
+                            "company",
+                            "record",
+                            "to",
+                            "user-profile"
+                        ],
+                        "description": "Type of feed",
+                        "x-ms-summary": "Feed Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of elements per page (max 100)",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "elements": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "body": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "text": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "actor": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "createdDate": {
+                                                "type": "string"
+                                            },
+                                            "capabilities": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                },
+                                "nextPageUrl": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/feed-elements": {
+            "post": {
+                "operationId": "PostFeedElement",
+                "summary": "Post to Chatter",
+                "description": "Creates a new feed element (post) on a user's feed or a record.",
+                "tags": [
+                    "Chatter"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "body",
+                                "feedElementType",
+                                "subjectId"
+                            ],
+                            "properties": {
+                                "body": {
+                                    "type": "object",
+                                    "properties": {
+                                        "messageSegments": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "description": "Text, Mention, Link, etc."
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    },
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "User ID for mentions"
+                                                    },
+                                                    "url": {
+                                                        "type": "string",
+                                                        "description": "URL for links"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "feedElementType": {
+                                    "type": "string",
+                                    "enum": [
+                                        "FeedItem"
+                                    ],
+                                    "description": "Type of feed element"
+                                },
+                                "subjectId": {
+                                    "type": "string",
+                                    "description": "User ID or Record ID to post to"
+                                },
+                                "visibility": {
+                                    "type": "string",
+                                    "enum": [
+                                        "AllUsers",
+                                        "InternalUsers"
+                                    ],
+                                    "description": "Post visibility"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": "object"
+                                },
+                                "createdDate": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/feed-elements/{feedElementId}": {
+            "get": {
+                "operationId": "GetFeedElement",
+                "summary": "Get Feed Element",
+                "description": "Returns a specific feed element by ID.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "feedElementId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Feed element ID",
+                        "x-ms-summary": "Feed Element ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": "object"
+                                },
+                                "actor": {
+                                    "type": "object"
+                                },
+                                "capabilities": {
+                                    "type": "object"
+                                },
+                                "createdDate": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Feed element not found"
+                    }
+                }
+            }
+        },
+        "/chatter/feed-elements/{feedElementId}/capabilities/chatter-likes/items": {
+            "post": {
+                "operationId": "LikeFeedElement",
+                "summary": "Like Feed Element",
+                "description": "Likes a feed element.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "feedElementId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Feed element ID",
+                        "x-ms-summary": "Feed Element ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Liked",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/feed-elements/{feedElementId}/capabilities/comments/items": {
+            "post": {
+                "operationId": "PostComment",
+                "summary": "Post Comment",
+                "description": "Adds a comment to a feed element.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "feedElementId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Feed element ID",
+                        "x-ms-summary": "Feed Element ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "body": {
+                                    "type": "object",
+                                    "properties": {
+                                        "messageSegments": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Comment created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": "object"
+                                },
+                                "createdDate": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/users/{userId}": {
+            "get": {
+                "operationId": "GetChatterUser",
+                "summary": "Get Chatter User",
+                "description": "Returns Chatter user profile information.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "User ID or 'me' for current user",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "firstName": {
+                                    "type": "string"
+                                },
+                                "lastName": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "email": {
+                                    "type": "string"
+                                },
+                                "username": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "companyName": {
+                                    "type": "string"
+                                },
+                                "photo": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fullEmailPhotoUrl": {
+                                            "type": "string"
+                                        },
+                                        "smallPhotoUrl": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/chatter/users": {
+            "get": {
+                "operationId": "ListChatterUsers",
+                "summary": "List Chatter Users",
+                "description": "Returns a list of Chatter users.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Search term for user name",
+                        "x-ms-summary": "Search"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of users per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "users": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "title": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "photo": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                },
+                                "nextPageUrl": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/groups": {
+            "get": {
+                "operationId": "ListChatterGroups",
+                "summary": "List Chatter Groups",
+                "description": "Returns a list of Chatter groups.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Search term for group name",
+                        "x-ms-summary": "Search"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "groups": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "memberCount": {
+                                                "type": "integer"
+                                            },
+                                            "visibility": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/chatter/groups/{groupId}": {
+            "get": {
+                "operationId": "GetChatterGroup",
+                "summary": "Get Chatter Group",
+                "description": "Returns details of a Chatter group.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Group ID",
+                        "x-ms-summary": "Group ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "memberCount": {
+                                    "type": "integer"
+                                },
+                                "visibility": {
+                                    "type": "string"
+                                },
+                                "owner": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Group not found"
+                    }
+                }
+            }
+        },
+        "/chatter/groups/{groupId}/members": {
+            "post": {
+                "operationId": "JoinChatterGroup",
+                "summary": "Join Chatter Group",
+                "description": "Adds the current user as a member of the group.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Group ID",
+                        "x-ms-summary": "Group ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Joined",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/connect/topics": {
+            "get": {
+                "operationId": "ListTopics",
+                "summary": "List Topics",
+                "description": "Returns a list of topics in the org.",
+                "tags": [
+                    "Chatter"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Search term",
+                        "x-ms-summary": "Search"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "topics": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "talkingAbout": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Salesforce MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides AI agents access to Salesforce operations as tools.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "tags": [
+        {
+            "name": "Query",
+            "description": "SOQL queries and SOSL searches"
+        },
+        {
+            "name": "Records",
+            "description": "sObject CRUD operations"
+        },
+        {
+            "name": "Metadata",
+            "description": "Object and field metadata"
+        },
+        {
+            "name": "Composite",
+            "description": "Batch and composite operations"
+        },
+        {
+            "name": "Analytics",
+            "description": "Reports and dashboards"
+        },
+        {
+            "name": "Chatter",
+            "description": "Social and collaboration features"
+        }
+    ],
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.salesforce.com/services/oauth2/authorize",
+            "tokenUrl": "https://login.salesforce.com/services/oauth2/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ]
+}
