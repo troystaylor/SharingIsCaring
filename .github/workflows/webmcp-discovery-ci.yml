@@ -47,6 +47,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Lowercase repo name for Docker tags
+        run: echo "REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -58,5 +61,5 @@ jobs:
           context: WebMCP Discovery/broker-service
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/webmcp-broker:latest
-            ghcr.io/${{ github.repository }}/webmcp-broker:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LC }}/webmcp-broker:latest
+            ghcr.io/${{ env.REPO_LC }}/webmcp-broker:${{ github.sha }}
