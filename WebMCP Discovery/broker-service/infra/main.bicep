@@ -8,7 +8,7 @@ param containerAppName string = 'webmcp-broker'
 param location string = resourceGroup().location
 
 @description('Container image to deploy')
-param containerImage string = 'ghcr.io/your-org/webmcp-broker:latest'
+param containerImage string = 'ghcr.io/troystaylor/sharingiscaring/webmcp-broker:latest'
 
 @description('API Key for broker authentication')
 @secure()
