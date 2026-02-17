@@ -105,7 +105,7 @@ export function managedIdentityMiddleware(req: Request, res: Response, next: Nex
             return;
         }
 
-        (req as any).tokenClaims = validation.claims;
+        (req as unknown as Record<string, unknown>).tokenClaims = validation.claims;
         next();
         return;
     }
@@ -117,7 +117,7 @@ export function managedIdentityMiddleware(req: Request, res: Response, next: Nex
             const validation = validateToken(token);
 
             if (validation.valid) {
-                (req as any).tokenClaims = validation.claims;
+                (req as unknown as Record<string, unknown>).tokenClaims = validation.claims;
                 next();
                 return;
             }

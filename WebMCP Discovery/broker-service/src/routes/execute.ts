@@ -22,7 +22,9 @@ export function createExecuteRouter(
         }
 
         const toolName = req.params.toolName;
-        const { input = {}, timeout = 30000 } = req.body;
+        const { input = {} } = req.body;
+        const _timeout = req.body.timeout ?? 30000; // reserved for future per-call timeouts
+        void _timeout;
         const startTime = Date.now();
 
         try {

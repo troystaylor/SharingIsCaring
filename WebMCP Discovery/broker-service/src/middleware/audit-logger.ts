@@ -98,7 +98,7 @@ export function auditMiddleware(req: Request, res: Response, next: NextFunction)
     const correlationId = `${Date.now()}-${++correlationCounter}`;
     
     // Attach correlation ID to request
-    (req as any).correlationId = correlationId;
+    (req as unknown as Record<string, unknown>).correlationId = correlationId;
 
     const entry: AuditEntry = {
         timestamp: new Date().toISOString(),
@@ -124,13 +124,13 @@ export function auditMiddleware(req: Request, res: Response, next: NextFunction)
 
     // Capture response
     const originalJson = res.json.bind(res);
-    res.json = function (body: any) {
+    res.json = function (body: Record<string, unknown>) {
         const completionEntry: AuditEntry = {
             ...entry,
             action: 'RESPONSE',
             statusCode: res.statusCode,
             durationMs: Date.now() - startTime,
-            error: body?.error
+            error: body?.error as string | undefined
         };
 
         if (auditLevel === 'detailed' || auditLevel === 'full') {

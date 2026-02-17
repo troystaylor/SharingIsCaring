@@ -42,14 +42,14 @@ describe('redactObject', () => {
 
     it('handles nested objects', () => {
         const obj = { user: { name: 'Alice', token: 'abc123' } };
-        const result = redactObject(obj) as Record<string, any>;
+        const result = redactObject(obj) as Record<string, Record<string, unknown>>;
         expect(result.user.token).toBe('[REDACTED]');
         expect(result.user.name).toBe('Alice');
     });
 
     it('handles arrays', () => {
         const arr = [{ password: 'x' }, { name: 'Bob' }];
-        const result = redactObject(arr) as any[];
+        const result = redactObject(arr) as Record<string, unknown>[];
         expect(result[0].password).toBe('[REDACTED]');
         expect(result[1].name).toBe('Bob');
     });

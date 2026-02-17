@@ -110,8 +110,8 @@ export function rbacMiddleware(req: Request, res: Response, next: NextFunction):
     const perms = ROLE_PERMISSIONS[role];
 
     // Attach role to request
-    (req as any).role = role;
-    (req as any).permissions = perms;
+    (req as unknown as Record<string, unknown>).role = role;
+    (req as unknown as Record<string, unknown>).permissions = perms;
 
     // Check navigation permission
     if (!perms.canNavigate) {

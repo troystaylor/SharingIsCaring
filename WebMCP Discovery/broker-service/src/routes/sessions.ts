@@ -27,6 +27,13 @@ export function createSessionsRouter(
                 await instance.page.setViewportSize(viewport);
             }
 
+            // Configure user agent if specified
+            if (userAgent) {
+                await instance.page.route('**/*', (route) =>
+                    route.continue({ headers: { ...route.request().headers(), 'user-agent': userAgent } })
+                );
+            }
+
             // Navigate to initial URL
             await instance.page.goto(url, { waitUntil: 'networkidle' });
 
