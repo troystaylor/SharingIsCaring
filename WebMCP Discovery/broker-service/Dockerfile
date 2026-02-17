@@ -1,15 +1,18 @@
-FROM mcr.microsoft.com/playwright:v1.42.0-jammy
-
+# --- Build stage ---
+FROM node:18-slim AS build
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY src/ ./src/
+RUN npm run build
 
-# Install dependencies
+# --- Runtime stage ---
+FROM mcr.microsoft.com/playwright:v1.42.0-jammy
+WORKDIR /app
+COPY package*.json ./
 RUN npm ci --only=production
-
-# Copy built application
-COPY dist/ ./dist/
+COPY --from=build /app/dist ./dist/
 
 # Create non-root user for security
 RUN useradd -m appuser && chown -R appuser:appuser /app
