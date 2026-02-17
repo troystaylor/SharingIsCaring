@@ -1,0 +1,53 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "brokerUrl": {
+                "type": "string",
+                "uiDefinition": {
+                    "displayName": "Broker Service URL",
+                    "description": "URL of your WebMCP broker service (e.g., https://your-app.azurecontainerapps.io)",
+                    "tooltip": "Deploy the broker service to Azure Container Apps first",
+                    "constraints": {
+                        "required": "true",
+                        "tabIndex": 1
+                    }
+                }
+            },
+            "api_key": {
+                "type": "securestring",
+                "uiDefinition": {
+                    "displayName": "API Key",
+                    "description": "API key for authenticating with the broker service",
+                    "tooltip": "Set this in your broker service environment variables",
+                    "constraints": {
+                        "required": "true",
+                        "tabIndex": 2
+                    }
+                }
+            }
+        },
+        "iconBrandColor": "#5C2D91",
+        "capabilities": [],
+        "scriptOperations": ["InvokeMCP", "DiscoverTools", "CreateSession", "GetSession", "CloseSession", "Navigate", "ListSessionTools", "CallSessionTool", "ExecuteTool", "InjectAuthentication", "TakeScreenshot"],
+        "publisher": "Troy Taylor",
+        "stackOwner": "Community"
+    },
+    "policyTemplateInstances": [
+        {
+            "templateId": "setheader",
+            "title": "Set API Key Header",
+            "parameters": {
+                "x-ms-apimTemplateParameter.name": "X-API-Key",
+                "x-ms-apimTemplateParameter.value": "@connectionParameters('api_key')",
+                "x-ms-apimTemplateParameter.existsAction": "override"
+            }
+        },
+        {
+            "templateId": "dynamichosturl",
+            "title": "Set Broker URL",
+            "parameters": {
+                "x-ms-apimTemplateParameter.urlTemplate": "@connectionParameters('brokerUrl')"
+            }
+        }
+    ]
+}

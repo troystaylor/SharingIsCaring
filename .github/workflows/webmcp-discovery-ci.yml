@@ -1,0 +1,62 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'WebMCP Discovery/broker-service/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'WebMCP Discovery/broker-service/**'
+
+jobs:
+  ci:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: WebMCP Discovery/broker-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: WebMCP Discovery/broker-service/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - run: npm test
+
+  cd:
+    name: Docker Build & Push
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: WebMCP Discovery/broker-service
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/webmcp-broker:latest
+            ghcr.io/${{ github.repository }}/webmcp-broker:${{ github.sha }}

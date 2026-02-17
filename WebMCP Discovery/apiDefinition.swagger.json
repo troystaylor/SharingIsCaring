@@ -1,0 +1,860 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "WebMCP Discovery",
+        "description": "Discover and execute WebMCP tools from any web page. Connect to websites that implement the WebMCP specification to automate browser-based workflows without traditional RPA.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "url": "https://github.com/troyhunt"
+        }
+    },
+    "host": "webmcp-broker.azurewebsites.net",
+    "basePath": "/api",
+    "schemes": [
+        "https"
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://webmachinelearning.github.io/webmcp/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Website;AI"
+        }
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/discover": {
+            "post": {
+                "operationId": "DiscoverTools",
+                "summary": "Discover Tools from URL",
+                "description": "Navigate to a web page and discover all WebMCP tools registered via navigator.modelContext. Returns tool names, descriptions, and input schemas.",
+                "tags": [
+                    "Discovery"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "url"
+                            ],
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "The URL of the web page to scan for WebMCP tools",
+                                    "x-ms-summary": "Page URL"
+                                },
+                                "waitForSelector": {
+                                    "type": "string",
+                                    "description": "CSS selector to wait for before reading tools (optional)",
+                                    "x-ms-summary": "Wait for Selector"
+                                },
+                                "timeout": {
+                                    "type": "integer",
+                                    "description": "Maximum time in milliseconds to wait for page load (default: 30000)",
+                                    "x-ms-summary": "Timeout (ms)"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tools discovered successfully",
+                        "schema": {
+                            "$ref": "#/definitions/DiscoveryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid URL or request"
+                    },
+                    "404": {
+                        "description": "No WebMCP tools found on page"
+                    },
+                    "408": {
+                        "description": "Page load timeout"
+                    }
+                }
+            }
+        },
+        "/sessions": {
+            "post": {
+                "operationId": "CreateSession",
+                "summary": "Create Browser Session",
+                "description": "Create a persistent browser session for stateful multi-step interactions. Use when tools depend on page state (e.g., login, cart, forms).",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "url"
+                            ],
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "Initial URL to navigate to",
+                                    "x-ms-summary": "Start URL"
+                                },
+                                "ttlMinutes": {
+                                    "type": "integer",
+                                    "description": "Session time-to-live in minutes (default: 15, max: 60)",
+                                    "x-ms-summary": "Session TTL (minutes)"
+                                },
+                                "viewport": {
+                                    "type": "object",
+                                    "description": "Browser viewport dimensions",
+                                    "properties": {
+                                        "width": {
+                                            "type": "integer",
+                                            "description": "Viewport width in pixels",
+                                            "x-ms-summary": "Width"
+                                        },
+                                        "height": {
+                                            "type": "integer",
+                                            "description": "Viewport height in pixels",
+                                            "x-ms-summary": "Height"
+                                        }
+                                    }
+                                },
+                                "userAgent": {
+                                    "type": "string",
+                                    "description": "Custom user agent string (optional)",
+                                    "x-ms-summary": "User Agent"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Session created",
+                        "schema": {
+                            "$ref": "#/definitions/SessionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "429": {
+                        "description": "Session limit reached"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}": {
+            "get": {
+                "operationId": "GetSession",
+                "summary": "Get Session Status",
+                "description": "Get the current status of a browser session including page URL, discovered tools, and time remaining.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session details",
+                        "schema": {
+                            "$ref": "#/definitions/SessionStatusResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found or expired"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "CloseSession",
+                "summary": "Close Session",
+                "description": "Close a browser session and release resources. Always close sessions when done to avoid charges.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Session closed"
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/navigate": {
+            "post": {
+                "operationId": "Navigate",
+                "summary": "Navigate to URL",
+                "description": "Navigate the browser session to a new URL while preserving cookies and session state.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "url"
+                            ],
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL to navigate to",
+                                    "x-ms-summary": "URL"
+                                },
+                                "waitForSelector": {
+                                    "type": "string",
+                                    "description": "CSS selector to wait for after navigation",
+                                    "x-ms-summary": "Wait for Selector"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Navigation complete",
+                        "schema": {
+                            "$ref": "#/definitions/NavigationResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    },
+                    "408": {
+                        "description": "Navigation timeout"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/tools": {
+            "get": {
+                "operationId": "ListSessionTools",
+                "summary": "List Session Tools",
+                "description": "Get all WebMCP tools available on the current page in this session.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tools list",
+                        "schema": {
+                            "$ref": "#/definitions/ToolsListResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/tools/{toolName}/call": {
+            "post": {
+                "operationId": "CallSessionTool",
+                "summary": "Call Tool (Session)",
+                "description": "Execute a WebMCP tool within an existing browser session. The page state and cookies are preserved between calls.",
+                "tags": [
+                    "Execution"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "toolName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Name of the WebMCP tool to call",
+                        "x-ms-summary": "Tool Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "input": {
+                                    "type": "object",
+                                    "description": "Input parameters matching the tool's inputSchema",
+                                    "x-ms-summary": "Tool Input"
+                                },
+                                "timeout": {
+                                    "type": "integer",
+                                    "description": "Maximum execution time in milliseconds (default: 30000)",
+                                    "x-ms-summary": "Timeout (ms)"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tool executed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResultResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input (schema mismatch)"
+                    },
+                    "404": {
+                        "description": "Session or tool not found"
+                    },
+                    "408": {
+                        "description": "Tool execution timeout"
+                    },
+                    "500": {
+                        "description": "Tool execution error"
+                    }
+                }
+            }
+        },
+        "/execute": {
+            "post": {
+                "operationId": "ExecuteTool",
+                "summary": "Execute Tool (Stateless)",
+                "description": "Execute a single WebMCP tool in a one-shot stateless request. A fresh browser instance is created, navigates to the URL, calls the tool, and closes. Use for simple, independent operations.",
+                "tags": [
+                    "Execution"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "url",
+                                "toolName"
+                            ],
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL of the page containing the WebMCP tool",
+                                    "x-ms-summary": "Page URL"
+                                },
+                                "toolName": {
+                                    "type": "string",
+                                    "description": "Name of the WebMCP tool to execute",
+                                    "x-ms-summary": "Tool Name"
+                                },
+                                "input": {
+                                    "type": "object",
+                                    "description": "Input parameters matching the tool's inputSchema",
+                                    "x-ms-summary": "Tool Input"
+                                },
+                                "timeout": {
+                                    "type": "integer",
+                                    "description": "Maximum total time in milliseconds (default: 60000)",
+                                    "x-ms-summary": "Timeout (ms)"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tool executed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResultResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or input"
+                    },
+                    "404": {
+                        "description": "Tool not found on page"
+                    },
+                    "408": {
+                        "description": "Execution timeout"
+                    },
+                    "500": {
+                        "description": "Execution error"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/authenticate": {
+            "post": {
+                "operationId": "InjectAuthentication",
+                "summary": "Inject Authentication",
+                "description": "Inject authentication credentials or tokens into the browser session. Supports cookies, localStorage, and HTTP headers.",
+                "tags": [
+                    "Authentication"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "cookies": {
+                                    "type": "array",
+                                    "description": "Cookies to inject",
+                                    "x-ms-summary": "Cookies",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Cookie name"
+                                            },
+                                            "value": {
+                                                "type": "string",
+                                                "description": "Cookie value"
+                                            },
+                                            "domain": {
+                                                "type": "string",
+                                                "description": "Cookie domain"
+                                            },
+                                            "path": {
+                                                "type": "string",
+                                                "description": "Cookie path"
+                                            },
+                                            "secure": {
+                                                "type": "boolean",
+                                                "description": "Secure flag"
+                                            },
+                                            "httpOnly": {
+                                                "type": "boolean",
+                                                "description": "HttpOnly flag"
+                                            }
+                                        }
+                                    }
+                                },
+                                "localStorage": {
+                                    "type": "object",
+                                    "description": "Key-value pairs to set in localStorage",
+                                    "x-ms-summary": "Local Storage"
+                                },
+                                "sessionStorage": {
+                                    "type": "object",
+                                    "description": "Key-value pairs to set in sessionStorage",
+                                    "x-ms-summary": "Session Storage"
+                                },
+                                "headers": {
+                                    "type": "object",
+                                    "description": "HTTP headers to inject on all requests (e.g., Authorization)",
+                                    "x-ms-summary": "HTTP Headers"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication injected"
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/screenshot": {
+            "get": {
+                "operationId": "TakeScreenshot",
+                "summary": "Take Screenshot",
+                "description": "Capture a screenshot of the current page state. Useful for debugging and verification.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fullPage",
+                        "in": "query",
+                        "type": "boolean",
+                        "description": "Capture full scrollable page (default: false)",
+                        "x-ms-summary": "Full Page"
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "png",
+                            "jpeg"
+                        ],
+                        "description": "Image format (default: png)",
+                        "x-ms-summary": "Format"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Screenshot captured",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenshotResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke WebMCP Discovery MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Discover and execute WebMCP tools from any web page through natural language.",
+                "tags": [
+                    "MCP"
+                ],
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "produces": [
+                    "application/json"
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "DiscoveryResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "The URL that was scanned"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Page title"
+                },
+                "toolCount": {
+                    "type": "integer",
+                    "description": "Number of tools discovered"
+                },
+                "tools": {
+                    "type": "array",
+                    "description": "List of discovered WebMCP tools",
+                    "items": {
+                        "$ref": "#/definitions/WebMCPTool"
+                    }
+                },
+                "scanDurationMs": {
+                    "type": "integer",
+                    "description": "Time taken to load page and discover tools"
+                }
+            }
+        },
+        "WebMCPTool": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Unique tool identifier"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Human-readable description of what the tool does"
+                },
+                "inputSchema": {
+                    "type": "object",
+                    "description": "JSON Schema defining the tool's input parameters"
+                },
+                "outputSchema": {
+                    "type": "object",
+                    "description": "JSON Schema defining the tool's output format (if provided)"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Tool category (if provided by the page)"
+                },
+                "requiresAuth": {
+                    "type": "boolean",
+                    "description": "Whether the tool requires authentication"
+                }
+            }
+        },
+        "SessionResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Unique session identifier"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "description": "ISO 8601 timestamp when session expires"
+                },
+                "tools": {
+                    "type": "array",
+                    "description": "Tools discovered on initial page",
+                    "items": {
+                        "$ref": "#/definitions/WebMCPTool"
+                    }
+                }
+            }
+        },
+        "SessionStatusResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "expired",
+                        "error"
+                    ],
+                    "description": "Current session status"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Current page title"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "description": "Session expiration timestamp"
+                },
+                "remainingSeconds": {
+                    "type": "integer",
+                    "description": "Seconds until session expires"
+                },
+                "toolCount": {
+                    "type": "integer",
+                    "description": "Number of tools on current page"
+                },
+                "callCount": {
+                    "type": "integer",
+                    "description": "Total tool calls made in this session"
+                }
+            }
+        },
+        "NavigationResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "New page URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "New page title"
+                },
+                "tools": {
+                    "type": "array",
+                    "description": "Tools discovered on new page",
+                    "items": {
+                        "$ref": "#/definitions/WebMCPTool"
+                    }
+                }
+            }
+        },
+        "ToolsListResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL"
+                },
+                "tools": {
+                    "type": "array",
+                    "description": "Available tools",
+                    "items": {
+                        "$ref": "#/definitions/WebMCPTool"
+                    }
+                }
+            }
+        },
+        "ToolResultResponse": {
+            "type": "object",
+            "properties": {
+                "toolName": {
+                    "type": "string",
+                    "description": "Name of the executed tool"
+                },
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the tool executed successfully"
+                },
+                "result": {
+                    "type": "object",
+                    "description": "Tool output (structure defined by tool's outputSchema)"
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error message if execution failed"
+                },
+                "executionTimeMs": {
+                    "type": "integer",
+                    "description": "Tool execution duration in milliseconds"
+                },
+                "pageChanged": {
+                    "type": "boolean",
+                    "description": "Whether the tool caused a page navigation"
+                },
+                "newUrl": {
+                    "type": "string",
+                    "description": "New URL if page changed"
+                }
+            }
+        },
+        "ScreenshotResponse": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "type": "string",
+                    "description": "Image format (png or jpeg)"
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "Image width in pixels"
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "Image height in pixels"
+                },
+                "base64": {
+                    "type": "string",
+                    "description": "Base64-encoded image data"
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Discovery",
+            "description": "Discover WebMCP tools on web pages"
+        },
+        {
+            "name": "Sessions",
+            "description": "Manage persistent browser sessions"
+        },
+        {
+            "name": "Execution",
+            "description": "Execute WebMCP tools"
+        },
+        {
+            "name": "Authentication",
+            "description": "Handle browser authentication"
+        },
+        {
+            "name": "MCP",
+            "description": "Model Context Protocol for Copilot Studio"
+        }
+    ],
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ]
+}
