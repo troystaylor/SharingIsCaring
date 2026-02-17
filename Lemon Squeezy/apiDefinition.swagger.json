@@ -1,0 +1,3353 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Lemon Squeezy",
+        "description": "Digital product sales platform connector for Power Platform. Manage products, customers, orders, subscriptions, license keys, and discounts.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.lemonsqueezy.com",
+    "basePath": "/v1",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.lemonsqueezy.com/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.lemonsqueezy.com/privacy"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Sales and CRM;Commerce"
+        }
+    ],
+    "paths": {
+        "/users/me": {
+            "get": {
+                "operationId": "GetCurrentUser",
+                "summary": "Get Current User",
+                "description": "Returns the authenticated user account.",
+                "tags": [
+                    "Account"
+                ],
+                "x-ms-visibility": "advanced",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/stores": {
+            "get": {
+                "operationId": "ListStores",
+                "summary": "List Stores",
+                "description": "Returns a list of stores the authenticated user has access to.",
+                "tags": [
+                    "Stores"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/StoreListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/stores/{id}": {
+            "get": {
+                "operationId": "GetStore",
+                "summary": "Get Store",
+                "description": "Retrieves a single store by ID.",
+                "tags": [
+                    "Stores"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Store ID",
+                        "x-ms-summary": "Store ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/StoreResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Store not found"
+                    }
+                }
+            }
+        },
+        "/products": {
+            "get": {
+                "operationId": "ListProducts",
+                "summary": "List Products",
+                "description": "Returns a list of products.",
+                "tags": [
+                    "Products"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/ProductListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/products/{id}": {
+            "get": {
+                "operationId": "GetProduct",
+                "summary": "Get Product",
+                "description": "Retrieves a single product by ID.",
+                "tags": [
+                    "Products"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Product ID",
+                        "x-ms-summary": "Product ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/ProductResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Product not found"
+                    }
+                }
+            }
+        },
+        "/variants": {
+            "get": {
+                "operationId": "ListVariants",
+                "summary": "List Variants",
+                "description": "Returns a list of product variants.",
+                "tags": [
+                    "Products"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[product_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by product ID",
+                        "x-ms-summary": "Product ID"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/VariantListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/variants/{id}": {
+            "get": {
+                "operationId": "GetVariant",
+                "summary": "Get Variant",
+                "description": "Retrieves a single product variant by ID.",
+                "tags": [
+                    "Products"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Variant ID",
+                        "x-ms-summary": "Variant ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/VariantResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Variant not found"
+                    }
+                }
+            }
+        },
+        "/customers": {
+            "get": {
+                "operationId": "ListCustomers",
+                "summary": "List Customers",
+                "description": "Returns a list of customers.",
+                "tags": [
+                    "Customers"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "filter[email]",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Filter by email address",
+                        "x-ms-summary": "Email"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/CustomerListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateCustomer",
+                "summary": "Create Customer",
+                "description": "Creates a new customer.",
+                "tags": [
+                    "Customers"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type",
+                                        "attributes",
+                                        "relationships"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "customers",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "required": [
+                                                "name",
+                                                "email"
+                                            ],
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "Customer's full name",
+                                                    "x-ms-summary": "Name"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "description": "Customer's email address",
+                                                    "x-ms-summary": "Email"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Customer's city",
+                                                    "x-ms-summary": "City"
+                                                },
+                                                "region": {
+                                                    "type": "string",
+                                                    "description": "Customer's region/state",
+                                                    "x-ms-summary": "Region"
+                                                },
+                                                "country": {
+                                                    "type": "string",
+                                                    "description": "Customer's country (ISO 3166-1 alpha-2)",
+                                                    "x-ms-summary": "Country"
+                                                }
+                                            }
+                                        },
+                                        "relationships": {
+                                            "type": "object",
+                                            "required": [
+                                                "store"
+                                            ],
+                                            "properties": {
+                                                "store": {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "data"
+                                                    ],
+                                                    "properties": {
+                                                        "data": {
+                                                            "type": "object",
+                                                            "required": [
+                                                                "type"
+                                                            ],
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "default": "stores",
+                                                                    "x-ms-visibility": "internal",
+                                                                    "title": ""
+                                                                },
+                                                                "id": {
+                                                                    "type": "string",
+                                                                    "description": "Store ID",
+                                                                    "x-ms-summary": "Store ID"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/CustomerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/customers/{id}": {
+            "get": {
+                "operationId": "GetCustomer",
+                "summary": "Get Customer",
+                "description": "Retrieves a single customer by ID.",
+                "tags": [
+                    "Customers"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Customer ID",
+                        "x-ms-summary": "Customer ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/CustomerResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateCustomer",
+                "summary": "Update Customer",
+                "description": "Updates an existing customer.",
+                "tags": [
+                    "Customers"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Customer ID",
+                        "x-ms-summary": "Customer ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "customers",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Customer ID",
+                                            "x-ms-summary": "Customer ID"
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "Customer's full name",
+                                                    "x-ms-summary": "Name"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "description": "Customer's email address",
+                                                    "x-ms-summary": "Email"
+                                                },
+                                                "city": {
+                                                    "type": "string",
+                                                    "description": "Customer's city",
+                                                    "x-ms-summary": "City"
+                                                },
+                                                "region": {
+                                                    "type": "string",
+                                                    "description": "Customer's region/state",
+                                                    "x-ms-summary": "Region"
+                                                },
+                                                "country": {
+                                                    "type": "string",
+                                                    "description": "Customer's country",
+                                                    "x-ms-summary": "Country"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "subscribed",
+                                                        "unsubscribed",
+                                                        "archived"
+                                                    ],
+                                                    "description": "Email marketing status",
+                                                    "x-ms-summary": "Status"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/CustomerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "operationId": "ListOrders",
+                "summary": "List Orders",
+                "description": "Returns a list of orders.",
+                "tags": [
+                    "Orders"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "filter[user_email]",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Filter by customer email",
+                        "x-ms-summary": "Email"
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "failed",
+                            "paid",
+                            "refunded",
+                            "partial_refund",
+                            "fraudulent"
+                        ],
+                        "description": "Filter by order status",
+                        "x-ms-summary": "Status"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/OrderListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "operationId": "GetOrder",
+                "summary": "Get Order",
+                "description": "Retrieves a single order by ID.",
+                "tags": [
+                    "Orders"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Order ID",
+                        "x-ms-summary": "Order ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/OrderResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    }
+                }
+            }
+        },
+        "/orders/{id}/generate-invoice": {
+            "post": {
+                "operationId": "GenerateInvoice",
+                "summary": "Generate Order Invoice",
+                "description": "Generates an invoice for an order.",
+                "tags": [
+                    "Orders"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Order ID",
+                        "x-ms-summary": "Order ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Billing name override",
+                                    "x-ms-summary": "Billing Name"
+                                },
+                                "address": {
+                                    "type": "string",
+                                    "description": "Billing address override",
+                                    "x-ms-summary": "Billing Address"
+                                },
+                                "city": {
+                                    "type": "string",
+                                    "description": "Billing city override",
+                                    "x-ms-summary": "Billing City"
+                                },
+                                "state": {
+                                    "type": "string",
+                                    "description": "Billing state override",
+                                    "x-ms-summary": "Billing State"
+                                },
+                                "zip_code": {
+                                    "type": "string",
+                                    "description": "Billing zip code override",
+                                    "x-ms-summary": "Billing Zip"
+                                },
+                                "country": {
+                                    "type": "string",
+                                    "description": "Billing country override",
+                                    "x-ms-summary": "Billing Country"
+                                },
+                                "notes": {
+                                    "type": "string",
+                                    "description": "Custom notes to add to invoice",
+                                    "x-ms-summary": "Notes"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "meta": {
+                                    "type": "object",
+                                    "properties": {
+                                        "urls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "download_invoice": {
+                                                    "type": "string",
+                                                    "description": "URL to download the invoice PDF"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    }
+                }
+            }
+        },
+        "/order-items": {
+            "get": {
+                "operationId": "ListOrderItems",
+                "summary": "List Order Items",
+                "description": "Returns a list of order items.",
+                "tags": [
+                    "Orders"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[order_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by order ID",
+                        "x-ms-summary": "Order ID"
+                    },
+                    {
+                        "name": "filter[product_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by product ID",
+                        "x-ms-summary": "Product ID"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/OrderItemListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/order-items/{id}": {
+            "get": {
+                "operationId": "GetOrderItem",
+                "summary": "Get Order Item",
+                "description": "Retrieves a single order item by ID.",
+                "tags": [
+                    "Orders"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Order Item ID",
+                        "x-ms-summary": "Order Item ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/OrderItemResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Order item not found"
+                    }
+                }
+            }
+        },
+        "/subscriptions": {
+            "get": {
+                "operationId": "ListSubscriptions",
+                "summary": "List Subscriptions",
+                "description": "Returns a list of subscriptions.",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "filter[order_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by order ID",
+                        "x-ms-summary": "Order ID"
+                    },
+                    {
+                        "name": "filter[product_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by product ID",
+                        "x-ms-summary": "Product ID"
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "on_trial",
+                            "active",
+                            "paused",
+                            "past_due",
+                            "unpaid",
+                            "cancelled",
+                            "expired"
+                        ],
+                        "description": "Filter by subscription status",
+                        "x-ms-summary": "Status"
+                    },
+                    {
+                        "name": "filter[user_email]",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Filter by customer email",
+                        "x-ms-summary": "Email"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SubscriptionListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/subscriptions/{id}": {
+            "get": {
+                "operationId": "GetSubscription",
+                "summary": "Get Subscription",
+                "description": "Retrieves a single subscription by ID.",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Subscription ID",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SubscriptionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Subscription not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateSubscription",
+                "summary": "Update Subscription",
+                "description": "Updates a subscription. Use to change variant, pause/unpause, or update billing anchor.",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Subscription ID",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "subscriptions",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Subscription ID",
+                                            "x-ms-summary": "Subscription ID"
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "properties": {
+                                                "variant_id": {
+                                                    "type": "integer",
+                                                    "description": "Change to a different variant (upgrade/downgrade)",
+                                                    "x-ms-summary": "Variant ID"
+                                                },
+                                                "pause": {
+                                                    "type": "object",
+                                                    "description": "Pause configuration",
+                                                    "properties": {
+                                                        "mode": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "void",
+                                                                "free"
+                                                            ],
+                                                            "description": "void = skip payments, free = continue service free",
+                                                            "x-ms-summary": "Pause Mode"
+                                                        },
+                                                        "resumes_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "description": "When to resume (ISO 8601)",
+                                                            "x-ms-summary": "Resume Date"
+                                                        }
+                                                    }
+                                                },
+                                                "billing_anchor": {
+                                                    "type": "integer",
+                                                    "description": "Day of month for billing (1-31)",
+                                                    "x-ms-summary": "Billing Anchor"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SubscriptionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Subscription not found"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "CancelSubscription",
+                "summary": "Cancel Subscription",
+                "description": "Cancels a subscription. The subscription will remain active until the end of the current billing period.",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Subscription ID",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SubscriptionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Subscription not found"
+                    }
+                }
+            }
+        },
+        "/subscription-invoices": {
+            "get": {
+                "operationId": "ListSubscriptionInvoices",
+                "summary": "List Subscription Invoices",
+                "description": "Returns a list of subscription invoices.",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "filter[subscription_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by subscription ID",
+                        "x-ms-summary": "Subscription ID"
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "paid",
+                            "void",
+                            "refunded",
+                            "partial_refund"
+                        ],
+                        "description": "Filter by invoice status",
+                        "x-ms-summary": "Status"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SubscriptionInvoiceListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/subscription-invoices/{id}": {
+            "get": {
+                "operationId": "GetSubscriptionInvoice",
+                "summary": "Get Subscription Invoice",
+                "description": "Retrieves a single subscription invoice by ID.",
+                "tags": [
+                    "Subscriptions"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Subscription Invoice ID",
+                        "x-ms-summary": "Invoice ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SubscriptionInvoiceResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Invoice not found"
+                    }
+                }
+            }
+        },
+        "/license-keys": {
+            "get": {
+                "operationId": "ListLicenseKeys",
+                "summary": "List License Keys",
+                "description": "Returns a list of license keys.",
+                "tags": [
+                    "License Keys"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "filter[order_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by order ID",
+                        "x-ms-summary": "Order ID"
+                    },
+                    {
+                        "name": "filter[product_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by product ID",
+                        "x-ms-summary": "Product ID"
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "inactive",
+                            "active",
+                            "expired",
+                            "disabled"
+                        ],
+                        "description": "Filter by license status",
+                        "x-ms-summary": "Status"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/LicenseKeyListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/license-keys/{id}": {
+            "get": {
+                "operationId": "GetLicenseKey",
+                "summary": "Get License Key",
+                "description": "Retrieves a single license key by ID.",
+                "tags": [
+                    "License Keys"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "License Key ID",
+                        "x-ms-summary": "License Key ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/LicenseKeyResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "License key not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateLicenseKey",
+                "summary": "Update License Key",
+                "description": "Updates a license key. Use to change activation limit, expiration, or disable the key.",
+                "tags": [
+                    "License Keys"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "License Key ID",
+                        "x-ms-summary": "License Key ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "license-keys",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "id": {
+                                            "type": "string",
+                                            "description": "License Key ID",
+                                            "x-ms-summary": "License Key ID"
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "properties": {
+                                                "activation_limit": {
+                                                    "type": "integer",
+                                                    "description": "Maximum activations allowed",
+                                                    "x-ms-summary": "Activation Limit"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "description": "Expiration date (ISO 8601). Set to null for perpetual.",
+                                                    "x-ms-summary": "Expires At"
+                                                },
+                                                "disabled": {
+                                                    "type": "boolean",
+                                                    "description": "Set to true to disable the license key",
+                                                    "x-ms-summary": "Disabled"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/LicenseKeyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "License key not found"
+                    }
+                }
+            }
+        },
+        "/discounts": {
+            "get": {
+                "operationId": "ListDiscounts",
+                "summary": "List Discounts",
+                "description": "Returns a list of discount codes.",
+                "tags": [
+                    "Discounts"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/DiscountListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateDiscount",
+                "summary": "Create Discount",
+                "description": "Creates a new discount code.",
+                "tags": [
+                    "Discounts"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type",
+                                        "attributes",
+                                        "relationships"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "discounts",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "required": [
+                                                "name",
+                                                "code",
+                                                "amount",
+                                                "amount_type"
+                                            ],
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "Name of the discount",
+                                                    "x-ms-summary": "Name"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "description": "Discount code (uppercase letters and numbers, 3-256 chars)",
+                                                    "x-ms-summary": "Code"
+                                                },
+                                                "amount": {
+                                                    "type": "integer",
+                                                    "description": "Discount amount (cents for fixed, whole number for percent)",
+                                                    "x-ms-summary": "Amount"
+                                                },
+                                                "amount_type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "percent",
+                                                        "fixed"
+                                                    ],
+                                                    "description": "Type of discount",
+                                                    "x-ms-summary": "Amount Type"
+                                                },
+                                                "duration": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "once",
+                                                        "repeating",
+                                                        "forever"
+                                                    ],
+                                                    "description": "How often discount applies to subscriptions",
+                                                    "x-ms-summary": "Duration"
+                                                },
+                                                "duration_in_months": {
+                                                    "type": "integer",
+                                                    "description": "Number of months (if duration is repeating)",
+                                                    "x-ms-summary": "Duration Months"
+                                                },
+                                                "is_limited_to_products": {
+                                                    "type": "boolean",
+                                                    "description": "Limit to specific products",
+                                                    "x-ms-summary": "Limited to Products"
+                                                },
+                                                "is_limited_redemptions": {
+                                                    "type": "boolean",
+                                                    "description": "Limit number of uses",
+                                                    "x-ms-summary": "Limited Redemptions"
+                                                },
+                                                "max_redemptions": {
+                                                    "type": "integer",
+                                                    "description": "Max number of redemptions",
+                                                    "x-ms-summary": "Max Redemptions"
+                                                },
+                                                "starts_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "description": "Start date (ISO 8601)",
+                                                    "x-ms-summary": "Starts At"
+                                                },
+                                                "expires_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "description": "Expiration date (ISO 8601)",
+                                                    "x-ms-summary": "Expires At"
+                                                }
+                                            }
+                                        },
+                                        "relationships": {
+                                            "type": "object",
+                                            "required": [
+                                                "store"
+                                            ],
+                                            "properties": {
+                                                "store": {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "data"
+                                                    ],
+                                                    "properties": {
+                                                        "data": {
+                                                            "type": "object",
+                                                            "required": [
+                                                                "type"
+                                                            ],
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "default": "stores",
+                                                                    "x-ms-visibility": "internal",
+                                                                    "title": ""
+                                                                },
+                                                                "id": {
+                                                                    "type": "string",
+                                                                    "description": "Store ID",
+                                                                    "x-ms-summary": "Store ID"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/DiscountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/discounts/{id}": {
+            "get": {
+                "operationId": "GetDiscount",
+                "summary": "Get Discount",
+                "description": "Retrieves a single discount by ID.",
+                "tags": [
+                    "Discounts"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Discount ID",
+                        "x-ms-summary": "Discount ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/DiscountResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Discount not found"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteDiscount",
+                "summary": "Delete Discount",
+                "description": "Deletes a discount code.",
+                "tags": [
+                    "Discounts"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Discount ID",
+                        "x-ms-summary": "Discount ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Discount not found"
+                    }
+                }
+            }
+        },
+        "/webhooks": {
+            "get": {
+                "operationId": "ListWebhooks",
+                "summary": "List Webhooks",
+                "description": "Returns a list of webhooks.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "filter[store_id]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Filter by store ID",
+                        "x-ms-summary": "Store ID"
+                    },
+                    {
+                        "name": "page[number]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number",
+                        "x-ms-summary": "Page"
+                    },
+                    {
+                        "name": "page[size]",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results per page",
+                        "x-ms-summary": "Page Size"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WebhookListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateWebhook",
+                "summary": "Create Webhook",
+                "description": "Creates a new webhook.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type",
+                                        "attributes",
+                                        "relationships"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "webhooks",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "required": [
+                                                "url",
+                                                "events",
+                                                "secret"
+                                            ],
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string",
+                                                    "description": "URL to receive webhook events",
+                                                    "x-ms-summary": "Webhook URL"
+                                                },
+                                                "events": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": "Array of event types (e.g., order_created, subscription_updated)",
+                                                    "x-ms-summary": "Events"
+                                                },
+                                                "secret": {
+                                                    "type": "string",
+                                                    "description": "Secret key for verifying webhook signatures",
+                                                    "x-ms-summary": "Secret"
+                                                }
+                                            }
+                                        },
+                                        "relationships": {
+                                            "type": "object",
+                                            "required": [
+                                                "store"
+                                            ],
+                                            "properties": {
+                                                "store": {
+                                                    "type": "object",
+                                                    "required": [
+                                                        "data"
+                                                    ],
+                                                    "properties": {
+                                                        "data": {
+                                                            "type": "object",
+                                                            "required": [
+                                                                "type"
+                                                            ],
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string",
+                                                                    "default": "stores",
+                                                                    "x-ms-visibility": "internal",
+                                                                    "title": ""
+                                                                },
+                                                                "id": {
+                                                                    "type": "string",
+                                                                    "description": "Store ID",
+                                                                    "x-ms-summary": "Store ID"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/WebhookResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/webhooks/{id}": {
+            "get": {
+                "operationId": "GetWebhook",
+                "summary": "Get Webhook",
+                "description": "Retrieves a single webhook by ID.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "x-ms-summary": "Webhook ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WebhookResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Webhook not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateWebhook",
+                "summary": "Update Webhook",
+                "description": "Updates an existing webhook.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "x-ms-summary": "Webhook ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "data"
+                            ],
+                            "properties": {
+                                "data": {
+                                    "type": "object",
+                                    "required": [
+                                        "type"
+                                    ],
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "webhooks",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Webhook ID",
+                                            "x-ms-summary": "Webhook ID"
+                                        },
+                                        "attributes": {
+                                            "type": "object",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string",
+                                                    "description": "URL to receive webhook events",
+                                                    "x-ms-summary": "Webhook URL"
+                                                },
+                                                "events": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": "Array of event types",
+                                                    "x-ms-summary": "Events"
+                                                },
+                                                "secret": {
+                                                    "type": "string",
+                                                    "description": "Secret key for verifying webhook signatures",
+                                                    "x-ms-summary": "Secret"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WebhookResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Webhook not found"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteWebhook",
+                "summary": "Delete Webhook",
+                "description": "Deletes a webhook.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Webhook ID",
+                        "x-ms-summary": "Webhook ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Webhook not found"
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Lemon Squeezy MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides tools for querying and managing Lemon Squeezy stores, products, customers, orders, subscriptions, license keys, and discounts.",
+                "tags": [
+                    "MCP"
+                ],
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "UserResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        },
+                        "id": {
+                            "type": "string"
+                        },
+                        "attributes": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "email": {
+                                    "type": "string"
+                                },
+                                "color": {
+                                    "type": "string"
+                                },
+                                "avatar_url": {
+                                    "type": "string"
+                                },
+                                "has_custom_avatar": {
+                                    "type": "boolean"
+                                },
+                                "createdAt": {
+                                    "type": "string"
+                                },
+                                "updatedAt": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "StoreListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StoreData"
+                    }
+                }
+            }
+        },
+        "StoreResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/StoreData"
+                }
+            }
+        },
+        "StoreData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "slug": {
+                            "type": "string"
+                        },
+                        "domain": {
+                            "type": "string"
+                        },
+                        "url": {
+                            "type": "string"
+                        },
+                        "avatar_url": {
+                            "type": "string"
+                        },
+                        "plan": {
+                            "type": "string"
+                        },
+                        "country": {
+                            "type": "string"
+                        },
+                        "country_nicename": {
+                            "type": "string"
+                        },
+                        "currency": {
+                            "type": "string"
+                        },
+                        "total_sales": {
+                            "type": "integer"
+                        },
+                        "total_revenue": {
+                            "type": "integer"
+                        },
+                        "thirty_day_sales": {
+                            "type": "integer"
+                        },
+                        "thirty_day_revenue": {
+                            "type": "integer"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "ProductListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProductData"
+                    }
+                }
+            }
+        },
+        "ProductResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/ProductData"
+                }
+            }
+        },
+        "ProductData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "slug": {
+                            "type": "string"
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "thumb_url": {
+                            "type": "string"
+                        },
+                        "large_thumb_url": {
+                            "type": "string"
+                        },
+                        "price": {
+                            "type": "integer"
+                        },
+                        "price_formatted": {
+                            "type": "string"
+                        },
+                        "from_price": {
+                            "type": "integer"
+                        },
+                        "to_price": {
+                            "type": "integer"
+                        },
+                        "pay_what_you_want": {
+                            "type": "boolean"
+                        },
+                        "buy_now_url": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "VariantListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VariantData"
+                    }
+                }
+            }
+        },
+        "VariantResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/VariantData"
+                }
+            }
+        },
+        "VariantData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {
+                            "type": "integer"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "slug": {
+                            "type": "string"
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "price": {
+                            "type": "integer"
+                        },
+                        "is_subscription": {
+                            "type": "boolean"
+                        },
+                        "interval": {
+                            "type": "string"
+                        },
+                        "interval_count": {
+                            "type": "integer"
+                        },
+                        "has_free_trial": {
+                            "type": "boolean"
+                        },
+                        "trial_interval": {
+                            "type": "string"
+                        },
+                        "trial_interval_count": {
+                            "type": "integer"
+                        },
+                        "pay_what_you_want": {
+                            "type": "boolean"
+                        },
+                        "min_price": {
+                            "type": "integer"
+                        },
+                        "suggested_price": {
+                            "type": "integer"
+                        },
+                        "has_license_keys": {
+                            "type": "boolean"
+                        },
+                        "license_activation_limit": {
+                            "type": "integer"
+                        },
+                        "is_license_limit_unlimited": {
+                            "type": "boolean"
+                        },
+                        "license_length_value": {
+                            "type": "integer"
+                        },
+                        "license_length_unit": {
+                            "type": "string"
+                        },
+                        "is_license_length_unlimited": {
+                            "type": "boolean"
+                        },
+                        "sort": {
+                            "type": "integer"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "CustomerListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CustomerData"
+                    }
+                }
+            }
+        },
+        "CustomerResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/CustomerData"
+                }
+            }
+        },
+        "CustomerData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "email": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "city": {
+                            "type": "string"
+                        },
+                        "region": {
+                            "type": "string"
+                        },
+                        "country": {
+                            "type": "string"
+                        },
+                        "total_revenue_currency": {
+                            "type": "integer"
+                        },
+                        "mrr": {
+                            "type": "integer"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "country_formatted": {
+                            "type": "string"
+                        },
+                        "total_revenue_currency_formatted": {
+                            "type": "string"
+                        },
+                        "mrr_formatted": {
+                            "type": "string"
+                        },
+                        "urls": {
+                            "type": "object",
+                            "properties": {
+                                "customer_portal": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "OrderListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/OrderData"
+                    }
+                }
+            }
+        },
+        "OrderResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/OrderData"
+                }
+            }
+        },
+        "OrderData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "customer_id": {
+                            "type": "integer"
+                        },
+                        "identifier": {
+                            "type": "string"
+                        },
+                        "order_number": {
+                            "type": "integer"
+                        },
+                        "user_name": {
+                            "type": "string"
+                        },
+                        "user_email": {
+                            "type": "string"
+                        },
+                        "currency": {
+                            "type": "string"
+                        },
+                        "currency_rate": {
+                            "type": "string"
+                        },
+                        "subtotal": {
+                            "type": "integer"
+                        },
+                        "setup_fee": {
+                            "type": "integer"
+                        },
+                        "discount_total": {
+                            "type": "integer"
+                        },
+                        "tax": {
+                            "type": "integer"
+                        },
+                        "total": {
+                            "type": "integer"
+                        },
+                        "refunded_amount": {
+                            "type": "integer"
+                        },
+                        "subtotal_usd": {
+                            "type": "integer"
+                        },
+                        "setup_fee_usd": {
+                            "type": "integer"
+                        },
+                        "discount_total_usd": {
+                            "type": "integer"
+                        },
+                        "tax_usd": {
+                            "type": "integer"
+                        },
+                        "total_usd": {
+                            "type": "integer"
+                        },
+                        "refunded_amount_usd": {
+                            "type": "integer"
+                        },
+                        "tax_name": {
+                            "type": "string"
+                        },
+                        "tax_rate": {
+                            "type": "string"
+                        },
+                        "tax_inclusive": {
+                            "type": "boolean"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "refunded": {
+                            "type": "boolean"
+                        },
+                        "refunded_at": {
+                            "type": "string"
+                        },
+                        "subtotal_formatted": {
+                            "type": "string"
+                        },
+                        "setup_fee_formatted": {
+                            "type": "string"
+                        },
+                        "discount_total_formatted": {
+                            "type": "string"
+                        },
+                        "tax_formatted": {
+                            "type": "string"
+                        },
+                        "total_formatted": {
+                            "type": "string"
+                        },
+                        "refunded_amount_formatted": {
+                            "type": "string"
+                        },
+                        "first_order_item": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "order_id": {
+                                    "type": "integer"
+                                },
+                                "product_id": {
+                                    "type": "integer"
+                                },
+                                "variant_id": {
+                                    "type": "integer"
+                                },
+                                "product_name": {
+                                    "type": "string"
+                                },
+                                "variant_name": {
+                                    "type": "string"
+                                },
+                                "price": {
+                                    "type": "integer"
+                                },
+                                "created_at": {
+                                    "type": "string"
+                                },
+                                "updated_at": {
+                                    "type": "string"
+                                },
+                                "test_mode": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "urls": {
+                            "type": "object",
+                            "properties": {
+                                "receipt": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "OrderItemListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/OrderItemData"
+                    }
+                }
+            }
+        },
+        "OrderItemResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/OrderItemData"
+                }
+            }
+        },
+        "OrderItemData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "order_id": {
+                            "type": "integer"
+                        },
+                        "product_id": {
+                            "type": "integer"
+                        },
+                        "variant_id": {
+                            "type": "integer"
+                        },
+                        "product_name": {
+                            "type": "string"
+                        },
+                        "variant_name": {
+                            "type": "string"
+                        },
+                        "price": {
+                            "type": "integer"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "SubscriptionListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SubscriptionData"
+                    }
+                }
+            }
+        },
+        "SubscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/SubscriptionData"
+                }
+            }
+        },
+        "SubscriptionData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "customer_id": {
+                            "type": "integer"
+                        },
+                        "order_id": {
+                            "type": "integer"
+                        },
+                        "order_item_id": {
+                            "type": "integer"
+                        },
+                        "product_id": {
+                            "type": "integer"
+                        },
+                        "variant_id": {
+                            "type": "integer"
+                        },
+                        "product_name": {
+                            "type": "string"
+                        },
+                        "variant_name": {
+                            "type": "string"
+                        },
+                        "user_name": {
+                            "type": "string"
+                        },
+                        "user_email": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "card_brand": {
+                            "type": "string"
+                        },
+                        "card_last_four": {
+                            "type": "string"
+                        },
+                        "pause": {
+                            "type": "object",
+                            "properties": {
+                                "mode": {
+                                    "type": "string"
+                                },
+                                "resumes_at": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "cancelled": {
+                            "type": "boolean"
+                        },
+                        "trial_ends_at": {
+                            "type": "string"
+                        },
+                        "billing_anchor": {
+                            "type": "integer"
+                        },
+                        "first_subscription_item": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "subscription_id": {
+                                    "type": "integer"
+                                },
+                                "price_id": {
+                                    "type": "integer"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                },
+                                "created_at": {
+                                    "type": "string"
+                                },
+                                "updated_at": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "urls": {
+                            "type": "object",
+                            "properties": {
+                                "update_payment_method": {
+                                    "type": "string"
+                                },
+                                "customer_portal": {
+                                    "type": "string"
+                                },
+                                "customer_portal_update_subscription": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "renews_at": {
+                            "type": "string"
+                        },
+                        "ends_at": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "SubscriptionInvoiceListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SubscriptionInvoiceData"
+                    }
+                }
+            }
+        },
+        "SubscriptionInvoiceResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/SubscriptionInvoiceData"
+                }
+            }
+        },
+        "SubscriptionInvoiceData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "subscription_id": {
+                            "type": "integer"
+                        },
+                        "customer_id": {
+                            "type": "integer"
+                        },
+                        "user_name": {
+                            "type": "string"
+                        },
+                        "user_email": {
+                            "type": "string"
+                        },
+                        "billing_reason": {
+                            "type": "string"
+                        },
+                        "card_brand": {
+                            "type": "string"
+                        },
+                        "card_last_four": {
+                            "type": "string"
+                        },
+                        "currency": {
+                            "type": "string"
+                        },
+                        "currency_rate": {
+                            "type": "string"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "refunded": {
+                            "type": "boolean"
+                        },
+                        "refunded_at": {
+                            "type": "string"
+                        },
+                        "subtotal": {
+                            "type": "integer"
+                        },
+                        "discount_total": {
+                            "type": "integer"
+                        },
+                        "tax": {
+                            "type": "integer"
+                        },
+                        "tax_inclusive": {
+                            "type": "boolean"
+                        },
+                        "total": {
+                            "type": "integer"
+                        },
+                        "refunded_amount": {
+                            "type": "integer"
+                        },
+                        "subtotal_usd": {
+                            "type": "integer"
+                        },
+                        "discount_total_usd": {
+                            "type": "integer"
+                        },
+                        "tax_usd": {
+                            "type": "integer"
+                        },
+                        "total_usd": {
+                            "type": "integer"
+                        },
+                        "refunded_amount_usd": {
+                            "type": "integer"
+                        },
+                        "subtotal_formatted": {
+                            "type": "string"
+                        },
+                        "discount_total_formatted": {
+                            "type": "string"
+                        },
+                        "tax_formatted": {
+                            "type": "string"
+                        },
+                        "total_formatted": {
+                            "type": "string"
+                        },
+                        "refunded_amount_formatted": {
+                            "type": "string"
+                        },
+                        "urls": {
+                            "type": "object",
+                            "properties": {
+                                "invoice_url": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "LicenseKeyListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LicenseKeyData"
+                    }
+                }
+            }
+        },
+        "LicenseKeyResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/LicenseKeyData"
+                }
+            }
+        },
+        "LicenseKeyData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "customer_id": {
+                            "type": "integer"
+                        },
+                        "order_id": {
+                            "type": "integer"
+                        },
+                        "order_item_id": {
+                            "type": "integer"
+                        },
+                        "product_id": {
+                            "type": "integer"
+                        },
+                        "user_name": {
+                            "type": "string"
+                        },
+                        "user_email": {
+                            "type": "string"
+                        },
+                        "key": {
+                            "type": "string"
+                        },
+                        "key_short": {
+                            "type": "string"
+                        },
+                        "activation_limit": {
+                            "type": "integer"
+                        },
+                        "instances_count": {
+                            "type": "integer"
+                        },
+                        "disabled": {
+                            "type": "boolean"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "expires_at": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "DiscountListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DiscountData"
+                    }
+                }
+            }
+        },
+        "DiscountResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/DiscountData"
+                }
+            }
+        },
+        "DiscountData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "code": {
+                            "type": "string"
+                        },
+                        "amount": {
+                            "type": "integer"
+                        },
+                        "amount_type": {
+                            "type": "string"
+                        },
+                        "is_limited_to_products": {
+                            "type": "boolean"
+                        },
+                        "is_limited_redemptions": {
+                            "type": "boolean"
+                        },
+                        "max_redemptions": {
+                            "type": "integer"
+                        },
+                        "starts_at": {
+                            "type": "string"
+                        },
+                        "expires_at": {
+                            "type": "string"
+                        },
+                        "duration": {
+                            "type": "string"
+                        },
+                        "duration_in_months": {
+                            "type": "integer"
+                        },
+                        "status": {
+                            "type": "string"
+                        },
+                        "status_formatted": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "WebhookListResponse": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "$ref": "#/definitions/PaginationMeta"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WebhookData"
+                    }
+                }
+            }
+        },
+        "WebhookResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/WebhookData"
+                }
+            }
+        },
+        "WebhookData": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "properties": {
+                        "store_id": {
+                            "type": "integer"
+                        },
+                        "url": {
+                            "type": "string"
+                        },
+                        "events": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "last_sent_at": {
+                            "type": "string"
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "updated_at": {
+                            "type": "string"
+                        },
+                        "test_mode": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "object",
+                    "properties": {
+                        "currentPage": {
+                            "type": "integer"
+                        },
+                        "from": {
+                            "type": "integer"
+                        },
+                        "lastPage": {
+                            "type": "integer"
+                        },
+                        "perPage": {
+                            "type": "integer"
+                        },
+                        "to": {
+                            "type": "integer"
+                        },
+                        "total": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Account",
+            "description": "User and authentication"
+        },
+        {
+            "name": "Stores",
+            "description": "Store management"
+        },
+        {
+            "name": "Products",
+            "description": "Products and variants"
+        },
+        {
+            "name": "Customers",
+            "description": "Customer management"
+        },
+        {
+            "name": "Orders",
+            "description": "Orders and order items"
+        },
+        {
+            "name": "Subscriptions",
+            "description": "Subscriptions and invoices"
+        },
+        {
+            "name": "License Keys",
+            "description": "License key management"
+        },
+        {
+            "name": "Discounts",
+            "description": "Discount codes"
+        },
+        {
+            "name": "Webhooks",
+            "description": "Webhook management"
+        },
+        {
+            "name": "MCP",
+            "description": "Model Context Protocol for Copilot Studio"
+        }
+    ],
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ]
+}
