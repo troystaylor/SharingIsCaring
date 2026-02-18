@@ -4,666 +4,780 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-/// <summary>
-/// Power MCP Template - Model Context Protocol implementation for Power Platform Custom Connectors
-/// 
-/// Features:
-/// - Full JSON-RPC 2.0 protocol support
-/// - MCP specification compliance (2025-11-25) - Copilot Studio compatible
-/// - Application Insights telemetry integration (optional)
-/// - Context.Logger for basic logging
-/// - Comprehensive error handling with correlation IDs
-/// - External API call helper with authorization forwarding
-/// 
-/// Usage:
-/// 1. Update SERVER CONFIGURATION section with your server details
-/// 2. Define your tools in BuildToolsList()
-/// 3. Add tool handlers in ExecuteToolAsync()
-/// 4. Implement tool logic in dedicated methods
-/// 5. (Optional) Add APP_INSIGHTS_CONNECTION_STRING for telemetry
-/// </summary>
-public class Script : ScriptBase
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  SECTION 1: MCP FRAMEWORK                                                    ║
+// ║                                                                              ║
+// ║  Built-in McpRequestHandler that brings MCP C# SDK patterns to Power         ║
+// ║  Platform. If Microsoft enables the official SDK namespaces, this section    ║
+// ║  becomes a using statement instead of inline code.                           ║
+// ║                                                                              ║
+// ║  Spec coverage: MCP 2025-11-25                                               ║
+// ║  Handles: initialize, ping, tools/*, resources/*, prompts/*,                 ║
+// ║           completion/complete, logging/setLevel, all notifications           ║
+// ║                                                                              ║
+// ║  Stateless limitations (Power Platform cannot send async notifications):     ║
+// ║   - Tasks (experimental, requires persistent state between requests)         ║
+// ║   - Server→client requests (sampling, elicitation, roots/list)               ║
+// ║   - Server→client notifications (progress, logging/message, list_changed)    ║
+// ║                                                                              ║
+// ║  Do not modify unless extending the framework itself.                        ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+
+// ── Configuration Types ──────────────────────────────────────────────────────
+
+/// <summary>Server identity reported in initialize response.</summary>
+public class McpServerInfo
 {
-    // ========================================
-    // SERVER CONFIGURATION
-    // ========================================
-    
-    /// <summary>Server name reported in MCP initialize response (use lowercase-with-dashes)</summary>
-    private const string ServerName = "power-mcp-server";
-    
-    /// <summary>Server version</summary>
-    private const string ServerVersion = "1.0.0";
-    
-    /// <summary>Human-readable title for the server</summary>
-    private const string ServerTitle = "Power MCP Server";
-    
-    /// <summary>Description of what this server does</summary>
-    private const string ServerDescription = "Power Platform custom connector implementing Model Context Protocol";
-    
-    /// <summary>MCP protocol version supported</summary>
-    private const string ProtocolVersion = "2025-11-25";
+    public string Name { get; set; } = "mcp-server";
+    public string Version { get; set; } = "1.0.0";
+    public string Title { get; set; }
+    public string Description { get; set; }
+}
 
-    /// <summary>Optional instructions for the client (initialize response)</summary>
-    private const string ServerInstructions = ""; // Set to guidance for client if needed
+/// <summary>Capabilities declared during initialization.</summary>
+public class McpCapabilities
+{
+    public bool Tools { get; set; } = true;
+    public bool Resources { get; set; }
+    public bool Prompts { get; set; }
+    public bool Logging { get; set; }
+    public bool Completions { get; set; }
+}
 
-    // ========================================
-    // APPLICATION INSIGHTS CONFIGURATION
-    // ========================================
-    
-    /// <summary>
-    /// Application Insights connection string
-    /// Format: InstrumentationKey=YOUR-KEY;IngestionEndpoint=https://REGION.in.applicationinsights.azure.com/;LiveEndpoint=https://REGION.livediagnostics.monitor.azure.com/
-    /// Get from: Azure Portal → Application Insights resource → Overview → Connection String
-    /// Leave empty to disable telemetry
-    /// </summary>
-    private const string APP_INSIGHTS_CONNECTION_STRING = "";
+/// <summary>Top-level configuration for the MCP handler.</summary>
+public class McpServerOptions
+{
+    public McpServerInfo ServerInfo { get; set; } = new McpServerInfo();
+    public string ProtocolVersion { get; set; } = "2025-11-25";
+    public McpCapabilities Capabilities { get; set; } = new McpCapabilities();
+    public string Instructions { get; set; }
+}
 
-    // ========================================
-    // MAIN ENTRY POINT
-    // ========================================
-    
-    public override async Task<HttpResponseMessage> ExecuteAsync()
+// ── Error Handling ───────────────────────────────────────────────────────────
+
+/// <summary>Standard JSON-RPC 2.0 error codes used by MCP.</summary>
+public enum McpErrorCode
+{
+    RequestTimeout = -32000,
+    ParseError = -32700,
+    InvalidRequest = -32600,
+    MethodNotFound = -32601,
+    InvalidParams = -32602,
+    InternalError = -32603
+}
+
+/// <summary>
+/// Throw from tool methods to surface a structured MCP error.
+/// Mirrors ModelContextProtocol.McpException from the official SDK.
+/// </summary>
+public class McpException : Exception
+{
+    public McpErrorCode Code { get; }
+    public McpException(McpErrorCode code, string message) : base(message) => Code = code;
+}
+
+// ── Schema Builder (Fluent API) ──────────────────────────────────────────────
+
+/// <summary>Fluent builder for JSON Schema objects used in tool inputSchema.</summary>
+public class McpSchemaBuilder
+{
+    private readonly JObject _properties = new JObject();
+    private readonly JArray _required = new JArray();
+
+    public McpSchemaBuilder String(string name, string description, bool required = false, string format = null, string[] enumValues = null)
     {
-        var correlationId = Guid.NewGuid().ToString();
-        var startTime = DateTime.UtcNow;
-        
-        this.Context.Logger.LogInformation($"[{correlationId}] MCP request received");
-        
-        string body = null;
-        JObject request = null;
-        string method = null;
-        JToken requestId = null;
+        var prop = new JObject { ["type"] = "string", ["description"] = description };
+        if (format != null) prop["format"] = format;
+        if (enumValues != null) prop["enum"] = new JArray(enumValues);
+        _properties[name] = prop;
+        if (required) _required.Add(name);
+        return this;
+    }
+
+    public McpSchemaBuilder Integer(string name, string description, bool required = false, int? defaultValue = null)
+    {
+        var prop = new JObject { ["type"] = "integer", ["description"] = description };
+        if (defaultValue.HasValue) prop["default"] = defaultValue.Value;
+        _properties[name] = prop;
+        if (required) _required.Add(name);
+        return this;
+    }
+
+    public McpSchemaBuilder Number(string name, string description, bool required = false)
+    {
+        _properties[name] = new JObject { ["type"] = "number", ["description"] = description };
+        if (required) _required.Add(name);
+        return this;
+    }
+
+    public McpSchemaBuilder Boolean(string name, string description, bool required = false)
+    {
+        _properties[name] = new JObject { ["type"] = "boolean", ["description"] = description };
+        if (required) _required.Add(name);
+        return this;
+    }
+
+    public McpSchemaBuilder Array(string name, string description, JObject itemSchema, bool required = false)
+    {
+        _properties[name] = new JObject
+        {
+            ["type"] = "array",
+            ["description"] = description,
+            ["items"] = itemSchema
+        };
+        if (required) _required.Add(name);
+        return this;
+    }
+
+    public McpSchemaBuilder Object(string name, string description, Action<McpSchemaBuilder> nestedConfig, bool required = false)
+    {
+        var nested = new McpSchemaBuilder();
+        nestedConfig?.Invoke(nested);
+        var obj = nested.Build();
+        obj["description"] = description;
+        _properties[name] = obj;
+        if (required) _required.Add(name);
+        return this;
+    }
+
+    public JObject Build()
+    {
+        var schema = new JObject
+        {
+            ["type"] = "object",
+            ["properties"] = _properties
+        };
+        if (_required.Count > 0) schema["required"] = _required;
+        return schema;
+    }
+}
+
+// ── Internal Tool Registration ───────────────────────────────────────────────
+
+internal class McpToolDefinition
+{
+    public string Name { get; set; }
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public JObject InputSchema { get; set; }
+    public JObject OutputSchema { get; set; }
+    public JObject Annotations { get; set; }
+    public Func<JObject, CancellationToken, Task<object>> Handler { get; set; }
+}
+
+// ── McpRequestHandler ────────────────────────────────────────────────────────
+//
+//    The core bridge class. Stateless, no DI, no ASP.NET Core.
+//    Takes a JSON-RPC string in → returns a JSON-RPC string out.
+//    This is the class that does not exist in the official SDK today.
+//
+
+/// <summary>
+/// Stateless MCP request handler that bridges the official SDK's patterns
+/// to Power Platform's ScriptBase.ExecuteAsync() model.
+/// 
+/// Handles all JSON-RPC 2.0 routing, protocol negotiation, tool discovery,
+/// parameter binding, and response formatting internally.
+/// </summary>
+public class McpRequestHandler
+{
+    private readonly McpServerOptions _options;
+    private readonly Dictionary<string, McpToolDefinition> _tools;
+
+    /// <summary>
+    /// Optional logging callback. Wire this up to Application Insights,
+    /// Context.Logger, or any other telemetry sink.
+    /// </summary>
+    public Action<string, object> OnLog { get; set; }
+
+    public McpRequestHandler(McpServerOptions options)
+    {
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _tools = new Dictionary<string, McpToolDefinition>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    // ── Tool Registration ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Register a tool using the fluent API.
+    /// Define the schema with McpSchemaBuilder, provide a handler, and optionally set annotations.
+    /// </summary>
+    public McpRequestHandler AddTool(
+        string name,
+        string description,
+        Action<McpSchemaBuilder> schemaConfig,
+        Func<JObject, CancellationToken, Task<JObject>> handler,
+        Action<JObject> annotationsConfig = null,
+        string title = null,
+        Action<McpSchemaBuilder> outputSchemaConfig = null)
+    {
+        var builder = new McpSchemaBuilder();
+        schemaConfig?.Invoke(builder);
+
+        JObject annotations = null;
+        if (annotationsConfig != null)
+        {
+            annotations = new JObject();
+            annotationsConfig(annotations);
+        }
+
+        JObject outputSchema = null;
+        if (outputSchemaConfig != null)
+        {
+            var outBuilder = new McpSchemaBuilder();
+            outputSchemaConfig(outBuilder);
+            outputSchema = outBuilder.Build();
+        }
+
+        _tools[name] = new McpToolDefinition
+        {
+            Name = name,
+            Title = title,
+            Description = description,
+            InputSchema = builder.Build(),
+            OutputSchema = outputSchema,
+            Annotations = annotations,
+            Handler = async (args, ct) => await handler(args, ct).ConfigureAwait(false)
+        };
+
+        return this;
+    }
+
+    // ── Main Handler ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Process a raw JSON-RPC 2.0 request string and return a JSON-RPC response string.
+    /// This is the single method that bridges the gap.
+    /// </summary>
+    public async Task<string> HandleAsync(string body, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return SerializeError(null, McpErrorCode.InvalidRequest, "Empty request body");
+
+        JObject request;
+        try
+        {
+            request = JObject.Parse(body);
+        }
+        catch (JsonException)
+        {
+            return SerializeError(null, McpErrorCode.ParseError, "Invalid JSON");
+        }
+
+        var method = request.Value<string>("method") ?? string.Empty;
+        var id = request["id"];
+
+        Log("McpRequestReceived", new { Method = method, HasId = id != null });
 
         try
         {
-            // Read and parse request body
-            try
-            {
-                body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-            }
-            catch
-            {
-                _ = LogToAppInsights("ParseError", new { CorrelationId = correlationId, Error = "Unable to read request body" });
-                return CreateJsonRpcErrorResponse(null, -32700, "Parse error", "Unable to read request body");
-            }
-
-            // Handle empty body gracefully
-            if (string.IsNullOrWhiteSpace(body))
-            {
-                this.Context.Logger.LogWarning($"[{correlationId}] Empty request body received");
-                return CreateJsonRpcErrorResponse(null, -32600, "Invalid Request", "Empty request body");
-            }
-
-            try
-            {
-                request = JObject.Parse(body);
-            }
-            catch (JsonException)
-            {
-                _ = LogToAppInsights("ParseError", new { CorrelationId = correlationId, Error = "Invalid JSON" });
-                return CreateJsonRpcErrorResponse(null, -32700, "Parse error", "Invalid JSON");
-            }
-
-            method = request.Value<string>("method") ?? string.Empty;
-            requestId = request["id"];
-
-            // Log incoming request (fire-and-forget for performance)
-            _ = LogToAppInsights("McpRequestReceived", new
-            {
-                CorrelationId = correlationId,
-                Method = method,
-                HasId = requestId != null,
-                Path = this.Context.Request.RequestUri.AbsolutePath
-            });
-
-            this.Context.Logger.LogInformation($"[{correlationId}] Processing MCP method: {method}");
-
-            // Route to appropriate handler - Copilot Studio compatible
-            HttpResponseMessage response;
             switch (method)
             {
                 // Core initialization
                 case "initialize":
-                    response = HandleInitialize(correlationId, request, requestId);
-                    break;
+                    return HandleInitialize(id, request);
 
-                // Notifications (no response body required, but return empty success)
+                // Notifications — Copilot Studio requires valid JSON-RPC for ALL requests
                 case "initialized":
                 case "notifications/initialized":
                 case "notifications/cancelled":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject());
-                    break;
+                case "notifications/roots/list_changed":
+                    return SerializeSuccess(id, new JObject());
 
                 // Health check
                 case "ping":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject());
-                    break;
+                    return SerializeSuccess(id, new JObject());
 
                 // Tools
                 case "tools/list":
-                    response = HandleToolsList(correlationId, request, requestId);
-                    break;
+                    return HandleToolsList(id);
 
                 case "tools/call":
-                    response = await HandleToolsCallAsync(correlationId, request, requestId).ConfigureAwait(false);
-                    break;
+                    return await HandleToolsCallAsync(id, request, cancellationToken).ConfigureAwait(false);
 
-                // Resources (required by MCP spec even if empty)
+                // Resources (respond based on declared capabilities)
                 case "resources/list":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject { ["resources"] = new JArray() });
-                    break;
+                    return SerializeSuccess(id, new JObject { ["resources"] = new JArray() });
 
                 case "resources/templates/list":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject { ["resourceTemplates"] = new JArray() });
-                    break;
+                    return SerializeSuccess(id, new JObject { ["resourceTemplates"] = new JArray() });
 
                 case "resources/read":
-                    response = await HandleResourcesReadAsync(correlationId, request, requestId).ConfigureAwait(false);
-                    break;
+                    return SerializeError(id, McpErrorCode.InvalidParams, "Resource not found");
 
-                // Prompts (required by MCP spec even if empty)
+                case "resources/subscribe":
+                case "resources/unsubscribe":
+                    return SerializeSuccess(id, new JObject());
+
+                // Prompts
                 case "prompts/list":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject { ["prompts"] = new JArray() });
-                    break;
+                    return SerializeSuccess(id, new JObject { ["prompts"] = new JArray() });
 
                 case "prompts/get":
-                    response = await HandlePromptsGetAsync(correlationId, request, requestId).ConfigureAwait(false);
-                    break;
+                    return SerializeError(id, McpErrorCode.InvalidParams, "Prompt not found");
 
-                // Completions (required by some MCP clients)
+                // Completions
                 case "completion/complete":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject 
-                    { 
-                        ["completion"] = new JObject 
-                        { 
-                            ["values"] = new JArray(), 
-                            ["total"] = 0, 
-                            ["hasMore"] = false 
-                        } 
+                    return SerializeSuccess(id, new JObject
+                    {
+                        ["completion"] = new JObject
+                        {
+                            ["values"] = new JArray(),
+                            ["total"] = 0,
+                            ["hasMore"] = false
+                        }
                     });
-                    break;
 
-                // Logging level (acknowledge but no action needed)
+                // Logging level
                 case "logging/setLevel":
-                    response = CreateJsonRpcSuccessResponse(requestId, new JObject());
-                    break;
+                    return SerializeSuccess(id, new JObject());
 
                 default:
-                    _ = LogToAppInsights("McpMethodNotFound", new { CorrelationId = correlationId, Method = method });
-                    response = CreateJsonRpcErrorResponse(requestId, -32601, "Method not found", method);
-                    break;
+                    Log("McpMethodNotFound", new { Method = method });
+                    return SerializeError(id, McpErrorCode.MethodNotFound, "Method not found", method);
             }
-
-            return response;
         }
-        catch (JsonException ex)
+        catch (McpException ex)
         {
-            this.Context.Logger.LogError($"[{correlationId}] JSON parse error: {ex.Message}");
-            _ = LogToAppInsights("McpError", new
-            {
-                CorrelationId = correlationId,
-                Method = method,
-                ErrorType = "JsonException",
-                ErrorMessage = ex.Message
-            });
-            return CreateJsonRpcErrorResponse(requestId, -32700, "Parse error", ex.Message);
+            Log("McpError", new { Method = method, Code = (int)ex.Code, Message = ex.Message });
+            return SerializeError(id, ex.Code, ex.Message);
         }
         catch (Exception ex)
         {
-            this.Context.Logger.LogError($"[{correlationId}] Internal error: {ex.Message}, StackTrace: {ex.StackTrace}");
-            _ = LogToAppInsights("McpError", new
-            {
-                CorrelationId = correlationId,
-                Method = method,
-                ErrorType = ex.GetType().Name,
-                ErrorMessage = ex.Message,
-                StackTrace = ex.StackTrace?.Substring(0, Math.Min(1000, ex.StackTrace?.Length ?? 0))
-            });
-            return CreateJsonRpcErrorResponse(requestId, -32603, "Internal error", ex.Message);
-        }
-        finally
-        {
-            var duration = DateTime.UtcNow - startTime;
-            this.Context.Logger.LogInformation($"[{correlationId}] Request completed in {duration.TotalMilliseconds}ms");
-            _ = LogToAppInsights("McpRequestCompleted", new
-            {
-                CorrelationId = correlationId,
-                Method = method,
-                DurationMs = duration.TotalMilliseconds
-            });
+            Log("McpError", new { Method = method, Error = ex.Message });
+            return SerializeError(id, McpErrorCode.InternalError, ex.Message);
         }
     }
 
-    // ========================================
-    // MCP PROTOCOL HANDLERS
-    // ========================================
+    // ── Protocol Handlers ────────────────────────────────────────────────
 
-    /// <summary>
-    /// Handle MCP initialize request - Copilot Studio compatible
-    /// Returns server capabilities and info per MCP spec
-    /// </summary>
-    private HttpResponseMessage HandleInitialize(string correlationId, JObject request, JToken requestId)
+    private string HandleInitialize(JToken id, JObject request)
     {
-        // Use client's protocol version if provided, otherwise default
-        var clientProtocolVersion = request["params"]?["protocolVersion"]?.ToString() ?? ProtocolVersion;
+        var clientProtocolVersion = request["params"]?["protocolVersion"]?.ToString()
+            ?? _options.ProtocolVersion;
+
+        var capabilities = new JObject();
+        if (_options.Capabilities.Tools)
+            capabilities["tools"] = new JObject { ["listChanged"] = false };
+        if (_options.Capabilities.Resources)
+            capabilities["resources"] = new JObject { ["subscribe"] = false, ["listChanged"] = false };
+        if (_options.Capabilities.Prompts)
+            capabilities["prompts"] = new JObject { ["listChanged"] = false };
+        if (_options.Capabilities.Logging)
+            capabilities["logging"] = new JObject();
+        if (_options.Capabilities.Completions)
+            capabilities["completions"] = new JObject();
+
+        var serverInfo = new JObject
+        {
+            ["name"] = _options.ServerInfo.Name,
+            ["version"] = _options.ServerInfo.Version
+        };
+        if (!string.IsNullOrWhiteSpace(_options.ServerInfo.Title))
+            serverInfo["title"] = _options.ServerInfo.Title;
+        if (!string.IsNullOrWhiteSpace(_options.ServerInfo.Description))
+            serverInfo["description"] = _options.ServerInfo.Description;
 
         var result = new JObject
         {
             ["protocolVersion"] = clientProtocolVersion,
-            ["capabilities"] = new JObject
-            {
-                ["tools"] = new JObject { ["listChanged"] = false },
-                ["resources"] = new JObject { ["subscribe"] = false, ["listChanged"] = false },
-                ["prompts"] = new JObject { ["listChanged"] = false },
-                ["logging"] = new JObject(),
-                ["completions"] = new JObject()
-            },
-            ["serverInfo"] = new JObject
-            {
-                ["name"] = ServerName,
-                ["version"] = ServerVersion,
-                ["title"] = ServerTitle,
-                ["description"] = ServerDescription
-            },
-            ["instructions"] = string.IsNullOrWhiteSpace(ServerInstructions) ? null : ServerInstructions
+            ["capabilities"] = capabilities,
+            ["serverInfo"] = serverInfo
         };
 
-        _ = LogToAppInsights("McpInitialized", new
+        if (!string.IsNullOrWhiteSpace(_options.Instructions))
+            result["instructions"] = _options.Instructions;
+
+        Log("McpInitialized", new
         {
-            CorrelationId = correlationId,
-            ServerName = ServerName,
-            ServerVersion = ServerVersion,
+            Server = _options.ServerInfo.Name,
+            Version = _options.ServerInfo.Version,
             ProtocolVersion = clientProtocolVersion
         });
 
-        return CreateJsonRpcSuccessResponse(requestId, result);
+        return SerializeSuccess(id, result);
     }
 
-    /// <summary>
-    /// Handle tools/list request - returns available tools
-    /// No initialization check required for Copilot Studio compatibility
-    /// </summary>
-    private HttpResponseMessage HandleToolsList(string correlationId, JObject request, JToken requestId)
+    private string HandleToolsList(JToken id)
     {
-        // Support cursor param per spec (ignored for static list)
-        var cursor = request["params"]?["cursor"]?.ToString();
-
-        var tools = BuildToolsList();
-        
-        _ = LogToAppInsights("McpToolsListed", new
+        var toolsArray = new JArray();
+        foreach (var tool in _tools.Values)
         {
-            CorrelationId = correlationId,
-            ToolCount = tools.Count
-        });
+            var toolObj = new JObject
+            {
+                ["name"] = tool.Name,
+                ["description"] = tool.Description,
+                ["inputSchema"] = tool.InputSchema
+            };
+            if (!string.IsNullOrWhiteSpace(tool.Title))
+                toolObj["title"] = tool.Title;
+            if (tool.OutputSchema != null)
+                toolObj["outputSchema"] = tool.OutputSchema;
+            if (tool.Annotations != null && tool.Annotations.Count > 0)
+                toolObj["annotations"] = tool.Annotations;
+            toolsArray.Add(toolObj);
+        }
 
-        var result = new JObject { ["tools"] = tools };
-        // No pagination for static list; omit nextCursor
-        return CreateJsonRpcSuccessResponse(requestId, result);
+        Log("McpToolsListed", new { Count = _tools.Count });
+        return SerializeSuccess(id, new JObject { ["tools"] = toolsArray });
     }
 
-    /// <summary>
-    /// Handle tools/call request - execute a specific tool
-    /// Returns tool results in MCP content format
-    /// </summary>
-    private async Task<HttpResponseMessage> HandleToolsCallAsync(string correlationId, JObject request, JToken requestId)
+    private async Task<string> HandleToolsCallAsync(JToken id, JObject request, CancellationToken ct)
     {
         var paramsObj = request["params"] as JObject;
-        if (paramsObj == null)
-        {
-            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "params object is required");
-        }
-
-        var toolName = paramsObj.Value<string>("name");
-        var arguments = paramsObj["arguments"] as JObject ?? new JObject();
+        var toolName = paramsObj?.Value<string>("name");
+        var arguments = paramsObj?["arguments"] as JObject ?? new JObject();
 
         if (string.IsNullOrWhiteSpace(toolName))
-        {
-            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "Tool name is required");
-        }
+            return SerializeError(id, McpErrorCode.InvalidParams, "Tool name is required");
 
-        this.Context.Logger.LogInformation($"[{correlationId}] Executing tool: {toolName}");
-        
-        _ = LogToAppInsights("McpToolCallStarted", new
-        {
-            CorrelationId = correlationId,
-            ToolName = toolName,
-            HasArguments = arguments.Count > 0
-        });
+        if (!_tools.TryGetValue(toolName, out var tool))
+            return SerializeError(id, McpErrorCode.InvalidParams, $"Unknown tool: {toolName}");
+
+        Log("McpToolCallStarted", new { Tool = toolName });
 
         try
         {
-            // Route to specific tool implementation
-            JObject toolResult = await ExecuteToolAsync(toolName, arguments).ConfigureAwait(false);
+            var result = await tool.Handler(arguments, ct).ConfigureAwait(false);
 
-            _ = LogToAppInsights("McpToolCallCompleted", new
-            {
-                CorrelationId = correlationId,
-                ToolName = toolName,
-                IsError = false
-            });
+            JObject callResult;
 
-            // Return MCP-compliant tool result
-            return CreateJsonRpcSuccessResponse(requestId, new JObject
+            // Support pre-formatted MCP tool results with rich content types
+            // (image, audio, resource, or mixed content arrays).
+            // If the handler returns { "content": [ { "type": "..." } ], ... },
+            // pass it through directly instead of wrapping in text.
+            if (result is JObject jobj && jobj["content"] is JArray contentArray
+                && contentArray.Count > 0 && contentArray[0]?["type"] != null)
             {
-                ["content"] = new JArray
+                callResult = new JObject
                 {
-                    new JObject
-                    {
-                        ["type"] = "text",
-                        ["text"] = toolResult.ToString(Formatting.Indented)
-                    }
-                },
-                ["isError"] = false
-            });
+                    ["content"] = contentArray,
+                    ["isError"] = jobj.Value<bool?>("isError") ?? false
+                };
+                if (jobj["structuredContent"] is JObject structured)
+                    callResult["structuredContent"] = structured;
+            }
+            else
+            {
+                string text;
+                if (result is JObject plainObj)
+                    text = plainObj.ToString(Newtonsoft.Json.Formatting.Indented);
+                else if (result is string s)
+                    text = s;
+                else if (result == null)
+                    text = "{}";
+                else
+                    text = JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
+
+                callResult = new JObject
+                {
+                    ["content"] = new JArray { new JObject { ["type"] = "text", ["text"] = text } },
+                    ["isError"] = false
+                };
+            }
+
+            Log("McpToolCallCompleted", new { Tool = toolName, IsError = callResult.Value<bool>("isError") });
+            return SerializeSuccess(id, callResult);
         }
         catch (ArgumentException ex)
         {
-            // Invalid arguments - return as tool error (not MCP error)
-            return CreateJsonRpcSuccessResponse(requestId, new JObject
+            return SerializeSuccess(id, new JObject
             {
                 ["content"] = new JArray
                 {
-                    new JObject
-                    {
-                        ["type"] = "text",
-                        ["text"] = $"Invalid arguments: {ex.Message}"
-                    }
+                    new JObject { ["type"] = "text", ["text"] = $"Invalid arguments: {ex.Message}" }
+                },
+                ["isError"] = true
+            });
+        }
+        catch (McpException ex)
+        {
+            return SerializeSuccess(id, new JObject
+            {
+                ["content"] = new JArray
+                {
+                    new JObject { ["type"] = "text", ["text"] = $"Tool error: {ex.Message}" }
                 },
                 ["isError"] = true
             });
         }
         catch (Exception ex)
         {
-            _ = LogToAppInsights("McpToolCallError", new
-            {
-                CorrelationId = correlationId,
-                ToolName = toolName,
-                ErrorMessage = ex.Message
-            });
+            Log("McpToolCallError", new { Tool = toolName, Error = ex.Message });
 
-            // Return tool error (not MCP protocol error)
-            return CreateJsonRpcSuccessResponse(requestId, new JObject
+            return SerializeSuccess(id, new JObject
             {
                 ["content"] = new JArray
                 {
-                    new JObject
-                    {
-                        ["type"] = "text",
-                        ["text"] = $"Tool execution failed: {ex.Message}"
-                    }
+                    new JObject { ["type"] = "text", ["text"] = $"Tool execution failed: {ex.Message}" }
                 },
                 ["isError"] = true
             });
         }
     }
 
-    /// <summary>
-    /// Route tool execution to the appropriate handler
-    /// </summary>
-    private async Task<JObject> ExecuteToolAsync(string toolName, JObject arguments)
-    {
-        switch (toolName.ToLowerInvariant())
+    // ── Content Helpers ────────────────────────────────────────────────
+    //
+    //    Use these to build rich tool results with image, audio, or resource
+    //    content. Return McpRequestHandler.ToolResult(...) from your handler
+    //    to bypass automatic text wrapping.
+    //
+
+    /// <summary>Create a text content item.</summary>
+    public static JObject TextContent(string text) =>
+        new JObject { ["type"] = "text", ["text"] = text };
+
+    /// <summary>Create an image content item (base64-encoded).</summary>
+    public static JObject ImageContent(string base64Data, string mimeType) =>
+        new JObject { ["type"] = "image", ["data"] = base64Data, ["mimeType"] = mimeType };
+
+    /// <summary>Create an audio content item (base64-encoded).</summary>
+    public static JObject AudioContent(string base64Data, string mimeType) =>
+        new JObject { ["type"] = "audio", ["data"] = base64Data, ["mimeType"] = mimeType };
+
+    /// <summary>Create an embedded resource content item.</summary>
+    public static JObject ResourceContent(string uri, string text, string mimeType = "text/plain") =>
+        new JObject
         {
-            case "echo":
-                return await ExecuteEchoToolAsync(arguments).ConfigureAwait(false);
+            ["type"] = "resource",
+            ["resource"] = new JObject { ["uri"] = uri, ["text"] = text, ["mimeType"] = mimeType }
+        };
 
-            case "get_data":
-                return await ExecuteGetDataToolAsync(arguments).ConfigureAwait(false);
-
-            // TODO: Add your custom tools here
-            // case "your_tool_name":
-            //     return await ExecuteYourToolAsync(arguments).ConfigureAwait(false);
-
-            default:
-                throw new ArgumentException($"Unknown tool: {toolName}");
-        }
+    /// <summary>
+    /// Build a pre-formatted tool result with mixed content types.
+    /// Return this from a tool handler to bypass automatic text wrapping.
+    /// </summary>
+    public static JObject ToolResult(JArray content, JObject structuredContent = null, bool isError = false)
+    {
+        var result = new JObject { ["content"] = content, ["isError"] = isError };
+        if (structuredContent != null) result["structuredContent"] = structuredContent;
+        return result;
     }
 
-    /// <summary>
-    /// Handle resources/read request
-    /// </summary>
-    private async Task<HttpResponseMessage> HandleResourcesReadAsync(string correlationId, JObject request, JToken requestId)
+    // ── JSON-RPC Serialization ───────────────────────────────────────────
+
+    private string SerializeSuccess(JToken id, JObject result)
     {
-        var paramsObj = request["params"] as JObject;
-        var uri = paramsObj?.Value<string>("uri");
-
-        if (string.IsNullOrWhiteSpace(uri))
-        {
-            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "Resource URI is required");
-        }
-
-        _ = LogToAppInsights("McpResourceRead", new
-        {
-            CorrelationId = correlationId,
-            ResourceUri = uri
-        });
-
-        // TODO: Implement resource reading logic based on URI
-        // For now, return a not found error
-        return CreateJsonRpcErrorResponse(requestId, -32602, "Resource not found", uri);
-    }
-
-    /// <summary>
-    /// Handle prompts/get request
-    /// </summary>
-    private async Task<HttpResponseMessage> HandlePromptsGetAsync(string correlationId, JObject request, JToken requestId)
-    {
-        var paramsObj = request["params"] as JObject;
-        var promptName = paramsObj?.Value<string>("name");
-
-        if (string.IsNullOrWhiteSpace(promptName))
-        {
-            return CreateJsonRpcErrorResponse(requestId, -32602, "Invalid params", "Prompt name is required");
-        }
-
-        _ = LogToAppInsights("McpPromptGet", new
-        {
-            CorrelationId = correlationId,
-            PromptName = promptName
-        });
-
-        // TODO: Implement prompt retrieval logic
-        // For now, return a not found error
-        return CreateJsonRpcErrorResponse(requestId, -32602, "Prompt not found", promptName);
-    }
-
-    // ========================================
-    // TOOL IMPLEMENTATIONS
-    // ========================================
-
-    /// <summary>
-    /// Example tool: Echo - returns the input message
-    /// </summary>
-    private Task<JObject> ExecuteEchoToolAsync(JObject arguments)
-    {
-        var message = arguments.Value<string>("message") ?? "No message provided";
-        
-        return Task.FromResult(new JObject
-        {
-            ["echo"] = message,
-            ["timestamp"] = DateTime.UtcNow.ToString("o")
-        });
-    }
-
-    /// <summary>
-    /// Example tool: Get Data - demonstrates external API call
-    /// </summary>
-    private async Task<JObject> ExecuteGetDataToolAsync(JObject arguments)
-    {
-        var dataId = RequireArgument(arguments, "id");
-        
-        // TODO: Replace with actual API call
-        // Example:
-        // var apiUrl = $"https://api.example.com/data/{dataId}";
-        // var result = await SendExternalRequestAsync(HttpMethod.Get, apiUrl, null).ConfigureAwait(false);
-        // return result;
-        
         return new JObject
         {
-            ["id"] = dataId,
-            ["data"] = "Sample data response",
-            ["retrievedAt"] = DateTime.UtcNow.ToString("o")
+            ["jsonrpc"] = "2.0",
+            ["id"] = id,
+            ["result"] = result
+        }.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    private string SerializeError(JToken id, McpErrorCode code, string message, string data = null)
+    {
+        return SerializeError(id, (int)code, message, data);
+    }
+
+    private string SerializeError(JToken id, int code, string message, string data = null)
+    {
+        var error = new JObject
+        {
+            ["code"] = code,
+            ["message"] = message
+        };
+        if (!string.IsNullOrWhiteSpace(data))
+            error["data"] = data;
+
+        return new JObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = id,
+            ["error"] = error
+        }.ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    private void Log(string eventName, object data)
+    {
+        OnLog?.Invoke(eventName, data);
+    }
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  SECTION 2: CONNECTOR ENTRY POINT                                          ║
+// ║                                                                            ║
+// ║  Configure your server, register your tools, and wire up telemetry.        ║
+// ║  Tool registration uses the fluent AddTool API — add your tools in the     ║
+// ║  RegisterTools method below.                                               ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+
+public class Script : ScriptBase
+{
+    // ── Server Configuration ─────────────────────────────────────────────
+
+    private static readonly McpServerOptions Options = new McpServerOptions
+    {
+        ServerInfo = new McpServerInfo
+        {
+            Name = "power-mcp-server",
+            Version = "1.0.0",
+            Title = "Power MCP Server",
+            Description = "Power Platform custom connector implementing Model Context Protocol"
+        },
+        ProtocolVersion = "2025-11-25",
+        Capabilities = new McpCapabilities
+        {
+            Tools = true,
+            Resources = true,
+            Prompts = true,
+            Logging = true,
+            Completions = true
+        },
+        Instructions = "" // Optional guidance for the client
+    };
+
+    /// <summary>
+    /// Application Insights connection string (leave empty to disable telemetry).
+    /// Format: InstrumentationKey=YOUR-KEY;IngestionEndpoint=https://REGION.in.applicationinsights.azure.com/;...
+    /// </summary>
+    private const string APP_INSIGHTS_CONNECTION_STRING = "";
+
+    // ── Entry Point ──────────────────────────────────────────────────────
+
+    public override async Task<HttpResponseMessage> ExecuteAsync()
+    {
+        var correlationId = Guid.NewGuid().ToString();
+        var startTime = DateTime.UtcNow;
+
+        // 1. Create the handler
+        var handler = new McpRequestHandler(Options);
+
+        // 2. Register tools
+        RegisterTools(handler);
+
+        // 3. Wire up logging (optional)
+        handler.OnLog = (eventName, data) =>
+        {
+            this.Context.Logger.LogInformation($"[{correlationId}] {eventName}");
+            _ = LogToAppInsights(eventName, data, correlationId);
+        };
+
+        // 4. Handle the request — one line does everything
+        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var result = await handler.HandleAsync(body, this.CancellationToken).ConfigureAwait(false);
+
+        var duration = DateTime.UtcNow - startTime;
+        this.Context.Logger.LogInformation($"[{correlationId}] Completed in {duration.TotalMilliseconds}ms");
+
+        // 5. Return the response
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(result, Encoding.UTF8, "application/json")
         };
     }
 
-    // ========================================
-    // EXTERNAL API HELPERS
-    // ========================================
+    // ── Tool Registration ────────────────────────────────────────────────
+    //
+    //    Add your tools here using handler.AddTool().
+    //    Each tool needs: name, description, schema, and handler.
+    //    Use McpSchemaBuilder to define the inputSchema.
+    //    Throw McpException for structured errors, ArgumentException for bad input.
+    //
+
+    private void RegisterTools(McpRequestHandler handler)
+    {
+        // Example: Echo tool
+        handler.AddTool("echo", "Echoes back the provided message. Useful for testing connectivity.",
+            schema: s => s.String("message", "The message to echo back", required: true),
+            handler: async (args, ct) =>
+            {
+                return new JObject
+                {
+                    ["echo"] = args.Value<string>("message") ?? "No message provided",
+                    ["timestamp"] = DateTime.UtcNow.ToString("o")
+                };
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        // Example: Get Data tool
+        handler.AddTool("get_data", "Retrieves data by ID from the connected data source.",
+            schema: s => s.String("id", "The unique identifier of the data to retrieve", required: true),
+            handler: async (args, ct) =>
+            {
+                var id = RequireArgument(args, "id");
+
+                // TODO: Replace with actual API call using SendExternalRequestAsync
+                // return await SendExternalRequestAsync(HttpMethod.Get, $"https://api.example.com/data/{id}");
+
+                return new JObject
+                {
+                    ["id"] = id,
+                    ["data"] = "Sample data response",
+                    ["retrievedAt"] = DateTime.UtcNow.ToString("o")
+                };
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        // TODO: Add your custom tools here
+        //
+        // handler.AddTool("your_tool_name", "Description of what this tool does",
+        //     schema: s => s
+        //         .String("param1", "First parameter", required: true)
+        //         .Integer("top", "Maximum items to return", defaultValue: 10),
+        //     handler: async (args, ct) =>
+        //     {
+        //         var param1 = args.Value<string>("param1");
+        //         var top = args.Value<int?>("top") ?? 10;
+        //         // Your tool logic here
+        //         return new JObject { ["result"] = "your result" };
+        //     });
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Send a request to an external API
-    /// Forwards the connector's authorization header if present
+    /// Send a request to an external API.
+    /// Forwards the connector's Authorization header and handles response parsing.
     /// </summary>
     private async Task<JObject> SendExternalRequestAsync(HttpMethod method, string url, JObject body = null)
     {
         var request = new HttpRequestMessage(method, url);
-        
-        // Forward OAuth token from connector (for delegated auth scenarios)
+
         if (this.Context.Request.Headers.Authorization != null)
-        {
             request.Headers.Authorization = this.Context.Request.Headers.Authorization;
-        }
-        
+
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-        
+
         if (body != null && (method == HttpMethod.Post || method.Method == "PATCH" || method.Method == "PUT"))
-        {
-            request.Content = new StringContent(body.ToString(Formatting.None), Encoding.UTF8, "application/json");
-        }
+            request.Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
 
         var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
-        {
             throw new Exception($"API request failed ({(int)response.StatusCode}): {content}");
-        }
 
         if (string.IsNullOrWhiteSpace(content))
-        {
             return new JObject { ["success"] = true, ["status"] = (int)response.StatusCode };
-        }
 
-        try
-        {
-            return JObject.Parse(content);
-        }
-        catch
-        {
-            return new JObject { ["text"] = content };
-        }
+        try { return JObject.Parse(content); }
+        catch { return new JObject { ["text"] = content }; }
     }
 
-    // ========================================
-    // TOOL/RESOURCE/PROMPT DEFINITIONS
-    // ========================================
-
-    /// <summary>
-    /// Build the list of available tools - define your tools here
-    /// Each tool needs: name, description, and inputSchema (JSON Schema)
-    /// </summary>
-    private JArray BuildToolsList()
-    {
-        return new JArray
-        {
-            // Example: Echo tool - replace with your actual tools
-            new JObject
-            {
-                ["name"] = "echo",
-                ["description"] = "Echoes back the provided message. Useful for testing connectivity.",
-                ["inputSchema"] = new JObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JObject
-                    {
-                        ["message"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["description"] = "The message to echo back"
-                        }
-                    },
-                    ["required"] = new JArray { "message" }
-                },
-                ["annotations"] = new JObject
-                {
-                    ["readOnlyHint"] = true,
-                    ["idempotentHint"] = true,
-                    ["openWorldHint"] = false
-                }
-            },
-            // Example: Get Data tool - replace with your actual tools
-            new JObject
-            {
-                ["name"] = "get_data",
-                ["description"] = "Retrieves data by ID from the connected data source.",
-                ["inputSchema"] = new JObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JObject
-                    {
-                        ["id"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["description"] = "The unique identifier of the data to retrieve"
-                        }
-                    },
-                    ["required"] = new JArray { "id" }
-                },
-                ["annotations"] = new JObject
-                {
-                    ["readOnlyHint"] = true,
-                    ["idempotentHint"] = true,
-                    ["openWorldHint"] = false
-                }
-            }
-            // TODO: Add your custom tools here
-            // new JObject
-            // {
-            //     ["name"] = "your_tool_name",
-            //     ["description"] = "Description of what this tool does",
-            //     ["inputSchema"] = new JObject
-            //     {
-            //         ["type"] = "object",
-            //         ["properties"] = new JObject { ... },
-            //         ["required"] = new JArray { "param1" }
-            //     }
-            // }
-        };
-    }
-
-    // ========================================
-    // HELPER METHODS
-    // ========================================
-
-    /// <summary>
-    /// Get a required argument from the tool arguments, throws if missing
-    /// </summary>
-    private string RequireArgument(JObject args, string name)
+    /// <summary>Get a required string argument; throws ArgumentException if missing.</summary>
+    private static string RequireArgument(JObject args, string name)
     {
         var value = args?[name]?.ToString();
         if (string.IsNullOrWhiteSpace(value))
-        {
             throw new ArgumentException($"'{name}' is required");
-        }
         return value;
     }
 
-    /// <summary>
-    /// Get an optional argument from the tool arguments
-    /// </summary>
-    private string GetArgument(JObject args, string name, string defaultValue = null)
+    /// <summary>Get an optional string argument with a default fallback.</summary>
+    private static string GetArgument(JObject args, string name, string defaultValue = null)
     {
         var value = args?[name]?.ToString();
         return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
     }
 
-    /// <summary>
-    /// Get a connection parameter by name
-    /// </summary>
+    /// <summary>Read a connection parameter by name (null-safe).</summary>
     private string GetConnectionParameter(string name)
     {
         try
@@ -671,87 +785,33 @@ public class Script : ScriptBase
             var raw = this.Context.ConnectionParameters[name]?.ToString();
             return string.IsNullOrWhiteSpace(raw) ? null : raw;
         }
-        catch
-        {
-            return null;
-        }
+        catch { return null; }
     }
 
-    // ========================================
-    // JSON-RPC RESPONSE HELPERS
-    // ========================================
+    // ── Application Insights (Optional) ──────────────────────────────────
 
-    private HttpResponseMessage CreateJsonRpcSuccessResponse(JToken id, JObject result)
-    {
-        var responseObj = new JObject
-        {
-            ["jsonrpc"] = "2.0",
-            ["id"] = id,
-            ["result"] = result
-        };
-
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
-        };
-    }
-
-    private HttpResponseMessage CreateJsonRpcErrorResponse(JToken id, int code, string message, string data = null)
-    {
-        var error = new JObject
-        {
-            ["code"] = code,
-            ["message"] = message
-        };
-
-        if (!string.IsNullOrWhiteSpace(data))
-        {
-            error["data"] = data;
-        }
-
-        var responseObj = new JObject
-        {
-            ["jsonrpc"] = "2.0",
-            ["id"] = id,
-            ["error"] = error
-        };
-
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
-        };
-    }
-
-    // ========================================
-    // APPLICATION INSIGHTS TELEMETRY
-    // ========================================
-
-    /// <summary>
-    /// Send custom event to Application Insights
-    /// </summary>
-    private async Task LogToAppInsights(string eventName, object properties)
+    private async Task LogToAppInsights(string eventName, object properties, string correlationId)
     {
         try
         {
-            var instrumentationKey = ExtractInstrumentationKey(APP_INSIGHTS_CONNECTION_STRING);
-            var ingestionEndpoint = ExtractIngestionEndpoint(APP_INSIGHTS_CONNECTION_STRING);
+            var instrumentationKey = ExtractConnectionStringPart(APP_INSIGHTS_CONNECTION_STRING, "InstrumentationKey");
+            var ingestionEndpoint = ExtractConnectionStringPart(APP_INSIGHTS_CONNECTION_STRING, "IngestionEndpoint")
+                ?? "https://dc.services.visualstudio.com/";
 
-            if (string.IsNullOrEmpty(instrumentationKey) || string.IsNullOrEmpty(ingestionEndpoint))
-            {
-                // Telemetry disabled - connection string not configured
+            if (string.IsNullOrEmpty(instrumentationKey))
                 return;
-            }
 
             var propsDict = new Dictionary<string, string>
             {
-                ["ServerName"] = ServerName,
-                ["ServerVersion"] = ServerVersion
+                ["ServerName"] = Options.ServerInfo.Name,
+                ["ServerVersion"] = Options.ServerInfo.Version,
+                ["CorrelationId"] = correlationId
             };
 
             if (properties != null)
             {
-                var propsJson = Newtonsoft.Json.JsonConvert.SerializeObject(properties);
-                var propsObj = Newtonsoft.Json.Linq.JObject.Parse(propsJson);
+                var propsJson = JsonConvert.SerializeObject(properties);
+                var propsObj = JObject.Parse(propsJson);
                 foreach (var prop in propsObj.Properties())
                 {
                     propsDict[prop.Name] = prop.Value?.ToString() ?? "";
@@ -775,7 +835,7 @@ public class Script : ScriptBase
                 }
             };
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(telemetryData);
+            var json = JsonConvert.SerializeObject(telemetryData);
             var telemetryUrl = new Uri(ingestionEndpoint.TrimEnd('/') + "/v2/track");
 
             var telemetryRequest = new HttpRequestMessage(HttpMethod.Post, telemetryUrl)
@@ -785,55 +845,22 @@ public class Script : ScriptBase
 
             await this.Context.SendAsync(telemetryRequest, this.CancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch
         {
-            // Suppress telemetry errors - don't fail the main request
-            this.Context.Logger.LogWarning($"Telemetry error: {ex.Message}");
+            // Suppress telemetry errors
         }
     }
 
-    private string ExtractInstrumentationKey(string connectionString)
+    private static string ExtractConnectionStringPart(string connectionString, string key)
     {
-        try
+        if (string.IsNullOrEmpty(connectionString)) return null;
+        var prefix = key + "=";
+        var parts = connectionString.Split(';');
+        foreach (var part in parts)
         {
-            if (string.IsNullOrEmpty(connectionString)) return null;
-
-            var parts = connectionString.Split(';');
-            foreach (var part in parts)
-            {
-                if (part.StartsWith("InstrumentationKey=", StringComparison.OrdinalIgnoreCase))
-                {
-                    return part.Substring("InstrumentationKey=".Length);
-                }
-            }
-            return null;
+            if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return part.Substring(prefix.Length);
         }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private string ExtractIngestionEndpoint(string connectionString)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(connectionString))
-                return "https://dc.services.visualstudio.com/";
-
-            var parts = connectionString.Split(';');
-            foreach (var part in parts)
-            {
-                if (part.StartsWith("IngestionEndpoint=", StringComparison.OrdinalIgnoreCase))
-                {
-                    return part.Substring("IngestionEndpoint=".Length);
-                }
-            }
-            return "https://dc.services.visualstudio.com/";
-        }
-        catch
-        {
-            return "https://dc.services.visualstudio.com/";
-        }
+        return null;
     }
 }
