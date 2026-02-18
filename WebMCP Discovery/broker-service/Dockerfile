@@ -8,7 +8,7 @@ COPY src/ ./src/
 RUN npm run build
 
 # --- Runtime stage ---
-FROM mcr.microsoft.com/playwright:v1.42.0-jammy
+FROM mcr.microsoft.com/playwright:v1.58.2-jammy
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
