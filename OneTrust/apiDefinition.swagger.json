@@ -1,0 +1,2184 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "OneTrust",
+    "description": "OneTrust is a trust intelligence platform that helps organizations manage privacy, security, and governance. This connector provides access to OneTrust Risk Management and Incident Management APIs.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "app.onetrust.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke OneTrust MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration with OneTrust Risk and Incident Management.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/api/risk/v3/risks": {
+      "post": {
+        "operationId": "CreateRisk",
+        "summary": "Create Risk",
+        "description": "Create a new risk in the Risk Register. The response will include the unique identifier of the created risk.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateRiskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "type": "string",
+              "x-ms-summary": "Risk ID",
+              "description": "The unique identifier of the created risk."
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/incident/v1/incidents": {
+      "post": {
+        "operationId": "CreateIncident",
+        "summary": "Create Incident",
+        "description": "Create a new incident in the Incident Register. The response will return the unique identifier of the newly created incident.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateIncidentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "type": "string",
+              "x-ms-summary": "Incident ID",
+              "description": "The unique identifier of the created incident."
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/incident/v1/incidents/{incidentId}": {
+      "get": {
+        "operationId": "GetIncident",
+        "summary": "Get Incident",
+        "description": "Retrieve details of a specific incident by its unique identifier.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the incident.",
+            "x-ms-summary": "Incident ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Unique identifier of the incident.",
+                  "x-ms-summary": "Incident ID"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the incident.",
+                  "x-ms-summary": "Name"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Description of the incident.",
+                  "x-ms-summary": "Description"
+                },
+                "incidentTypeName": {
+                  "type": "string",
+                  "description": "Type of the incident.",
+                  "x-ms-summary": "Incident Type"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Current status of the incident.",
+                  "x-ms-summary": "Status"
+                },
+                "orgGroupId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Organization group identifier.",
+                  "x-ms-summary": "Organization Group ID"
+                },
+                "dateOccurred": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Date and time when the incident occurred.",
+                  "x-ms-summary": "Date Occurred"
+                },
+                "dateDiscovered": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Date and time when the incident was discovered.",
+                  "x-ms-summary": "Date Discovered"
+                },
+                "deadline": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Investigation or notification deadline.",
+                  "x-ms-summary": "Deadline"
+                },
+                "sourceType": {
+                  "type": "string",
+                  "description": "Creation source of the incident.",
+                  "x-ms-summary": "Source Type"
+                },
+                "rootCause": {
+                  "type": "string",
+                  "description": "Root cause summary.",
+                  "x-ms-summary": "Root Cause"
+                },
+                "notificationNeeded": {
+                  "type": "string",
+                  "description": "Whether notification is required.",
+                  "x-ms-summary": "Notification Needed"
+                },
+                "currentStageName": {
+                  "type": "string",
+                  "description": "Current workflow stage name.",
+                  "x-ms-summary": "Current Stage"
+                },
+                "createdDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Date and time when the incident was created.",
+                  "x-ms-summary": "Created Date"
+                },
+                "lastUpdatedDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Date and time when the incident was last updated.",
+                  "x-ms-summary": "Last Updated Date"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "UpdateIncident",
+        "summary": "Update Incident",
+        "description": "Update an existing incident in the Incident Register.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the incident to update.",
+            "x-ms-summary": "Incident ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateIncidentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/incident/v1/incidents/search": {
+      "post": {
+        "operationId": "SearchIncidents",
+        "summary": "Search Incidents",
+        "description": "Search for incidents using filters and full-text search. Returns a paginated list of incidents matching the criteria.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 0,
+            "description": "Page number (zero-based).",
+            "x-ms-summary": "Page"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 20,
+            "description": "Number of results per page.",
+            "x-ms-summary": "Page Size"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Sort field and direction (e.g., 'name,asc').",
+            "x-ms-summary": "Sort",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/SearchIncidentsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "array",
+                  "description": "List of matching incidents.",
+                  "x-ms-summary": "Incidents",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Incident identifier.",
+                        "x-ms-summary": "Incident ID"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Name of the incident.",
+                        "x-ms-summary": "Name"
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "Description of the incident.",
+                        "x-ms-summary": "Description"
+                      },
+                      "incidentTypeName": {
+                        "type": "string",
+                        "description": "Type of the incident.",
+                        "x-ms-summary": "Incident Type"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "Current status.",
+                        "x-ms-summary": "Status"
+                      },
+                      "orgGroupId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Organization group identifier.",
+                        "x-ms-summary": "Organization Group ID"
+                      },
+                      "currentStageName": {
+                        "type": "string",
+                        "description": "Current workflow stage.",
+                        "x-ms-summary": "Current Stage"
+                      },
+                      "createdDateTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Created date.",
+                        "x-ms-summary": "Created Date"
+                      }
+                    }
+                  }
+                },
+                "page": {
+                  "type": "object",
+                  "description": "Pagination details.",
+                  "x-ms-summary": "Page Info",
+                  "properties": {
+                    "number": {
+                      "type": "integer",
+                      "description": "Current page number.",
+                      "x-ms-summary": "Page Number"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "Page size.",
+                      "x-ms-summary": "Page Size"
+                    },
+                    "totalElements": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Total number of matching incidents.",
+                      "x-ms-summary": "Total Elements"
+                    },
+                    "totalPages": {
+                      "type": "integer",
+                      "description": "Total number of pages.",
+                      "x-ms-summary": "Total Pages"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/incident/v1/assignments/entities/{entityId}/stage": {
+      "post": {
+        "operationId": "UpdateIncidentStage",
+        "summary": "Update Incident Stage",
+        "description": "Move an incident to the next workflow stage.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The incident entity identifier.",
+            "x-ms-summary": "Entity ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateIncidentStageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/incident/v1/incidents/{incidentId}/inventory-links/{inventoryType}": {
+      "post": {
+        "operationId": "LinkIncidentToInventory",
+        "summary": "Link Incident to Inventory",
+        "description": "Link an incident to one or more inventory items such as assets, processing activities, vendors, or entities.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "incidentId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the incident.",
+            "x-ms-summary": "Incident ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "inventoryType",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The type of inventory to link.",
+            "x-ms-summary": "Inventory Type",
+            "x-ms-url-encoding": "single",
+            "enum": [
+              "assets",
+              "processing-activities",
+              "vendors",
+              "entities"
+            ]
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LinkIncidentInventoryRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/access/v1/external/organizations": {
+      "get": {
+        "operationId": "GetOrganizations",
+        "summary": "Get Organizations",
+        "description": "Retrieve the hierarchical list of organizations configured in OneTrust. Use this to obtain organization group IDs required for creating risks and incidents.",
+        "x-ms-visibility": "important",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Organization group identifier.",
+                    "x-ms-summary": "Organization ID"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the organization.",
+                    "x-ms-summary": "Name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the organization.",
+                    "x-ms-summary": "Description"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Status of the organization (ACTIVE, INACTIVE).",
+                    "x-ms-summary": "Status"
+                  },
+                  "children": {
+                    "type": "array",
+                    "description": "Child organizations.",
+                    "x-ms-summary": "Children",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Child organization identifier.",
+                          "x-ms-summary": "Organization ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the child organization.",
+                          "x-ms-summary": "Name"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Status of the child organization.",
+                          "x-ms-summary": "Status"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/risk/v2/risks/upsert": {
+      "put": {
+        "operationId": "UpsertRisk",
+        "summary": "Upsert Risk",
+        "description": "Create or update a risk based on matching attributes. If a risk with matching attributes exists, it will be updated; otherwise, a new risk will be created.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "matchAttributes",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Comma-separated list of field names to match on (e.g., 'name,orgGroupId').",
+            "x-ms-summary": "Match Attributes",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpsertRiskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "riskId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The unique identifier of the created or updated risk.",
+                  "x-ms-summary": "Risk ID"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/risk/v2/risks/{riskId}": {
+      "put": {
+        "operationId": "UpdateRisk",
+        "summary": "Update Risk",
+        "description": "Update all fields of an existing risk in the Risk Register.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the risk to update.",
+            "x-ms-summary": "Risk ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateRiskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteRisk",
+        "summary": "Delete Risk",
+        "description": "Delete a risk from the Risk Register by its unique identifier.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the risk to delete.",
+            "x-ms-summary": "Risk ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "ModifyRisk",
+        "summary": "Modify Risk",
+        "description": "Partially update specific fields of an existing risk. Only the provided fields will be modified.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the risk to modify.",
+            "x-ms-summary": "Risk ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ModifyRiskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/risk/v2/risks/{id}/assign-stage": {
+      "post": {
+        "operationId": "UpdateRiskStage",
+        "summary": "Update Risk Stage",
+        "description": "Move a risk to a different workflow stage.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the risk.",
+            "x-ms-summary": "Risk ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateRiskStageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    },
+    "/api/risk-template/v1/templates/{riskTemplateId}": {
+      "get": {
+        "operationId": "GetRiskTemplate",
+        "summary": "Get Risk Template",
+        "description": "Retrieve details of a specific risk template by its unique identifier.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "riskTemplateId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "The unique identifier of the risk template.",
+            "x-ms-summary": "Risk Template ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Risk template identifier.",
+                  "x-ms-summary": "Template ID"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the risk template.",
+                  "x-ms-summary": "Name"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Description of the risk template.",
+                  "x-ms-summary": "Description"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Status of the template.",
+                  "x-ms-summary": "Status"
+                },
+                "riskType": {
+                  "type": "string",
+                  "description": "Type of risk this template is for.",
+                  "x-ms-summary": "Risk Type"
+                },
+                "createdDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Date and time when the template was created.",
+                  "x-ms-summary": "Created Date"
+                },
+                "lastUpdatedDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Date and time when the template was last updated.",
+                  "x-ms-summary": "Last Updated Date"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "429": {
+            "description": "Too Many Requests"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "CreateRiskRequest": {
+      "type": "object",
+      "required": [
+        "orgGroupId"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the risk.",
+          "x-ms-summary": "Name",
+          "x-ms-visibility": "important",
+          "maxLength": 300
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the risk.",
+          "x-ms-summary": "Description",
+          "x-ms-visibility": "important",
+          "maxLength": 4000
+        },
+        "orgGroupId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The organization group identifier.",
+          "x-ms-summary": "Organization Group ID",
+          "x-ms-visibility": "important"
+        },
+        "treatmentPlan": {
+          "type": "string",
+          "description": "Treatment plan for the risk.",
+          "x-ms-summary": "Treatment Plan",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "treatment": {
+          "type": "string",
+          "description": "Remediation details for the risk.",
+          "x-ms-summary": "Treatment",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Deadline for the risk, format YYYY-MM-DDTHH:MM:SS.FFFZ.",
+          "x-ms-summary": "Deadline",
+          "x-ms-visibility": "advanced"
+        },
+        "reminderDays": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Number of days before the deadline when a reminder will be sent.",
+          "x-ms-summary": "Reminder Days",
+          "x-ms-visibility": "advanced"
+        },
+        "threatId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Risk threat identifier.",
+          "x-ms-summary": "Threat ID",
+          "x-ms-visibility": "advanced"
+        },
+        "riskApproversId": {
+          "type": "array",
+          "description": "List of risk approver identifiers.",
+          "x-ms-summary": "Risk Approver IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "categoryIds": {
+          "type": "array",
+          "description": "List of risk category identifiers.",
+          "x-ms-summary": "Category IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "vulnerabilityIds": {
+          "type": "array",
+          "description": "List of risk vulnerability identifiers.",
+          "x-ms-summary": "Vulnerability IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "controlIds": {
+          "type": "array",
+          "description": "Set of control identifiers to associate with the risk.",
+          "x-ms-summary": "Control IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "riskOwners": {
+          "type": "array",
+          "description": "List of risk owners.",
+          "x-ms-summary": "Risk Owners",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "$ref": "#/definitions/BasicEntityDetail"
+          }
+        },
+        "riskManager": {
+          "type": "array",
+          "description": "List of risk manager identifiers.",
+          "x-ms-summary": "Risk Manager IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "inherentRiskLevel": {
+          "type": "object",
+          "description": "Inherent risk level details.",
+          "x-ms-summary": "Inherent Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "residualRiskLevel": {
+          "type": "object",
+          "description": "Residual risk level details.",
+          "x-ms-summary": "Residual Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "targetRiskLevel": {
+          "type": "object",
+          "description": "Target risk level details.",
+          "x-ms-summary": "Target Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "riskTemplate": {
+          "type": "object",
+          "description": "Risk template to use for the risk.",
+          "x-ms-summary": "Risk Template",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Risk template identifier.",
+              "x-ms-summary": "Template ID"
+            }
+          }
+        }
+      }
+    },
+    "CreateIncidentRequest": {
+      "type": "object",
+      "required": [
+        "name",
+        "incidentTypeName",
+        "orgGroupId"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the incident. Provide a descriptive name so it can be quickly referenced in the incident register.",
+          "x-ms-summary": "Name",
+          "x-ms-visibility": "important"
+        },
+        "incidentTypeName": {
+          "type": "string",
+          "description": "The name of the type of incident that has occurred.",
+          "x-ms-summary": "Incident Type Name",
+          "x-ms-visibility": "important",
+          "default": "Unknown"
+        },
+        "orgGroupId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The organization identifier. Retrieve from the Get List of Organizations API.",
+          "x-ms-summary": "Organization Group ID",
+          "x-ms-visibility": "important"
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the incident.",
+          "x-ms-summary": "Description",
+          "x-ms-visibility": "important"
+        },
+        "dateOccurred": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time when the incident occurred (ISO 8601 UTC).",
+          "x-ms-summary": "Date Occurred",
+          "x-ms-visibility": "important"
+        },
+        "dateDiscovered": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time when the incident was discovered (ISO 8601 UTC).",
+          "x-ms-summary": "Date Discovered",
+          "x-ms-visibility": "important"
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date by which the incident investigation or notification must be completed (ISO 8601 UTC).",
+          "x-ms-summary": "Deadline",
+          "x-ms-visibility": "advanced"
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "Creation source of the incident.",
+          "x-ms-summary": "Source Type",
+          "x-ms-visibility": "advanced",
+          "default": "INTEGRATION",
+          "enum": [
+            "MANUAL",
+            "ASSESSMENT",
+            "WEBFORM",
+            "INTEGRATION"
+          ]
+        },
+        "rootCause": {
+          "type": "string",
+          "description": "The root cause summary of the incident.",
+          "x-ms-summary": "Root Cause",
+          "x-ms-visibility": "advanced"
+        },
+        "notificationNeeded": {
+          "type": "string",
+          "description": "Indicates whether a notification is required for this incident.",
+          "x-ms-summary": "Notification Needed",
+          "x-ms-visibility": "advanced",
+          "default": "UNKNOWN",
+          "enum": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ]
+        },
+        "autoAssessJurisdictions": {
+          "type": "boolean",
+          "description": "If true, automatically assess jurisdictions after incident creation.",
+          "x-ms-summary": "Auto Assess Jurisdictions",
+          "x-ms-visibility": "advanced",
+          "default": false
+        },
+        "incidentAssigneeRequests": {
+          "type": "array",
+          "description": "List of incident assignee requests.",
+          "x-ms-summary": "Assignees",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "$ref": "#/definitions/IncidentAssigneeRequest"
+          }
+        },
+        "jurisdictions": {
+          "type": "array",
+          "description": "Impacted jurisdictions for the incident.",
+          "x-ms-summary": "Jurisdictions",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "$ref": "#/definitions/IncidentJurisdictionRequest"
+          }
+        }
+      }
+    },
+    "SearchIncidentsRequest": {
+      "type": "object",
+      "properties": {
+        "fullText": {
+          "type": "string",
+          "description": "Full-text search string to match against incident fields.",
+          "x-ms-summary": "Search Text",
+          "x-ms-visibility": "important"
+        },
+        "filters": {
+          "type": "array",
+          "description": "Array of filter criteria to narrow search results.",
+          "x-ms-summary": "Filters",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fieldName": {
+                "type": "string",
+                "description": "Name of the field to filter on.",
+                "x-ms-summary": "Field Name"
+              },
+              "filterValue": {
+                "type": "string",
+                "description": "Value to filter by.",
+                "x-ms-summary": "Filter Value"
+              },
+              "operator": {
+                "type": "string",
+                "description": "Filter operator (e.g., EQ, CONTAINS, IN).",
+                "x-ms-summary": "Operator"
+              }
+            }
+          }
+        }
+      }
+    },
+    "UpsertRiskRequest": {
+      "type": "object",
+      "required": [
+        "type",
+        "source",
+        "orgGroupId"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of the risk.",
+          "x-ms-summary": "Risk Type",
+          "x-ms-visibility": "important"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the risk.",
+          "x-ms-summary": "Source",
+          "x-ms-visibility": "important"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the risk.",
+          "x-ms-summary": "Name",
+          "x-ms-visibility": "important",
+          "maxLength": 300
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the risk.",
+          "x-ms-summary": "Description",
+          "x-ms-visibility": "important",
+          "maxLength": 4000
+        },
+        "orgGroupId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The organization group identifier.",
+          "x-ms-summary": "Organization Group ID",
+          "x-ms-visibility": "important"
+        },
+        "associatedInventory": {
+          "type": "object",
+          "description": "Associated inventory item for the risk.",
+          "x-ms-summary": "Associated Inventory",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "inventoryType": {
+              "type": "string",
+              "description": "Type of inventory (e.g., ASSET, PROCESSING_ACTIVITY, VENDOR, ENTITY).",
+              "x-ms-summary": "Inventory Type"
+            },
+            "inventoryId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifier of the associated inventory item.",
+              "x-ms-summary": "Inventory ID"
+            }
+          }
+        },
+        "treatmentPlan": {
+          "type": "string",
+          "description": "Treatment plan for the risk.",
+          "x-ms-summary": "Treatment Plan",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "treatment": {
+          "type": "string",
+          "description": "Remediation details for the risk.",
+          "x-ms-summary": "Treatment",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Deadline for the risk.",
+          "x-ms-summary": "Deadline",
+          "x-ms-visibility": "advanced"
+        },
+        "reminderDays": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Number of days before the deadline to send a reminder.",
+          "x-ms-summary": "Reminder Days",
+          "x-ms-visibility": "advanced"
+        },
+        "categoryIds": {
+          "type": "array",
+          "description": "List of risk category identifiers.",
+          "x-ms-summary": "Category IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "inherentRiskLevel": {
+          "type": "object",
+          "description": "Inherent risk level details.",
+          "x-ms-summary": "Inherent Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "residualRiskLevel": {
+          "type": "object",
+          "description": "Residual risk level details.",
+          "x-ms-summary": "Residual Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "targetRiskLevel": {
+          "type": "object",
+          "description": "Target risk level details.",
+          "x-ms-summary": "Target Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        }
+      }
+    },
+    "UpdateRiskRequest": {
+      "type": "object",
+      "required": [
+        "result"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the risk.",
+          "x-ms-summary": "Name",
+          "x-ms-visibility": "important",
+          "maxLength": 300
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the risk.",
+          "x-ms-summary": "Description",
+          "x-ms-visibility": "important",
+          "maxLength": 4000
+        },
+        "orgGroupId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The organization group identifier.",
+          "x-ms-summary": "Organization Group ID",
+          "x-ms-visibility": "important"
+        },
+        "result": {
+          "type": "string",
+          "description": "Risk result or disposition.",
+          "x-ms-summary": "Result",
+          "x-ms-visibility": "important",
+          "enum": [
+            "ACCEPTED",
+            "MITIGATED",
+            "TRANSFERRED",
+            "AVOIDED"
+          ]
+        },
+        "treatmentPlan": {
+          "type": "string",
+          "description": "Treatment plan for the risk.",
+          "x-ms-summary": "Treatment Plan",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "treatment": {
+          "type": "string",
+          "description": "Remediation details for the risk.",
+          "x-ms-summary": "Treatment",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Deadline for the risk.",
+          "x-ms-summary": "Deadline",
+          "x-ms-visibility": "advanced"
+        },
+        "reminderDays": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Number of days before the deadline to send a reminder.",
+          "x-ms-summary": "Reminder Days",
+          "x-ms-visibility": "advanced"
+        },
+        "threatId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Risk threat identifier.",
+          "x-ms-summary": "Threat ID",
+          "x-ms-visibility": "advanced"
+        },
+        "riskApproversId": {
+          "type": "array",
+          "description": "List of risk approver identifiers.",
+          "x-ms-summary": "Risk Approver IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "categoryIds": {
+          "type": "array",
+          "description": "List of risk category identifiers.",
+          "x-ms-summary": "Category IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "vulnerabilityIds": {
+          "type": "array",
+          "description": "List of risk vulnerability identifiers.",
+          "x-ms-summary": "Vulnerability IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "controlIds": {
+          "type": "array",
+          "description": "Set of control identifiers to associate with the risk.",
+          "x-ms-summary": "Control IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "riskOwners": {
+          "type": "array",
+          "description": "List of risk owners.",
+          "x-ms-summary": "Risk Owners",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "$ref": "#/definitions/BasicEntityDetail"
+          }
+        },
+        "riskManager": {
+          "type": "array",
+          "description": "List of risk manager identifiers.",
+          "x-ms-summary": "Risk Manager IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "inherentRiskLevel": {
+          "type": "object",
+          "description": "Inherent risk level details.",
+          "x-ms-summary": "Inherent Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "residualRiskLevel": {
+          "type": "object",
+          "description": "Residual risk level details.",
+          "x-ms-summary": "Residual Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "targetRiskLevel": {
+          "type": "object",
+          "description": "Target risk level details.",
+          "x-ms-summary": "Target Risk Level",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "levelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Risk level identifier.",
+              "x-ms-summary": "Level ID"
+            },
+            "level": {
+              "type": "string",
+              "description": "Risk level name.",
+              "x-ms-summary": "Level"
+            },
+            "impactLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Impact level identifier.",
+              "x-ms-summary": "Impact Level ID"
+            },
+            "impactLevel": {
+              "type": "string",
+              "description": "Impact level name.",
+              "x-ms-summary": "Impact Level"
+            },
+            "probabilityLevelId": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Probability level identifier.",
+              "x-ms-summary": "Probability Level ID"
+            },
+            "probabilityLevel": {
+              "type": "string",
+              "description": "Probability level name.",
+              "x-ms-summary": "Probability Level"
+            },
+            "riskScore": {
+              "type": "number",
+              "description": "Calculated risk score.",
+              "x-ms-summary": "Risk Score"
+            }
+          }
+        },
+        "riskTemplate": {
+          "type": "object",
+          "description": "Risk template to use for the risk.",
+          "x-ms-summary": "Risk Template",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Risk template identifier.",
+              "x-ms-summary": "Template ID"
+            }
+          }
+        }
+      }
+    },
+    "ModifyRiskRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the risk.",
+          "x-ms-summary": "Name",
+          "maxLength": 300
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the risk.",
+          "x-ms-summary": "Description",
+          "maxLength": 4000
+        },
+        "orgGroupId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The organization group identifier.",
+          "x-ms-summary": "Organization Group ID"
+        },
+        "result": {
+          "type": "string",
+          "description": "Risk result or disposition.",
+          "x-ms-summary": "Result",
+          "enum": [
+            "ACCEPTED",
+            "MITIGATED",
+            "TRANSFERRED",
+            "AVOIDED"
+          ]
+        },
+        "treatmentPlan": {
+          "type": "string",
+          "description": "Treatment plan for the risk.",
+          "x-ms-summary": "Treatment Plan",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "treatment": {
+          "type": "string",
+          "description": "Remediation details for the risk.",
+          "x-ms-summary": "Treatment",
+          "x-ms-visibility": "advanced",
+          "maxLength": 4000
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Deadline for the risk.",
+          "x-ms-summary": "Deadline",
+          "x-ms-visibility": "advanced"
+        },
+        "reminderDays": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Number of days before the deadline to send a reminder.",
+          "x-ms-summary": "Reminder Days",
+          "x-ms-visibility": "advanced"
+        }
+      }
+    },
+    "UpdateRiskStageRequest": {
+      "type": "object",
+      "required": [
+        "nextStageId",
+        "direction"
+      ],
+      "properties": {
+        "nextStageId": {
+          "type": "string",
+          "description": "The identifier of the next workflow stage.",
+          "x-ms-summary": "Next Stage ID",
+          "x-ms-visibility": "important"
+        },
+        "direction": {
+          "type": "string",
+          "description": "Direction of stage transition.",
+          "x-ms-summary": "Direction",
+          "x-ms-visibility": "important",
+          "enum": [
+            "FORWARD",
+            "BACKWARD"
+          ]
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Additional parameters for the stage transition.",
+          "x-ms-summary": "Parameters",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "description": "Comment for the stage transition.",
+              "x-ms-summary": "Comment"
+            }
+          }
+        }
+      }
+    },
+    "UpdateIncidentStageRequest": {
+      "type": "object",
+      "required": [
+        "nextStageName"
+      ],
+      "properties": {
+        "nextStageName": {
+          "type": "string",
+          "description": "The name of the next workflow stage to transition to.",
+          "x-ms-summary": "Next Stage Name",
+          "x-ms-visibility": "important"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Additional parameters for the stage transition.",
+          "x-ms-summary": "Parameters",
+          "x-ms-visibility": "advanced",
+          "properties": {
+            "comment": {
+              "type": "string",
+              "description": "Comment for the stage transition.",
+              "x-ms-summary": "Comment"
+            }
+          }
+        }
+      }
+    },
+    "LinkIncidentInventoryRequest": {
+      "type": "object",
+      "properties": {
+        "inventoryIds": {
+          "type": "array",
+          "description": "List of inventory item identifiers to link.",
+          "x-ms-summary": "Inventory IDs",
+          "x-ms-visibility": "important",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "externalIds": {
+          "type": "array",
+          "description": "List of external identifiers for the inventory items.",
+          "x-ms-summary": "External IDs",
+          "x-ms-visibility": "advanced",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "Source type for the inventory link.",
+          "x-ms-summary": "Source Type",
+          "x-ms-visibility": "advanced"
+        }
+      }
+    },
+    "BasicEntityDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the entity.",
+          "x-ms-summary": "Entity ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the entity.",
+          "x-ms-summary": "Entity Name",
+          "maxLength": 300
+        }
+      }
+    },
+    "RiskLevelDetails": {
+      "type": "object",
+      "properties": {
+        "levelId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Risk level identifier.",
+          "x-ms-summary": "Level ID"
+        },
+        "level": {
+          "type": "string",
+          "description": "Risk level name.",
+          "x-ms-summary": "Level"
+        },
+        "impactLevelId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Impact level identifier.",
+          "x-ms-summary": "Impact Level ID"
+        },
+        "impactLevel": {
+          "type": "string",
+          "description": "Impact level name.",
+          "x-ms-summary": "Impact Level"
+        },
+        "probabilityLevelId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Probability level identifier.",
+          "x-ms-summary": "Probability Level ID"
+        },
+        "probabilityLevel": {
+          "type": "string",
+          "description": "Probability level name.",
+          "x-ms-summary": "Probability Level"
+        },
+        "riskScore": {
+          "type": "number",
+          "description": "Calculated risk score.",
+          "x-ms-summary": "Risk Score"
+        }
+      }
+    },
+    "RiskTemplateIdentifier": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Risk template identifier.",
+          "x-ms-summary": "Template ID"
+        }
+      }
+    },
+    "IncidentAssigneeRequest": {
+      "type": "object",
+      "required": [
+        "assigneeId"
+      ],
+      "properties": {
+        "assigneeId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Incident user assignee identifier.",
+          "x-ms-summary": "Assignee ID"
+        },
+        "assigneeEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email of the incident assignee. Valid only when the assignee type is USER.",
+          "x-ms-summary": "Assignee Email"
+        },
+        "type": {
+          "type": "string",
+          "description": "Indicates whether the assignee is an individual user or a group.",
+          "x-ms-summary": "Assignee Type",
+          "default": "USER",
+          "enum": [
+            "USER",
+            "GROUP"
+          ]
+        }
+      }
+    },
+    "IncidentJurisdictionRequest": {
+      "type": "object",
+      "required": [
+        "countryCode"
+      ],
+      "properties": {
+        "jurisdictionId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Incident jurisdiction identifier.",
+          "x-ms-summary": "Jurisdiction ID"
+        },
+        "countryCode": {
+          "type": "string",
+          "description": "Three-digit country code of the jurisdiction.",
+          "x-ms-summary": "Country Code"
+        },
+        "stateProvinceCode": {
+          "type": "string",
+          "description": "State/province code. Required if country code is USA or CAN.",
+          "x-ms-summary": "State/Province Code"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://app.onetrust.com/api/access/v1/oauth/authorize",
+      "tokenUrl": "https://app.onetrust.com/api/access/v1/oauth/token",
+      "scopes": {
+        "RISK": "Risk management scope",
+        "RISK_READ": "Read risk data scope",
+        "INCIDENT": "Incident management scope",
+        "INCIDENT_CREATE": "Incident creation scope",
+        "INCIDENT_READ": "Read incident data scope",
+        "INTEGRATION": "Integration scope for risk upsert and update",
+        "ORGANIZATION": "Organization data access scope",
+        "USER": "User data access scope"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": [
+        "RISK",
+        "RISK_READ",
+        "INCIDENT",
+        "INCIDENT_CREATE",
+        "INCIDENT_READ",
+        "INTEGRATION",
+        "ORGANIZATION",
+        "USER"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://www.onetrust.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://www.onetrust.com/privacy-notice/"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Security;IT Operations"
+    }
+  ]
+}
