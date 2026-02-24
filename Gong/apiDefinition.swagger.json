@@ -1,0 +1,4197 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Gong",
+        "description": "Connector for the Gong Revenue Intelligence platform. Manage calls, users, stats, meetings, CRM data, permissions, engagement, and more.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.gong.io",
+    "basePath": "/v2",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/calls": {
+            "get": {
+                "operationId": "ListCalls",
+                "summary": "List Calls",
+                "description": "Retrieve call data by date range.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "fromDateTime",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "Start date and time (ISO 8601).",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDateTime",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "End date and time (ISO 8601).",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "workspaceId",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Optional workspace ID to filter calls.",
+                        "x-ms-summary": "Workspace ID",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Cursor for pagination.",
+                        "x-ms-summary": "Cursor",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of calls",
+                        "schema": {
+                            "$ref": "#/definitions/CallsResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "AddCall",
+                "summary": "Add Call",
+                "description": "Add a new call to Gong. After adding, upload the media using Add Call Recording.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "actualStart",
+                                "primaryUser",
+                                "parties"
+                            ],
+                            "properties": {
+                                "clientUniqueId": {
+                                    "type": "string",
+                                    "description": "A unique identifier for the call in your system.",
+                                    "x-ms-summary": "Client Unique ID"
+                                },
+                                "actualStart": {
+                                    "type": "string",
+                                    "description": "Actual start time of the call (ISO 8601).",
+                                    "x-ms-summary": "Actual Start"
+                                },
+                                "direction": {
+                                    "type": "string",
+                                    "description": "Call direction.",
+                                    "x-ms-summary": "Direction",
+                                    "enum": [
+                                        "Inbound",
+                                        "Outbound",
+                                        "Conference",
+                                        "Unknown"
+                                    ]
+                                },
+                                "duration": {
+                                    "type": "number",
+                                    "description": "Call duration in seconds.",
+                                    "x-ms-summary": "Duration"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Call title.",
+                                    "x-ms-summary": "Title"
+                                },
+                                "primaryUser": {
+                                    "type": "string",
+                                    "description": "Email address of the primary user (host).",
+                                    "x-ms-summary": "Primary User Email"
+                                },
+                                "parties": {
+                                    "type": "array",
+                                    "description": "List of call participants.",
+                                    "x-ms-summary": "Parties",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "emailAddress": {
+                                                "type": "string",
+                                                "description": "Participant email.",
+                                                "x-ms-summary": "Email"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Participant name.",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "phoneNumber": {
+                                                "type": "string",
+                                                "description": "Participant phone number.",
+                                                "x-ms-summary": "Phone Number"
+                                            }
+                                        }
+                                    }
+                                },
+                                "meetingUrl": {
+                                    "type": "string",
+                                    "description": "Meeting URL.",
+                                    "x-ms-summary": "Meeting URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "scheduledStart": {
+                                    "type": "string",
+                                    "description": "Scheduled start time (ISO 8601).",
+                                    "x-ms-summary": "Scheduled Start",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "scheduledEnd": {
+                                    "type": "string",
+                                    "description": "Scheduled end time (ISO 8601).",
+                                    "x-ms-summary": "Scheduled End",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "language": {
+                                    "type": "string",
+                                    "description": "Language of the call.",
+                                    "x-ms-summary": "Language",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "workspaceId": {
+                                    "type": "string",
+                                    "description": "Workspace ID for the call.",
+                                    "x-ms-summary": "Workspace ID",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "downloadMediaUrl": {
+                                    "type": "string",
+                                    "description": "URL to download the media file.",
+                                    "x-ms-summary": "Download Media URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "disposition": {
+                                    "type": "string",
+                                    "description": "Call disposition.",
+                                    "x-ms-summary": "Disposition",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "customData": {
+                                    "type": "string",
+                                    "description": "Custom metadata as a string.",
+                                    "x-ms-summary": "Custom Data",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "callProviderCode": {
+                                    "type": "string",
+                                    "description": "Telephony provider identifier.",
+                                    "x-ms-summary": "Provider Code",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Call created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "callId": {
+                                    "type": "string",
+                                    "description": "The ID of the newly created call."
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL to the call in Gong."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/calls/{id}": {
+            "get": {
+                "operationId": "GetCall",
+                "summary": "Get Call",
+                "description": "Retrieve data for a specific call.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The call ID.",
+                        "x-ms-summary": "Call ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Call data",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "call": {
+                                    "$ref": "#/definitions/CallBasic"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/calls/{id}/media": {
+            "put": {
+                "operationId": "AddCallRecording",
+                "summary": "Add Call Recording",
+                "description": "Upload a media file for a call. The call must have been created first using Add Call.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Call ID returned from Add Call.",
+                        "x-ms-summary": "Call ID"
+                    },
+                    {
+                        "name": "mediaFile",
+                        "in": "formData",
+                        "type": "file",
+                        "required": true,
+                        "description": "The media file to upload (audio or video).",
+                        "x-ms-summary": "Media File"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Recording uploaded",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "callId": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/calls/extensive": {
+            "post": {
+                "operationId": "GetCallsExtensive",
+                "summary": "Get Calls Extensive",
+                "description": "Retrieve detailed call data with content, interaction stats, and collaboration for specific calls.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "properties": {
+                                        "callIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of call IDs to retrieve.",
+                                            "x-ms-summary": "Call IDs"
+                                        },
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "workspaceId": {
+                                            "type": "string",
+                                            "description": "Workspace ID to filter.",
+                                            "x-ms-summary": "Workspace ID",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "contentSelector": {
+                                    "type": "object",
+                                    "description": "Controls which content fields to include.",
+                                    "x-ms-summary": "Content Selector",
+                                    "x-ms-visibility": "advanced",
+                                    "properties": {
+                                        "exposedFields": {
+                                            "type": "object",
+                                            "properties": {
+                                                "content": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "topics": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "trackers": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "brief": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "outline": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "highlights": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "callOutcome": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "keyPoints": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                },
+                                                "interaction": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "interactivity": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "talkRatio": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "longestMonologue": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "patience": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "questionRate": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                },
+                                                "collaboration": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "publicComments": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                },
+                                                "media": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "audioUrl": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "videoUrl": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                },
+                                                "parties": {
+                                                    "type": "boolean"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Extensive call data",
+                        "schema": {
+                            "$ref": "#/definitions/CallsExtensiveResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/calls/transcript": {
+            "post": {
+                "operationId": "GetCallTranscripts",
+                "summary": "Get Call Transcripts",
+                "description": "Retrieve transcripts for specified calls.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "properties": {
+                                        "callIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of call IDs.",
+                                            "x-ms-summary": "Call IDs"
+                                        },
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "workspaceId": {
+                                            "type": "string",
+                                            "description": "Workspace ID.",
+                                            "x-ms-summary": "Workspace ID",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Call transcripts",
+                        "schema": {
+                            "$ref": "#/definitions/TranscriptsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/calls/users-access": {
+            "put": {
+                "operationId": "GiveUsersAccessToCalls",
+                "summary": "Give Users Access to Calls",
+                "description": "Give specific users access to calls.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "callAccessList"
+                            ],
+                            "properties": {
+                                "callAccessList": {
+                                    "type": "array",
+                                    "description": "List of call access grants.",
+                                    "x-ms-summary": "Call Access List",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "callId": {
+                                                "type": "string",
+                                                "description": "Call ID.",
+                                                "x-ms-summary": "Call ID"
+                                            },
+                                            "userIds": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "description": "User IDs to grant access.",
+                                                "x-ms-summary": "User IDs"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Access granted",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "RemoveUsersAccessFromCalls",
+                "summary": "Remove Users Access from Calls",
+                "description": "Remove specific users' access from calls.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "callAccessList"
+                            ],
+                            "properties": {
+                                "callAccessList": {
+                                    "type": "array",
+                                    "description": "List of call access removals.",
+                                    "x-ms-summary": "Call Access List",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "callId": {
+                                                "type": "string",
+                                                "description": "Call ID.",
+                                                "x-ms-summary": "Call ID"
+                                            },
+                                            "userIds": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "description": "User IDs to remove access.",
+                                                "x-ms-summary": "User IDs"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Access removed",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "operationId": "ListUsers",
+                "summary": "List Users",
+                "description": "Retrieve a list of all users in the Gong account.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Cursor for pagination.",
+                        "x-ms-summary": "Cursor",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "includeAvatars",
+                        "in": "query",
+                        "type": "boolean",
+                        "description": "Whether to include avatar URLs.",
+                        "x-ms-summary": "Include Avatars",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "schema": {
+                            "$ref": "#/definitions/UsersResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "operationId": "GetUser",
+                "summary": "Get User",
+                "description": "Retrieve data for a specific user by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The user ID.",
+                        "x-ms-summary": "User ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User data",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "user": {
+                                    "$ref": "#/definitions/UserBasic"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/settings-history": {
+            "get": {
+                "operationId": "GetUserSettingsHistory",
+                "summary": "Get User Settings History",
+                "description": "Retrieve the settings change history for a specific user.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The user ID.",
+                        "x-ms-summary": "User ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User settings history",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "userHistoryRecords": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "changedWhen": {
+                                                "type": "string",
+                                                "description": "When the change occurred."
+                                            },
+                                            "changedByUserId": {
+                                                "type": "string",
+                                                "description": "Who made the change."
+                                            },
+                                            "setting": {
+                                                "type": "string",
+                                                "description": "The setting that changed."
+                                            },
+                                            "previousValue": {
+                                                "type": "string",
+                                                "description": "Previous value."
+                                            },
+                                            "newValue": {
+                                                "type": "string",
+                                                "description": "New value."
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/extensive": {
+            "post": {
+                "operationId": "GetUsersExtensive",
+                "summary": "Get Users Extensive",
+                "description": "Retrieve extensive user data for specific users or the entire account.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "properties": {
+                                        "userIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional list of user IDs to filter.",
+                                            "x-ms-summary": "User IDs"
+                                        },
+                                        "createdFromDateTime": {
+                                            "type": "string",
+                                            "description": "Filter users created from this date (ISO 8601).",
+                                            "x-ms-summary": "Created From Date",
+                                            "x-ms-visibility": "advanced"
+                                        },
+                                        "createdToDateTime": {
+                                            "type": "string",
+                                            "description": "Filter users created to this date (ISO 8601).",
+                                            "x-ms-summary": "Created To Date",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Extensive user data",
+                        "schema": {
+                            "$ref": "#/definitions/UsersExtensiveResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/activity/scorecards": {
+            "post": {
+                "operationId": "GetScorecardStats",
+                "summary": "Get Scorecard Stats",
+                "description": "Retrieve scorecard statistics for calls within a date range.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "required": [
+                                        "fromDateTime",
+                                        "toDateTime"
+                                    ],
+                                    "properties": {
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "callIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional call IDs.",
+                                            "x-ms-summary": "Call IDs",
+                                            "x-ms-visibility": "advanced"
+                                        },
+                                        "scorecardIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional scorecard IDs.",
+                                            "x-ms-summary": "Scorecard IDs",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Scorecard stats",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "scorecardStats": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "callId": {
+                                                "type": "string"
+                                            },
+                                            "callStartTime": {
+                                                "type": "string"
+                                            },
+                                            "reviewedUserId": {
+                                                "type": "string"
+                                            },
+                                            "reviewerUserId": {
+                                                "type": "string"
+                                            },
+                                            "scorecardId": {
+                                                "type": "string"
+                                            },
+                                            "scorecardName": {
+                                                "type": "string"
+                                            },
+                                            "overallScore": {
+                                                "type": "number"
+                                            },
+                                            "answers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "questionId": {
+                                                            "type": "string"
+                                                        },
+                                                        "questionText": {
+                                                            "type": "string"
+                                                        },
+                                                        "isOverall": {
+                                                            "type": "boolean"
+                                                        },
+                                                        "answerText": {
+                                                            "type": "string"
+                                                        },
+                                                        "score": {
+                                                            "type": "number"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/activity/day-by-day": {
+            "post": {
+                "operationId": "GetActivityDayByDay",
+                "summary": "Get Activity Day by Day",
+                "description": "Retrieve day-by-day activity statistics for users.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "required": [
+                                        "fromDateTime",
+                                        "toDateTime"
+                                    ],
+                                    "properties": {
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "userIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional user IDs.",
+                                            "x-ms-summary": "User IDs",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Day-by-day activity stats",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "daysActivity": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string"
+                                            },
+                                            "day": {
+                                                "type": "string"
+                                            },
+                                            "callsAsHost": {
+                                                "type": "integer"
+                                            },
+                                            "callsAttended": {
+                                                "type": "integer"
+                                            },
+                                            "callsGaveFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsReceivedFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsRequestedFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsMarkedAsFeedbackGiven": {
+                                                "type": "integer"
+                                            },
+                                            "callsListenedTo": {
+                                                "type": "integer"
+                                            },
+                                            "callsSharedInternally": {
+                                                "type": "integer"
+                                            },
+                                            "callsSharedExternally": {
+                                                "type": "integer"
+                                            },
+                                            "callsScoredByUser": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/activity/aggregate": {
+            "post": {
+                "operationId": "GetAggregateActivity",
+                "summary": "Get Aggregate Activity",
+                "description": "Retrieve aggregated activity statistics for multiple users across a date range.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "required": [
+                                        "fromDateTime",
+                                        "toDateTime"
+                                    ],
+                                    "properties": {
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "userIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional user IDs.",
+                                            "x-ms-summary": "User IDs",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Aggregate activity stats",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "usersAggregateActivity": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string"
+                                            },
+                                            "callsAsHost": {
+                                                "type": "integer"
+                                            },
+                                            "callsAttended": {
+                                                "type": "integer"
+                                            },
+                                            "callsGaveFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsReceivedFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsRequestedFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsListenedTo": {
+                                                "type": "integer"
+                                            },
+                                            "callsSharedInternally": {
+                                                "type": "integer"
+                                            },
+                                            "callsSharedExternally": {
+                                                "type": "integer"
+                                            },
+                                            "callsScoredByUser": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/activity/aggregate-by-period": {
+            "post": {
+                "operationId": "GetAggregateActivityByPeriod",
+                "summary": "Get Aggregate Activity by Period",
+                "description": "Retrieve aggregated activity statistics for multiple users broken down by time period.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "required": [
+                                        "fromDateTime",
+                                        "toDateTime"
+                                    ],
+                                    "properties": {
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "userIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional user IDs.",
+                                            "x-ms-summary": "User IDs",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "aggregateBy": {
+                                    "type": "string",
+                                    "description": "Time period to aggregate by.",
+                                    "x-ms-summary": "Aggregate By",
+                                    "enum": [
+                                        "Week",
+                                        "Month",
+                                        "Quarter"
+                                    ]
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Aggregate activity by period",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "usersAggregateActivityByPeriod": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string"
+                                            },
+                                            "periodStartDate": {
+                                                "type": "string"
+                                            },
+                                            "periodEndDate": {
+                                                "type": "string"
+                                            },
+                                            "callsAsHost": {
+                                                "type": "integer"
+                                            },
+                                            "callsAttended": {
+                                                "type": "integer"
+                                            },
+                                            "callsGaveFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsReceivedFeedback": {
+                                                "type": "integer"
+                                            },
+                                            "callsListenedTo": {
+                                                "type": "integer"
+                                            },
+                                            "callsSharedInternally": {
+                                                "type": "integer"
+                                            },
+                                            "callsSharedExternally": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/interaction": {
+            "post": {
+                "operationId": "GetInteractionStats",
+                "summary": "Get Interaction Stats",
+                "description": "Retrieve interaction statistics (talk ratio, interactivity, etc.) for calls.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "object",
+                                    "required": [
+                                        "fromDateTime",
+                                        "toDateTime"
+                                    ],
+                                    "properties": {
+                                        "fromDateTime": {
+                                            "type": "string",
+                                            "description": "Start date and time (ISO 8601).",
+                                            "x-ms-summary": "From Date"
+                                        },
+                                        "toDateTime": {
+                                            "type": "string",
+                                            "description": "End date and time (ISO 8601).",
+                                            "x-ms-summary": "To Date"
+                                        },
+                                        "callIds": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Optional call IDs.",
+                                            "x-ms-summary": "Call IDs",
+                                            "x-ms-visibility": "advanced"
+                                        }
+                                    }
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Cursor for pagination.",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Interaction statistics",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "interactionStats": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string"
+                                            },
+                                            "callId": {
+                                                "type": "string"
+                                            },
+                                            "talkRatio": {
+                                                "type": "number"
+                                            },
+                                            "longestMonologue": {
+                                                "type": "number"
+                                            },
+                                            "interactivity": {
+                                                "type": "number"
+                                            },
+                                            "patience": {
+                                                "type": "number"
+                                            },
+                                            "questionRate": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/scorecards": {
+            "get": {
+                "operationId": "ListScorecards",
+                "summary": "List Scorecards",
+                "description": "Retrieve a list of all configured scorecards.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of scorecards",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "scorecards": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "scorecardId": {
+                                                "type": "string"
+                                            },
+                                            "scorecardName": {
+                                                "type": "string"
+                                            },
+                                            "enabled": {
+                                                "type": "boolean"
+                                            },
+                                            "updatedAt": {
+                                                "type": "string"
+                                            },
+                                            "questions": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "questionId": {
+                                                            "type": "string"
+                                                        },
+                                                        "questionText": {
+                                                            "type": "string"
+                                                        },
+                                                        "questionRevision": {
+                                                            "type": "integer"
+                                                        },
+                                                        "isOverall": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workspaces": {
+            "get": {
+                "operationId": "ListWorkspaces",
+                "summary": "List Workspaces",
+                "description": "Retrieve a list of all workspaces in the Gong account.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of workspaces",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "workspaces": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/library/folders": {
+            "get": {
+                "operationId": "ListLibraryFolders",
+                "summary": "List Library Folders",
+                "description": "Retrieve a list of all library folders.",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Optional workspace ID to filter folders.",
+                        "x-ms-summary": "Workspace ID",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of library folders",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "folders": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "folderId": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "creatorUserId": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/library/folder-content": {
+            "get": {
+                "operationId": "GetLibraryFolderContent",
+                "summary": "Get Library Folder Content",
+                "description": "Retrieve the content of a specific library folder.",
+                "parameters": [
+                    {
+                        "name": "folderId",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The ID of the library folder.",
+                        "x-ms-summary": "Folder ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Library folder content",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "calls": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "callId": {
+                                                "type": "string"
+                                            },
+                                            "title": {
+                                                "type": "string"
+                                            },
+                                            "started": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/meetings": {
+            "post": {
+                "operationId": "CreateMeeting",
+                "summary": "Create Meeting",
+                "description": "Create a new meeting in Gong (Beta).",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "organizerEmail",
+                                "scheduledStart",
+                                "scheduledEnd"
+                            ],
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "description": "Meeting title.",
+                                    "x-ms-summary": "Title"
+                                },
+                                "organizerEmail": {
+                                    "type": "string",
+                                    "description": "Email of the meeting organizer.",
+                                    "x-ms-summary": "Organizer Email"
+                                },
+                                "scheduledStart": {
+                                    "type": "string",
+                                    "description": "Scheduled start time (ISO 8601).",
+                                    "x-ms-summary": "Start Time"
+                                },
+                                "scheduledEnd": {
+                                    "type": "string",
+                                    "description": "Scheduled end time (ISO 8601).",
+                                    "x-ms-summary": "End Time"
+                                },
+                                "externalMeetingId": {
+                                    "type": "string",
+                                    "description": "External meeting identifier.",
+                                    "x-ms-summary": "External Meeting ID",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "meetingUrl": {
+                                    "type": "string",
+                                    "description": "URL of the meeting.",
+                                    "x-ms-summary": "Meeting URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "invitees": {
+                                    "type": "array",
+                                    "description": "List of invitees.",
+                                    "x-ms-summary": "Invitees",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "description": "Invitee email.",
+                                                "x-ms-summary": "Email"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Invitee display name.",
+                                                "x-ms-summary": "Display Name"
+                                            }
+                                        }
+                                    }
+                                },
+                                "workspaceId": {
+                                    "type": "string",
+                                    "description": "Workspace ID.",
+                                    "x-ms-summary": "Workspace ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Meeting created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "meetingId": {
+                                    "type": "string",
+                                    "description": "The ID of the newly created meeting."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/meetings/{meetingId}": {
+            "put": {
+                "operationId": "UpdateMeeting",
+                "summary": "Update Meeting",
+                "description": "Update an existing meeting in Gong (Beta).",
+                "parameters": [
+                    {
+                        "name": "meetingId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The meeting ID.",
+                        "x-ms-summary": "Meeting ID"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "description": "Meeting title.",
+                                    "x-ms-summary": "Title"
+                                },
+                                "scheduledStart": {
+                                    "type": "string",
+                                    "description": "Scheduled start time (ISO 8601).",
+                                    "x-ms-summary": "Start Time"
+                                },
+                                "scheduledEnd": {
+                                    "type": "string",
+                                    "description": "Scheduled end time (ISO 8601).",
+                                    "x-ms-summary": "End Time"
+                                },
+                                "meetingUrl": {
+                                    "type": "string",
+                                    "description": "URL of the meeting.",
+                                    "x-ms-summary": "Meeting URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "invitees": {
+                                    "type": "array",
+                                    "description": "Updated list of invitees.",
+                                    "x-ms-summary": "Invitees",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "description": "Invitee email.",
+                                                "x-ms-summary": "Email"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Invitee display name.",
+                                                "x-ms-summary": "Display Name"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Meeting updated",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteMeeting",
+                "summary": "Delete Meeting",
+                "description": "Delete an existing meeting in Gong (Beta).",
+                "parameters": [
+                    {
+                        "name": "meetingId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The meeting ID.",
+                        "x-ms-summary": "Meeting ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Meeting deleted",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/meetings/integration/status": {
+            "post": {
+                "operationId": "ValidateMeetingIntegration",
+                "summary": "Validate Meeting Integration",
+                "description": "Validate the status of a meeting integration (Beta).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "integrationId"
+                            ],
+                            "properties": {
+                                "integrationId": {
+                                    "type": "string",
+                                    "description": "The meeting integration ID.",
+                                    "x-ms-summary": "Integration ID"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Integration status.",
+                                    "x-ms-summary": "Status"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Integration status validated",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/data-privacy/data-for-email-address": {
+            "get": {
+                "operationId": "GetDataForEmailAddress",
+                "summary": "Get Data for Email Address",
+                "description": "Retrieve all data associated with a specific email address for data privacy purposes.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "emailAddress",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The email address to look up.",
+                        "x-ms-summary": "Email Address"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data associated with the email address",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "emailAddress": {
+                                    "type": "string"
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "callId": {
+                                                "type": "string"
+                                            },
+                                            "callUrl": {
+                                                "type": "string"
+                                            },
+                                            "callTitle": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/data-privacy/data-for-phone-number": {
+            "get": {
+                "operationId": "GetDataForPhoneNumber",
+                "summary": "Get Data for Phone Number",
+                "description": "Retrieve all data associated with a specific phone number for data privacy purposes.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "phoneNumber",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The phone number to look up.",
+                        "x-ms-summary": "Phone Number"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data associated with the phone number",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "phoneNumber": {
+                                    "type": "string"
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "callId": {
+                                                "type": "string"
+                                            },
+                                            "callUrl": {
+                                                "type": "string"
+                                            },
+                                            "callTitle": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/data-privacy/erase-data-for-email-address": {
+            "post": {
+                "operationId": "EraseDataForEmailAddress",
+                "summary": "Erase Data for Email Address",
+                "description": "Purge all data associated with a specific email address. This action cannot be undone.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "emailAddress",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The email address to purge data for.",
+                        "x-ms-summary": "Email Address"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data purge initiated",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/data-privacy/erase-data-for-phone-number": {
+            "post": {
+                "operationId": "EraseDataForPhoneNumber",
+                "summary": "Erase Data for Phone Number",
+                "description": "Purge all data associated with a specific phone number. This action cannot be undone.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "phoneNumber",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The phone number to purge data for.",
+                        "x-ms-summary": "Phone Number"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Data purge initiated",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/crm/entities": {
+            "post": {
+                "operationId": "UploadCRMEntities",
+                "summary": "Upload CRM Entities",
+                "description": "Upload CRM entities (accounts, contacts, deals, leads, etc.) into Gong.",
+                "x-ms-visibility": "advanced",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier.",
+                        "x-ms-summary": "Integration ID"
+                    },
+                    {
+                        "name": "objectType",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The type of CRM object being uploaded.",
+                        "x-ms-summary": "Object Type",
+                        "enum": [
+                            "ACCOUNT",
+                            "CONTACT",
+                            "DEAL",
+                            "LEAD",
+                            "USER",
+                            "BUSINESS_USER",
+                            "STAGE"
+                        ]
+                    },
+                    {
+                        "name": "clientRequestId",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Client request ID for tracking.",
+                        "x-ms-summary": "Client Request ID",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "dataFile",
+                        "in": "formData",
+                        "type": "file",
+                        "required": true,
+                        "description": "The data file containing CRM entities (JSON lines format).",
+                        "x-ms-summary": "Data File"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload accepted",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "clientRequestId": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "operationId": "GetCRMObjects",
+                "summary": "Get CRM Objects",
+                "description": "Retrieve CRM objects that were previously uploaded to Gong.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier.",
+                        "x-ms-summary": "Integration ID"
+                    },
+                    {
+                        "name": "objectType",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The type of CRM object.",
+                        "x-ms-summary": "Object Type",
+                        "enum": [
+                            "ACCOUNT",
+                            "CONTACT",
+                            "DEAL",
+                            "LEAD"
+                        ]
+                    },
+                    {
+                        "name": "objectsCrmIds",
+                        "in": "query",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "CRM IDs of the objects to retrieve.",
+                        "x-ms-summary": "Object CRM IDs"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CRM objects",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "objects": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "objectId": {
+                                                "type": "string"
+                                            },
+                                            "objectType": {
+                                                "type": "string"
+                                            },
+                                            "fields": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "value": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "modifiedDate": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/crm/integrations": {
+            "put": {
+                "operationId": "RegisterCRMIntegration",
+                "summary": "Register CRM Integration",
+                "description": "Register or update a CRM integration with Gong.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "integrationName",
+                                "crmSystemType"
+                            ],
+                            "properties": {
+                                "integrationName": {
+                                    "type": "string",
+                                    "description": "Name for the CRM integration.",
+                                    "x-ms-summary": "Integration Name"
+                                },
+                                "crmSystemType": {
+                                    "type": "string",
+                                    "description": "The CRM system type.",
+                                    "x-ms-summary": "CRM System Type"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CRM integration registered",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "integrationId": {
+                                    "type": "integer",
+                                    "format": "int64"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "operationId": "GetCRMIntegration",
+                "summary": "Get CRM Integration",
+                "description": "Retrieve details for a CRM integration.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier.",
+                        "x-ms-summary": "Integration ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CRM integration details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "integrationId": {
+                                    "type": "integer",
+                                    "format": "int64"
+                                },
+                                "integrationName": {
+                                    "type": "string"
+                                },
+                                "crmSystemType": {
+                                    "type": "string"
+                                },
+                                "createdDateTime": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteCRMIntegration",
+                "summary": "Delete CRM Integration",
+                "description": "Delete a CRM integration and all its data from Gong.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier to delete.",
+                        "x-ms-summary": "Integration ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CRM integration deleted",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/crm/entity-schema": {
+            "put": {
+                "operationId": "SetCRMEntitySchema",
+                "summary": "Set CRM Entity Schema",
+                "description": "Define the schema for a CRM entity type in an integration.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier.",
+                        "x-ms-summary": "Integration ID"
+                    },
+                    {
+                        "name": "objectType",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The type of CRM object.",
+                        "x-ms-summary": "Object Type",
+                        "enum": [
+                            "ACCOUNT",
+                            "CONTACT",
+                            "DEAL",
+                            "LEAD",
+                            "USER",
+                            "BUSINESS_USER",
+                            "STAGE"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "fields"
+                            ],
+                            "properties": {
+                                "fields": {
+                                    "type": "array",
+                                    "description": "Schema field definitions.",
+                                    "x-ms-summary": "Fields",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Field name.",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "uniqueId": {
+                                                "type": "string",
+                                                "description": "Unique identifier for the field.",
+                                                "x-ms-summary": "Unique ID"
+                                            },
+                                            "label": {
+                                                "type": "string",
+                                                "description": "Display label.",
+                                                "x-ms-summary": "Label"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Field type (STRING, NUMBER, DATE, BOOLEAN, REFERENCE).",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "referenceTo": {
+                                                "type": "string",
+                                                "description": "Referenced object type (for REFERENCE fields).",
+                                                "x-ms-summary": "Reference To",
+                                                "x-ms-visibility": "advanced"
+                                            },
+                                            "orderedValues": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "description": "Ordered enum values.",
+                                                "x-ms-summary": "Ordered Values",
+                                                "x-ms-visibility": "advanced"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Schema set",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            },
+            "get": {
+                "operationId": "GetCRMEntitySchema",
+                "summary": "Get CRM Entity Schema",
+                "description": "Retrieve the schema for a CRM entity type.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier.",
+                        "x-ms-summary": "Integration ID"
+                    },
+                    {
+                        "name": "objectType",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The type of CRM object.",
+                        "x-ms-summary": "Object Type",
+                        "enum": [
+                            "ACCOUNT",
+                            "CONTACT",
+                            "DEAL",
+                            "LEAD",
+                            "USER",
+                            "BUSINESS_USER",
+                            "STAGE"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entity schema",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "fields": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "uniqueId": {
+                                                "type": "string"
+                                            },
+                                            "label": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "referenceTo": {
+                                                "type": "string"
+                                            },
+                                            "orderedValues": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/crm/request-status": {
+            "get": {
+                "operationId": "GetCRMRequestStatus",
+                "summary": "Get CRM Request Status",
+                "description": "Retrieve the status of a CRM upload request.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "integrationId",
+                        "in": "query",
+                        "type": "integer",
+                        "format": "int64",
+                        "required": true,
+                        "description": "The CRM integration identifier.",
+                        "x-ms-summary": "Integration ID"
+                    },
+                    {
+                        "name": "clientRequestId",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The client request ID provided during upload.",
+                        "x-ms-summary": "Client Request ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request status",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Status of the CRM request."
+                                },
+                                "numberOfObjectsProcessed": {
+                                    "type": "integer"
+                                },
+                                "errors": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "objectId": {
+                                                "type": "string"
+                                            },
+                                            "error": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/customer-engagement/content/shared": {
+            "put": {
+                "operationId": "ReportContentShared",
+                "summary": "Report Content Shared",
+                "description": "Report a content shared engagement event (Beta).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "reportingSystem",
+                                "companyUserEmail",
+                                "contentTitle"
+                            ],
+                            "properties": {
+                                "reportingSystem": {
+                                    "type": "string",
+                                    "description": "Name of the system reporting the event.",
+                                    "x-ms-summary": "Reporting System"
+                                },
+                                "companyUserEmail": {
+                                    "type": "string",
+                                    "description": "Email of the company user who shared content.",
+                                    "x-ms-summary": "User Email"
+                                },
+                                "engagementTimestamp": {
+                                    "type": "string",
+                                    "description": "When the event occurred (ISO 8601).",
+                                    "x-ms-summary": "Timestamp"
+                                },
+                                "contentId": {
+                                    "type": "string",
+                                    "description": "Content identifier.",
+                                    "x-ms-summary": "Content ID",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "contentTitle": {
+                                    "type": "string",
+                                    "description": "Title of the shared content.",
+                                    "x-ms-summary": "Content Title"
+                                },
+                                "contentUrl": {
+                                    "type": "string",
+                                    "description": "URL of the shared content.",
+                                    "x-ms-summary": "Content URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "nonCompanyParticipants": {
+                                    "type": "array",
+                                    "description": "External participants.",
+                                    "x-ms-summary": "External Participants",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "x-ms-summary": "Email"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "x-ms-summary": "Name"
+                                            }
+                                        }
+                                    }
+                                },
+                                "moreInfoUrl": {
+                                    "type": "string",
+                                    "description": "URL for more information.",
+                                    "x-ms-summary": "More Info URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "workspaceId": {
+                                    "type": "string",
+                                    "description": "Workspace ID.",
+                                    "x-ms-summary": "Workspace ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event recorded",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/customer-engagement/content/viewed": {
+            "put": {
+                "operationId": "ReportContentViewed",
+                "summary": "Report Content Viewed",
+                "description": "Report a content viewed engagement event (Beta).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "reportingSystem",
+                                "contentTitle",
+                                "nonCompanyParticipants"
+                            ],
+                            "properties": {
+                                "reportingSystem": {
+                                    "type": "string",
+                                    "description": "Name of the system reporting the event.",
+                                    "x-ms-summary": "Reporting System"
+                                },
+                                "engagementTimestamp": {
+                                    "type": "string",
+                                    "description": "When the event occurred (ISO 8601).",
+                                    "x-ms-summary": "Timestamp"
+                                },
+                                "contentId": {
+                                    "type": "string",
+                                    "description": "Content identifier.",
+                                    "x-ms-summary": "Content ID",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "contentTitle": {
+                                    "type": "string",
+                                    "description": "Title of the viewed content.",
+                                    "x-ms-summary": "Content Title"
+                                },
+                                "contentUrl": {
+                                    "type": "string",
+                                    "description": "URL of the viewed content.",
+                                    "x-ms-summary": "Content URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "nonCompanyParticipants": {
+                                    "type": "array",
+                                    "description": "External participants who viewed content.",
+                                    "x-ms-summary": "External Participants",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "x-ms-summary": "Email"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "x-ms-summary": "Name"
+                                            }
+                                        }
+                                    }
+                                },
+                                "moreInfoUrl": {
+                                    "type": "string",
+                                    "description": "URL for more information.",
+                                    "x-ms-summary": "More Info URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "workspaceId": {
+                                    "type": "string",
+                                    "description": "Workspace ID.",
+                                    "x-ms-summary": "Workspace ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event recorded",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/customer-engagement/action": {
+            "put": {
+                "operationId": "ReportCustomAction",
+                "summary": "Report Custom Action",
+                "description": "Report a custom engagement action event (Beta).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "reportingSystem",
+                                "companyUserEmail",
+                                "contentTitle",
+                                "actionName"
+                            ],
+                            "properties": {
+                                "reportingSystem": {
+                                    "type": "string",
+                                    "description": "Name of the system reporting the event.",
+                                    "x-ms-summary": "Reporting System"
+                                },
+                                "companyUserEmail": {
+                                    "type": "string",
+                                    "description": "Email of the company user.",
+                                    "x-ms-summary": "User Email"
+                                },
+                                "engagementTimestamp": {
+                                    "type": "string",
+                                    "description": "When the event occurred (ISO 8601).",
+                                    "x-ms-summary": "Timestamp"
+                                },
+                                "contentTitle": {
+                                    "type": "string",
+                                    "description": "Title of the related content.",
+                                    "x-ms-summary": "Content Title"
+                                },
+                                "actionName": {
+                                    "type": "string",
+                                    "description": "Name of the custom action.",
+                                    "x-ms-summary": "Action Name"
+                                },
+                                "nonCompanyParticipants": {
+                                    "type": "array",
+                                    "description": "External participants.",
+                                    "x-ms-summary": "External Participants",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "x-ms-summary": "Email"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "x-ms-summary": "Name"
+                                            }
+                                        }
+                                    }
+                                },
+                                "moreInfoUrl": {
+                                    "type": "string",
+                                    "description": "URL for more information.",
+                                    "x-ms-summary": "More Info URL",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "workspaceId": {
+                                    "type": "string",
+                                    "description": "Workspace ID.",
+                                    "x-ms-summary": "Workspace ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event recorded",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/logs": {
+            "get": {
+                "operationId": "ListLogs",
+                "summary": "List Logs",
+                "description": "Retrieve audit logs from Gong.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "logType",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The type of log to retrieve.",
+                        "x-ms-summary": "Log Type",
+                        "enum": [
+                            "AccessLog",
+                            "UserActivityLog",
+                            "UserCallPlay",
+                            "ExternallySharedCallAccess",
+                            "ExternallySharedCallPlay"
+                        ]
+                    },
+                    {
+                        "name": "fromDateTime",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Start date and time (ISO 8601).",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDateTime",
+                        "in": "query",
+                        "type": "string",
+                        "description": "End date and time (ISO 8601).",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Cursor for pagination.",
+                        "x-ms-summary": "Cursor",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Audit logs",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "logs": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string"
+                                            },
+                                            "userEmailAddress": {
+                                                "type": "string"
+                                            },
+                                            "userFullName": {
+                                                "type": "string"
+                                            },
+                                            "impersonatorUserId": {
+                                                "type": "string"
+                                            },
+                                            "impersonatorEmailAddress": {
+                                                "type": "string"
+                                            },
+                                            "impersonatorCompanyId": {
+                                                "type": "string"
+                                            },
+                                            "impersonatorFullName": {
+                                                "type": "string"
+                                            },
+                                            "eventTime": {
+                                                "type": "string"
+                                            },
+                                            "ipAddress": {
+                                                "type": "string"
+                                            },
+                                            "logRecord": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "field": {
+                                                        "type": "string"
+                                                    },
+                                                    "oldValue": {
+                                                        "type": "string"
+                                                    },
+                                                    "newValue": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/all-permission-profiles": {
+            "get": {
+                "operationId": "ListPermissionProfiles",
+                "summary": "List Permission Profiles",
+                "description": "Retrieve all permission profiles for a workspace.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission profiles",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "permissionProfiles": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "permissionProfileId": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/permission-profile": {
+            "post": {
+                "operationId": "CreatePermissionProfile",
+                "summary": "Create Permission Profile",
+                "description": "Create a new permission profile.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PermissionProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "permissionProfileId": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "operationId": "GetPermissionProfile",
+                "summary": "Get Permission Profile",
+                "description": "Retrieve a specific permission profile.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "permissionProfileId",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The permission profile ID.",
+                        "x-ms-summary": "Profile ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permission profile",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "permissionProfile": {
+                                    "$ref": "#/definitions/PermissionProfile"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdatePermissionProfile",
+                "summary": "Update Permission Profile",
+                "description": "Update an existing permission profile.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PermissionProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile updated",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/permission-profile/users": {
+            "get": {
+                "operationId": "ListPermissionProfileUsers",
+                "summary": "List Permission Profile Users",
+                "description": "Retrieve users assigned to a specific permission profile.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "permissionProfileId",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "The permission profile ID.",
+                        "x-ms-summary": "Profile ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile users",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "users": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "userId": {
+                                                "type": "string"
+                                            },
+                                            "emailAddress": {
+                                                "type": "string"
+                                            },
+                                            "firstName": {
+                                                "type": "string"
+                                            },
+                                            "lastName": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/flows": {
+            "get": {
+                "operationId": "ListFlows",
+                "summary": "List Flows",
+                "description": "Retrieve Engage flows for a user (Alpha).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "flowOwnerEmail",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "description": "Email of the flow owner.",
+                        "x-ms-summary": "Flow Owner Email"
+                    },
+                    {
+                        "name": "workspaceId",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Workspace ID.",
+                        "x-ms-summary": "Workspace ID",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Cursor for pagination.",
+                        "x-ms-summary": "Cursor",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of flows",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "records": {
+                                    "$ref": "#/definitions/Records"
+                                },
+                                "flows": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "ownerEmail": {
+                                                "type": "string"
+                                            },
+                                            "status": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/flows/prospects": {
+            "post": {
+                "operationId": "GetFlowsForProspects",
+                "summary": "Get Flows for Prospects",
+                "description": "Retrieve flows associated with specific prospects (Alpha).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "prospectsCrmIds"
+                            ],
+                            "properties": {
+                                "prospectsCrmIds": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": "CRM IDs of the prospects.",
+                                    "x-ms-summary": "Prospect CRM IDs"
+                                },
+                                "gongFlowId": {
+                                    "type": "string",
+                                    "description": "Optional flow ID to filter.",
+                                    "x-ms-summary": "Flow ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Flows for prospects",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "requestId": {
+                                    "type": "string"
+                                },
+                                "prospects": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "prospectCrmId": {
+                                                "type": "string"
+                                            },
+                                            "flows": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "flowId": {
+                                                            "type": "string"
+                                                        },
+                                                        "flowName": {
+                                                            "type": "string"
+                                                        },
+                                                        "status": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/flows/prospects/assign": {
+            "post": {
+                "operationId": "AssignFlowToProspects",
+                "summary": "Assign Flow to Prospects",
+                "description": "Assign prospects to an Engage flow (Alpha).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "prospectsCrmIds",
+                                "gongFlowId",
+                                "assignToEmail"
+                            ],
+                            "properties": {
+                                "prospectsCrmIds": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": "CRM IDs of the prospects.",
+                                    "x-ms-summary": "Prospect CRM IDs"
+                                },
+                                "gongFlowId": {
+                                    "type": "string",
+                                    "description": "The flow ID to assign.",
+                                    "x-ms-summary": "Flow ID"
+                                },
+                                "assignToEmail": {
+                                    "type": "string",
+                                    "description": "Email of the user to assign the flow to.",
+                                    "x-ms-summary": "Assign To Email"
+                                },
+                                "crmIntegrationId": {
+                                    "type": "integer",
+                                    "format": "int64",
+                                    "description": "CRM integration ID.",
+                                    "x-ms-summary": "CRM Integration ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Flow assigned",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/digital-interaction": {
+            "post": {
+                "operationId": "AddDigitalInteraction",
+                "summary": "Add Digital Interaction",
+                "description": "Upload digital interaction events to Gong (Alpha).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "sourceSystemName",
+                                "events"
+                            ],
+                            "properties": {
+                                "sourceSystemName": {
+                                    "type": "string",
+                                    "description": "Name of the source system.",
+                                    "x-ms-summary": "Source System"
+                                },
+                                "events": {
+                                    "type": "array",
+                                    "description": "Digital interaction events.",
+                                    "x-ms-summary": "Events",
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "companyUserEmail",
+                                            "timestamp",
+                                            "eventType"
+                                        ],
+                                        "properties": {
+                                            "companyUserEmail": {
+                                                "type": "string",
+                                                "description": "Email of the company user.",
+                                                "x-ms-summary": "User Email"
+                                            },
+                                            "timestamp": {
+                                                "type": "string",
+                                                "description": "When the event occurred (ISO 8601).",
+                                                "x-ms-summary": "Timestamp"
+                                            },
+                                            "eventType": {
+                                                "type": "string",
+                                                "description": "Type of digital interaction event.",
+                                                "x-ms-summary": "Event Type"
+                                            },
+                                            "sessionId": {
+                                                "type": "string",
+                                                "description": "Session identifier.",
+                                                "x-ms-summary": "Session ID",
+                                                "x-ms-visibility": "advanced"
+                                            },
+                                            "nonCompanyParticipants": {
+                                                "type": "array",
+                                                "description": "External participants.",
+                                                "x-ms-summary": "External Participants",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "email": {
+                                                            "type": "string",
+                                                            "x-ms-summary": "Email"
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "x-ms-summary": "Name"
+                                                        },
+                                                        "title": {
+                                                            "type": "string",
+                                                            "x-ms-summary": "Title"
+                                                        },
+                                                        "companyName": {
+                                                            "type": "string",
+                                                            "x-ms-summary": "Company"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "content": {
+                                                "type": "object",
+                                                "description": "Content details.",
+                                                "x-ms-summary": "Content",
+                                                "x-ms-visibility": "advanced",
+                                                "properties": {
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "url": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Interaction recorded",
+                        "schema": {
+                            "$ref": "#/definitions/BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Gong MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Gong API operations as MCP tools.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "BaseResponse": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string",
+                    "description": "Unique request identifier."
+                }
+            }
+        },
+        "Records": {
+            "type": "object",
+            "properties": {
+                "totalRecords": {
+                    "type": "integer",
+                    "description": "Total number of records matching the filter."
+                },
+                "currentPageSize": {
+                    "type": "integer",
+                    "description": "Number of records in the current page."
+                },
+                "currentPageNumber": {
+                    "type": "integer",
+                    "description": "Current page number."
+                },
+                "cursor": {
+                    "type": "string",
+                    "description": "Cursor to retrieve the next page of results."
+                }
+            }
+        },
+        "CallsResponse": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string",
+                    "description": "Unique request identifier."
+                },
+                "records": {
+                    "$ref": "#/definitions/Records"
+                },
+                "calls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CallBasic"
+                    }
+                }
+            }
+        },
+        "CallBasic": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique call identifier."
+                },
+                "url": {
+                    "type": "string",
+                    "description": "URL to the call in Gong."
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Call title."
+                },
+                "scheduled": {
+                    "type": "string",
+                    "description": "Scheduled start time."
+                },
+                "started": {
+                    "type": "string",
+                    "description": "Actual start time."
+                },
+                "duration": {
+                    "type": "integer",
+                    "description": "Call duration in seconds."
+                },
+                "primaryUserId": {
+                    "type": "string",
+                    "description": "Primary user (host) ID."
+                },
+                "direction": {
+                    "type": "string",
+                    "description": "Call direction (Inbound, Outbound, Conference)."
+                },
+                "system": {
+                    "type": "string",
+                    "description": "System that captured the call."
+                },
+                "scope": {
+                    "type": "string",
+                    "description": "Call scope (Internal, External)."
+                },
+                "media": {
+                    "type": "string",
+                    "description": "Media type (Video, Audio)."
+                },
+                "language": {
+                    "type": "string",
+                    "description": "Language of the call."
+                },
+                "workspaceId": {
+                    "type": "string",
+                    "description": "Workspace the call belongs to."
+                },
+                "isPrivate": {
+                    "type": "boolean",
+                    "description": "Whether the call is private."
+                }
+            }
+        },
+        "CallsExtensiveResponse": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string",
+                    "description": "Unique request identifier."
+                },
+                "records": {
+                    "$ref": "#/definitions/Records"
+                },
+                "calls": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "metaData": {
+                                "$ref": "#/definitions/CallBasic"
+                            },
+                            "parties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "emailAddress": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "title": {
+                                            "type": "string"
+                                        },
+                                        "userId": {
+                                            "type": "string"
+                                        },
+                                        "speakerId": {
+                                            "type": "string"
+                                        },
+                                        "affiliation": {
+                                            "type": "string",
+                                            "description": "Internal or External."
+                                        }
+                                    }
+                                }
+                            },
+                            "content": {
+                                "type": "object",
+                                "properties": {
+                                    "topics": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "duration": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "trackers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "count": {
+                                                    "type": "integer"
+                                                },
+                                                "type": {
+                                                    "type": "string"
+                                                },
+                                                "occurrences": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "startTime": {
+                                                                "type": "number"
+                                                            },
+                                                            "speakerId": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "brief": {
+                                        "type": "string",
+                                        "description": "AI-generated brief summary."
+                                    },
+                                    "outline": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "section": {
+                                                    "type": "string"
+                                                },
+                                                "startTime": {
+                                                    "type": "number"
+                                                },
+                                                "duration": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "highlights": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "title": {
+                                                    "type": "string"
+                                                },
+                                                "items": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "text": {
+                                                                "type": "string"
+                                                            },
+                                                            "startTime": {
+                                                                "type": "number"
+                                                            },
+                                                            "speakerId": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "callOutcome": {
+                                        "type": "string"
+                                    },
+                                    "keyPoints": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "interaction": {
+                                "type": "object",
+                                "properties": {
+                                    "interactivity": {
+                                        "type": "number"
+                                    },
+                                    "talkRatio": {
+                                        "type": "number"
+                                    },
+                                    "longestMonologue": {
+                                        "type": "number"
+                                    },
+                                    "patience": {
+                                        "type": "number"
+                                    },
+                                    "questionRate": {
+                                        "type": "number"
+                                    }
+                                }
+                            },
+                            "collaboration": {
+                                "type": "object",
+                                "properties": {
+                                    "publicComments": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "audioStartTime": {
+                                                    "type": "number"
+                                                },
+                                                "commenterUserId": {
+                                                    "type": "string"
+                                                },
+                                                "comment": {
+                                                    "type": "string"
+                                                },
+                                                "during": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "media": {
+                                "type": "object",
+                                "properties": {
+                                    "audioUrl": {
+                                        "type": "string"
+                                    },
+                                    "videoUrl": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "TranscriptsResponse": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string",
+                    "description": "Unique request identifier."
+                },
+                "records": {
+                    "$ref": "#/definitions/Records"
+                },
+                "callTranscripts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "callId": {
+                                "type": "string",
+                                "description": "Call identifier."
+                            },
+                            "transcript": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "speakerId": {
+                                            "type": "string",
+                                            "description": "Speaker identifier."
+                                        },
+                                        "topic": {
+                                            "type": "string",
+                                            "description": "Topic of this segment."
+                                        },
+                                        "sentences": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "start": {
+                                                        "type": "number",
+                                                        "description": "Start time in seconds."
+                                                    },
+                                                    "end": {
+                                                        "type": "number",
+                                                        "description": "End time in seconds."
+                                                    },
+                                                    "text": {
+                                                        "type": "string",
+                                                        "description": "Transcript text."
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "UsersResponse": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string",
+                    "description": "Unique request identifier."
+                },
+                "records": {
+                    "$ref": "#/definitions/Records"
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UserBasic"
+                    }
+                }
+            }
+        },
+        "UserBasic": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "User identifier."
+                },
+                "emailAddress": {
+                    "type": "string",
+                    "description": "User email address."
+                },
+                "created": {
+                    "type": "string",
+                    "description": "When the user was created."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Whether the user is active."
+                },
+                "firstName": {
+                    "type": "string",
+                    "description": "User first name."
+                },
+                "lastName": {
+                    "type": "string",
+                    "description": "User last name."
+                },
+                "title": {
+                    "type": "string",
+                    "description": "User title/role."
+                },
+                "phoneNumber": {
+                    "type": "string",
+                    "description": "User phone number."
+                },
+                "extension": {
+                    "type": "string",
+                    "description": "Phone extension."
+                },
+                "settings": {
+                    "type": "object",
+                    "properties": {
+                        "webConferencesRecorded": {
+                            "type": "boolean"
+                        },
+                        "preventWebConferenceRecording": {
+                            "type": "boolean"
+                        },
+                        "telephonyCallsImported": {
+                            "type": "boolean"
+                        },
+                        "emailsImported": {
+                            "type": "boolean"
+                        },
+                        "nonRecordedMeetingsImported": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "managerId": {
+                    "type": "string",
+                    "description": "Manager user ID."
+                },
+                "meetingConsentPageUrl": {
+                    "type": "string",
+                    "description": "URL for meeting consent page."
+                },
+                "spokenLanguages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "language": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "UsersExtensiveResponse": {
+            "type": "object",
+            "properties": {
+                "requestId": {
+                    "type": "string"
+                },
+                "records": {
+                    "$ref": "#/definitions/Records"
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UserBasic"
+                    }
+                }
+            }
+        },
+        "PermissionProfile": {
+            "type": "object",
+            "properties": {
+                "permissionProfileId": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "callsAccessLevel": {
+                    "type": "string",
+                    "description": "Level of access to calls."
+                },
+                "libraryFolderAccess": {
+                    "type": "string",
+                    "description": "Level of access to library folders."
+                },
+                "canViewPrivateCalls": {
+                    "type": "boolean"
+                },
+                "canEditCallDetails": {
+                    "type": "boolean"
+                },
+                "canDeleteCalls": {
+                    "type": "boolean"
+                },
+                "canShareCallsExternally": {
+                    "type": "boolean"
+                },
+                "canShareCallsInternally": {
+                    "type": "boolean"
+                },
+                "canCreateLibraryFolders": {
+                    "type": "boolean"
+                },
+                "canManageTeamMembers": {
+                    "type": "boolean"
+                },
+                "canViewScorecards": {
+                    "type": "boolean"
+                },
+                "canScoreCalls": {
+                    "type": "boolean"
+                },
+                "canViewDealBoard": {
+                    "type": "boolean"
+                },
+                "canViewForecasting": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "PermissionProfileRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "workspaceId"
+            ],
+            "properties": {
+                "permissionProfileId": {
+                    "type": "string",
+                    "description": "Profile ID (required for update).",
+                    "x-ms-summary": "Profile ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Profile name.",
+                    "x-ms-summary": "Name"
+                },
+                "workspaceId": {
+                    "type": "string",
+                    "description": "Workspace ID.",
+                    "x-ms-summary": "Workspace ID"
+                },
+                "callsAccessLevel": {
+                    "type": "string",
+                    "description": "Level of access to calls.",
+                    "x-ms-summary": "Calls Access Level",
+                    "x-ms-visibility": "advanced"
+                },
+                "libraryFolderAccess": {
+                    "type": "string",
+                    "description": "Level of access to library folders.",
+                    "x-ms-summary": "Library Access",
+                    "x-ms-visibility": "advanced"
+                },
+                "canViewPrivateCalls": {
+                    "type": "boolean",
+                    "description": "Can view private calls.",
+                    "x-ms-summary": "View Private Calls",
+                    "x-ms-visibility": "advanced"
+                },
+                "canEditCallDetails": {
+                    "type": "boolean",
+                    "description": "Can edit call details.",
+                    "x-ms-summary": "Edit Call Details",
+                    "x-ms-visibility": "advanced"
+                },
+                "canDeleteCalls": {
+                    "type": "boolean",
+                    "description": "Can delete calls.",
+                    "x-ms-summary": "Delete Calls",
+                    "x-ms-visibility": "advanced"
+                },
+                "canShareCallsExternally": {
+                    "type": "boolean",
+                    "description": "Can share calls externally.",
+                    "x-ms-summary": "Share Externally",
+                    "x-ms-visibility": "advanced"
+                },
+                "canShareCallsInternally": {
+                    "type": "boolean",
+                    "description": "Can share calls internally.",
+                    "x-ms-summary": "Share Internally",
+                    "x-ms-visibility": "advanced"
+                },
+                "canCreateLibraryFolders": {
+                    "type": "boolean",
+                    "description": "Can create library folders.",
+                    "x-ms-summary": "Create Folders",
+                    "x-ms-visibility": "advanced"
+                },
+                "canManageTeamMembers": {
+                    "type": "boolean",
+                    "description": "Can manage team members.",
+                    "x-ms-summary": "Manage Team",
+                    "x-ms-visibility": "advanced"
+                },
+                "canViewScorecards": {
+                    "type": "boolean",
+                    "description": "Can view scorecards.",
+                    "x-ms-summary": "View Scorecards",
+                    "x-ms-visibility": "advanced"
+                },
+                "canScoreCalls": {
+                    "type": "boolean",
+                    "description": "Can score calls.",
+                    "x-ms-summary": "Score Calls",
+                    "x-ms-visibility": "advanced"
+                },
+                "canViewDealBoard": {
+                    "type": "boolean",
+                    "description": "Can view deal board.",
+                    "x-ms-summary": "View Deal Board",
+                    "x-ms-visibility": "advanced"
+                },
+                "canViewForecasting": {
+                    "type": "boolean",
+                    "description": "Can view forecasting.",
+                    "x-ms-summary": "View Forecasting",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://app.gong.io/oauth2/authorize",
+            "tokenUrl": "https://app.gong.io/oauth2/generate-customer-token",
+            "scopes": {
+                "api:calls:read:basic": "Read basic call data",
+                "api:calls:read:extensive": "Read extensive call data",
+                "api:calls:read:media-url": "Read call media URLs",
+                "api:calls:read:transcript": "Read call transcripts",
+                "api:calls:create": "Create calls and upload recordings",
+                "api:users:read": "Read user data",
+                "api:stats:scorecards": "Read scorecard stats",
+                "api:stats:interaction": "Read interaction stats",
+                "api:stats:user-actions": "Read user activity stats",
+                "api:stats:user-actions:detailed": "Read detailed user activity stats",
+                "api:settings:scorecards:read": "Read scorecard settings",
+                "api:workspaces:read": "Read workspaces",
+                "api:library:read": "Read library content",
+                "api:meetings:user:create": "Create meetings",
+                "api:meetings:user:update": "Update meetings",
+                "api:meetings:user:delete": "Delete meetings",
+                "api:data-privacy:read": "Read data privacy info",
+                "api:data-privacy:delete": "Delete data for privacy",
+                "api:data-privacy:write": "Write data privacy operations",
+                "api:crm:upload": "Upload CRM data",
+                "api:crm:get-objects": "Get CRM objects",
+                "api:crm:integration:register": "Register CRM integrations",
+                "api:crm:integration:delete": "Delete CRM integrations",
+                "api:crm:schema": "Manage CRM entity schemas",
+                "api:logs:read": "Read audit logs",
+                "api:call-user-access:write": "Manage user access to calls",
+                "api:flows:read": "Read Engage flows",
+                "api:flows:write": "Manage Engage flows",
+                "api:digital-interactions:write": "Write digital interactions",
+                "api:engagement-data:write": "Write engagement data"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Calls",
+            "description": "Operations related to calls"
+        },
+        {
+            "name": "Users",
+            "description": "Operations related to users"
+        },
+        {
+            "name": "Stats",
+            "description": "Operations related to statistics"
+        },
+        {
+            "name": "Settings",
+            "description": "Operations related to settings"
+        },
+        {
+            "name": "Library",
+            "description": "Operations related to the content library"
+        },
+        {
+            "name": "Meetings",
+            "description": "Operations related to meetings (Beta)"
+        },
+        {
+            "name": "Data Privacy",
+            "description": "Operations related to data privacy"
+        },
+        {
+            "name": "CRM",
+            "description": "Operations related to CRM data"
+        },
+        {
+            "name": "Engagement",
+            "description": "Operations related to customer engagement (Beta)"
+        },
+        {
+            "name": "Auditing",
+            "description": "Operations related to audit logs"
+        },
+        {
+            "name": "Permissions",
+            "description": "Operations related to permission profiles"
+        },
+        {
+            "name": "Flows",
+            "description": "Operations related to Engage flows (Alpha)"
+        },
+        {
+            "name": "Digital Interactions",
+            "description": "Operations related to digital interactions (Alpha)"
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Sales and CRM"
+        },
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.gong.io"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.gong.io/privacy-policy/"
+        }
+    ]
+}
