@@ -360,7 +360,107 @@ public class Script : ScriptBase
                         ["items"] = new JObject { ["type"] = "object" }
                     }
                 },
-                new[] { "requests" })
+                new[] { "requests" }),
+
+            // Knowledge Tools
+            CreateTool("list_knowledge_articles", "List Knowledge articles visible to the current user. Supports search and pagination.",
+                new JObject
+                {
+                    ["q"] = new JObject { ["type"] = "string", ["description"] = "Search term for articles (optional)" },
+                    ["channel"] = new JObject { ["type"] = "string", ["description"] = "Channel context: App, Pkb, Csp, Prm (optional)" },
+                    ["page_size"] = new JObject { ["type"] = "integer", ["description"] = "Number of articles per page, max 100 (optional)" }
+                },
+                Array.Empty<string>()),
+
+            CreateTool("get_knowledge_article", "Get the full content and metadata of a Knowledge article by ID.",
+                new JObject
+                {
+                    ["article_id"] = new JObject { ["type"] = "string", ["description"] = "Knowledge Article ID" },
+                    ["channel"] = new JObject { ["type"] = "string", ["description"] = "Channel context: App, Pkb, Csp, Prm (optional)" }
+                },
+                new[] { "article_id" }),
+
+            CreateTool("create_knowledge_article", "Create a new Knowledge article draft.",
+                new JObject
+                {
+                    ["article_type"] = new JObject { ["type"] = "string", ["description"] = "API name of the article type (e.g., FAQ__kav, Knowledge__kav)" },
+                    ["title"] = new JObject { ["type"] = "string", ["description"] = "Article title" },
+                    ["url_name"] = new JObject { ["type"] = "string", ["description"] = "URL-friendly name for the article" },
+                    ["fields"] = new JObject { ["type"] = "object", ["description"] = "Additional article fields as key-value pairs (optional)" }
+                },
+                new[] { "article_type", "title", "url_name" }),
+
+            CreateTool("update_knowledge_article", "Update a Knowledge article. Can update title, fields, or manage lifecycle.",
+                new JObject
+                {
+                    ["article_id"] = new JObject { ["type"] = "string", ["description"] = "Knowledge Article ID" },
+                    ["title"] = new JObject { ["type"] = "string", ["description"] = "New article title (optional)" },
+                    ["fields"] = new JObject { ["type"] = "object", ["description"] = "Article fields to update (optional)" }
+                },
+                new[] { "article_id" }),
+
+            CreateTool("delete_knowledge_article", "Delete a Knowledge article.",
+                new JObject
+                {
+                    ["article_id"] = new JObject { ["type"] = "string", ["description"] = "Knowledge Article ID" }
+                },
+                new[] { "article_id" }),
+
+            // Search Suggestion Tools
+            CreateTool("search_suggestions", "Get search query suggestions based on what other users have searched in Knowledge. Synonym-aware.",
+                new JObject
+                {
+                    ["q"] = new JObject { ["type"] = "string", ["description"] = "Search query string (minimum 3 characters)" },
+                    ["language"] = new JObject { ["type"] = "string", ["description"] = "Language code (e.g., en_US)" },
+                    ["channel"] = new JObject { ["type"] = "string", ["description"] = "Channel context: AllChannels, App, Pkb, Csp, Prm (optional)" }
+                },
+                new[] { "q", "language" }),
+
+            CreateTool("suggest_article_titles", "Get Knowledge article titles matching a search query.",
+                new JObject
+                {
+                    ["q"] = new JObject { ["type"] = "string", ["description"] = "Search query string" },
+                    ["language"] = new JObject { ["type"] = "string", ["description"] = "Article language (e.g., en_US)" },
+                    ["publish_status"] = new JObject { ["type"] = "string", ["description"] = "Article status: Draft, Online, or Archived" },
+                    ["article_type"] = new JObject { ["type"] = "string", ["description"] = "Article type API name to filter by (optional)" }
+                },
+                new[] { "q", "language", "publish_status" }),
+
+            // Synonym Tools
+            CreateTool("list_synonym_groups", "List all search synonym groups in the org.",
+                new JObject(),
+                Array.Empty<string>()),
+
+            CreateTool("get_synonym_group", "Get details of a specific synonym group by ID.",
+                new JObject
+                {
+                    ["id"] = new JObject { ["type"] = "string", ["description"] = "Synonym Group ID" }
+                },
+                new[] { "id" }),
+
+            CreateTool("create_synonym_group", "Create a new search synonym group.",
+                new JObject
+                {
+                    ["group_name"] = new JObject { ["type"] = "string", ["description"] = "Name of the synonym group" },
+                    ["synonyms"] = new JObject { ["type"] = "string", ["description"] = "Comma-separated list of synonym terms (e.g., 'CRM, customer relationship management')" }
+                },
+                new[] { "group_name", "synonyms" }),
+
+            CreateTool("update_synonym_group", "Update an existing synonym group.",
+                new JObject
+                {
+                    ["id"] = new JObject { ["type"] = "string", ["description"] = "Synonym Group ID" },
+                    ["group_name"] = new JObject { ["type"] = "string", ["description"] = "New group name (optional)" },
+                    ["synonyms"] = new JObject { ["type"] = "string", ["description"] = "Updated comma-separated synonym terms (optional)" }
+                },
+                new[] { "id" }),
+
+            CreateTool("delete_synonym_group", "Delete a search synonym group.",
+                new JObject
+                {
+                    ["id"] = new JObject { ["type"] = "string", ["description"] = "Synonym Group ID" }
+                },
+                new[] { "id" })
         };
 
         return CreateJsonRpcSuccessResponse(requestId, new JObject { ["tools"] = tools });
@@ -771,6 +871,81 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
                     ["compositeRequest"] = requests
                 };
                 return await CallSalesforceApi("POST", "/composite", compositeBody);
+
+            // Knowledge
+            case "list_knowledge_articles":
+                var kaPath = "/support/knowledgeArticles";
+                var kaParams = new List<string>();
+                if (!string.IsNullOrEmpty(args["q"]?.ToString())) kaParams.Add($"q={Uri.EscapeDataString(args["q"].ToString())}");
+                if (!string.IsNullOrEmpty(args["channel"]?.ToString())) kaParams.Add($"channel={args["channel"]}");
+                if (args["page_size"] != null) kaParams.Add($"pageSize={args["page_size"]}");
+                if (kaParams.Count > 0) kaPath += "?" + string.Join("&", kaParams);
+                return await CallSalesforceApi("GET", kaPath);
+
+            case "get_knowledge_article":
+                var gaPath = $"/support/knowledgeArticles/{args["article_id"]}";
+                if (!string.IsNullOrEmpty(args["channel"]?.ToString())) gaPath += $"?channel={args["channel"]}";
+                return await CallSalesforceApi("GET", gaPath);
+
+            case "create_knowledge_article":
+                var createArticleBody = new JObject
+                {
+                    ["articleTypeApiName"] = args["article_type"]?.ToString(),
+                    ["title"] = args["title"]?.ToString(),
+                    ["urlName"] = args["url_name"]?.ToString()
+                };
+                if (args["fields"] is JObject articleFields && articleFields.HasValues)
+                    createArticleBody["fields"] = articleFields;
+                return await CallSalesforceApi("POST", "/knowledgeManagement/articles", createArticleBody);
+
+            case "update_knowledge_article":
+                var updateArticleBody = new JObject();
+                if (!string.IsNullOrEmpty(args["title"]?.ToString())) updateArticleBody["title"] = args["title"];
+                if (args["fields"] is JObject updateFields && updateFields.HasValues)
+                    updateArticleBody["fields"] = updateFields;
+                await CallSalesforceApi("PATCH", $"/knowledgeManagement/articles/{args["article_id"]}", updateArticleBody);
+                return new JObject { ["success"] = true, ["id"] = args["article_id"] };
+
+            case "delete_knowledge_article":
+                await CallSalesforceApi("DELETE", $"/knowledgeManagement/articles/{args["article_id"]}");
+                return new JObject { ["success"] = true, ["deleted"] = args["article_id"] };
+
+            // Search Suggestions
+            case "search_suggestions":
+                var ssParams = $"q={Uri.EscapeDataString(args["q"].ToString())}&language={args["language"]}";
+                if (!string.IsNullOrEmpty(args["channel"]?.ToString())) ssParams += $"&channel={args["channel"]}";
+                return await CallSalesforceApi("GET", $"/search/suggestSearchQueries?{ssParams}");
+
+            case "suggest_article_titles":
+                var stParams = $"q={Uri.EscapeDataString(args["q"].ToString())}&language={args["language"]}&publishStatus={args["publish_status"]}";
+                if (!string.IsNullOrEmpty(args["article_type"]?.ToString())) stParams += $"&articleType={args["article_type"]}";
+                return await CallSalesforceApi("GET", $"/search/suggestTitleMatches?{stParams}");
+
+            // Synonyms (Tooling API)
+            case "list_synonym_groups":
+                return await CallSalesforceApi("GET", "/tooling/query?q=" + Uri.EscapeDataString("SELECT Id, GroupName, Synonyms FROM SearchSynonymGroup ORDER BY GroupName"));
+
+            case "get_synonym_group":
+                return await CallSalesforceApi("GET", $"/tooling/sobjects/SearchSynonymGroup/{args["id"]}");
+
+            case "create_synonym_group":
+                var createSynBody = new JObject
+                {
+                    ["GroupName"] = args["group_name"]?.ToString(),
+                    ["Synonyms"] = args["synonyms"]?.ToString()
+                };
+                return await CallSalesforceApi("POST", "/tooling/sobjects/SearchSynonymGroup", createSynBody);
+
+            case "update_synonym_group":
+                var updateSynBody = new JObject();
+                if (!string.IsNullOrEmpty(args["group_name"]?.ToString())) updateSynBody["GroupName"] = args["group_name"];
+                if (!string.IsNullOrEmpty(args["synonyms"]?.ToString())) updateSynBody["Synonyms"] = args["synonyms"];
+                await CallSalesforceApi("PATCH", $"/tooling/sobjects/SearchSynonymGroup/{args["id"]}", updateSynBody);
+                return new JObject { ["success"] = true, ["id"] = args["id"] };
+
+            case "delete_synonym_group":
+                await CallSalesforceApi("DELETE", $"/tooling/sobjects/SearchSynonymGroup/{args["id"]}");
+                return new JObject { ["success"] = true, ["deleted"] = args["id"] };
 
             default:
                 throw new ArgumentException($"Unknown tool: {toolName}");

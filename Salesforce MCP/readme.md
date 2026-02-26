@@ -1,9 +1,9 @@
 # Salesforce MCP Connector
 
-Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Provides full access to Core REST API (SOQL, sObject CRUD, Search), Composite API, Reports & Dashboards, and Connect/Chatter APIs.
+Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Provides full access to Core REST API (SOQL, sObject CRUD, Search), Composite API, Reports & Dashboards, Connect/Chatter APIs, Knowledge Articles, Search Suggestions, and Synonym Groups via Tooling API.
 
 **Features:**
-- **40+ operations** covering all major Salesforce REST APIs
+- **50+ operations** covering all major Salesforce REST APIs including Knowledge and Tooling
 - **Dynamic sObject Schema** - Body fields auto-populate based on selected object
 - **MCP-enabled** for Copilot Studio integration with AI agents
 - **Application Insights** telemetry for monitoring and debugging
@@ -86,7 +86,7 @@ After creating the connector, update the `apiProperties.json`:
 
 ## API Coverage
 
-This connector includes **40+ operations** across 6 Salesforce API categories:
+This connector includes **50+ operations** across 8 Salesforce API categories:
 
 ### Query API (3 operations)
 | Operation | Description |
@@ -143,6 +143,26 @@ This connector includes **40+ operations** across 6 Salesforce API categories:
 | `GetChatterGroup` | Get group details |
 | `JoinChatterGroup` | Join a group |
 | `ListTopics` | List topics |
+
+### Knowledge API (7 operations)
+| Operation | Description |
+|-----------|-------------|
+| `ListKnowledgeArticles` | List Knowledge articles with search and pagination |
+| `GetKnowledgeArticle` | Get full article content and metadata |
+| `CreateKnowledgeArticle` | Create a new Knowledge article draft |
+| `UpdateKnowledgeArticle` | Update a Knowledge article |
+| `DeleteKnowledgeArticle` | Delete a Knowledge article |
+| `SuggestSearchQueries` | Get search suggestions based on user query |
+| `SuggestArticleTitles` | Get article title matches for search query |
+
+### Synonyms API - Tooling (5 operations)
+| Operation | Description |
+|-----------|-------------|
+| `ToolingQuery` | Execute SOQL query against Tooling API |
+| `GetSynonymGroup` | Get synonym group details |
+| `CreateSynonymGroup` | Create a search synonym group |
+| `UpdateSynonymGroup` | Update a synonym group |
+| `DeleteSynonymGroup` | Delete a synonym group |
 
 ## Dynamic sObject Schema
 
@@ -324,6 +344,18 @@ This connector includes Model Context Protocol (MCP) support for integration wit
 | `post_to_chatter` | Post to Chatter |
 | `get_chatter_feed` | Get feed elements |
 | `composite` | Execute multiple operations |
+| `list_knowledge_articles` | List Knowledge articles with search and pagination |
+| `get_knowledge_article` | Get full article content by ID |
+| `create_knowledge_article` | Create a Knowledge article draft |
+| `update_knowledge_article` | Update a Knowledge article |
+| `delete_knowledge_article` | Delete a Knowledge article |
+| `search_suggestions` | Get synonym-aware search query suggestions |
+| `suggest_article_titles` | Get article title matches for search |
+| `list_synonym_groups` | List all search synonym groups |
+| `get_synonym_group` | Get synonym group details |
+| `create_synonym_group` | Create a search synonym group |
+| `update_synonym_group` | Update a synonym group |
+| `delete_synonym_group` | Delete a synonym group |
 
 ### Available MCP Resources
 
@@ -413,6 +445,8 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
 - [SOQL and SOSL Reference](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/)
 - [Chatter REST API](https://developer.salesforce.com/docs/atlas.en-us.chatterapi.meta/chatterapi/)
 - [Reports and Dashboards API](https://developer.salesforce.com/docs/atlas.en-us.api_analytics.meta/api_analytics/)
+- [Knowledge REST API](https://developer.salesforce.com/docs/atlas.en-us.knowledge_dev.meta/knowledge_dev/)
+- [Tooling API (Synonyms)](https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/)
 - [Power Platform Custom Connectors](https://docs.microsoft.com/en-us/connectors/custom-connectors/)
 
 ## License

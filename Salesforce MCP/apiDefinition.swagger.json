@@ -3,7 +3,7 @@
     "info": {
         "title": "Salesforce MCP",
         "version": "1.0.0",
-        "description": "Comprehensive Salesforce connector covering Core REST API (SOQL, sObject CRUD, Search), Composite API, Reports & Dashboards, and Connect/Chatter APIs. MCP-enabled for Copilot Studio integration with dynamic sObject schema support.",
+        "description": "Comprehensive Salesforce connector covering Core REST API (SOQL, sObject CRUD, Search), Composite API, Reports & Dashboards, Connect/Chatter APIs, Knowledge Articles, Search Suggestions, and Synonym Groups via Tooling API. MCP-enabled for Copilot Studio integration with dynamic sObject schema support.",
         "contact": {
             "name": "Troy Taylor",
             "email": "troy@troystaylor.com"
@@ -2142,6 +2142,799 @@
                 }
             }
         },
+        "/support/knowledgeArticles": {
+            "get": {
+                "operationId": "ListKnowledgeArticles",
+                "summary": "List Knowledge Articles",
+                "description": "Returns a list of Knowledge articles visible to the current user.",
+                "tags": [
+                    "Knowledge"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Search term for articles",
+                        "x-ms-summary": "Search"
+                    },
+                    {
+                        "name": "channel",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "App",
+                            "Pkb",
+                            "Csp",
+                            "Prm"
+                        ],
+                        "description": "Channel context (App, Pkb, Csp, Prm)",
+                        "x-ms-summary": "Channel"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of articles per page (max 100)",
+                        "x-ms-summary": "Page Size"
+                    },
+                    {
+                        "name": "pageNumber",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Page number to retrieve",
+                        "x-ms-summary": "Page Number"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "articles": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "articleNumber": {
+                                                "type": "string"
+                                            },
+                                            "title": {
+                                                "type": "string"
+                                            },
+                                            "urlName": {
+                                                "type": "string"
+                                            },
+                                            "summary": {
+                                                "type": "string"
+                                            },
+                                            "articleType": {
+                                                "type": "string"
+                                            },
+                                            "lastPublishedDate": {
+                                                "type": "string"
+                                            },
+                                            "url": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "currentPageUrl": {
+                                    "type": "string"
+                                },
+                                "nextPageUrl": {
+                                    "type": "string"
+                                },
+                                "pageNumber": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/support/knowledgeArticles/{articleId}": {
+            "get": {
+                "operationId": "GetKnowledgeArticle",
+                "summary": "Get Knowledge Article",
+                "description": "Returns the full content and metadata of a Knowledge article.",
+                "tags": [
+                    "Knowledge"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "articleId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Knowledge Article ID",
+                        "x-ms-summary": "Article ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "channel",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "App",
+                            "Pkb",
+                            "Csp",
+                            "Prm"
+                        ],
+                        "description": "Channel context",
+                        "x-ms-summary": "Channel"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "articleNumber": {
+                                    "type": "string"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "urlName": {
+                                    "type": "string"
+                                },
+                                "summary": {
+                                    "type": "string"
+                                },
+                                "articleType": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": "string"
+                                },
+                                "lastPublishedDate": {
+                                    "type": "string"
+                                },
+                                "url": {
+                                    "type": "string"
+                                },
+                                "layoutItems": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "label": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string"
+                                            },
+                                            "value": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    }
+                }
+            }
+        },
+        "/knowledgeManagement/articles": {
+            "post": {
+                "operationId": "CreateKnowledgeArticle",
+                "summary": "Create Knowledge Article",
+                "description": "Creates a new Knowledge article draft.",
+                "tags": [
+                    "Knowledge"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "articleTypeApiName",
+                                "title",
+                                "urlName"
+                            ],
+                            "properties": {
+                                "articleTypeApiName": {
+                                    "type": "string",
+                                    "description": "API name of the article type (e.g., FAQ__kav, Knowledge__kav)",
+                                    "x-ms-summary": "Article Type"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Article title",
+                                    "x-ms-summary": "Title"
+                                },
+                                "urlName": {
+                                    "type": "string",
+                                    "description": "URL-friendly name",
+                                    "x-ms-summary": "URL Name"
+                                },
+                                "fields": {
+                                    "type": "object",
+                                    "description": "Additional article fields as key-value pairs",
+                                    "x-ms-summary": "Fields"
+                                }
+                            }
+                        },
+                        "description": "Article details"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "ID of the created article"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/knowledgeManagement/articles/{knowledgeArticleId}": {
+            "patch": {
+                "operationId": "UpdateKnowledgeArticle",
+                "summary": "Update Knowledge Article",
+                "description": "Updates a Knowledge article. Can also manage article lifecycle (publish, archive, draft).",
+                "tags": [
+                    "Knowledge"
+                ],
+                "parameters": [
+                    {
+                        "name": "knowledgeArticleId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Knowledge Article ID",
+                        "x-ms-summary": "Article ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "articleTypeApiName": {
+                                    "type": "string",
+                                    "description": "API name of the article type",
+                                    "x-ms-summary": "Article Type"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Article title",
+                                    "x-ms-summary": "Title"
+                                },
+                                "fields": {
+                                    "type": "object",
+                                    "description": "Article fields to update",
+                                    "x-ms-summary": "Fields"
+                                }
+                            }
+                        },
+                        "description": "Article update payload"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - No Content"
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteKnowledgeArticle",
+                "summary": "Delete Knowledge Article",
+                "description": "Deletes a Knowledge article.",
+                "tags": [
+                    "Knowledge"
+                ],
+                "parameters": [
+                    {
+                        "name": "knowledgeArticleId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Knowledge Article ID",
+                        "x-ms-summary": "Article ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - Article deleted"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Article not found"
+                    }
+                }
+            }
+        },
+        "/search/suggestSearchQueries": {
+            "get": {
+                "operationId": "SuggestSearchQueries",
+                "summary": "Suggest Search Queries",
+                "description": "Returns suggested searches based on the user's query string, matching searches that other users have performed in Salesforce Knowledge.",
+                "tags": [
+                    "Knowledge"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Search query string (minimum 3 characters)",
+                        "x-ms-summary": "Search Query"
+                    },
+                    {
+                        "name": "language",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Language of the query (e.g., en_US)",
+                        "x-ms-summary": "Language"
+                    },
+                    {
+                        "name": "channel",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "AllChannels",
+                            "App",
+                            "Pkb",
+                            "Csp",
+                            "Prm"
+                        ],
+                        "description": "Channel context",
+                        "x-ms-summary": "Channel"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "autoSuggestResults": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "attributes": {
+                                                "type": "object"
+                                            },
+                                            "searchSuggestion": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "hasMoreResults": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid query"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/search/suggestTitleMatches": {
+            "get": {
+                "operationId": "SuggestArticleTitles",
+                "summary": "Suggest Article Title Matches",
+                "description": "Returns Knowledge article titles that match the user's search query string.",
+                "tags": [
+                    "Knowledge"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Search query string",
+                        "x-ms-summary": "Search Query"
+                    },
+                    {
+                        "name": "language",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Article language (e.g., en_US)",
+                        "x-ms-summary": "Language"
+                    },
+                    {
+                        "name": "publishStatus",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "Draft",
+                            "Online",
+                            "Archived"
+                        ],
+                        "description": "Article publication status",
+                        "x-ms-summary": "Publish Status"
+                    },
+                    {
+                        "name": "articleType",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Article type API name to filter by",
+                        "x-ms-summary": "Article Type"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "autoSuggestResults": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "attributes": {
+                                                "type": "object"
+                                            },
+                                            "Id": {
+                                                "type": "string"
+                                            },
+                                            "Title": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "hasMoreResults": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid query"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/tooling/query": {
+            "get": {
+                "operationId": "ToolingQuery",
+                "summary": "Execute Tooling API Query",
+                "description": "Executes a SOQL query against the Tooling API. Use to query synonym groups (SearchSynonymGroup) and other tooling objects.",
+                "tags": [
+                    "Synonyms"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "SOQL query for Tooling API objects (e.g., SELECT Id, GroupName FROM SearchSynonymGroup)",
+                        "x-ms-summary": "Tooling SOQL Query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Number of records returned"
+                                },
+                                "totalSize": {
+                                    "type": "integer",
+                                    "description": "Total records matching query"
+                                },
+                                "done": {
+                                    "type": "boolean"
+                                },
+                                "records": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "attributes": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "url": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "Id": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed query"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/tooling/sobjects/SearchSynonymGroup": {
+            "post": {
+                "operationId": "CreateSynonymGroup",
+                "summary": "Create Synonym Group",
+                "description": "Creates a new search synonym group in the org.",
+                "tags": [
+                    "Synonyms"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "GroupName",
+                                "Synonyms"
+                            ],
+                            "properties": {
+                                "GroupName": {
+                                    "type": "string",
+                                    "description": "Name of the synonym group",
+                                    "x-ms-summary": "Group Name"
+                                },
+                                "Synonyms": {
+                                    "type": "string",
+                                    "description": "Comma-separated list of synonym terms (e.g., 'CRM, customer relationship management, salesforce')",
+                                    "x-ms-summary": "Synonyms"
+                                }
+                            }
+                        },
+                        "description": "Synonym group details"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "ID of the created synonym group"
+                                },
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "errors": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/tooling/sobjects/SearchSynonymGroup/{synonymGroupId}": {
+            "get": {
+                "operationId": "GetSynonymGroup",
+                "summary": "Get Synonym Group",
+                "description": "Returns details of a specific synonym group.",
+                "tags": [
+                    "Synonyms"
+                ],
+                "parameters": [
+                    {
+                        "name": "synonymGroupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Synonym Group ID",
+                        "x-ms-summary": "Synonym Group ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "attributes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "url": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "Id": {
+                                    "type": "string"
+                                },
+                                "GroupName": {
+                                    "type": "string"
+                                },
+                                "Synonyms": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Synonym group not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateSynonymGroup",
+                "summary": "Update Synonym Group",
+                "description": "Updates an existing synonym group.",
+                "tags": [
+                    "Synonyms"
+                ],
+                "parameters": [
+                    {
+                        "name": "synonymGroupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Synonym Group ID",
+                        "x-ms-summary": "Synonym Group ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "GroupName": {
+                                    "type": "string",
+                                    "description": "Name of the synonym group",
+                                    "x-ms-summary": "Group Name"
+                                },
+                                "Synonyms": {
+                                    "type": "string",
+                                    "description": "Comma-separated list of synonym terms",
+                                    "x-ms-summary": "Synonyms"
+                                }
+                            }
+                        },
+                        "description": "Fields to update"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - No Content"
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Synonym group not found"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteSynonymGroup",
+                "summary": "Delete Synonym Group",
+                "description": "Deletes a synonym group.",
+                "tags": [
+                    "Synonyms"
+                ],
+                "parameters": [
+                    {
+                        "name": "synonymGroupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Synonym Group ID",
+                        "x-ms-summary": "Synonym Group ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - Synonym group deleted"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Synonym group not found"
+                    }
+                }
+            }
+        },
         "/mcp": {
             "post": {
                 "operationId": "InvokeMCP",
@@ -2181,6 +2974,14 @@
         {
             "name": "Chatter",
             "description": "Social and collaboration features"
+        },
+        {
+            "name": "Knowledge",
+            "description": "Knowledge articles and search suggestions"
+        },
+        {
+            "name": "Synonyms",
+            "description": "Search synonym group management via Tooling API"
         }
     ],
     "securityDefinitions": {
