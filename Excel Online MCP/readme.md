@@ -15,44 +15,50 @@ Microsoft Graph exposes Excel workbook operations as discrete REST endpoints. Ea
 
 ## Authentication
 
-- Identity provider: Azure Active Directory
-- Resource URL: https://graph.microsoft.com
-- Scope: Files.ReadWrite Sites.ReadWrite.All
-- On-behalf-of (delegated): Enabled
+- **Type**: OAuth 2.0 (Azure AD)
+- **Identity Provider**: Azure Active Directory (aadcertified)
+- **Resource URL**: https://graph.microsoft.com
+- **Scopes**: 
+  - Files.ReadWrite
+  - Sites.ReadWrite.All
+- **Flow**: Delegated (on-behalf-of) — User context required
+- **API Version**: v1.0 only (production stability; beta endpoints not used)
 
 ## Tools
 
-- orchestrate_core: Tier 1 enum-driven orchestration for worksheet/range operations.
-- orchestrate_data: Tier 2 enum-driven orchestration for table/data operations.
-- orchestrate_formulas: Tier 3 enum-driven orchestration for formulas/calculation.
-- orchestrate_formatting: Tier 4 enum-driven orchestration for formatting/layout.
-- orchestrate_charts: Tier 5 enum-driven orchestration for charts/visualizations.
-- orchestrate_named_items: Tier 6 enum-driven orchestration for named item operations.
-- orchestrate_advanced_features: Tier 7 enum-driven orchestration for validation/conditional format/pivot operations.
-- orchestrate_governance: Tier 8 enum-driven orchestration for workbook governance/protection operations.
-- orchestrate_bulk_operations: Tier 9 enum-driven orchestration for bulk and multi-sheet operations.
-- orchestrate_enterprise: Tier 10 enum-driven orchestration for enterprise patterns and safe wrappers.
-- orchestrate_comments: Tier 11 enum-driven orchestration for comments and annotations.
-- orchestrate_metadata: Tier 12 enum-driven orchestration for properties and metadata.
-- orchestrate_images: Tier 13 enum-driven orchestration for images and media.
-- orchestrate_functions: Tier 14 enum-driven orchestration for function reference and validation.
-- orchestrate_filtering: Tier 15 enum-driven orchestration for advanced filtering.
-- orchestrate_arrays: Tier 16 enum-driven orchestration for array formulas and dynamic ranges.
-- orchestrate_insights: Tier 17 enum-driven orchestration for workbook analysis and insights.
-- list_worksheets: List worksheets in a workbook.
-- list_tables: List workbook tables (or worksheet-specific tables).
-- get_table_rows: Retrieve table rows with optional row limit.
-- get_range: Read a range from a worksheet.
-- update_range: Write values into a range.
-- clear_range: Clear contents/formatting from a range.
-- get_used_range: Retrieve the used range in a worksheet.
-- add_table_rows: Append rows to a table.
-- create_table: Create a table from a worksheet range.
-- create_session: Create a workbook session (optional).
-- close_session: Close a workbook session.
-- discover_excel_graph: Discover Excel endpoints from Microsoft Learn.
-- invoke_excel_graph: Invoke any Graph Excel endpoint (advanced).
-- batch_invoke_excel_graph: Batch invoke up to 20 Excel endpoints.
+### Orchestration Tools (Tiers 1-17, ~150+ Excel operations via enums)
+
+Primary interface—use these for all Excel operations:
+
+- **orchestrate_core**: Worksheets, ranges, freezing
+- **orchestrate_data**: Tables, data operations  
+- **orchestrate_formulas**: Formulas, calculation
+- **orchestrate_formatting**: Number formats, fonts, fills, borders
+- **orchestrate_charts**: Charts, visualization
+- **orchestrate_named_items**: Named ranges (workbook/worksheet)
+- **orchestrate_advanced_features**: Data validation, conditional formatting, pivots
+- **orchestrate_governance**: Sessions, calculation, worksheet protection
+- **orchestrate_bulk_operations**: Multi-range, multi-sheet, batch transactions
+- **orchestrate_enterprise**: Safe invoke, batch invoke, discovery with limits, permission checks
+- **orchestrate_comments**: Cell comments, threading, replies
+- **orchestrate_metadata**: Workbook/worksheet properties
+- **orchestrate_images**: Graphics, embedded media
+- **orchestrate_functions**: Function reference, validation
+- **orchestrate_filtering**: Advanced filters, snapshots
+- **orchestrate_arrays**: Dynamic array formulas, spill ranges
+- **orchestrate_insights**: Workbook analysis, performance, audit
+
+### Discovery & Generic Invoke (Advanced usage)
+
+- **discover_excel_graph**: Discover Excel endpoints from Microsoft Learn MCP
+- **invoke_excel_graph**: Call any Graph Excel endpoint (advanced users)
+- **batch_invoke_excel_graph**: Batch invoke up to 20 Excel endpoints
+
+### Legacy Explicit Tools (Backward compatibility)
+
+- **list_worksheets**, **get_range**, **update_range**, **clear_range**, **get_used_range**
+- **list_tables**, **get_table_rows**, **add_table_rows**, **create_table**
+- **create_session**, **close_session**
 
 ## Tiered orchestration model
 
@@ -269,8 +275,8 @@ By default, tools are sessionless. To use sessions:
 
 1. Create a new custom connector in Power Platform.
 2. Import apiDefinition.swagger.json.
-3. Configure OAuth using the Entra app (delegated).
-4. Optional: Enable "Use Microsoft Graph beta" if needed.
+3. Configure OAuth 2.0 using your Entra app (delegated permissions).
+4. Verify OAuth scopes are set: Files.ReadWrite, Sites.ReadWrite.All.
 5. Test tools in Copilot Studio.
 
 ## Notes
