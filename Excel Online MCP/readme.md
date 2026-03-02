@@ -6,6 +6,8 @@ MCP-enabled connector for Excel Online (Microsoft Graph). This connector exposes
 
 Microsoft Graph exposes Excel workbook operations as discrete REST endpoints. Each MCP tool maps directly to one Graph endpoint, allowing Copilot Studio to chain tools without pre-built flows. By default, the tools run sessionless (atomic calls). Optional session support is available for performance.
 
+**Advanced discovery**: This connector includes integration with Microsoft Learn MCP to dynamically discover Excel Graph operations and guardrailed invoke/batch tools for power users.
+
 ## Prerequisites
 
 - Entra app registration with delegated permissions:
@@ -284,3 +286,4 @@ By default, tools are sessionless. To use sessions:
 - Sessionless calls persist changes immediately.
 - Use sessions for multi-step edits to improve performance.
 - Orchestration tools are powerful; prefer explicit tools when possible.
+
