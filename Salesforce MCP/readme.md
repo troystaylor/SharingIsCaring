@@ -34,6 +34,9 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
      - `Manage user data via APIs (api)`
      - `Perform requests at any time (refresh_token, offline_access)`
 4. Save and copy the **Consumer Key** and **Consumer Secret**
+5. Navigate to **Manage > OAuth Policies**:
+   - **Refresh Token Policy**: Set to **"Refresh token is valid until revoked"**
+   - **Permitted Users**: "All users may self-authorize" (or admin pre-authorized)
 
 #### Option 2: Connected App (Legacy)
 
@@ -51,6 +54,9 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
      - `Perform requests at any time (refresh_token, offline_access)`
 4. Save and wait 2-10 minutes for propagation
 5. Copy the **Consumer Key** and **Consumer Secret**
+6. Navigate to **Manage > OAuth Policies**:
+   - **Refresh Token Policy**: Set to **"Refresh token is valid until revoked"**
+   - **Permitted Users**: "All users may self-authorize" (or admin pre-authorized)
 
 ## Installation
 
@@ -145,6 +151,9 @@ This connector includes **50+ operations** across 8 Salesforce API categories:
 | `ListTopics` | List topics |
 
 ### Knowledge API (7 operations)
+
+> **Note:** The Salesforce Knowledge Support API requires an `Accept-Language` HTTP header (e.g., `en-US`). The connector script handles this automatically using the `DEFAULT_LANGUAGE` constant defined at the top of `script.csx`. Change this value if your org uses a different language.
+
 | Operation | Description |
 |-----------|-------------|
 | `ListKnowledgeArticles` | List Knowledge articles with search and pagination |
@@ -407,10 +416,12 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
 
 ### Common Issues
 
-1. **401 Unauthorized**
+1. **401 Unauthorized / INVALID_SESSION_ID**
    - Verify Consumer Key and Secret are correct
    - Ensure user has API access
    - Check Connected App is properly configured
+   - Ensure the connector `host` matches your Salesforce My Domain (e.g., `mycompany.my.salesforce.com`, **not** `lightning.force.com`)
+   - If you recently changed OAuth settings, **delete the existing connection and create a new one** — stale tokens are not automatically refreshed
 
 2. **403 Forbidden**
    - User lacks object/field permissions
@@ -419,7 +430,8 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
 3. **invalid_grant Error**
    - Token may have expired
    - Re-authenticate the connection
-   - Check IP restrictions on Connected App
+   - Check IP restrictions on Connected App (set to **Relax IP restrictions** or add Power Platform IPs)
+   - Verify **Refresh Token Policy** is set to "Refresh token is valid until revoked"
 
 4. **REQUEST_LIMIT_EXCEEDED**
    - Org has hit daily API limits
