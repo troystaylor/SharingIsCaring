@@ -11,6 +11,9 @@ public class Script : ScriptBase
     // Application Insights configuration - set your connection string to enable telemetry
     private const string APP_INSIGHTS_CONNECTION_STRING = "";
 
+    // Default language for Knowledge Articles and Search Suggestions API calls
+    private const string DEFAULT_LANGUAGE = "en-US";
+
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
         var correlationId = Guid.NewGuid().ToString();
@@ -880,12 +883,12 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
                 if (!string.IsNullOrEmpty(args["channel"]?.ToString())) kaParams.Add($"channel={args["channel"]}");
                 if (args["page_size"] != null) kaParams.Add($"pageSize={args["page_size"]}");
                 if (kaParams.Count > 0) kaPath += "?" + string.Join("&", kaParams);
-                return await CallSalesforceApi("GET", kaPath);
+                return await CallSalesforceApi("GET", kaPath, headers: new Dictionary<string, string> { { "Accept-Language", DEFAULT_LANGUAGE } });
 
             case "get_knowledge_article":
                 var gaPath = $"/support/knowledgeArticles/{args["article_id"]}";
                 if (!string.IsNullOrEmpty(args["channel"]?.ToString())) gaPath += $"?channel={args["channel"]}";
-                return await CallSalesforceApi("GET", gaPath);
+                return await CallSalesforceApi("GET", gaPath, headers: new Dictionary<string, string> { { "Accept-Language", DEFAULT_LANGUAGE } });
 
             case "create_knowledge_article":
                 var createArticleBody = new JObject
@@ -914,12 +917,12 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
             case "search_suggestions":
                 var ssParams = $"q={Uri.EscapeDataString(args["q"].ToString())}&language={args["language"]}";
                 if (!string.IsNullOrEmpty(args["channel"]?.ToString())) ssParams += $"&channel={args["channel"]}";
-                return await CallSalesforceApi("GET", $"/search/suggestSearchQueries?{ssParams}");
+                return await CallSalesforceApi("GET", $"/search/suggestSearchQueries?{ssParams}", headers: new Dictionary<string, string> { { "Accept-Language", args["language"]?.ToString() ?? DEFAULT_LANGUAGE } });
 
             case "suggest_article_titles":
                 var stParams = $"q={Uri.EscapeDataString(args["q"].ToString())}&language={args["language"]}&publishStatus={args["publish_status"]}";
                 if (!string.IsNullOrEmpty(args["article_type"]?.ToString())) stParams += $"&articleType={args["article_type"]}";
-                return await CallSalesforceApi("GET", $"/search/suggestTitleMatches?{stParams}");
+                return await CallSalesforceApi("GET", $"/search/suggestTitleMatches?{stParams}", headers: new Dictionary<string, string> { { "Accept-Language", args["language"]?.ToString() ?? DEFAULT_LANGUAGE } });
 
             // Synonyms (Tooling API)
             case "list_synonym_groups":
@@ -952,7 +955,7 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
         }
     }
 
-    private async Task<JObject> CallSalesforceApi(string method, string path, JObject body = null)
+    private async Task<JObject> CallSalesforceApi(string method, string path, JObject body = null, Dictionary<string, string> headers = null)
     {
         var baseUri = Context.Request.RequestUri.GetLeftPart(UriPartial.Authority);
         var fullPath = $"{baseUri}/services/data/v66.0{path}";
@@ -964,6 +967,13 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
             request.Headers.Authorization = Context.Request.Headers.Authorization;
 
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        // Add custom headers
+        if (headers != null)
+        {
+            foreach (var h in headers)
+                request.Headers.TryAddWithoutValidation(h.Key, h.Value);
+        }
 
         if (body != null)
             request.Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
