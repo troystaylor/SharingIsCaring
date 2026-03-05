@@ -2935,6 +2935,343 @@
                 }
             }
         },
+        "/sobjects/Case": {
+            "post": {
+                "operationId": "CreateCase",
+                "summary": "Create Case",
+                "description": "Creates a new support Case in Salesforce.",
+                "tags": [
+                    "Cases"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "Subject",
+                                "Description",
+                                "Priority"
+                            ],
+                            "properties": {
+                                "Subject": {
+                                    "type": "string",
+                                    "description": "Short summary of the issue",
+                                    "x-ms-summary": "Subject"
+                                },
+                                "Description": {
+                                    "type": "string",
+                                    "description": "Detailed description including environment, steps to reproduce, and what was already tried",
+                                    "x-ms-summary": "Description"
+                                },
+                                "Priority": {
+                                    "type": "string",
+                                    "description": "Case priority",
+                                    "x-ms-summary": "Priority",
+                                    "enum": [
+                                        "Critical",
+                                        "High",
+                                        "Medium",
+                                        "Low"
+                                    ]
+                                },
+                                "Origin": {
+                                    "type": "string",
+                                    "description": "Channel the case originated from (defaults to Chat)",
+                                    "x-ms-summary": "Origin",
+                                    "default": "Chat"
+                                },
+                                "Type": {
+                                    "type": "string",
+                                    "description": "Case type",
+                                    "x-ms-summary": "Type",
+                                    "enum": [
+                                        "Problem",
+                                        "Feature Request",
+                                        "Question"
+                                    ]
+                                },
+                                "ContactId": {
+                                    "type": "string",
+                                    "description": "Contact record ID to associate with the case",
+                                    "x-ms-summary": "Contact ID"
+                                },
+                                "AccountId": {
+                                    "type": "string",
+                                    "description": "Account record ID to associate with the case",
+                                    "x-ms-summary": "Account ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Case created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Case record ID"
+                                },
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "errors": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/sobjects/Case/{caseId}": {
+            "get": {
+                "operationId": "GetCase",
+                "summary": "Get Case",
+                "description": "Retrieves a Case by ID including CaseNumber, Subject, Status, Priority, and other fields.",
+                "tags": [
+                    "Cases"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Case record ID (15 or 18 character)",
+                        "x-ms-summary": "Case ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of fields to return (e.g., CaseNumber,Subject,Status,Priority)",
+                        "x-ms-summary": "Fields"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "Id": {
+                                    "type": "string",
+                                    "description": "Case record ID"
+                                },
+                                "CaseNumber": {
+                                    "type": "string",
+                                    "description": "Auto-generated case number"
+                                },
+                                "Subject": {
+                                    "type": "string",
+                                    "description": "Case subject"
+                                },
+                                "Description": {
+                                    "type": "string",
+                                    "description": "Case description"
+                                },
+                                "Status": {
+                                    "type": "string",
+                                    "description": "Case status"
+                                },
+                                "Priority": {
+                                    "type": "string",
+                                    "description": "Case priority"
+                                },
+                                "Origin": {
+                                    "type": "string",
+                                    "description": "Case origin channel"
+                                },
+                                "Type": {
+                                    "type": "string",
+                                    "description": "Case type"
+                                },
+                                "ContactId": {
+                                    "type": "string",
+                                    "description": "Associated contact ID"
+                                },
+                                "AccountId": {
+                                    "type": "string",
+                                    "description": "Associated account ID"
+                                },
+                                "CreatedDate": {
+                                    "type": "string",
+                                    "description": "Case creation timestamp"
+                                },
+                                "ClosedDate": {
+                                    "type": "string",
+                                    "description": "Case closure timestamp"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Case not found"
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateCase",
+                "summary": "Update Case",
+                "description": "Updates fields on an existing Case.",
+                "tags": [
+                    "Cases"
+                ],
+                "parameters": [
+                    {
+                        "name": "caseId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Case record ID",
+                        "x-ms-summary": "Case ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "Subject": {
+                                    "type": "string",
+                                    "description": "Case subject",
+                                    "x-ms-summary": "Subject"
+                                },
+                                "Description": {
+                                    "type": "string",
+                                    "description": "Case description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "Status": {
+                                    "type": "string",
+                                    "description": "Case status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "Priority": {
+                                    "type": "string",
+                                    "description": "Case priority",
+                                    "x-ms-summary": "Priority",
+                                    "enum": [
+                                        "Critical",
+                                        "High",
+                                        "Medium",
+                                        "Low"
+                                    ]
+                                },
+                                "Type": {
+                                    "type": "string",
+                                    "description": "Case type",
+                                    "x-ms-summary": "Type"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success - Case updated"
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Case not found"
+                    }
+                }
+            }
+        },
+        "/sobjects/CaseComment": {
+            "post": {
+                "operationId": "AddCaseComment",
+                "summary": "Add Case Comment",
+                "description": "Adds a comment to an existing Case.",
+                "tags": [
+                    "Cases"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "ParentId",
+                                "CommentBody"
+                            ],
+                            "properties": {
+                                "ParentId": {
+                                    "type": "string",
+                                    "description": "Case record ID this comment belongs to",
+                                    "x-ms-summary": "Case ID"
+                                },
+                                "CommentBody": {
+                                    "type": "string",
+                                    "description": "Comment text",
+                                    "x-ms-summary": "Comment Body"
+                                },
+                                "IsPublished": {
+                                    "type": "boolean",
+                                    "description": "Whether the comment is visible to portal users (default false)",
+                                    "x-ms-summary": "Published",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Comment created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Comment record ID"
+                                },
+                                "success": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
         "/mcp": {
             "post": {
                 "operationId": "InvokeMCP",
@@ -2982,6 +3319,10 @@
         {
             "name": "Synonyms",
             "description": "Search synonym group management via Tooling API"
+        },
+        {
+            "name": "Cases",
+            "description": "Support case lifecycle — create, read, update, and comment"
         }
     ],
     "securityDefinitions": {

@@ -463,7 +463,20 @@ public class Script : ScriptBase
                 {
                     ["id"] = new JObject { ["type"] = "string", ["description"] = "Synonym Group ID" }
                 },
-                new[] { "id" })
+                new[] { "id" }),
+
+            // Case Creation Tool
+            CreateTool("create_case", "Create a new support Case in Salesforce. Returns CaseNumber and Id. Use this instead of create_record when creating Cases.",
+                new JObject
+                {
+                    ["subject"] = new JObject { ["type"] = "string", ["description"] = "Case subject / short summary of the issue" },
+                    ["description"] = new JObject { ["type"] = "string", ["description"] = "Detailed description including environment, steps to reproduce, and what was already tried" },
+                    ["priority"] = new JObject { ["type"] = "string", ["description"] = "Case priority: Critical, High, Medium, or Low" },
+                    ["contact_email"] = new JObject { ["type"] = "string", ["description"] = "Contact email to associate with the case (optional — looked up automatically)" },
+                    ["type"] = new JObject { ["type"] = "string", ["description"] = "Case type (e.g., Problem, Feature Request, Question). Optional." },
+                    ["origin"] = new JObject { ["type"] = "string", ["description"] = "Case origin channel. Defaults to Chat if omitted." }
+                },
+                new[] { "subject", "description", "priority" })
         };
 
         return CreateJsonRpcSuccessResponse(requestId, new JObject { ["tools"] = tools });
@@ -949,6 +962,45 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
             case "delete_synonym_group":
                 await CallSalesforceApi("DELETE", $"/tooling/sobjects/SearchSynonymGroup/{args["id"]}");
                 return new JObject { ["success"] = true, ["deleted"] = args["id"] };
+
+            // Case Creation
+            case "create_case":
+            {
+                var caseBody = new JObject
+                {
+                    ["Subject"] = args["subject"]?.ToString(),
+                    ["Description"] = args["description"]?.ToString(),
+                    ["Priority"] = args["priority"]?.ToString() ?? "Medium",
+                    ["Origin"] = args["origin"]?.ToString() ?? "Chat"
+                };
+
+                if (!string.IsNullOrEmpty(args["type"]?.ToString()))
+                    caseBody["Type"] = args["type"];
+
+                // Look up ContactId by email if provided
+                var contactEmail = args["contact_email"]?.ToString();
+                if (!string.IsNullOrEmpty(contactEmail))
+                {
+                    var contactQuery = await CallSalesforceApi("GET",
+                        $"/query?q={Uri.EscapeDataString($"SELECT Id FROM Contact WHERE Email = '{contactEmail.Replace("'", "\\'")}' LIMIT 1")}");
+                    var contactRecords = contactQuery["records"] as JArray;
+                    if (contactRecords != null && contactRecords.Count > 0)
+                        caseBody["ContactId"] = contactRecords[0]["Id"]?.ToString();
+                }
+
+                var createResult = await CallSalesforceApi("POST", "/sobjects/Case", caseBody);
+                var caseId = createResult["id"]?.ToString();
+
+                // Query back for CaseNumber
+                if (!string.IsNullOrEmpty(caseId))
+                {
+                    var caseDetail = await CallSalesforceApi("GET",
+                        $"/sobjects/Case/{caseId}?fields=CaseNumber,Id,Subject,Priority,Status");
+                    return caseDetail;
+                }
+
+                return createResult;
+            }
 
             default:
                 throw new ArgumentException($"Unknown tool: {toolName}");
