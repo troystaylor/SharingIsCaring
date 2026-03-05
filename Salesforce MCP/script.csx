@@ -476,7 +476,109 @@ public class Script : ScriptBase
                     ["type"] = new JObject { ["type"] = "string", ["description"] = "Case type (e.g., Problem, Feature Request, Question). Optional." },
                     ["origin"] = new JObject { ["type"] = "string", ["description"] = "Case origin channel. Defaults to Chat if omitted." }
                 },
-                new[] { "subject", "description", "priority" })
+                new[] { "subject", "description", "priority" }),
+
+            // Deflection Tracking Tool
+            CreateTool("log_interaction", "Log a Copilot agent interaction for deflection tracking and metrics. Call this at the end of every triage conversation.",
+                new JObject
+                {
+                    ["outcome"] = new JObject { ["type"] = "string", ["description"] = "Interaction outcome: Deflected, Case Created, Abandoned, or Escalated" },
+                    ["severity"] = new JObject { ["type"] = "string", ["description"] = "Severity classification: Sev 1 - Critical, Sev 2 - High, Sev 3 - Medium, or Sev 4 - Low" },
+                    ["topic"] = new JObject { ["type"] = "string", ["description"] = "Primary topic or category of the user's question" },
+                    ["summary"] = new JObject { ["type"] = "string", ["description"] = "Brief summary of the interaction and resolution" },
+                    ["kb_articles_shown"] = new JObject { ["type"] = "integer", ["description"] = "Number of KB articles presented during self-service (0 if none)" },
+                    ["case_id"] = new JObject { ["type"] = "string", ["description"] = "Salesforce Case ID if a case was created (optional)" },
+                    ["channel"] = new JObject { ["type"] = "string", ["description"] = "Channel: Service Console, Customer Portal, or Documentation Site" },
+                    ["conversation_id"] = new JObject { ["type"] = "string", ["description"] = "Direct Line conversation ID (optional)" },
+                    ["user_email"] = new JObject { ["type"] = "string", ["description"] = "Email of the user (optional)" }
+                },
+                new[] { "outcome", "summary" }),
+
+            // Phase 3 — Autonomous Actions
+
+            // Case Timeline (for summary, closure summary, and email drafting)
+            CreateTool("get_case_timeline", "Retrieve a Case with its full timeline: CaseComments, EmailMessages, and FeedItems. Use this before generating a case summary, closure summary, or response email.",
+                new JObject
+                {
+                    ["case_id"] = new JObject { ["type"] = "string", ["description"] = "Salesforce Case ID (18-char)" }
+                },
+                new[] { "case_id" }),
+
+            // Send Case Email
+            CreateTool("send_case_email", "Send or draft an outbound email on a Case. Creates an EmailMessage record linked to the case.",
+                new JObject
+                {
+                    ["case_id"] = new JObject { ["type"] = "string", ["description"] = "Case ID to associate the email with" },
+                    ["to_address"] = new JObject { ["type"] = "string", ["description"] = "Recipient email address" },
+                    ["subject"] = new JObject { ["type"] = "string", ["description"] = "Email subject line" },
+                    ["body"] = new JObject { ["type"] = "string", ["description"] = "Email body (HTML supported)" },
+                    ["status"] = new JObject { ["type"] = "string", ["description"] = "Email status: Draft or Sent. Defaults to Draft so the agent can review before sending." }
+                },
+                new[] { "case_id", "to_address", "subject", "body" }),
+
+            // KB Suggestion for Case
+            CreateTool("suggest_kb_for_case", "Search Knowledge articles matching a case's subject and description. Returns ranked article matches for the agent to recommend or attach.",
+                new JObject
+                {
+                    ["case_id"] = new JObject { ["type"] = "string", ["description"] = "Case ID to find matching KB articles for" },
+                    ["search_terms"] = new JObject { ["type"] = "string", ["description"] = "Additional search keywords to refine results (optional)" }
+                },
+                new[] { "case_id" }),
+
+            // Draft KB Article from Case
+            CreateTool("draft_kb_article", "Create a Knowledge article draft pre-populated with data from a resolved case. Useful when no existing KB covers the issue.",
+                new JObject
+                {
+                    ["case_id"] = new JObject { ["type"] = "string", ["description"] = "Case ID to base the article on" },
+                    ["article_type"] = new JObject { ["type"] = "string", ["description"] = "Knowledge article type API name (e.g., Knowledge__kav). Defaults to Knowledge__kav." },
+                    ["title"] = new JObject { ["type"] = "string", ["description"] = "Article title" },
+                    ["url_name"] = new JObject { ["type"] = "string", ["description"] = "URL-friendly slug for the article" },
+                    ["summary"] = new JObject { ["type"] = "string", ["description"] = "Article summary / short description" },
+                    ["content"] = new JObject { ["type"] = "string", ["description"] = "Full article body content (HTML or plain text)" }
+                },
+                new[] { "case_id", "title", "url_name", "content" }),
+
+            // Case Categorization
+            CreateTool("categorize_case", "Update a Case with categorization fields: Type, Reason, product area, and root cause. Use after analyzing case content.",
+                new JObject
+                {
+                    ["case_id"] = new JObject { ["type"] = "string", ["description"] = "Case ID to categorize" },
+                    ["type"] = new JObject { ["type"] = "string", ["description"] = "Case type: Problem, Feature Request, or Question" },
+                    ["reason"] = new JObject { ["type"] = "string", ["description"] = "Case reason (e.g., Installation, Performance, Compatibility, New Feature)" },
+                    ["subject"] = new JObject { ["type"] = "string", ["description"] = "Updated subject with standardized naming (optional)" },
+                    ["internal_comments"] = new JObject { ["type"] = "string", ["description"] = "Internal comment explaining the categorization rationale" }
+                },
+                new[] { "case_id", "type", "reason" }),
+
+            // --- Phase 5: Reporting & Analytics ---
+
+            // Case Trends
+            CreateTool("get_case_trends", "Get case volume trends grouped by a specified field over a time period. Returns counts and percentages for trend analysis and manager dashboards.",
+                new JObject
+                {
+                    ["group_by"] = new JObject { ["type"] = "string", ["description"] = "Field to group by: Type, Reason, Priority, Status, Origin, or a custom field API name" },
+                    ["days"] = new JObject { ["type"] = "integer", ["description"] = "Lookback period in days (default: 30)" },
+                    ["min_count"] = new JObject { ["type"] = "integer", ["description"] = "Minimum count to include in results (default: 1)" }
+                },
+                new[] { "group_by" }),
+
+            // Deflection Metrics
+            CreateTool("get_deflection_metrics", "Get deflection metrics from Copilot_Interaction__c records. Returns outcome counts, deflection rates, and optional grouping by topic, channel, or severity.",
+                new JObject
+                {
+                    ["days"] = new JObject { ["type"] = "integer", ["description"] = "Lookback period in days (default: 30)" },
+                    ["group_by"] = new JObject { ["type"] = "string", ["description"] = "Optional grouping field: Topic__c, Channel__c, Severity__c, or none (default: none)" }
+                },
+                new string[] { }),
+
+            // SLA Compliance
+            CreateTool("get_sla_compliance", "Get SLA compliance metrics for cases. Compares first response time against SLA thresholds by priority. Returns compliance percentages and breached case details.",
+                new JObject
+                {
+                    ["days"] = new JObject { ["type"] = "integer", ["description"] = "Lookback period in days (default: 30)" },
+                    ["priority"] = new JObject { ["type"] = "string", ["description"] = "Optional filter by priority: Critical, High, Medium, or Low" }
+                },
+                new string[] { })
         };
 
         return CreateJsonRpcSuccessResponse(requestId, new JObject { ["tools"] = tools });
@@ -963,6 +1065,220 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
                 await CallSalesforceApi("DELETE", $"/tooling/sobjects/SearchSynonymGroup/{args["id"]}");
                 return new JObject { ["success"] = true, ["deleted"] = args["id"] };
 
+            // Deflection Tracking
+            case "log_interaction":
+            {
+                var interactionBody = new JObject
+                {
+                    ["Outcome__c"] = args["outcome"]?.ToString(),
+                    ["Summary__c"] = args["summary"]?.ToString()
+                };
+
+                if (!string.IsNullOrEmpty(args["severity"]?.ToString()))
+                    interactionBody["Severity__c"] = args["severity"];
+                if (!string.IsNullOrEmpty(args["topic"]?.ToString()))
+                    interactionBody["Topic__c"] = args["topic"];
+                if (!string.IsNullOrEmpty(args["channel"]?.ToString()))
+                    interactionBody["Channel__c"] = args["channel"];
+                if (!string.IsNullOrEmpty(args["conversation_id"]?.ToString()))
+                    interactionBody["Conversation_Id__c"] = args["conversation_id"];
+                if (!string.IsNullOrEmpty(args["user_email"]?.ToString()))
+                    interactionBody["User_Email__c"] = args["user_email"];
+                if (!string.IsNullOrEmpty(args["case_id"]?.ToString()))
+                    interactionBody["Case__c"] = args["case_id"];
+
+                var kbCount = args["kb_articles_shown"]?.ToObject<int?>() ?? 0;
+                interactionBody["KB_Articles_Shown__c"] = kbCount;
+
+                var logResult = await CallSalesforceApi("POST", "/sobjects/Copilot_Interaction__c", interactionBody);
+                var interactionId = logResult["id"]?.ToString();
+
+                if (!string.IsNullOrEmpty(interactionId))
+                {
+                    var detail = await CallSalesforceApi("GET",
+                        $"/sobjects/Copilot_Interaction__c/{interactionId}?fields=Name,Outcome__c,Severity__c,Topic__c,Channel__c");
+                    return detail;
+                }
+
+                return logResult;
+            }
+
+            // Phase 3 — Autonomous Actions
+
+            case "get_case_timeline":
+            {
+                var timelineCaseId = args["case_id"]?.ToString();
+
+                // Fetch case details, comments, emails, and feed items in parallel via composite
+                var timelineComposite = new JObject
+                {
+                    ["allOrNone"] = false,
+                    ["compositeRequest"] = new JArray
+                    {
+                        new JObject
+                        {
+                            ["method"] = "GET",
+                            ["url"] = $"/services/data/v66.0/sobjects/Case/{timelineCaseId}?fields=CaseNumber,Subject,Description,Status,Priority,Type,Reason,Origin,CreatedDate,ClosedDate,ContactEmail,Contact.Name,Account.Name",
+                            ["referenceId"] = "caseDetail"
+                        },
+                        new JObject
+                        {
+                            ["method"] = "GET",
+                            ["url"] = $"/services/data/v66.0/query?q={Uri.EscapeDataString($"SELECT Id, CommentBody, CreatedBy.Name, CreatedDate, IsPublished FROM CaseComment WHERE ParentId = '{timelineCaseId}' ORDER BY CreatedDate ASC")}",
+                            ["referenceId"] = "comments"
+                        },
+                        new JObject
+                        {
+                            ["method"] = "GET",
+                            ["url"] = $"/services/data/v66.0/query?q={Uri.EscapeDataString($"SELECT Id, Subject, TextBody, FromAddress, ToAddress, Status, MessageDate, Incoming FROM EmailMessage WHERE ParentId = '{timelineCaseId}' ORDER BY MessageDate ASC")}",
+                            ["referenceId"] = "emails"
+                        },
+                        new JObject
+                        {
+                            ["method"] = "GET",
+                            ["url"] = $"/services/data/v66.0/query?q={Uri.EscapeDataString($"SELECT Id, Type, Body, CreatedBy.Name, CreatedDate FROM FeedItem WHERE ParentId = '{timelineCaseId}' ORDER BY CreatedDate ASC LIMIT 50")}",
+                            ["referenceId"] = "feedItems"
+                        }
+                    }
+                };
+
+                var timelineResult = await CallSalesforceApi("POST", "/composite", timelineComposite);
+
+                // Flatten into a clean timeline object
+                var compositeResults = timelineResult["compositeResponse"] as JArray ?? new JArray();
+                var timeline = new JObject();
+                foreach (var cr in compositeResults)
+                {
+                    var refId = cr["referenceId"]?.ToString();
+                    var statusCode = cr["httpStatusCode"]?.ToObject<int>() ?? 0;
+                    if (statusCode >= 200 && statusCode < 300)
+                        timeline[refId] = cr["body"];
+                    else
+                        timeline[refId] = new JObject { ["error"] = $"HTTP {statusCode}" };
+                }
+                return timeline;
+            }
+
+            case "send_case_email":
+            {
+                var emailBody = new JObject
+                {
+                    ["ParentId"] = args["case_id"]?.ToString(),
+                    ["ToAddress"] = args["to_address"]?.ToString(),
+                    ["Subject"] = args["subject"]?.ToString(),
+                    ["HtmlBody"] = args["body"]?.ToString(),
+                    ["Status"] = args["status"]?.ToString() ?? "Draft"
+                };
+
+                var emailResult = await CallSalesforceApi("POST", "/sobjects/EmailMessage", emailBody);
+                var emailId = emailResult["id"]?.ToString();
+
+                if (!string.IsNullOrEmpty(emailId))
+                {
+                    var emailDetail = await CallSalesforceApi("GET",
+                        $"/sobjects/EmailMessage/{emailId}?fields=Id,Subject,ToAddress,Status,MessageDate,ParentId");
+                    return emailDetail;
+                }
+
+                return emailResult;
+            }
+
+            case "suggest_kb_for_case":
+            {
+                // Get case subject and description for search context
+                var suggestCaseId = args["case_id"]?.ToString();
+                var caseInfo = await CallSalesforceApi("GET",
+                    $"/sobjects/Case/{suggestCaseId}?fields=Subject,Description");
+
+                var caseSubject = caseInfo["Subject"]?.ToString() ?? "";
+                var caseDesc = caseInfo["Description"]?.ToString() ?? "";
+                var extraTerms = args["search_terms"]?.ToString() ?? "";
+
+                // Build search query from case context
+                var searchQuery = caseSubject;
+                if (!string.IsNullOrEmpty(extraTerms))
+                    searchQuery = $"{extraTerms} {searchQuery}";
+
+                // Search Knowledge articles
+                var kbPath = $"/support/knowledgeArticles?q={Uri.EscapeDataString(searchQuery)}&pageSize=10";
+                var kbResults = await CallSalesforceApi("GET", kbPath,
+                    headers: new Dictionary<string, string> { { "Accept-Language", DEFAULT_LANGUAGE } });
+
+                // Return results with the case context for reference
+                return new JObject
+                {
+                    ["case"] = new JObject { ["Id"] = suggestCaseId, ["Subject"] = caseSubject },
+                    ["searchQuery"] = searchQuery,
+                    ["articles"] = kbResults["articles"] ?? new JArray()
+                };
+            }
+
+            case "draft_kb_article":
+            {
+                var draftCaseId = args["case_id"]?.ToString();
+                var draftArticleType = args["article_type"]?.ToString() ?? "Knowledge__kav";
+
+                var draftBody = new JObject
+                {
+                    ["articleTypeApiName"] = draftArticleType,
+                    ["title"] = args["title"]?.ToString(),
+                    ["urlName"] = args["url_name"]?.ToString()
+                };
+
+                var draftFields = new JObject();
+                if (!string.IsNullOrEmpty(args["summary"]?.ToString()))
+                    draftFields["Summary"] = args["summary"];
+                if (!string.IsNullOrEmpty(args["content"]?.ToString()))
+                    draftFields["Content__c"] = args["content"];
+                // Link back to the originating case
+                draftFields["SourceId"] = draftCaseId;
+
+                if (draftFields.HasValues)
+                    draftBody["fields"] = draftFields;
+
+                var articleResult = await CallSalesforceApi("POST", "/knowledgeManagement/articles", draftBody);
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["articleId"] = articleResult["id"],
+                    ["caseId"] = draftCaseId,
+                    ["title"] = args["title"]
+                };
+            }
+
+            case "categorize_case":
+            {
+                var catCaseId = args["case_id"]?.ToString();
+                var catBody = new JObject
+                {
+                    ["Type"] = args["type"]?.ToString(),
+                    ["Reason"] = args["reason"]?.ToString()
+                };
+
+                if (!string.IsNullOrEmpty(args["subject"]?.ToString()))
+                    catBody["Subject"] = args["subject"];
+
+                await CallSalesforceApi("PATCH", $"/sobjects/Case/{catCaseId}", catBody);
+
+                // Add internal comment with categorization rationale
+                var catComment = args["internal_comments"]?.ToString();
+                if (!string.IsNullOrEmpty(catComment))
+                {
+                    var commentBody = new JObject
+                    {
+                        ["ParentId"] = catCaseId,
+                        ["CommentBody"] = catComment,
+                        ["IsPublished"] = false
+                    };
+                    await CallSalesforceApi("POST", "/sobjects/CaseComment", commentBody);
+                }
+
+                // Return updated case
+                var updatedCase = await CallSalesforceApi("GET",
+                    $"/sobjects/Case/{catCaseId}?fields=CaseNumber,Subject,Type,Reason,Status,Priority");
+                return updatedCase;
+            }
+
             // Case Creation
             case "create_case":
             {
@@ -1000,6 +1316,144 @@ SELECT Id, Name, CreatedDate FROM Account WHERE CreatedById = '005XXXXXXXXXXXX' 
                 }
 
                 return createResult;
+            }
+
+            // --- Phase 5: Reporting & Analytics ---
+
+            case "get_case_trends":
+            {
+                var groupField = args["group_by"]?.ToString() ?? "Type";
+                var days = args["days"]?.Value<int>() ?? 30;
+                var minCount = args["min_count"]?.Value<int>() ?? 1;
+
+                // Allowed standard fields — custom fields pass through if they end with __c
+                var allowedFields = new HashSet<string> { "Type", "Reason", "Priority", "Status", "Origin" };
+                if (!allowedFields.Contains(groupField) && !groupField.EndsWith("__c"))
+                    throw new ArgumentException($"Invalid group_by field: {groupField}");
+
+                var sinceDate = DateTime.UtcNow.AddDays(-days).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+                var trendSoql = $"SELECT {groupField}, COUNT(Id) cnt FROM Case WHERE CreatedDate >= {sinceDate} GROUP BY {groupField} HAVING COUNT(Id) >= {minCount} ORDER BY COUNT(Id) DESC";
+                var result = await CallSalesforceApi("GET", $"/query?q={Uri.EscapeDataString(trendSoql)}");
+                return result;
+            }
+
+            case "get_deflection_metrics":
+            {
+                var days = args["days"]?.Value<int>() ?? 30;
+                var groupBy = args["group_by"]?.ToString() ?? "none";
+                var sinceDate = DateTime.UtcNow.AddDays(-days).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+                string deflectionSoql;
+                if (groupBy == "none" || string.IsNullOrEmpty(groupBy))
+                {
+                    deflectionSoql = $"SELECT Outcome__c, COUNT(Id) cnt FROM Copilot_Interaction__c WHERE CreatedDate >= {sinceDate} GROUP BY Outcome__c ORDER BY COUNT(Id) DESC";
+                }
+                else
+                {
+                    var allowedGroupFields = new HashSet<string> { "Topic__c", "Channel__c", "Severity__c" };
+                    if (!allowedGroupFields.Contains(groupBy))
+                        throw new ArgumentException($"Invalid group_by field: {groupBy}. Allowed: Topic__c, Channel__c, Severity__c");
+
+                    deflectionSoql = $"SELECT Outcome__c, {groupBy}, COUNT(Id) cnt FROM Copilot_Interaction__c WHERE CreatedDate >= {sinceDate} GROUP BY Outcome__c, {groupBy} ORDER BY COUNT(Id) DESC";
+                }
+
+                var result = await CallSalesforceApi("GET", $"/query?q={Uri.EscapeDataString(deflectionSoql)}");
+                return result;
+            }
+
+            case "get_sla_compliance":
+            {
+                var days = args["days"]?.Value<int>() ?? 30;
+                var priorityFilter = args["priority"]?.ToString();
+                var sinceDate = DateTime.UtcNow.AddDays(-days).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+                // Query cases with their priority and first response timestamps
+                var whereClause = $"CreatedDate >= {sinceDate}";
+                if (!string.IsNullOrEmpty(priorityFilter))
+                    whereClause += $" AND Priority = '{priorityFilter.Replace("'", "\\'")}'";
+
+                var slaSoql = $"SELECT Id, CaseNumber, Subject, Priority, Status, CreatedDate, " +
+                           $"(SELECT CreatedDate FROM CaseComments ORDER BY CreatedDate ASC LIMIT 1), " +
+                           $"(SELECT CreatedDate FROM EmailMessages WHERE Incoming = false ORDER BY CreatedDate ASC LIMIT 1) " +
+                           $"FROM Case WHERE {whereClause} ORDER BY CreatedDate DESC LIMIT 200";
+
+                var result = await CallSalesforceApi("GET", $"/query?q={Uri.EscapeDataString(slaSoql)}");
+
+                // SLA thresholds in hours
+                var slaThresholds = new Dictionary<string, double>
+                {
+                    ["Critical"] = 1,
+                    ["High"] = 4,
+                    ["Medium"] = 24,
+                    ["Low"] = 48
+                };
+
+                var cases = result["records"] as JArray ?? new JArray();
+                var summary = new JObject();
+                var breachedCases = new JArray();
+
+                foreach (var c in cases)
+                {
+                    var priority = c["Priority"]?.ToString() ?? "Medium";
+                    var created = c["CreatedDate"]?.Value<DateTime>() ?? DateTime.UtcNow;
+
+                    // Find earliest response (comment or outbound email)
+                    DateTime? firstResponse = null;
+                    var comments = c["CaseComments"]?["records"] as JArray;
+                    var emails = c["EmailMessages"]?["records"] as JArray;
+
+                    if (comments != null && comments.Count > 0)
+                        firstResponse = comments[0]["CreatedDate"]?.Value<DateTime>();
+                    if (emails != null && emails.Count > 0)
+                    {
+                        var emailDate = emails[0]["CreatedDate"]?.Value<DateTime>();
+                        if (emailDate.HasValue && (!firstResponse.HasValue || emailDate.Value < firstResponse.Value))
+                            firstResponse = emailDate;
+                    }
+
+                    if (!summary.ContainsKey(priority))
+                        summary[priority] = new JObject { ["total"] = 0, ["within_sla"] = 0, ["breached"] = 0, ["no_response"] = 0 };
+
+                    var pStats = summary[priority] as JObject;
+                    pStats["total"] = pStats["total"].Value<int>() + 1;
+
+                    if (firstResponse.HasValue)
+                    {
+                        var responseHours = (firstResponse.Value - created).TotalHours;
+                        var threshold = slaThresholds.ContainsKey(priority) ? slaThresholds[priority] : 24;
+
+                        if (responseHours <= threshold)
+                        {
+                            pStats["within_sla"] = pStats["within_sla"].Value<int>() + 1;
+                        }
+                        else
+                        {
+                            pStats["breached"] = pStats["breached"].Value<int>() + 1;
+                            breachedCases.Add(new JObject
+                            {
+                                ["CaseNumber"] = c["CaseNumber"],
+                                ["Id"] = c["Id"],
+                                ["Subject"] = c["Subject"],
+                                ["Priority"] = priority,
+                                ["ResponseHours"] = Math.Round(responseHours, 1),
+                                ["SlaThresholdHours"] = slaThresholds.ContainsKey(priority) ? slaThresholds[priority] : 24
+                            });
+                        }
+                    }
+                    else
+                    {
+                        pStats["no_response"] = pStats["no_response"].Value<int>() + 1;
+                    }
+                }
+
+                return new JObject
+                {
+                    ["sla_thresholds"] = JObject.FromObject(slaThresholds),
+                    ["compliance_by_priority"] = summary,
+                    ["breached_cases"] = breachedCases,
+                    ["period_days"] = days,
+                    ["total_cases_analyzed"] = cases.Count
+                };
             }
 
             default:
