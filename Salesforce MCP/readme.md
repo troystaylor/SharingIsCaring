@@ -28,9 +28,8 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
    - **Name**: Power Platform Connector
    - **Contact Email**: Your email
    - **Enable OAuth Settings**: Checked
-   - **Callback URL**: `https://global.consent.azure-apim.net/redirect`
+   - **Callback URL**: `{{Retrieve after connector is saved}}`
    - **Selected OAuth Scopes**:
-     - `Access the identity URL service (id, profile, email, address, phone)`
      - `Manage user data via APIs (api)`
      - `Perform requests at any time (refresh_token, offline_access)`
 4. Save and copy the **Consumer Key** and **Consumer Secret**
@@ -49,9 +48,13 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
    - **Enable OAuth Settings**: Checked
    - **Callback URL**: `https://global.consent.azure-apim.net/redirect`
    - **Selected OAuth Scopes**:
-     - `Access the identity URL service (id, profile, email, address, phone)`
      - `Manage user data via APIs (api)`
      - `Perform requests at any time (refresh_token, offline_access)`
+   - **Flow Enablement**:
+      - Check `Enable Authorization Code and Credentials Flow`
+   - **Security**:
+      - Check `Require secret for Web Server Flow`
+      - Check `Require secret for Refresh Token Flow`
 4. Save and wait 2-10 minutes for propagation
 5. Copy the **Consumer Key** and **Consumer Secret**
 6. Navigate to **Manage > OAuth Policies**:
@@ -464,3 +467,4 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
 ## License
 
 This connector is provided as-is for educational and development purposes.
+
