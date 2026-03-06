@@ -1,0 +1,2742 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Azure Arc Data Services",
+    "description": "Manage Azure Arc-enabled SQL Server instances, databases, availability groups, failover groups, SQL Server licenses, ESU licenses, data controllers, and SQL Managed Instances through Azure Resource Manager. Query Azure Resource Graph for cross-subscription inventory.",
+    "version": "2.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "management.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Azure Arc Data Services MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration with Azure Arc Data Services management.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/providers/Microsoft.AzureArcData/sqlServerInstances": {
+      "get": {
+        "summary": "List SQL Server Instances by Subscription",
+        "description": "List all Azure Arc-enabled SQL Server instances in a subscription.",
+        "operationId": "ListSqlServerInstancesBySubscription",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SQL Server instances",
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstanceListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances": {
+      "get": {
+        "summary": "List SQL Server Instances by Resource Group",
+        "description": "List Azure Arc-enabled SQL Server instances in a resource group.",
+        "operationId": "ListSqlServerInstances",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SQL Server instances",
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstanceListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}": {
+      "get": {
+        "summary": "Get SQL Server Instance",
+        "description": "Get details of a specific Azure Arc-enabled SQL Server instance.",
+        "operationId": "GetSqlServerInstance",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SQL Server instance details",
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstance"
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Create or Update SQL Server Instance",
+        "description": "Create or update an Azure Arc-enabled SQL Server instance registration.",
+        "operationId": "CreateOrUpdateSqlServerInstance",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstance"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated SQL Server instance",
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstance"
+            }
+          },
+          "201": {
+            "description": "Created SQL Server instance"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update SQL Server Instance",
+        "description": "Partially update an Azure Arc-enabled SQL Server instance (tags, license type, monitoring, backup policy).",
+        "operationId": "UpdateSqlServerInstance",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstanceUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated SQL Server instance",
+            "schema": {
+              "$ref": "#/definitions/SqlServerInstance"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete SQL Server Instance",
+        "description": "Delete the Azure Arc-enabled SQL Server instance registration.",
+        "operationId": "DeleteSqlServerInstance",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instance deleted"
+          },
+          "204": {
+            "description": "Instance not found"
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}/databases": {
+      "get": {
+        "summary": "List Databases",
+        "description": "List databases on an Azure Arc-enabled SQL Server instance.",
+        "operationId": "ListDatabases",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of databases",
+            "schema": {
+              "$ref": "#/definitions/SqlServerDatabaseListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}/databases/{databaseName}": {
+      "get": {
+        "summary": "Get Database",
+        "description": "Get details of a specific database on an Azure Arc-enabled SQL Server instance.",
+        "operationId": "GetDatabase",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "databaseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Database Name",
+            "description": "The name of the database.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Database details",
+            "schema": {
+              "$ref": "#/definitions/SqlServerDatabase"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}/availabilityGroups": {
+      "get": {
+        "summary": "List Availability Groups",
+        "description": "List SQL Server availability groups on an Azure Arc-enabled SQL Server instance.",
+        "operationId": "ListAvailabilityGroups",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of availability groups",
+            "schema": {
+              "$ref": "#/definitions/SqlServerAvailabilityGroupListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}/availabilityGroups/{availabilityGroupName}": {
+      "get": {
+        "summary": "Get Availability Group",
+        "description": "Get details of a specific SQL Server availability group.",
+        "operationId": "GetAvailabilityGroup",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "availabilityGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Availability Group",
+            "description": "The name of the availability group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability group details",
+            "schema": {
+              "$ref": "#/definitions/SqlServerAvailabilityGroup"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}/failoverGroups": {
+      "get": {
+        "summary": "List Failover Groups",
+        "description": "List failover groups on an Azure Arc-enabled SQL Server instance.",
+        "operationId": "ListFailoverGroups",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of failover groups",
+            "schema": {
+              "$ref": "#/definitions/FailoverGroupListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerInstances/{sqlServerInstanceName}/failoverGroups/{failoverGroupName}": {
+      "get": {
+        "summary": "Get Failover Group",
+        "description": "Get details of a specific failover group on an Azure Arc-enabled SQL Server instance.",
+        "operationId": "GetFailoverGroup",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Server Instance",
+            "description": "The name of the SQL Server instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "failoverGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Failover Group",
+            "description": "The name of the failover group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Failover group details",
+            "schema": {
+              "$ref": "#/definitions/FailoverGroup"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/providers/Microsoft.AzureArcData/sqlServerLicenses": {
+      "get": {
+        "summary": "List SQL Server Licenses by Subscription",
+        "description": "List all SQL Server license resources in a subscription for billing and license management.",
+        "operationId": "ListSqlServerLicenses",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SQL Server licenses",
+            "schema": {
+              "$ref": "#/definitions/SqlServerLicenseListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerLicenses/{sqlServerLicenseName}": {
+      "get": {
+        "summary": "Get SQL Server License",
+        "description": "Get details of a specific SQL Server license resource.",
+        "operationId": "GetSqlServerLicense",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerLicenseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "License Name",
+            "description": "The name of the SQL Server license.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SQL Server license details",
+            "schema": {
+              "$ref": "#/definitions/SqlServerLicense"
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Create or Update SQL Server License",
+        "description": "Create or update a SQL Server license resource for billing management.",
+        "operationId": "CreateOrUpdateSqlServerLicense",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerLicenseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "License Name",
+            "description": "The name of the SQL Server license.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SqlServerLicense"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated license",
+            "schema": {
+              "$ref": "#/definitions/SqlServerLicense"
+            }
+          },
+          "201": {
+            "description": "Created license"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete SQL Server License",
+        "description": "Delete a SQL Server license resource.",
+        "operationId": "DeleteSqlServerLicense",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerLicenseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "License Name",
+            "description": "The name of the SQL Server license.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "License deleted"
+          },
+          "204": {
+            "description": "License not found"
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/providers/Microsoft.AzureArcData/sqlServerEsuLicenses": {
+      "get": {
+        "summary": "List ESU Licenses by Subscription",
+        "description": "List all SQL Server Extended Security Update (ESU) license resources in a subscription.",
+        "operationId": "ListSqlServerEsuLicenses",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of ESU licenses",
+            "schema": {
+              "$ref": "#/definitions/SqlServerEsuLicenseListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlServerEsuLicenses/{sqlServerEsuLicenseName}": {
+      "get": {
+        "summary": "Get ESU License",
+        "description": "Get details of a specific SQL Server Extended Security Update (ESU) license.",
+        "operationId": "GetSqlServerEsuLicense",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerEsuLicenseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "ESU License Name",
+            "description": "The name of the ESU license.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ESU license details",
+            "schema": {
+              "$ref": "#/definitions/SqlServerEsuLicense"
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Create or Update ESU License",
+        "description": "Create or update a SQL Server Extended Security Update (ESU) license.",
+        "operationId": "CreateOrUpdateSqlServerEsuLicense",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerEsuLicenseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "ESU License Name",
+            "description": "The name of the ESU license.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SqlServerEsuLicense"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated ESU license",
+            "schema": {
+              "$ref": "#/definitions/SqlServerEsuLicense"
+            }
+          },
+          "201": {
+            "description": "Created ESU license"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete ESU License",
+        "description": "Delete a SQL Server Extended Security Update (ESU) license.",
+        "operationId": "DeleteSqlServerEsuLicense",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlServerEsuLicenseName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "ESU License Name",
+            "description": "The name of the ESU license.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ESU license deleted"
+          },
+          "204": {
+            "description": "ESU license not found"
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/dataControllers": {
+      "get": {
+        "summary": "List Data Controllers",
+        "description": "List Azure Arc data controllers in a resource group.",
+        "operationId": "ListDataControllers",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of data controllers",
+            "schema": {
+              "$ref": "#/definitions/DataControllerListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/dataControllers/{dataControllerName}": {
+      "get": {
+        "summary": "Get Data Controller",
+        "description": "Get details of a specific Azure Arc data controller.",
+        "operationId": "GetDataController",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "dataControllerName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Data Controller",
+            "description": "The name of the data controller.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data controller details",
+            "schema": {
+              "$ref": "#/definitions/DataController"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlManagedInstances": {
+      "get": {
+        "summary": "List SQL Managed Instances",
+        "description": "List SQL Managed Instances enabled by Azure Arc in a resource group.",
+        "operationId": "ListSqlManagedInstances",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SQL Managed Instances",
+            "schema": {
+              "$ref": "#/definitions/SqlManagedInstanceListResult"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.AzureArcData/sqlManagedInstances/{sqlManagedInstanceName}": {
+      "get": {
+        "summary": "Get SQL Managed Instance",
+        "description": "Get details of a specific SQL Managed Instance enabled by Azure Arc.",
+        "operationId": "GetSqlManagedInstance",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Subscription ID",
+            "description": "The Azure subscription ID.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "resourceGroupName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Resource Group",
+            "description": "The name of the Azure resource group.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "sqlManagedInstanceName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "SQL Managed Instance",
+            "description": "The name of the SQL Managed Instance.",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-01-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SQL Managed Instance details",
+            "schema": {
+              "$ref": "#/definitions/SqlManagedInstance"
+            }
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ResourceGraph/resources": {
+      "post": {
+        "summary": "Query Resource Graph",
+        "description": "Execute an Azure Resource Graph query to search across subscriptions for Arc SQL Server resources.",
+        "operationId": "QueryResourceGraph",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2021-03-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "query"
+              ],
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "The Azure Resource Graph KQL query.",
+                  "x-ms-summary": "Query"
+                },
+                "subscriptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Subscription IDs to scope the query.",
+                  "x-ms-summary": "Subscriptions"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Query results",
+            "schema": {
+              "$ref": "#/definitions/ResourceGraphResult"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SqlServerInstance": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "location": {
+          "type": "string",
+          "description": "Azure region",
+          "x-ms-summary": "Location"
+        },
+        "tags": {
+          "type": "object",
+          "description": "Resource tags",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "$ref": "#/definitions/SqlServerInstanceProperties"
+        }
+      }
+    },
+    "SqlServerInstanceProperties": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "SQL Server version",
+          "x-ms-summary": "SQL Version",
+          "enum": [
+            "SQL Server 2012",
+            "SQL Server 2014",
+            "SQL Server 2016",
+            "SQL Server 2017",
+            "SQL Server 2019",
+            "SQL Server 2022",
+            "SQL Server 2025",
+            "Unknown"
+          ]
+        },
+        "edition": {
+          "type": "string",
+          "description": "SQL Server edition",
+          "x-ms-summary": "Edition",
+          "enum": [
+            "Evaluation",
+            "Enterprise",
+            "Standard",
+            "Web",
+            "Developer",
+            "Express",
+            "Unknown"
+          ]
+        },
+        "containerResourceId": {
+          "type": "string",
+          "description": "ARM resource ID of the connected machine"
+        },
+        "createTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Instance creation timestamp"
+        },
+        "vCore": {
+          "type": "string",
+          "description": "Number of virtual cores",
+          "x-ms-summary": "vCores"
+        },
+        "cores": {
+          "type": "string",
+          "description": "Number of CPU cores",
+          "x-ms-summary": "Cores"
+        },
+        "status": {
+          "type": "string",
+          "description": "Instance status",
+          "x-ms-summary": "Status",
+          "enum": [
+            "Connected",
+            "Disconnected",
+            "Registered",
+            "Unknown"
+          ]
+        },
+        "patchLevel": {
+          "type": "string",
+          "description": "SQL Server patch level"
+        },
+        "collation": {
+          "type": "string",
+          "description": "SQL Server collation"
+        },
+        "currentVersion": {
+          "type": "string",
+          "description": "Current version of the SQL Server instance"
+        },
+        "instanceName": {
+          "type": "string",
+          "description": "SQL Server instance name",
+          "x-ms-summary": "Instance Name"
+        },
+        "tcpDynamicPorts": {
+          "type": "string",
+          "description": "Dynamic TCP port"
+        },
+        "tcpStaticPorts": {
+          "type": "string",
+          "description": "Static TCP port"
+        },
+        "productId": {
+          "type": "string",
+          "description": "SQL Server product ID"
+        },
+        "licenseType": {
+          "type": "string",
+          "description": "License type",
+          "x-ms-summary": "License Type",
+          "enum": [
+            "Paid",
+            "Free",
+            "HADR",
+            "ServerCAL",
+            "LicenseOnly",
+            "PAYG",
+            "Undefined"
+          ]
+        },
+        "azureDefenderStatusLastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last Azure Defender status update"
+        },
+        "azureDefenderStatus": {
+          "type": "string",
+          "description": "Azure Defender for SQL status",
+          "x-ms-summary": "Defender Status",
+          "enum": [
+            "Protected",
+            "Unprotected",
+            "Unknown"
+          ]
+        },
+        "provisioningState": {
+          "type": "string",
+          "description": "Provisioning state",
+          "x-ms-summary": "Provisioning State"
+        },
+        "hostType": {
+          "type": "string",
+          "description": "Type of host for the SQL Server instance",
+          "enum": [
+            "Azure Virtual Machine",
+            "Azure VMware Solution",
+            "Azure Kubernetes Service",
+            "AWS VMware Cloud on AWS",
+            "GCP VMware Engine",
+            "Physical Server",
+            "Virtual Machine",
+            "Other"
+          ]
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "Type of SQL Server service",
+          "x-ms-summary": "Service Type",
+          "enum": [
+            "Engine",
+            "SSAS",
+            "SSIS",
+            "SSRS",
+            "PBIRS"
+          ]
+        },
+        "backupPolicy": {
+          "$ref": "#/definitions/BackupPolicy"
+        },
+        "monitoring": {
+          "$ref": "#/definitions/MonitoringConfig"
+        },
+        "migration": {
+          "$ref": "#/definitions/MigrationConfig"
+        },
+        "clientConnection": {
+          "$ref": "#/definitions/ClientConnectionConfig"
+        },
+        "authentication": {
+          "$ref": "#/definitions/AuthenticationConfig"
+        },
+        "bestPracticesAssessment": {
+          "$ref": "#/definitions/BestPracticesAssessmentConfig"
+        },
+        "upgradeLockedUntil": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Extension upgrade locked until this date"
+        }
+      }
+    },
+    "SqlServerInstanceUpdate": {
+      "type": "object",
+      "description": "Partial update payload for a SQL Server instance.",
+      "properties": {
+        "tags": {
+          "type": "object",
+          "description": "Resource tags to update",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "Properties to update",
+          "properties": {
+            "licenseType": {
+              "type": "string",
+              "description": "License type",
+              "enum": [
+                "Paid",
+                "Free",
+                "HADR",
+                "ServerCAL",
+                "LicenseOnly",
+                "PAYG",
+                "Undefined"
+              ]
+            },
+            "monitoring": {
+              "$ref": "#/definitions/MonitoringConfig"
+            },
+            "backupPolicy": {
+              "$ref": "#/definitions/BackupPolicy"
+            }
+          }
+        }
+      }
+    },
+    "BackupPolicy": {
+      "type": "object",
+      "description": "Automated backup policy configuration",
+      "properties": {
+        "retentionPeriodDays": {
+          "type": "integer",
+          "description": "Backup retention period in days (0-35)",
+          "x-ms-summary": "Retention Days"
+        },
+        "fullBackupDays": {
+          "type": "integer",
+          "description": "Days between full backups (0-7)",
+          "x-ms-summary": "Full Backup Interval"
+        },
+        "differentialBackupHours": {
+          "type": "integer",
+          "description": "Hours between differential backups",
+          "x-ms-summary": "Differential Interval"
+        },
+        "transactionLogBackupMinutes": {
+          "type": "integer",
+          "description": "Minutes between transaction log backups (0-60)",
+          "x-ms-summary": "Log Backup Interval"
+        }
+      }
+    },
+    "MonitoringConfig": {
+      "type": "object",
+      "description": "Monitoring configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether monitoring is enabled",
+          "x-ms-summary": "Monitoring Enabled"
+        }
+      }
+    },
+    "MigrationConfig": {
+      "type": "object",
+      "description": "Migration assessment configuration",
+      "properties": {
+        "assessment": {
+          "type": "object",
+          "description": "Migration assessment settings",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Whether migration assessment is enabled"
+            },
+            "settings": {
+              "type": "object",
+              "description": "Assessment calculation settings",
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "description": "Currency for pricing (e.g., USD)"
+                },
+                "targetLocation": {
+                  "type": "string",
+                  "description": "Target Azure region for migration"
+                },
+                "lookbackPeriodInDays": {
+                  "type": "integer",
+                  "description": "Performance data lookback period in days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ClientConnectionConfig": {
+      "type": "object",
+      "description": "Client connection configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether client connection tracking is enabled"
+        }
+      }
+    },
+    "AuthenticationConfig": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Authentication mode",
+          "enum": [
+            "Windows",
+            "Mixed",
+            "Undefined"
+          ]
+        }
+      }
+    },
+    "BestPracticesAssessmentConfig": {
+      "type": "object",
+      "description": "Best practices assessment configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether BPA is enabled",
+          "x-ms-summary": "BPA Enabled"
+        },
+        "schedule": {
+          "type": "object",
+          "description": "Assessment schedule",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Whether scheduled assessment is enabled"
+            },
+            "cronTrigger": {
+              "type": "object",
+              "description": "Cron schedule for assessments",
+              "properties": {
+                "expression": {
+                  "type": "string",
+                  "description": "Cron expression"
+                },
+                "timeZone": {
+                  "type": "string",
+                  "description": "Time zone for the schedule"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "SqlServerInstanceListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SqlServerInstance"
+          },
+          "description": "Array of SQL Server instances"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "SqlServerDatabase": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "Database Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "properties": {
+          "$ref": "#/definitions/SqlServerDatabaseProperties"
+        }
+      }
+    },
+    "SqlServerDatabaseProperties": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "Database state",
+          "x-ms-summary": "State",
+          "enum": [
+            "Online",
+            "Restoring",
+            "Recovering",
+            "RecoveryPending",
+            "Suspect",
+            "Emergency",
+            "Offline",
+            "Copying",
+            "OfflineSecondary"
+          ]
+        },
+        "recoveryMode": {
+          "type": "string",
+          "description": "Recovery model",
+          "x-ms-summary": "Recovery Mode",
+          "enum": [
+            "Full",
+            "Bulk-logged",
+            "Simple"
+          ]
+        },
+        "databaseCreationDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Database creation date"
+        },
+        "compatibilityLevel": {
+          "type": "integer",
+          "description": "SQL Server compatibility level",
+          "x-ms-summary": "Compatibility Level"
+        },
+        "sizeMB": {
+          "type": "number",
+          "description": "Size in megabytes",
+          "x-ms-summary": "Size (MB)"
+        },
+        "spaceAvailableMB": {
+          "type": "number",
+          "description": "Available space in megabytes",
+          "x-ms-summary": "Space Available (MB)"
+        },
+        "isReadOnly": {
+          "type": "boolean",
+          "description": "Whether the database is read-only"
+        },
+        "collationName": {
+          "type": "string",
+          "description": "Database collation"
+        },
+        "isEncrypted": {
+          "type": "boolean",
+          "description": "Whether the database is encrypted",
+          "x-ms-summary": "Encrypted"
+        },
+        "isTrustworthyOn": {
+          "type": "boolean",
+          "description": "Whether trustworthy mode is enabled"
+        },
+        "isAutoCloseOn": {
+          "type": "boolean",
+          "description": "Whether AUTO_CLOSE is enabled"
+        },
+        "isAutoShrinkOn": {
+          "type": "boolean",
+          "description": "Whether AUTO_SHRINK is enabled"
+        },
+        "isAutoCreateStatsOn": {
+          "type": "boolean",
+          "description": "Whether AUTO_CREATE_STATISTICS is enabled"
+        },
+        "isAutoUpdateStatsOn": {
+          "type": "boolean",
+          "description": "Whether AUTO_UPDATE_STATISTICS is enabled"
+        },
+        "isRemoteDataArchiveEnabled": {
+          "type": "boolean",
+          "description": "Whether Stretch Database is enabled"
+        },
+        "isMemoryOptimizationEnabled": {
+          "type": "boolean",
+          "description": "Whether In-Memory OLTP is enabled"
+        },
+        "backupInformation": {
+          "$ref": "#/definitions/SqlServerDatabaseBackupInfo"
+        },
+        "provisioningState": {
+          "type": "string",
+          "description": "Provisioning state"
+        }
+      }
+    },
+    "SqlServerDatabaseBackupInfo": {
+      "type": "object",
+      "properties": {
+        "lastFullBackup": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last full backup timestamp",
+          "x-ms-summary": "Last Full Backup"
+        },
+        "lastDiffBackup": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last differential backup timestamp"
+        },
+        "lastLogBackup": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last log backup timestamp"
+        }
+      }
+    },
+    "SqlServerDatabaseListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SqlServerDatabase"
+          },
+          "description": "Array of databases"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "SqlServerAvailabilityGroup": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "Availability Group Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "properties": {
+          "$ref": "#/definitions/SqlServerAvailabilityGroupProperties"
+        }
+      }
+    },
+    "SqlServerAvailabilityGroupProperties": {
+      "type": "object",
+      "properties": {
+        "availabilityGroupId": {
+          "type": "string",
+          "description": "Unique ID of the availability group"
+        },
+        "serverName": {
+          "type": "string",
+          "description": "Server name",
+          "x-ms-summary": "Server Name"
+        },
+        "state": {
+          "type": "string",
+          "description": "Availability group state",
+          "x-ms-summary": "State"
+        },
+        "replicas": {
+          "type": "object",
+          "description": "Replicas",
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AvailabilityGroupReplica"
+              },
+              "description": "List of replicas"
+            }
+          }
+        },
+        "databases": {
+          "type": "object",
+          "description": "Databases in the AG",
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AvailabilityGroupDatabase"
+              },
+              "description": "List of databases"
+            }
+          }
+        },
+        "info": {
+          "type": "object",
+          "description": "Additional AG information",
+          "properties": {
+            "failureConditionLevel": {
+              "type": "integer",
+              "description": "Failure condition level"
+            },
+            "healthCheckTimeout": {
+              "type": "integer",
+              "description": "Health check timeout in milliseconds"
+            },
+            "basicFeatures": {
+              "type": "boolean",
+              "description": "Whether basic features are enabled"
+            },
+            "dtcSupport": {
+              "type": "boolean",
+              "description": "Whether DTC support is enabled"
+            },
+            "dbFailover": {
+              "type": "boolean",
+              "description": "Whether database failover is enabled"
+            },
+            "isDistributed": {
+              "type": "boolean",
+              "description": "Whether this is a distributed AG"
+            },
+            "clusterTypeDescription": {
+              "type": "string",
+              "description": "Cluster type description"
+            },
+            "requiredSynchronizedSecondariesToCommit": {
+              "type": "integer",
+              "description": "Required synchronized secondaries"
+            },
+            "isContained": {
+              "type": "boolean",
+              "description": "Whether this is a contained AG"
+            }
+          }
+        },
+        "provisioningState": {
+          "type": "string",
+          "description": "Provisioning state"
+        }
+      }
+    },
+    "AvailabilityGroupReplica": {
+      "type": "object",
+      "properties": {
+        "replicaId": {
+          "type": "string",
+          "description": "Replica ID"
+        },
+        "replicaName": {
+          "type": "string",
+          "description": "Replica server name",
+          "x-ms-summary": "Replica Name"
+        },
+        "configure": {
+          "type": "object",
+          "description": "Replica configuration",
+          "properties": {
+            "endpoint": {
+              "type": "object",
+              "properties": {
+                "endpointUrl": {
+                  "type": "string",
+                  "description": "Endpoint URL"
+                }
+              }
+            },
+            "availabilityModeDescription": {
+              "type": "string",
+              "description": "Availability mode"
+            },
+            "failoverModeDescription": {
+              "type": "string",
+              "description": "Failover mode"
+            },
+            "sessionTimeout": {
+              "type": "integer",
+              "description": "Session timeout seconds"
+            },
+            "primaryRoleAllowConnectionsDescription": {
+              "type": "string",
+              "description": "Primary role connection policy"
+            },
+            "secondaryRoleAllowConnectionsDescription": {
+              "type": "string",
+              "description": "Secondary role connection policy"
+            },
+            "replicaCreateDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Replica creation date"
+            },
+            "replicaModifyDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Replica modification date"
+            },
+            "backupPriority": {
+              "type": "integer",
+              "description": "Backup priority"
+            },
+            "readOnlyRoutingUrl": {
+              "type": "string",
+              "description": "Read-only routing URL"
+            },
+            "seedingModeDescription": {
+              "type": "string",
+              "description": "Seeding mode"
+            }
+          }
+        },
+        "state": {
+          "type": "object",
+          "description": "Replica state",
+          "properties": {
+            "role": {
+              "type": "string",
+              "description": "Current role (PRIMARY/SECONDARY)"
+            },
+            "operationalStateDescription": {
+              "type": "string",
+              "description": "Operational state"
+            },
+            "recoveryHealthDescription": {
+              "type": "string",
+              "description": "Recovery health"
+            },
+            "synchronizationHealthDescription": {
+              "type": "string",
+              "description": "Synchronization health"
+            },
+            "connectedStateDescription": {
+              "type": "string",
+              "description": "Connected state"
+            },
+            "lastConnectErrorDescription": {
+              "type": "string",
+              "description": "Last connection error"
+            },
+            "lastConnectErrorTimestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Last error timestamp"
+            }
+          }
+        }
+      }
+    },
+    "AvailabilityGroupDatabase": {
+      "type": "object",
+      "properties": {
+        "databaseName": {
+          "type": "string",
+          "description": "Database name",
+          "x-ms-summary": "Database Name"
+        },
+        "replicaName": {
+          "type": "string",
+          "description": "Replica name"
+        },
+        "isLocal": {
+          "type": "boolean",
+          "description": "Whether the database is local"
+        },
+        "isPrimaryReplica": {
+          "type": "boolean",
+          "description": "Whether this is the primary replica"
+        },
+        "synchronizationStateDescription": {
+          "type": "string",
+          "description": "Synchronization state"
+        },
+        "isCommitParticipant": {
+          "type": "boolean",
+          "description": "Whether commits are participated"
+        },
+        "synchronizationHealthDescription": {
+          "type": "string",
+          "description": "Synchronization health"
+        },
+        "databaseStateDescription": {
+          "type": "string",
+          "description": "Database state"
+        },
+        "isSuspended": {
+          "type": "boolean",
+          "description": "Whether synchronization is suspended"
+        }
+      }
+    },
+    "SqlServerAvailabilityGroupListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SqlServerAvailabilityGroup"
+          },
+          "description": "Array of availability groups"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "FailoverGroup": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "Failover Group Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "properties": {
+          "$ref": "#/definitions/FailoverGroupProperties"
+        }
+      }
+    },
+    "FailoverGroupProperties": {
+      "type": "object",
+      "properties": {
+        "partnerManagedInstanceId": {
+          "type": "string",
+          "description": "ARM resource ID of the partner managed instance"
+        },
+        "spec": {
+          "type": "object",
+          "description": "Failover group specification",
+          "properties": {
+            "role": {
+              "type": "string",
+              "description": "Current role",
+              "x-ms-summary": "Role",
+              "enum": [
+                "Primary",
+                "Secondary"
+              ]
+            },
+            "partnerMI": {
+              "type": "string",
+              "description": "Partner managed instance name"
+            },
+            "partnerMirroringURL": {
+              "type": "string",
+              "description": "Partner mirroring URL"
+            },
+            "sourceMI": {
+              "type": "string",
+              "description": "Source managed instance"
+            },
+            "sourceMirroringURL": {
+              "type": "string",
+              "description": "Source mirroring URL"
+            },
+            "sharedName": {
+              "type": "string",
+              "description": "Shared name",
+              "x-ms-summary": "Shared Name"
+            }
+          }
+        },
+        "status": {
+          "type": "object",
+          "description": "Failover group status",
+          "properties": {
+            "role": {
+              "type": "string",
+              "description": "Current role"
+            },
+            "lastFailoverTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Last failover timestamp"
+            }
+          }
+        },
+        "provisioningState": {
+          "type": "string",
+          "description": "Provisioning state"
+        }
+      }
+    },
+    "FailoverGroupListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FailoverGroup"
+          },
+          "description": "Array of failover groups"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "SqlServerLicense": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "License Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "location": {
+          "type": "string",
+          "description": "Azure region",
+          "x-ms-summary": "Location"
+        },
+        "tags": {
+          "type": "object",
+          "description": "Resource tags",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "License properties",
+          "properties": {
+            "billingPlan": {
+              "type": "string",
+              "description": "Billing plan",
+              "x-ms-summary": "Billing Plan",
+              "enum": [
+                "Paid",
+                "Free"
+              ]
+            },
+            "physicalCoreCount": {
+              "type": "integer",
+              "description": "Number of physical cores",
+              "x-ms-summary": "Physical Cores"
+            },
+            "activationState": {
+              "type": "string",
+              "description": "License activation state",
+              "x-ms-summary": "Activation State",
+              "enum": [
+                "Activated",
+                "Deactivated"
+              ]
+            },
+            "scopeType": {
+              "type": "string",
+              "description": "License scope type",
+              "enum": [
+                "Subscription",
+                "ResourceGroup",
+                "Tenant"
+              ]
+            },
+            "lastActivatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Last activation timestamp"
+            },
+            "lastDeactivatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Last deactivation timestamp"
+            },
+            "tenantId": {
+              "type": "string",
+              "description": "Tenant ID"
+            },
+            "provisioningState": {
+              "type": "string",
+              "description": "Provisioning state"
+            }
+          }
+        }
+      }
+    },
+    "SqlServerLicenseListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SqlServerLicense"
+          },
+          "description": "Array of SQL Server licenses"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "SqlServerEsuLicense": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "ESU License Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "location": {
+          "type": "string",
+          "description": "Azure region",
+          "x-ms-summary": "Location"
+        },
+        "tags": {
+          "type": "object",
+          "description": "Resource tags",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "ESU license properties",
+          "properties": {
+            "billingPlan": {
+              "type": "string",
+              "description": "Billing plan",
+              "x-ms-summary": "Billing Plan",
+              "enum": [
+                "Paid",
+                "Free"
+              ]
+            },
+            "physicalCoreCount": {
+              "type": "integer",
+              "description": "Number of physical cores",
+              "x-ms-summary": "Physical Cores"
+            },
+            "activationState": {
+              "type": "string",
+              "description": "ESU license activation state",
+              "x-ms-summary": "Activation State",
+              "enum": [
+                "Activated",
+                "Deactivated"
+              ]
+            },
+            "scopeType": {
+              "type": "string",
+              "description": "License scope type",
+              "enum": [
+                "Subscription",
+                "ResourceGroup",
+                "Tenant"
+              ]
+            },
+            "version": {
+              "type": "string",
+              "description": "SQL Server version for ESU",
+              "enum": [
+                "SQL Server 2012",
+                "SQL Server 2014"
+              ]
+            },
+            "esuYear": {
+              "type": "integer",
+              "description": "ESU year (1, 2, or 3)"
+            },
+            "terminationDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ESU termination date"
+            },
+            "provisioningState": {
+              "type": "string",
+              "description": "Provisioning state"
+            }
+          }
+        }
+      }
+    },
+    "SqlServerEsuLicenseListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SqlServerEsuLicense"
+          },
+          "description": "Array of ESU licenses"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "DataController": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "Data Controller Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "location": {
+          "type": "string",
+          "description": "Azure region",
+          "x-ms-summary": "Location"
+        },
+        "tags": {
+          "type": "object",
+          "description": "Resource tags",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "Data controller properties",
+          "properties": {
+            "infrastructure": {
+              "type": "string",
+              "description": "Infrastructure type",
+              "x-ms-summary": "Infrastructure",
+              "enum": [
+                "azure",
+                "gcp",
+                "aws",
+                "alibaba",
+                "onpremises",
+                "other"
+              ]
+            },
+            "k8sRaw": {
+              "type": "object",
+              "description": "Raw Kubernetes data controller info"
+            },
+            "lastUploadedDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Last uploaded date from on-premises"
+            },
+            "provisioningState": {
+              "type": "string",
+              "description": "Provisioning state"
+            }
+          }
+        }
+      }
+    },
+    "DataControllerListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DataController"
+          },
+          "description": "Array of data controllers"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "SqlManagedInstance": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Fully qualified resource ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resource name",
+          "x-ms-summary": "SQL MI Name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Resource type"
+        },
+        "location": {
+          "type": "string",
+          "description": "Azure region",
+          "x-ms-summary": "Location"
+        },
+        "tags": {
+          "type": "object",
+          "description": "Resource tags",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "properties": {
+          "type": "object",
+          "description": "SQL Managed Instance properties",
+          "properties": {
+            "dataControllerId": {
+              "type": "string",
+              "description": "ARM resource ID of the data controller"
+            },
+            "admin": {
+              "type": "string",
+              "description": "Admin username",
+              "x-ms-summary": "Admin"
+            },
+            "startTime": {
+              "type": "string",
+              "description": "Instance start time"
+            },
+            "endTime": {
+              "type": "string",
+              "description": "Instance end time"
+            },
+            "vCores": {
+              "type": "string",
+              "description": "Number of vCores",
+              "x-ms-summary": "vCores"
+            },
+            "licenseType": {
+              "type": "string",
+              "description": "License type",
+              "x-ms-summary": "License Type",
+              "enum": [
+                "BasePrice",
+                "LicenseIncluded",
+                "DisasterRecovery"
+              ]
+            },
+            "k8sRaw": {
+              "type": "object",
+              "description": "Raw Kubernetes managed instance info"
+            },
+            "lastUploadedDate": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Last uploaded date from on-premises"
+            },
+            "provisioningState": {
+              "type": "string",
+              "description": "Provisioning state"
+            }
+          }
+        }
+      }
+    },
+    "SqlManagedInstanceListResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SqlManagedInstance"
+          },
+          "description": "Array of SQL Managed Instances"
+        },
+        "nextLink": {
+          "type": "string",
+          "description": "Link to the next page of results"
+        }
+      }
+    },
+    "ResourceGraphResult": {
+      "type": "object",
+      "description": "Azure Resource Graph query result",
+      "properties": {
+        "totalRecords": {
+          "type": "integer",
+          "description": "Total number of records matching the query",
+          "x-ms-summary": "Total Records"
+        },
+        "count": {
+          "type": "integer",
+          "description": "Number of records in this page",
+          "x-ms-summary": "Count"
+        },
+        "data": {
+          "type": "object",
+          "description": "Query result data"
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Query facets"
+        },
+        "resultTruncated": {
+          "type": "string",
+          "description": "Whether results were truncated",
+          "enum": [
+            "true",
+            "false"
+          ]
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://management.azure.com/user_impersonation": "Access Azure Resource Manager"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "https://management.azure.com/user_impersonation"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/en-us/azure/architecture/hybrid/azure-arc-sql-server"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Data;IT Operations"
+    }
+  ]
+}
