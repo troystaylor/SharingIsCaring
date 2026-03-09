@@ -36,6 +36,8 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
 5. Navigate to **Manage > OAuth Policies**:
    - **Refresh Token Policy**: Set to **"Refresh token is valid until revoked"**
    - **Permitted Users**: "All users may self-authorize" (or admin pre-authorized)
+6. Navigate to **Setup > Security > OAuth and OpenID Connect Settings**
+   - **Allow Authorization Code and Credentials Flows**: Toggle On
 
 #### Option 2: Connected App (Legacy)
 
@@ -467,4 +469,5 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
 ## License
 
 This connector is provided as-is for educational and development purposes.
+
 
