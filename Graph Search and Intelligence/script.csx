@@ -375,6 +375,7 @@ public class Script : ScriptBase
                 {
                     query = new { type = "string", description = "Natural language query (e.g. \"Find the board deck from last quarter\")" },
                     filter = new { type = "string", description = "KQL path filter (e.g. \"filetype:docx\")" },
+                    metadata = new { type = "array", items = new { type = "string" }, description = "Metadata fields to return (e.g. [\"title\", \"author\"])" },
                     from = new { type = "integer", description = "Pagination offset (default 0)" },
                     size = new { type = "integer", description = "Page size (default 10)" }
                 },
@@ -384,6 +385,7 @@ public class Script : ScriptBase
             {
                 var body = new JObject { ["query"] = args["query"]?.ToString() };
                 if (args["filter"] != null) body["filter"] = args["filter"].ToString();
+                if (args["metadata"] != null) body["metadata"] = new JArray(args["metadata"].ToObject<string[]>());
                 if (args["from"] != null) body["from"] = args["from"].Value<int>();
                 if (args["size"] != null) body["size"] = args["size"].Value<int>();
                 return await GraphBetaPostAsync("/copilot/search", body);
