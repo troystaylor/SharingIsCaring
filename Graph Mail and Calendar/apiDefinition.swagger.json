@@ -1,0 +1,4436 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Graph Mail and Calendar",
+    "description": "Microsoft Graph connector for Outlook mail and calendar operations including sending, searching, replying, scheduling meetings, managing events, and checking availability.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Graph Mail and Calendar MCP",
+        "description": "Sends JSON-RPC requests to invoke Microsoft Graph mail and calendar tools via MCP for Copilot Studio integration.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages": {
+      "get": {
+        "operationId": "ListMessages",
+        "summary": "List Messages",
+        "description": "Retrieve messages from the signed-in user's mailbox. Supports keyword search, OData filter, ordering, and field selection.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Keyword search (e.g. \"subject:quarterly\" or \"from:john@contoso.com\" or \"budget report\")"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter (e.g. isRead eq false)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of messages to return (default 10)"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order (e.g. receivedDateTime desc)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Comma-separated fields to return (e.g. subject,from,receivedDateTime)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/message"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateDraft",
+        "summary": "Create Draft Message",
+        "description": "Create a new draft message in the signed-in user's mailbox.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createMessageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}": {
+      "get": {
+        "operationId": "GetMessage",
+        "summary": "Get Message",
+        "description": "Get a specific message by ID from the signed-in user's mailbox.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Expand",
+            "description": "Navigation properties to expand (e.g. attachments)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdateMessage",
+        "summary": "Update Message",
+        "description": "Update properties of a message (subject, body, categories, importance, isRead).",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "type": "string",
+                  "x-ms-summary": "Subject"
+                },
+                "body": {
+                  "$ref": "#/definitions/itemBody"
+                },
+                "categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "x-ms-summary": "Categories"
+                },
+                "importance": {
+                  "type": "string",
+                  "x-ms-summary": "Importance",
+                  "enum": [
+                    "low",
+                    "normal",
+                    "high"
+                  ]
+                },
+                "isRead": {
+                  "type": "boolean",
+                  "x-ms-summary": "Is Read"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteMessage",
+        "summary": "Delete Message",
+        "description": "Delete a message from the signed-in user's mailbox.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/send": {
+      "post": {
+        "operationId": "SendDraft",
+        "summary": "Send Draft",
+        "description": "Send an existing draft message.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The draft message ID"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/reply": {
+      "post": {
+        "operationId": "Reply",
+        "summary": "Reply to Message",
+        "description": "Reply to the sender of a message with a comment.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID to reply to"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Reply text"
+                },
+                "message": {
+                  "type": "object",
+                  "description": "Optional message overrides (toRecipients, etc.)",
+                  "properties": {
+                    "toRecipients": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/recipient"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/replyAll": {
+      "post": {
+        "operationId": "ReplyAll",
+        "summary": "Reply All to Message",
+        "description": "Reply to all recipients of a message.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID to reply all to"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Reply text"
+                },
+                "message": {
+                  "type": "object",
+                  "description": "Optional message overrides",
+                  "properties": {
+                    "toRecipients": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/recipient"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/forward": {
+      "post": {
+        "operationId": "ForwardMessage",
+        "summary": "Forward Message",
+        "description": "Forward a message to specified recipients.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID to forward"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "toRecipients"
+              ],
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Optional forward comment"
+                },
+                "toRecipients": {
+                  "type": "array",
+                  "x-ms-summary": "To Recipients",
+                  "description": "Recipients to forward to",
+                  "items": {
+                    "$ref": "#/definitions/recipient"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/move": {
+      "post": {
+        "operationId": "MoveMessage",
+        "summary": "Move Message",
+        "description": "Move a message to a different mail folder.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID to move"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "destinationId"
+              ],
+              "properties": {
+                "destinationId": {
+                  "type": "string",
+                  "x-ms-summary": "Destination Folder ID",
+                  "description": "The ID of the destination folder, or well-known name (inbox, drafts, sentitems, deleteditems, archive)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Moved",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/copy": {
+      "post": {
+        "operationId": "CopyMessage",
+        "summary": "Copy Message",
+        "description": "Copy a message to a folder.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID to copy"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["destinationId"],
+              "properties": {
+                "destinationId": {
+                  "type": "string",
+                  "x-ms-summary": "Destination Folder ID",
+                  "description": "The ID of the destination folder, or well-known name (inbox, drafts, sentitems, deleteditems, archive)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Copied",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/createReply": {
+      "post": {
+        "operationId": "CreateReplyDraft",
+        "summary": "Create Reply Draft",
+        "description": "Create a draft reply to a message. Edit the draft then send via Send Draft.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the message to reply to"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Optional comment to include in the reply"
+                },
+                "message": {
+                  "type": "object",
+                  "description": "Optional overrides for the reply message",
+                  "properties": {
+                    "toRecipients": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/definitions/recipient"
+                      },
+                      "x-ms-summary": "To Recipients",
+                      "description": "Override the default To recipients"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/createReplyAll": {
+      "post": {
+        "operationId": "CreateReplyAllDraft",
+        "summary": "Create Reply All Draft",
+        "description": "Create a draft reply-all to a message. Edit the draft then send via Send Draft.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the message to reply-all to"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Optional comment to include in the reply-all"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/createForward": {
+      "post": {
+        "operationId": "CreateForwardDraft",
+        "summary": "Create Forward Draft",
+        "description": "Create a draft forward of a message. Add recipients and modify the draft before sending via Send Draft.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the message to forward"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Optional comment to include in the forward"
+                },
+                "toRecipients": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/recipient"
+                  },
+                  "x-ms-summary": "To Recipients",
+                  "description": "Recipients to forward the message to"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/attachments": {
+      "get": {
+        "operationId": "ListAttachments",
+        "summary": "List Attachments",
+        "description": "List all attachments on a message.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/attachment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateAttachment",
+        "summary": "Create Attachment",
+        "description": "Add a file attachment to a draft message. Provide base64-encoded content.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The draft message ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["@odata.type", "name", "contentBytes"],
+              "properties": {
+                "@odata.type": {
+                  "type": "string",
+                  "default": "#microsoft.graph.fileAttachment",
+                  "x-ms-visibility": "internal",
+                  "title": ""
+                },
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "File Name",
+                  "description": "Attachment file name (e.g. report.pdf)"
+                },
+                "contentType": {
+                  "type": "string",
+                  "x-ms-summary": "Content Type",
+                  "description": "MIME type (e.g. application/pdf)"
+                },
+                "contentBytes": {
+                  "type": "string",
+                  "x-ms-summary": "Content (Base64)",
+                  "description": "Base64-encoded file content"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/attachment"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/attachments/{attachmentId}": {
+      "get": {
+        "operationId": "GetAttachment",
+        "summary": "Get Attachment",
+        "description": "Get a specific attachment on a message including metadata and base64 content.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "x-ms-url-encoding": "single",
+            "description": "The attachment ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/attachment"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteAttachment",
+        "summary": "Delete Attachment",
+        "description": "Delete an attachment from a draft message.",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The draft message ID"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "x-ms-url-encoding": "single",
+            "description": "The attachment ID to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/messages/{messageId}/attachments/{attachmentId}/$value": {
+      "get": {
+        "operationId": "GetAttachmentContent",
+        "summary": "Get Attachment Content",
+        "description": "Download the raw content of a file attachment.",
+        "produces": ["application/octet-stream"],
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "x-ms-url-encoding": "single",
+            "description": "The attachment ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Raw file content",
+            "schema": {
+              "type": "file"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/sendMail": {
+      "post": {
+        "operationId": "SendMail",
+        "summary": "Send Mail",
+        "description": "Send a new email as the signed-in user.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sendMailRequest"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/getMailTips": {
+      "post": {
+        "operationId": "GetMailTips",
+        "summary": "Get Mail Tips",
+        "description": "Get MailTips for one or more recipients, including out-of-office status, mailbox full, delivery restrictions, and custom tips.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["EmailAddresses", "MailTipsOptions"],
+              "properties": {
+                "EmailAddresses": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "x-ms-summary": "Email Addresses",
+                  "description": "Email addresses to get tips for"
+                },
+                "MailTipsOptions": {
+                  "type": "string",
+                  "x-ms-summary": "Mail Tips Options",
+                  "description": "Comma-separated: automaticReplies, mailboxFullStatus, customMailTip, deliveryRestriction, externalMemberCount, maxMessageSize, moderationStatus, recipientScope, totalMemberCount"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "emailAddress": {
+                        "$ref": "#/definitions/emailAddress"
+                      },
+                      "automaticReplies": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string"
+                          },
+                          "scheduledStartTime": {
+                            "$ref": "#/definitions/dateTimeTimeZone"
+                          },
+                          "scheduledEndTime": {
+                            "$ref": "#/definitions/dateTimeTimeZone"
+                          }
+                        }
+                      },
+                      "mailboxFull": {
+                        "type": "boolean"
+                      },
+                      "maxMessageSize": {
+                        "type": "integer"
+                      },
+                      "deliveryRestricted": {
+                        "type": "boolean"
+                      },
+                      "isModerated": {
+                        "type": "boolean"
+                      },
+                      "customMailTip": {
+                        "type": "string"
+                      },
+                      "externalMemberCount": {
+                        "type": "integer"
+                      },
+                      "totalMemberCount": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders/{folderId}": {
+      "get": {
+        "operationId": "GetMailFolder",
+        "summary": "Get Mail Folder",
+        "description": "Get properties of a specific mail folder by ID. Use well-known folder names: inbox, drafts, sentitems, deleteditems, junkemail, archive.",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Folder ID",
+            "x-ms-url-encoding": "single",
+            "description": "Mail folder ID or well-known name (inbox, drafts, sentitems, deleteditems, junkemail, archive)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Properties to return (e.g. id,displayName,totalItemCount,unreadItemCount)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/mailFolder"
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdateMailFolder",
+        "summary": "Update Mail Folder",
+        "description": "Update properties of a mail folder such as renaming it.",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Folder ID",
+            "x-ms-url-encoding": "single",
+            "description": "The mail folder ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "x-ms-summary": "Display Name",
+                  "description": "New display name for the folder"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/mailFolder"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteMailFolder",
+        "summary": "Delete Mail Folder",
+        "description": "Delete a mail folder and its contents.",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Folder ID",
+            "x-ms-url-encoding": "single",
+            "description": "The mail folder ID to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders/{folderId}/childFolders": {
+      "get": {
+        "operationId": "ListChildFolders",
+        "summary": "List Child Folders",
+        "description": "List the child (sub) folders of a specific mail folder.",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Folder ID",
+            "x-ms-url-encoding": "single",
+            "description": "The parent mail folder ID or well-known name"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of child folders to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/mailFolder"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders/{folderId}/messages": {
+      "get": {
+        "operationId": "ListFolderMessages",
+        "summary": "List Folder Messages",
+        "description": "List messages in a specific mail folder. Supports search, filter, and OData parameters.",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Folder ID",
+            "x-ms-url-encoding": "single",
+            "description": "Mail folder ID or well-known name (inbox, drafts, sentitems, deleteditems, junkemail, archive)"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Keyword search within this folder"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of messages to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order (e.g. receivedDateTime desc)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/message"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateFolderMessage",
+        "summary": "Create Message in Folder",
+        "description": "Create a draft message directly in a specific mail folder.",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Folder ID",
+            "x-ms-url-encoding": "single",
+            "description": "The folder ID or well-known name"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createMessageRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders": {
+      "get": {
+        "operationId": "ListMailFolders",
+        "summary": "List Mail Folders",
+        "description": "List mail folders in the signed-in user's mailbox.",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Search folders by display name"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of folders to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/mailFolder"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateMailFolder",
+        "summary": "Create Mail Folder",
+        "description": "Create a new mail folder in the user's mailbox.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["displayName"],
+              "properties": {
+                "displayName": {
+                  "type": "string",
+                  "x-ms-summary": "Display Name",
+                  "description": "The name of the new mail folder"
+                },
+                "isHidden": {
+                  "type": "boolean",
+                  "x-ms-summary": "Is Hidden",
+                  "description": "Whether the folder is hidden"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/mailFolder"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders/inbox/messageRules": {
+      "get": {
+        "operationId": "ListMessageRules",
+        "summary": "List Message Rules",
+        "description": "Get all the messageRule objects defined for the user's inbox.",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "x-ms-summary": "Top",
+            "description": "Number of rules to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/messageRule"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateMessageRule",
+        "summary": "Create Message Rule",
+        "description": "Create a message rule for the user's inbox by specifying conditions and actions.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/messageRule"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/messageRule"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders/inbox/messageRules/{ruleId}": {
+      "get": {
+        "operationId": "GetMessageRule",
+        "summary": "Get Message Rule",
+        "description": "Get the properties and relationships of a message rule.",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Rule ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the message rule"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/messageRule"
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdateMessageRule",
+        "summary": "Update Message Rule",
+        "description": "Update the properties of a message rule.",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Rule ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the message rule"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/messageRule"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/messageRule"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteMessageRule",
+        "summary": "Delete Message Rule",
+        "description": "Delete a message rule.",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Rule ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the message rule to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/mailFolders/sentitems/messages": {
+      "get": {
+        "operationId": "ListSentMessages",
+        "summary": "List Sent Messages",
+        "description": "List messages in the signed-in user's Sent Items folder.",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Keyword search in sent messages"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of messages to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order (e.g. sentDateTime desc)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/message"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/search/query": {
+      "post": {
+        "operationId": "SearchMessages",
+        "summary": "Search Messages (KQL)",
+        "description": "Search Outlook messages using Microsoft Graph Search API with KQL (Keyword Query Language) queries. Searches across subject, body, and attachments.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "requests"
+              ],
+              "properties": {
+                "requests": {
+                  "type": "array",
+                  "description": "Search requests",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "entityTypes",
+                      "query"
+                    ],
+                    "properties": {
+                      "entityTypes": {
+                        "type": "array",
+                        "description": "Entity types to search (message, event)",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "query": {
+                        "type": "object",
+                        "properties": {
+                          "queryString": {
+                            "type": "string",
+                            "description": "KQL query string (e.g. \"subject:quarterly AND from:john\")"
+                          }
+                        }
+                      },
+                      "from": {
+                        "type": "integer",
+                        "description": "Offset for pagination"
+                      },
+                      "size": {
+                        "type": "integer",
+                        "description": "Number of results to return"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "searchTerms": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "hitsContainers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "hits": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "hitId": {
+                                    "type": "string"
+                                  },
+                                  "rank": {
+                                    "type": "integer"
+                                  },
+                                  "summary": {
+                                    "type": "string"
+                                  },
+                                  "resource": {
+                                    "type": "object",
+                                    "properties": {
+                                      "@odata.type": {
+                                        "type": "string"
+                                      },
+                                      "subject": {
+                                        "type": "string"
+                                      },
+                                      "bodyPreview": {
+                                        "type": "string"
+                                      },
+                                      "receivedDateTime": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "moreResultsAvailable": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/events": {
+      "get": {
+        "operationId": "ListEvents",
+        "summary": "List Events",
+        "description": "List calendar events for the signed-in user. Supports keyword search, OData filter, and ordering.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Keyword search in events (e.g. \"team standup\")"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter (e.g. subject eq 'Team Meeting')"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order (e.g. start/dateTime)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/event"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateEvent",
+        "summary": "Create Event",
+        "description": "Create a new calendar event. Supports attendees, Teams meetings, recurring events, and all-day events.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createEventRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}": {
+      "get": {
+        "operationId": "GetEvent",
+        "summary": "Get Event",
+        "description": "Get a specific calendar event by ID.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Expand",
+            "description": "Navigation properties to expand"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdateEvent",
+        "summary": "Update Event",
+        "description": "Update an existing calendar event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createEventRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteEvent",
+        "summary": "Delete Event",
+        "description": "Delete a calendar event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/accept": {
+      "post": {
+        "operationId": "AcceptEvent",
+        "summary": "Accept Event",
+        "description": "Accept a meeting invitation.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/eventResponseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/decline": {
+      "post": {
+        "operationId": "DeclineEvent",
+        "summary": "Decline Event",
+        "description": "Decline a meeting invitation.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/eventResponseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/tentativelyAccept": {
+      "post": {
+        "operationId": "TentativelyAcceptEvent",
+        "summary": "Tentatively Accept Event",
+        "description": "Tentatively accept a meeting invitation.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "$ref": "#/definitions/eventResponseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/cancel": {
+      "post": {
+        "operationId": "CancelEvent",
+        "summary": "Cancel Event",
+        "description": "Cancel a meeting and notify attendees.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string",
+                  "x-ms-summary": "Comment",
+                  "description": "Cancellation message to attendees"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/snoozeReminder": {
+      "post": {
+        "operationId": "SnoozeReminder",
+        "summary": "Snooze Reminder",
+        "description": "Snooze the reminder for an event and reschedule it to a new time.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the event"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["newReminderTime"],
+              "properties": {
+                "newReminderTime": {
+                  "type": "object",
+                  "description": "The new date and time to trigger the reminder",
+                  "properties": {
+                    "dateTime": { "type": "string", "description": "Date/time value (ISO 8601)" },
+                    "timeZone": { "type": "string", "description": "Time zone (e.g. Pacific Standard Time, UTC)" }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/dismissReminder": {
+      "post": {
+        "operationId": "DismissReminder",
+        "summary": "Dismiss Reminder",
+        "description": "Dismiss the reminder for an event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the event"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/instances": {
+      "get": {
+        "operationId": "ListEventInstances",
+        "summary": "List Event Instances",
+        "description": "Get the instances (occurrences) of a recurring event for a specified time range.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The recurring event ID"
+          },
+          {
+            "name": "startDateTime",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Start Date/Time",
+            "description": "Start of time range (ISO 8601, e.g. 2024-01-01T00:00:00Z)"
+          },
+          {
+            "name": "endDateTime",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "End Date/Time",
+            "description": "End of time range (ISO 8601, e.g. 2024-12-31T23:59:59Z)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of instances to return"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Properties to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/event"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/attachments": {
+      "get": {
+        "operationId": "ListEventAttachments",
+        "summary": "List Event Attachments",
+        "description": "List all attachments on a calendar event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/attachment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateEventAttachment",
+        "summary": "Create Event Attachment",
+        "description": "Add a file attachment to a calendar event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["@odata.type", "name", "contentBytes"],
+              "properties": {
+                "@odata.type": {
+                  "type": "string",
+                  "default": "#microsoft.graph.fileAttachment",
+                  "x-ms-visibility": "internal",
+                  "title": ""
+                },
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "File Name",
+                  "description": "Attachment file name"
+                },
+                "contentType": {
+                  "type": "string",
+                  "x-ms-summary": "Content Type",
+                  "description": "MIME type"
+                },
+                "contentBytes": {
+                  "type": "string",
+                  "x-ms-summary": "Content (Base64)",
+                  "description": "Base64-encoded file content"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/attachment"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/events/{eventId}/attachments/{attachmentId}": {
+      "get": {
+        "operationId": "GetEventAttachment",
+        "summary": "Get Event Attachment",
+        "description": "Get a specific attachment on a calendar event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the event"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the attachment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/attachment"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteEventAttachment",
+        "summary": "Delete Event Attachment",
+        "description": "Delete an attachment from a calendar event.",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the event"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "x-ms-url-encoding": "single",
+            "description": "The ID of the attachment to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendarView": {
+      "get": {
+        "operationId": "ListCalendarView",
+        "summary": "List Calendar View",
+        "description": "Get calendar events within a specific date/time range, including recurring event occurrences.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "startDateTime",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Start Date/Time",
+            "description": "Start of time range (ISO 8601, e.g. 2026-03-09T00:00:00Z)"
+          },
+          {
+            "name": "endDateTime",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "End Date/Time",
+            "description": "End of time range (ISO 8601, e.g. 2026-03-09T23:59:59Z)"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order (e.g. start/dateTime)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/event"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/findMeetingTimes": {
+      "post": {
+        "operationId": "FindMeetingTimes",
+        "summary": "Find Meeting Times",
+        "description": "Suggest meeting times based on organizer and attendee availability, constraints, and preferences.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/findMeetingTimesRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "meetingTimeSuggestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "confidence": {
+                        "type": "number"
+                      },
+                      "meetingTimeSlot": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "$ref": "#/definitions/dateTimeTimeZone"
+                          },
+                          "end": {
+                            "$ref": "#/definitions/dateTimeTimeZone"
+                          }
+                        }
+                      },
+                      "organizerAvailability": {
+                        "type": "string"
+                      },
+                      "attendeeAvailability": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "attendee": {
+                              "$ref": "#/definitions/attendee"
+                            },
+                            "availability": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "suggestionReason": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "emptySuggestionsReason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendar/getSchedule": {
+      "post": {
+        "operationId": "GetSchedule",
+        "summary": "Get Schedule",
+        "description": "Get the free/busy availability schedule for users, distribution lists, or resources.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "schedules",
+                "startTime",
+                "endTime"
+              ],
+              "properties": {
+                "schedules": {
+                  "type": "array",
+                  "x-ms-summary": "Schedules",
+                  "description": "SMTP addresses of users or resources to check",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "startTime": {
+                  "type": "object",
+                  "x-ms-summary": "Start Time",
+                  "properties": {
+                    "dateTime": { "type": "string", "description": "Date/time value (ISO 8601)" },
+                    "timeZone": { "type": "string", "description": "Time zone (e.g. Pacific Standard Time, UTC)" }
+                  }
+                },
+                "endTime": {
+                  "type": "object",
+                  "x-ms-summary": "End Time",
+                  "properties": {
+                    "dateTime": { "type": "string", "description": "Date/time value (ISO 8601)" },
+                    "timeZone": { "type": "string", "description": "Time zone (e.g. Pacific Standard Time, UTC)" }
+                  }
+                },
+                "availabilityViewInterval": {
+                  "type": "integer",
+                  "x-ms-summary": "Interval (minutes)",
+                  "description": "Time slot duration in minutes (default 30)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "scheduleId": {
+                        "type": "string"
+                      },
+                      "availabilityView": {
+                        "type": "string"
+                      },
+                      "scheduleItems": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string"
+                            },
+                            "start": {
+                              "$ref": "#/definitions/dateTimeTimeZone"
+                            },
+                            "end": {
+                              "$ref": "#/definitions/dateTimeTimeZone"
+                            },
+                            "subject": {
+                              "type": "string"
+                            },
+                            "location": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendars": {
+      "get": {
+        "operationId": "ListCalendars",
+        "summary": "List Calendars",
+        "description": "List all calendars for the signed-in user.",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Search calendars by name"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of calendars to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/calendar"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateCalendar",
+        "summary": "Create Calendar",
+        "description": "Create a new calendar for the signed-in user.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "Calendar Name",
+                  "description": "Name of the new calendar"
+                },
+                "color": {
+                  "type": "string",
+                  "x-ms-summary": "Color",
+                  "description": "Color theme (auto, lightBlue, lightGreen, lightOrange, lightGray, lightYellow, lightTeal, lightPink, lightBrown, lightRed, maxColor)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/calendar"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/calendars/{calendarId}": {
+      "get": {
+        "operationId": "GetCalendar",
+        "summary": "Get Calendar",
+        "description": "Get properties of a specific calendar.",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Calendar ID",
+            "x-ms-url-encoding": "single",
+            "description": "The calendar ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Properties to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/calendar"
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "UpdateCalendar",
+        "summary": "Update Calendar",
+        "description": "Update properties of a calendar (name, color).",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Calendar ID",
+            "x-ms-url-encoding": "single",
+            "description": "The calendar ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "x-ms-summary": "Calendar Name",
+                  "description": "Updated calendar name"
+                },
+                "color": {
+                  "type": "string",
+                  "x-ms-summary": "Color",
+                  "description": "Color theme"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/calendar"
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteCalendar",
+        "summary": "Delete Calendar",
+        "description": "Delete a secondary calendar. Cannot delete the default calendar.",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Calendar ID",
+            "x-ms-url-encoding": "single",
+            "description": "The calendar ID to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me": {
+      "get": {
+        "operationId": "GetMyProfile",
+        "summary": "Get My Profile",
+        "description": "Retrieve the profile of the signed-in user.",
+        "parameters": [
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Comma-separated properties to return (e.g. displayName,mail,jobTitle,department)"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Expand",
+            "description": "Expand related entity: manager or directReports (only one per request)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/manager": {
+      "get": {
+        "operationId": "GetMyManager",
+        "summary": "Get My Manager",
+        "description": "Retrieve the manager of the signed-in user.",
+        "parameters": [
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Manager properties to return (e.g. id,displayName,mail,jobTitle)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/directReports": {
+      "get": {
+        "operationId": "GetMyDirectReports",
+        "summary": "Get My Direct Reports",
+        "description": "List the direct reports of the signed-in user.",
+        "parameters": [
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Properties to return (e.g. id,displayName,mail,jobTitle,userPrincipalName)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of direct reports to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/user"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/photo": {
+      "get": {
+        "operationId": "GetMyPhotoMetadata",
+        "summary": "Get My Photo Metadata",
+        "description": "Get the metadata for the signed-in user's profile photo, including dimensions and content type.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "x-ms-summary": "Photo ID",
+                  "description": "Photo identifier"
+                },
+                "height": {
+                  "type": "integer",
+                  "x-ms-summary": "Height",
+                  "description": "Height in pixels"
+                },
+                "width": {
+                  "type": "integer",
+                  "x-ms-summary": "Width",
+                  "description": "Width in pixels"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/people": {
+      "get": {
+        "operationId": "ListPeople",
+        "summary": "List Relevant People",
+        "description": "Get a collection of person objects ordered by relevance to the signed-in user (based on communication, collaboration, and business relationships).",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "x-ms-summary": "Search",
+            "description": "Search people by name or email"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "x-ms-summary": "Top",
+            "description": "Number of results to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "x-ms-summary": "Select",
+            "description": "Comma-separated properties to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/person"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userIdentifier}": {
+      "get": {
+        "operationId": "GetUserProfile",
+        "summary": "Get User Profile",
+        "description": "Retrieve a specific user's profile by object ID (GUID) or userPrincipalName (UPN).",
+        "parameters": [
+          {
+            "name": "userIdentifier",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User Identifier",
+            "x-ms-url-encoding": "single",
+            "description": "User object ID (GUID) or userPrincipalName (UPN). Do not use 'me'."
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Comma-separated user properties to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Expand",
+            "description": "Expand: manager or directReports (only one per request)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userIdentifier}/manager": {
+      "get": {
+        "operationId": "GetUsersManager",
+        "summary": "Get User's Manager",
+        "description": "Retrieve the manager of a specified user by object ID or UPN.",
+        "parameters": [
+          {
+            "name": "userIdentifier",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User Identifier",
+            "x-ms-url-encoding": "single",
+            "description": "User object ID (GUID) or userPrincipalName (UPN). Do not use 'me'."
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Manager properties to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userIdentifier}/directReports": {
+      "get": {
+        "operationId": "GetDirectReports",
+        "summary": "Get Direct Reports",
+        "description": "List the direct reports of a specified user.",
+        "parameters": [
+          {
+            "name": "userIdentifier",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User Identifier",
+            "x-ms-url-encoding": "single",
+            "description": "User object ID (GUID) or userPrincipalName (UPN). Do not use 'me'."
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Properties to return (e.g. id,displayName,mail,jobTitle,userPrincipalName)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of direct reports to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/user"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users": {
+      "get": {
+        "operationId": "ListUsers",
+        "summary": "List Users",
+        "description": "List users in the organization. Supports search, filter, and ordering. ConsistencyLevel is set to eventual for advanced queries.",
+        "parameters": [
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Free-text search (format: \"displayName:John\"). Requires ConsistencyLevel: eventual header."
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter (e.g. startswith(displayName,'A'))"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Comma-separated properties to return"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of users to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order (e.g. displayName)"
+          },
+          {
+            "name": "$count",
+            "in": "query",
+            "type": "boolean",
+            "required": false,
+            "x-ms-summary": "Include Count",
+            "description": "Include count of items"
+          },
+          {
+            "name": "ConsistencyLevel",
+            "in": "header",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Consistency Level",
+            "description": "Set to 'eventual' for advanced queries (required for $search)",
+            "default": "eventual",
+            "x-ms-visibility": "internal"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/user"
+                  }
+                },
+                "@odata.count": {
+                  "type": "integer"
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/messages": {
+      "get": {
+        "operationId": "ListUserMessages",
+        "summary": "List User Messages",
+        "description": "List messages from a specific user's mailbox.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single",
+            "description": "User ID or email address"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Keyword search"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of messages to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/message"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/messages/{messageId}": {
+      "get": {
+        "operationId": "GetUserMessage",
+        "summary": "Get User Message",
+        "description": "Get a specific message from another user's mailbox.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single",
+            "description": "User ID or email address"
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Message ID",
+            "x-ms-url-encoding": "single",
+            "description": "The message ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/message"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/sendMail": {
+      "post": {
+        "operationId": "SendUserMail",
+        "summary": "Send User Mail",
+        "description": "Send mail on behalf of another user.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single",
+            "description": "User ID or email address"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/sendMailRequest"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/events": {
+      "get": {
+        "operationId": "ListUserEvents",
+        "summary": "List User Events",
+        "description": "List calendar events from a specific user's calendar.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single",
+            "description": "User ID or email address"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Search",
+            "description": "Keyword search in events"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/event"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/events/{eventId}": {
+      "get": {
+        "operationId": "GetUserEvent",
+        "summary": "Get User Event",
+        "description": "Get a specific event from another user's calendar.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single",
+            "description": "User ID or email address"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Event ID",
+            "x-ms-url-encoding": "single",
+            "description": "The event ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/event"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/users/{userId}/calendarView": {
+      "get": {
+        "operationId": "ListUserCalendarView",
+        "summary": "List User Calendar View",
+        "description": "Get calendar events within a specific date range for another user.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single",
+            "description": "User ID or email address"
+          },
+          {
+            "name": "startDateTime",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Start Date/Time",
+            "description": "Start of time range (ISO 8601)"
+          },
+          {
+            "name": "endDateTime",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "End Date/Time",
+            "description": "End of time range (ISO 8601)"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of events to return"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Sort order"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/event"
+                  }
+                },
+                "@odata.nextLink": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "emailAddress": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "address": {
+          "type": "string",
+          "description": "Email address"
+        }
+      }
+    },
+    "recipient": {
+      "type": "object",
+      "properties": {
+        "emailAddress": {
+          "$ref": "#/definitions/emailAddress"
+        }
+      }
+    },
+    "itemBody": {
+      "type": "object",
+      "properties": {
+        "contentType": {
+          "type": "string",
+          "description": "Content type: Text or HTML"
+        },
+        "content": {
+          "type": "string",
+          "description": "Body content"
+        }
+      }
+    },
+    "dateTimeTimeZone": {
+      "type": "object",
+      "properties": {
+        "dateTime": {
+          "type": "string",
+          "description": "Date/time value (ISO 8601)"
+        },
+        "timeZone": {
+          "type": "string",
+          "description": "Time zone (e.g. Pacific Standard Time, UTC)"
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "Location name"
+        },
+        "locationType": {
+          "type": "string",
+          "description": "Location type"
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "countryOrRegion": {
+              "type": "string"
+            },
+            "postalCode": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "attendee": {
+      "type": "object",
+      "properties": {
+        "emailAddress": {
+          "$ref": "#/definitions/emailAddress"
+        },
+        "type": {
+          "type": "string",
+          "description": "Attendee type: required, optional, resource"
+        },
+        "status": {
+          "type": "object",
+          "properties": {
+            "response": {
+              "type": "string"
+            },
+            "time": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "patternedRecurrence": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "daily, weekly, absoluteMonthly, relativeMonthly, absoluteYearly, relativeYearly"
+            },
+            "interval": {
+              "type": "integer",
+              "description": "Number of units between occurrences"
+            },
+            "daysOfWeek": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Days of the week (sunday, monday, etc.)"
+            },
+            "dayOfMonth": {
+              "type": "integer"
+            },
+            "month": {
+              "type": "integer"
+            },
+            "firstDayOfWeek": {
+              "type": "string"
+            },
+            "index": {
+              "type": "string"
+            }
+          }
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "endDate, noEnd, numbered"
+            },
+            "startDate": {
+              "type": "string"
+            },
+            "endDate": {
+              "type": "string"
+            },
+            "numberOfOccurrences": {
+              "type": "integer"
+            },
+            "recurrenceTimeZone": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "bodyPreview": {
+          "type": "string"
+        },
+        "body": {
+          "$ref": "#/definitions/itemBody"
+        },
+        "from": {
+          "$ref": "#/definitions/recipient"
+        },
+        "toRecipients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/recipient"
+          }
+        },
+        "ccRecipients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/recipient"
+          }
+        },
+        "bccRecipients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/recipient"
+          }
+        },
+        "receivedDateTime": {
+          "type": "string"
+        },
+        "sentDateTime": {
+          "type": "string"
+        },
+        "importance": {
+          "type": "string"
+        },
+        "isRead": {
+          "type": "boolean"
+        },
+        "isDraft": {
+          "type": "boolean"
+        },
+        "hasAttachments": {
+          "type": "boolean"
+        },
+        "conversationId": {
+          "type": "string"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "internetMessageId": {
+          "type": "string"
+        },
+        "webLink": {
+          "type": "string"
+        },
+        "parentFolderId": {
+          "type": "string"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "body": {
+          "$ref": "#/definitions/itemBody"
+        },
+        "bodyPreview": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "end": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "location": {
+          "$ref": "#/definitions/location"
+        },
+        "attendees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/attendee"
+          }
+        },
+        "organizer": {
+          "$ref": "#/definitions/recipient"
+        },
+        "isOnlineMeeting": {
+          "type": "boolean"
+        },
+        "onlineMeeting": {
+          "type": "object",
+          "properties": {
+            "joinUrl": {
+              "type": "string"
+            }
+          }
+        },
+        "recurrence": {
+          "$ref": "#/definitions/patternedRecurrence"
+        },
+        "importance": {
+          "type": "string"
+        },
+        "showAs": {
+          "type": "string"
+        },
+        "isCancelled": {
+          "type": "boolean"
+        },
+        "isAllDay": {
+          "type": "boolean"
+        },
+        "reminderMinutesBeforeStart": {
+          "type": "integer"
+        },
+        "responseStatus": {
+          "type": "object",
+          "properties": {
+            "response": {
+              "type": "string"
+            },
+            "time": {
+              "type": "string"
+            }
+          }
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sensitivity": {
+          "type": "string"
+        },
+        "webLink": {
+          "type": "string"
+        },
+        "seriesMasterId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "attachment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "@odata.type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "isInline": {
+          "type": "boolean"
+        },
+        "contentBytes": {
+          "type": "string",
+          "description": "Base64-encoded content (file attachments)"
+        }
+      }
+    },
+    "mailFolder": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "parentFolderId": {
+          "type": "string"
+        },
+        "childFolderCount": {
+          "type": "integer"
+        },
+        "unreadItemCount": {
+          "type": "integer"
+        },
+        "totalItemCount": {
+          "type": "integer"
+        }
+      }
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "mail": {
+          "type": "string"
+        },
+        "userPrincipalName": {
+          "type": "string"
+        },
+        "jobTitle": {
+          "type": "string"
+        },
+        "department": {
+          "type": "string"
+        },
+        "officeLocation": {
+          "type": "string"
+        },
+        "mobilePhone": {
+          "type": "string"
+        },
+        "businessPhones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "companyName": {
+          "type": "string"
+        },
+        "givenName": {
+          "type": "string"
+        },
+        "surname": {
+          "type": "string"
+        },
+        "manager": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "displayName": { "type": "string" },
+            "mail": { "type": "string" },
+            "jobTitle": { "type": "string" },
+            "userPrincipalName": { "type": "string" }
+          }
+        },
+        "directReports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "displayName": { "type": "string" },
+              "mail": { "type": "string" },
+              "jobTitle": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "isDefaultCalendar": {
+          "type": "boolean"
+        },
+        "canEdit": {
+          "type": "boolean"
+        },
+        "owner": {
+          "$ref": "#/definitions/emailAddress"
+        }
+      }
+    },
+    "createMessageRequest": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string",
+          "x-ms-summary": "Subject",
+          "description": "Message subject"
+        },
+        "body": {
+          "type": "object",
+          "x-ms-summary": "Body",
+          "properties": {
+            "contentType": { "type": "string", "description": "Content type: Text or HTML" },
+            "content": { "type": "string", "description": "Body content" }
+          }
+        },
+        "toRecipients": {
+          "type": "array",
+          "x-ms-summary": "To Recipients",
+          "description": "Primary recipients",
+          "items": {
+            "$ref": "#/definitions/recipient"
+          }
+        },
+        "ccRecipients": {
+          "type": "array",
+          "x-ms-summary": "CC Recipients",
+          "items": {
+            "$ref": "#/definitions/recipient"
+          }
+        },
+        "bccRecipients": {
+          "type": "array",
+          "x-ms-summary": "BCC Recipients",
+          "items": {
+            "$ref": "#/definitions/recipient"
+          }
+        },
+        "importance": {
+          "type": "string",
+          "x-ms-summary": "Importance",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        }
+      }
+    },
+    "sendMailRequest": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "object",
+          "x-ms-summary": "Message",
+          "properties": {
+            "subject": { "type": "string", "description": "Message subject" },
+            "body": {
+              "type": "object",
+              "properties": {
+                "contentType": { "type": "string", "description": "Content type: Text or HTML" },
+                "content": { "type": "string", "description": "Body content" }
+              }
+            },
+            "toRecipients": {
+              "type": "array",
+              "description": "Primary recipients",
+              "items": { "$ref": "#/definitions/recipient" }
+            },
+            "ccRecipients": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/recipient" }
+            },
+            "bccRecipients": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/recipient" }
+            },
+            "importance": {
+              "type": "string",
+              "enum": ["low", "normal", "high"]
+            }
+          }
+        },
+        "saveToSentItems": {
+          "type": "boolean",
+          "x-ms-summary": "Save to Sent Items",
+          "description": "Save to Sent Items folder (default true)"
+        }
+      }
+    },
+    "eventResponseRequest": {
+      "type": "object",
+      "properties": {
+        "comment": {
+          "type": "string",
+          "x-ms-summary": "Comment",
+          "description": "Optional response message"
+        },
+        "sendResponse": {
+          "type": "boolean",
+          "x-ms-summary": "Send Response",
+          "description": "Whether to send a response to the organizer (default true)"
+        }
+      }
+    },
+    "createEventRequest": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string",
+          "x-ms-summary": "Subject",
+          "description": "Event title"
+        },
+        "body": {
+          "type": "object",
+          "x-ms-summary": "Body",
+          "properties": {
+            "contentType": { "type": "string", "description": "Content type: Text or HTML" },
+            "content": { "type": "string", "description": "Body content" }
+          }
+        },
+        "start": {
+          "type": "object",
+          "x-ms-summary": "Start",
+          "properties": {
+            "dateTime": { "type": "string", "description": "Date/time value (ISO 8601)" },
+            "timeZone": { "type": "string", "description": "Time zone (e.g. Pacific Standard Time, UTC)" }
+          }
+        },
+        "end": {
+          "type": "object",
+          "x-ms-summary": "End",
+          "properties": {
+            "dateTime": { "type": "string", "description": "Date/time value (ISO 8601)" },
+            "timeZone": { "type": "string", "description": "Time zone (e.g. Pacific Standard Time, UTC)" }
+          }
+        },
+        "location": {
+          "type": "object",
+          "x-ms-summary": "Location",
+          "properties": {
+            "displayName": { "type": "string", "description": "Location name" },
+            "locationType": { "type": "string", "description": "Location type" }
+          }
+        },
+        "attendees": {
+          "type": "array",
+          "x-ms-summary": "Attendees",
+          "items": {
+            "$ref": "#/definitions/attendee"
+          }
+        },
+        "isOnlineMeeting": {
+          "type": "boolean",
+          "x-ms-summary": "Is Online Meeting",
+          "description": "Create a Teams meeting"
+        },
+        "onlineMeetingProvider": {
+          "type": "string",
+          "x-ms-summary": "Online Meeting Provider",
+          "description": "teamsForBusiness, skypeForBusiness, or skypeForConsumer",
+          "enum": [
+            "teamsForBusiness",
+            "skypeForBusiness",
+            "skypeForConsumer"
+          ]
+        },
+        "isAllDay": {
+          "type": "boolean",
+          "x-ms-summary": "Is All Day"
+        },
+        "importance": {
+          "type": "string",
+          "x-ms-summary": "Importance",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        },
+        "showAs": {
+          "type": "string",
+          "x-ms-summary": "Show As",
+          "enum": [
+            "free",
+            "tentative",
+            "busy",
+            "oof",
+            "workingElsewhere"
+          ]
+        },
+        "recurrence": {
+          "type": "object",
+          "x-ms-summary": "Recurrence",
+          "properties": {
+            "pattern": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "description": "daily, weekly, absoluteMonthly, relativeMonthly, absoluteYearly, relativeYearly" },
+                "interval": { "type": "integer", "description": "Number of units between occurrences" },
+                "daysOfWeek": { "type": "array", "items": { "type": "string" }, "description": "Days of the week" },
+                "dayOfMonth": { "type": "integer" },
+                "month": { "type": "integer" },
+                "firstDayOfWeek": { "type": "string" },
+                "index": { "type": "string" }
+              }
+            },
+            "range": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "description": "endDate, noEnd, numbered" },
+                "startDate": { "type": "string" },
+                "endDate": { "type": "string" },
+                "numberOfOccurrences": { "type": "integer" },
+                "recurrenceTimeZone": { "type": "string" }
+              }
+            }
+          }
+        },
+        "reminderMinutesBeforeStart": {
+          "type": "integer",
+          "x-ms-summary": "Reminder (minutes)"
+        },
+        "allowNewTimeProposals": {
+          "type": "boolean",
+          "x-ms-summary": "Allow Time Proposals"
+        },
+        "transactionId": {
+          "type": "string",
+          "x-ms-summary": "Transaction ID",
+          "description": "Idempotence identifier"
+        }
+      }
+    },
+    "findMeetingTimesRequest": {
+      "type": "object",
+      "required": [
+        "meetingDuration"
+      ],
+      "properties": {
+        "attendees": {
+          "type": "array",
+          "x-ms-summary": "Attendees",
+          "description": "Attendees to check availability",
+          "items": {
+            "type": "object",
+            "properties": {
+              "emailAddress": {
+                "$ref": "#/definitions/emailAddress"
+              },
+              "type": {
+                "type": "string",
+                "description": "required, optional, resource"
+              }
+            }
+          }
+        },
+        "meetingDuration": {
+          "type": "string",
+          "x-ms-summary": "Meeting Duration",
+          "description": "Duration in ISO 8601 format (e.g. PT1H, PT30M)"
+        },
+        "timeConstraint": {
+          "type": "object",
+          "x-ms-summary": "Time Constraint",
+          "properties": {
+            "activityDomain": {
+              "type": "string",
+              "description": "work, personal, unrestricted, unknown"
+            },
+            "timeslots": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                  },
+                  "end": {
+                    "$ref": "#/definitions/dateTimeTimeZone"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "maxCandidates": {
+          "type": "integer",
+          "x-ms-summary": "Max Candidates",
+          "description": "Maximum number of suggestions"
+        },
+        "isOrganizerOptional": {
+          "type": "boolean",
+          "x-ms-summary": "Organizer Optional"
+        },
+        "returnSuggestionReasons": {
+          "type": "boolean",
+          "x-ms-summary": "Return Reasons"
+        },
+        "minimumAttendeePercentage": {
+          "type": "number",
+          "x-ms-summary": "Min Attendee %",
+          "description": "Minimum percentage of attendees required (0-100)"
+        }
+      }
+    },
+    "messageRule": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Rule ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "Display name of the rule"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int32",
+          "x-ms-summary": "Sequence",
+          "description": "Execution order of the rule"
+        },
+        "isEnabled": {
+          "type": "boolean",
+          "x-ms-summary": "Enabled",
+          "description": "Whether the rule is enabled"
+        },
+        "isReadOnly": {
+          "type": "boolean",
+          "x-ms-summary": "Read Only",
+          "description": "Whether the rule is read-only"
+        },
+        "conditions": {
+          "type": "object",
+          "description": "Conditions that trigger the rule",
+          "properties": {
+            "subjectContains": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Strings in subject that trigger rule"
+            },
+            "bodyContains": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Strings in body that trigger rule"
+            },
+            "senderContains": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Strings in sender address that trigger rule"
+            },
+            "fromAddresses": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/recipient" },
+              "description": "From addresses that trigger rule"
+            },
+            "sentToAddresses": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/recipient" },
+              "description": "Sent-to addresses that trigger rule"
+            },
+            "hasAttachments": {
+              "type": "boolean",
+              "description": "Whether message has attachments"
+            },
+            "importance": {
+              "type": "string",
+              "description": "Importance level: low, normal, high"
+            }
+          }
+        },
+        "actions": {
+          "type": "object",
+          "description": "Actions to perform when conditions are met",
+          "properties": {
+            "moveToFolder": {
+              "type": "string",
+              "description": "Folder ID to move message to"
+            },
+            "copyToFolder": {
+              "type": "string",
+              "description": "Folder ID to copy message to"
+            },
+            "delete": {
+              "type": "boolean",
+              "description": "Whether to delete the message"
+            },
+            "permanentDelete": {
+              "type": "boolean",
+              "description": "Whether to permanently delete"
+            },
+            "markAsRead": {
+              "type": "boolean",
+              "description": "Whether to mark as read"
+            },
+            "markImportance": {
+              "type": "string",
+              "description": "Set importance: low, normal, high"
+            },
+            "forwardTo": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/recipient" },
+              "description": "Forward to addresses"
+            },
+            "redirectTo": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/recipient" },
+              "description": "Redirect to addresses"
+            },
+            "stopProcessingRules": {
+              "type": "boolean",
+              "description": "Stop processing more rules"
+            }
+          }
+        }
+      }
+    },
+    "person": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Person ID"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "Display name"
+        },
+        "givenName": {
+          "type": "string",
+          "x-ms-summary": "Given Name",
+          "description": "First name"
+        },
+        "surname": {
+          "type": "string",
+          "x-ms-summary": "Surname",
+          "description": "Last name"
+        },
+        "userPrincipalName": {
+          "type": "string",
+          "x-ms-summary": "UPN",
+          "description": "User principal name"
+        },
+        "emailAddresses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "description": "Email address"
+              },
+              "rank": {
+                "type": "number",
+                "description": "Relevance rank"
+              }
+            }
+          },
+          "description": "Person's email addresses"
+        },
+        "phones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Phone type"
+              },
+              "number": {
+                "type": "string",
+                "description": "Phone number"
+              }
+            }
+          },
+          "description": "Phone numbers"
+        },
+        "personType": {
+          "type": "object",
+          "properties": {
+            "class": {
+              "type": "string",
+              "description": "Person class: Person, Group"
+            },
+            "subclass": {
+              "type": "string",
+              "description": "Subclass: OrganizationUser, PersonalContact, etc."
+            }
+          }
+        },
+        "jobTitle": {
+          "type": "string",
+          "x-ms-summary": "Job Title",
+          "description": "Job title"
+        },
+        "department": {
+          "type": "string",
+          "x-ms-summary": "Department",
+          "description": "Department"
+        },
+        "companyName": {
+          "type": "string",
+          "x-ms-summary": "Company",
+          "description": "Company name"
+        },
+        "officeLocation": {
+          "type": "string",
+          "x-ms-summary": "Office",
+          "description": "Office location"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2-auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "Mail.ReadWrite": "Read and write mail",
+        "Mail.Send": "Send mail",
+        "Calendars.ReadWrite": "Read and write calendars",
+        "User.Read": "Sign in and read user profile",
+        "User.ReadBasic.All": "Read all users' basic profiles",
+        "MailboxSettings.ReadWrite": "Read and write mailbox settings",
+        "People.Read": "Read relevant people list",
+        "offline_access": "Maintain access"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2-auth": [
+        "Mail.ReadWrite",
+        "Mail.Send",
+        "Calendars.ReadWrite",
+        "User.Read",
+        "User.ReadBasic.All",
+        "MailboxSettings.ReadWrite",
+        "People.Read",
+        "offline_access"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/graph/api/resources/mail-api-overview"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Communication;Productivity"
+    }
+  ]
+}
