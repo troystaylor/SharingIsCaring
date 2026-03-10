@@ -1,0 +1,2386 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "LinkedIn Community Management",
+    "version": "1.0.0",
+    "description": "LinkedIn Community Management connector covering Posts, Comments, Reactions, Organizations, Social Metadata, Media Uploads (Images, Videos, Documents), and Organization Analytics (Share, Page, Follower Statistics). MCP-enabled for Copilot Studio integration. Uses LinkedIn Marketing API v202602.",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "api.linkedin.com",
+  "basePath": "/rest",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/posts": {
+      "post": {
+        "operationId": "CreatePost",
+        "summary": "Create Post",
+        "description": "Creates a new post on LinkedIn. Supports text, image, video, article, document, poll, multi-image, and reshare content types.",
+        "tags": [
+          "Posts"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "author",
+                "commentary",
+                "visibility",
+                "distribution",
+                "lifecycleState"
+              ],
+              "properties": {
+                "author": {
+                  "type": "string",
+                  "description": "URN of the author (e.g., urn:li:organization:123 or urn:li:person:456)",
+                  "x-ms-summary": "Author URN"
+                },
+                "commentary": {
+                  "type": "string",
+                  "description": "Text content of the post. Supports @mentions via {urn} syntax.",
+                  "x-ms-summary": "Post Text"
+                },
+                "visibility": {
+                  "type": "string",
+                  "description": "Post visibility: PUBLIC, CONNECTIONS, or LOGGED_IN",
+                  "x-ms-summary": "Visibility",
+                  "enum": [
+                    "PUBLIC",
+                    "CONNECTIONS",
+                    "LOGGED_IN"
+                  ]
+                },
+                "distribution": {
+                  "type": "object",
+                  "description": "Distribution settings for the post",
+                  "properties": {
+                    "feedDistribution": {
+                      "type": "string",
+                      "description": "Feed distribution: MAIN_FEED or NONE",
+                      "enum": [
+                        "MAIN_FEED",
+                        "NONE"
+                      ]
+                    },
+                    "targetEntities": {
+                      "type": "array",
+                      "description": "Target entities for distribution",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "geoLocations": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "industries": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "seniorities": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "staffCountRanges": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "thirdPartyDistributionChannels": {
+                      "type": "array",
+                      "description": "Third-party distribution channels",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "lifecycleState": {
+                  "type": "string",
+                  "description": "Lifecycle state: PUBLISHED or DRAFT",
+                  "x-ms-summary": "State",
+                  "enum": [
+                    "PUBLISHED",
+                    "DRAFT"
+                  ]
+                },
+                "isReshareDisabledByAuthor": {
+                  "type": "boolean",
+                  "description": "Whether resharing is disabled"
+                },
+                "content": {
+                  "type": "object",
+                  "description": "Rich content attachment (image, video, article, document, poll, multi-image)",
+                  "properties": {
+                    "article": {
+                      "type": "object",
+                      "description": "Article content",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "description": "Article URL"
+                        },
+                        "title": {
+                          "type": "string",
+                          "description": "Article title"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Article description"
+                        },
+                        "thumbnail": {
+                          "type": "string",
+                          "description": "Thumbnail image URN"
+                        }
+                      }
+                    },
+                    "media": {
+                      "type": "object",
+                      "description": "Single media attachment (image, video, or document)",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Media URN (image, video, or document URN)"
+                        },
+                        "title": {
+                          "type": "string",
+                          "description": "Media title"
+                        },
+                        "altText": {
+                          "type": "string",
+                          "description": "Alternative text for accessibility"
+                        }
+                      }
+                    },
+                    "multiImage": {
+                      "type": "object",
+                      "description": "Multiple image attachment",
+                      "properties": {
+                        "images": {
+                          "type": "array",
+                          "description": "Array of image objects",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "Image URN"
+                              },
+                              "altText": {
+                                "type": "string",
+                                "description": "Alt text"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "poll": {
+                      "type": "object",
+                      "description": "Poll content",
+                      "properties": {
+                        "question": {
+                          "type": "string",
+                          "description": "Poll question"
+                        },
+                        "options": {
+                          "type": "array",
+                          "description": "Poll options (2-4)",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "type": "string",
+                                "description": "Option text"
+                              }
+                            }
+                          }
+                        },
+                        "settings": {
+                          "type": "object",
+                          "description": "Poll settings",
+                          "properties": {
+                            "duration": {
+                              "type": "string",
+                              "description": "Poll duration: ONE_DAY, THREE_DAYS, ONE_WEEK, TWO_WEEKS",
+                              "enum": [
+                                "ONE_DAY",
+                                "THREE_DAYS",
+                                "ONE_WEEK",
+                                "TWO_WEEKS"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "reshareContext": {
+                  "type": "object",
+                  "description": "Reshare context for resharing an existing post",
+                  "properties": {
+                    "parent": {
+                      "type": "string",
+                      "description": "URN of the post to reshare"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Post created",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "URN of the created post"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "FindPostsByAuthor",
+        "summary": "Find Posts by Author",
+        "description": "Retrieves posts authored by a specific member or organization.",
+        "tags": [
+          "Posts"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "author",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Author URN (e.g., urn:li:organization:123 or urn:li:person:456)",
+            "x-ms-summary": "Author URN"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Number of posts to return (default 10, max 100)",
+            "x-ms-summary": "Count"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Index of the first post to return for pagination",
+            "x-ms-summary": "Start Index"
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort order: LAST_MODIFIED or CREATED",
+            "x-ms-summary": "Sort By",
+            "enum": [
+              "LAST_MODIFIED",
+              "CREATED"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Array of posts",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Post URN"
+                      },
+                      "author": {
+                        "type": "string",
+                        "description": "Author URN"
+                      },
+                      "commentary": {
+                        "type": "string",
+                        "description": "Post text"
+                      },
+                      "visibility": {
+                        "type": "string",
+                        "description": "Visibility setting"
+                      },
+                      "lifecycleState": {
+                        "type": "string",
+                        "description": "Current state"
+                      },
+                      "publishedAt": {
+                        "type": "integer",
+                        "description": "Published timestamp (epoch ms)"
+                      },
+                      "lastModifiedAt": {
+                        "type": "integer",
+                        "description": "Last modified timestamp (epoch ms)"
+                      }
+                    }
+                  }
+                },
+                "paging": {
+                  "type": "object",
+                  "description": "Pagination info",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "start": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{postUrn}": {
+      "get": {
+        "operationId": "GetPost",
+        "summary": "Get Post",
+        "description": "Retrieves a single post by its URN.",
+        "tags": [
+          "Posts"
+        ],
+        "parameters": [
+          {
+            "name": "postUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Post URN (e.g., urn:li:ugcPost:12345 or urn:li:share:12345)",
+            "x-ms-summary": "Post URN",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Post URN"
+                },
+                "author": {
+                  "type": "string",
+                  "description": "Author URN"
+                },
+                "commentary": {
+                  "type": "string",
+                  "description": "Post text"
+                },
+                "visibility": {
+                  "type": "string",
+                  "description": "Visibility setting"
+                },
+                "lifecycleState": {
+                  "type": "string",
+                  "description": "Current lifecycle state"
+                },
+                "publishedAt": {
+                  "type": "integer",
+                  "description": "Published timestamp (epoch ms)"
+                },
+                "lastModifiedAt": {
+                  "type": "integer",
+                  "description": "Last modified timestamp (epoch ms)"
+                },
+                "distribution": {
+                  "type": "object",
+                  "description": "Distribution settings"
+                },
+                "content": {
+                  "type": "object",
+                  "description": "Rich content attachment"
+                },
+                "isReshareDisabledByAuthor": {
+                  "type": "boolean",
+                  "description": "Whether resharing is disabled"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found"
+          }
+        }
+      },
+      "post": {
+        "operationId": "UpdatePost",
+        "summary": "Update Post",
+        "description": "Partially updates an existing post. Can update commentary, distribution, and content properties.",
+        "tags": [
+          "Posts"
+        ],
+        "parameters": [
+          {
+            "name": "postUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Post URN to update (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Post URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "commentary": {
+                  "type": "string",
+                  "description": "Updated post text",
+                  "x-ms-summary": "Post Text"
+                },
+                "isReshareDisabledByAuthor": {
+                  "type": "boolean",
+                  "description": "Disable resharing"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Post updated"
+          },
+          "404": {
+            "description": "Post not found"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeletePost",
+        "summary": "Delete Post",
+        "description": "Deletes a post by its URN.",
+        "tags": [
+          "Posts"
+        ],
+        "parameters": [
+          {
+            "name": "postUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Post URN to delete (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Post URN",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Post deleted"
+          },
+          "404": {
+            "description": "Post not found"
+          }
+        }
+      }
+    },
+    "/socialActions/{entityUrn}/comments": {
+      "get": {
+        "operationId": "GetComments",
+        "summary": "Get Comments",
+        "description": "Retrieves comments on a post or other social entity.",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "entityUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN to get comments for (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Entity URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Index of first comment to return",
+            "x-ms-summary": "Start Index"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Number of comments to return",
+            "x-ms-summary": "Count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Array of comments",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Comment ID"
+                      },
+                      "actor": {
+                        "type": "string",
+                        "description": "Author URN"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "Comment message",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "Comment text"
+                          }
+                        }
+                      },
+                      "created": {
+                        "type": "object",
+                        "description": "Creation timestamp",
+                        "properties": {
+                          "time": {
+                            "type": "integer",
+                            "description": "Epoch ms"
+                          }
+                        }
+                      },
+                      "parentComment": {
+                        "type": "string",
+                        "description": "Parent comment URN for replies"
+                      }
+                    }
+                  }
+                },
+                "paging": {
+                  "type": "object",
+                  "description": "Pagination info",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "start": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateComment",
+        "summary": "Create Comment",
+        "description": "Creates a comment on a post or other social entity.",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "entityUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN to comment on (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Entity URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "actor",
+                "message"
+              ],
+              "properties": {
+                "actor": {
+                  "type": "string",
+                  "description": "Actor URN (e.g., urn:li:organization:123 or urn:li:person:456)",
+                  "x-ms-summary": "Actor URN"
+                },
+                "message": {
+                  "type": "object",
+                  "description": "Comment message",
+                  "required": [
+                    "text"
+                  ],
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Comment text",
+                      "x-ms-summary": "Comment Text"
+                    }
+                  }
+                },
+                "parentComment": {
+                  "type": "string",
+                  "description": "Parent comment URN for threaded replies (optional)",
+                  "x-ms-summary": "Parent Comment URN"
+                },
+                "content": {
+                  "type": "array",
+                  "description": "Media attachments for the comment",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "entity": {
+                        "type": "object",
+                        "properties": {
+                          "image": {
+                            "type": "string",
+                            "description": "Image URN"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Comment created",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Comment ID"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/socialActions/{entityUrn}/comments/{commentId}": {
+      "get": {
+        "operationId": "GetComment",
+        "summary": "Get Comment",
+        "description": "Retrieves a specific comment by its ID.",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "entityUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN the comment belongs to",
+            "x-ms-summary": "Entity URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Comment ID",
+            "x-ms-summary": "Comment ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Comment ID"
+                },
+                "actor": {
+                  "type": "string",
+                  "description": "Author URN"
+                },
+                "message": {
+                  "type": "object",
+                  "description": "Comment message",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "description": "Comment text"
+                    }
+                  }
+                },
+                "created": {
+                  "type": "object",
+                  "description": "Creation timestamp",
+                  "properties": {
+                    "time": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteComment",
+        "summary": "Delete Comment",
+        "description": "Deletes a comment from a post.",
+        "tags": [
+          "Comments"
+        ],
+        "parameters": [
+          {
+            "name": "entityUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN the comment belongs to",
+            "x-ms-summary": "Entity URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "commentId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Comment ID to delete",
+            "x-ms-summary": "Comment ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Actor URN performing the delete (e.g., urn:li:organization:123)",
+            "x-ms-summary": "Actor URN"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Comment deleted"
+          }
+        }
+      }
+    },
+    "/reactions": {
+      "get": {
+        "operationId": "GetReactions",
+        "summary": "Get Reactions",
+        "description": "Retrieves reactions on a post or other social entity.",
+        "tags": [
+          "Reactions"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "entity",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN to get reactions for (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Entity URN"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Index of first reaction to return",
+            "x-ms-summary": "Start Index"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Number of reactions to return",
+            "x-ms-summary": "Count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Array of reactions",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "reactionType": {
+                        "type": "string",
+                        "description": "Reaction type: LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, ENTERTAINMENT, MAYBE"
+                      },
+                      "actor": {
+                        "type": "string",
+                        "description": "Reactor URN"
+                      },
+                      "created": {
+                        "type": "object",
+                        "description": "Creation timestamp",
+                        "properties": {
+                          "time": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "paging": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "start": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateReaction",
+        "summary": "Create Reaction",
+        "description": "Creates a reaction on a post or other social entity.",
+        "tags": [
+          "Reactions"
+        ],
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Actor URN creating the reaction (e.g., urn:li:person:123 or urn:li:organization:456)",
+            "x-ms-summary": "Actor URN"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "root",
+                "reactionType"
+              ],
+              "properties": {
+                "root": {
+                  "type": "string",
+                  "description": "Entity URN to react to (e.g., urn:li:ugcPost:12345)",
+                  "x-ms-summary": "Entity URN"
+                },
+                "reactionType": {
+                  "type": "string",
+                  "description": "Reaction type",
+                  "x-ms-summary": "Reaction Type",
+                  "enum": [
+                    "LIKE",
+                    "PRAISE",
+                    "EMPATHY",
+                    "INTEREST",
+                    "APPRECIATION",
+                    "ENTERTAINMENT",
+                    "MAYBE"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Reaction created"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "DeleteReaction",
+        "summary": "Delete Reaction",
+        "description": "Removes a reaction from a post. The actor and entity URNs form the compound key for the reaction to delete.",
+        "tags": [
+          "Reactions"
+        ],
+        "parameters": [
+          {
+            "name": "actorUrn",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Actor URN who reacted (e.g., urn:li:person:123)",
+            "x-ms-summary": "Actor URN"
+          },
+          {
+            "name": "entityUrn",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN the reaction is on (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Entity URN"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reaction deleted"
+          }
+        }
+      }
+    },
+    "/organizations/{orgId}": {
+      "get": {
+        "operationId": "GetOrganization",
+        "summary": "Get Organization",
+        "description": "Retrieves an organization by its numeric ID.",
+        "tags": [
+          "Organizations"
+        ],
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Organization numeric ID",
+            "x-ms-summary": "Organization ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "description": "Organization ID"
+                },
+                "vanityName": {
+                  "type": "string",
+                  "description": "Vanity name"
+                },
+                "localizedName": {
+                  "type": "string",
+                  "description": "Organization display name"
+                },
+                "localizedDescription": {
+                  "type": "string",
+                  "description": "Organization description"
+                },
+                "localizedWebsite": {
+                  "type": "string",
+                  "description": "Website URL"
+                },
+                "logoV2": {
+                  "type": "object",
+                  "description": "Organization logo"
+                },
+                "staffCountRange": {
+                  "type": "string",
+                  "description": "Employee count range"
+                },
+                "industries": {
+                  "type": "array",
+                  "description": "Industry URNs",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "specialities": {
+                  "type": "array",
+                  "description": "Organization specialties",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found"
+          }
+        }
+      }
+    },
+    "/organizations": {
+      "get": {
+        "operationId": "FindOrgByVanityName",
+        "summary": "Find Organization by Vanity Name",
+        "description": "Looks up an organization by its vanity name (URL slug).",
+        "tags": [
+          "Organizations"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "vanityName",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "vanityName",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Organization vanity name (e.g., microsoft)",
+            "x-ms-summary": "Vanity Name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Matching organizations",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "description": "Organization ID"
+                      },
+                      "vanityName": {
+                        "type": "string",
+                        "description": "Vanity name"
+                      },
+                      "localizedName": {
+                        "type": "string",
+                        "description": "Organization display name"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/networkSizes/{orgUrn}": {
+      "get": {
+        "operationId": "GetFollowerCount",
+        "summary": "Get Follower Count",
+        "description": "Retrieves the total follower count for an organization.",
+        "tags": [
+          "Organizations"
+        ],
+        "parameters": [
+          {
+            "name": "orgUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Organization URN (e.g., urn:li:organization:123)",
+            "x-ms-summary": "Organization URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "edgeType",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "COMPANY_FOLLOWED_BY_MEMBER",
+            "x-ms-visibility": "internal"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "firstDegreeSize": {
+                  "type": "integer",
+                  "description": "Total follower count"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizationAcls": {
+      "get": {
+        "operationId": "FindMemberOrgAccess",
+        "summary": "Find Member Organization Access",
+        "description": "Retrieves organization access control entries for the authenticated member or a specific organization.",
+        "tags": [
+          "Organizations"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Query type: roleAssignee (for current member) or organization (for org admins)",
+            "x-ms-summary": "Query Type",
+            "enum": [
+              "roleAssignee",
+              "organization"
+            ]
+          },
+          {
+            "name": "organization",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Organization URN (required when q=organization)",
+            "x-ms-summary": "Organization URN"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Filter by role: ADMINISTRATOR, DIRECT_SPONSORED_CONTENT_POSTER, etc.",
+            "x-ms-summary": "Role Filter",
+            "enum": [
+              "ADMINISTRATOR",
+              "DIRECT_SPONSORED_CONTENT_POSTER",
+              "LEAD_GEN_FORMS_MANAGER"
+            ]
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Filter by state: APPROVED or REQUESTED",
+            "x-ms-summary": "State Filter",
+            "enum": [
+              "APPROVED",
+              "REQUESTED"
+            ]
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Pagination start index",
+            "x-ms-summary": "Start Index"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Number of results (max 100)",
+            "x-ms-summary": "Count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Access control entries",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "roleAssignee": {
+                        "type": "string",
+                        "description": "Member URN"
+                      },
+                      "organization": {
+                        "type": "string",
+                        "description": "Organization URN"
+                      },
+                      "role": {
+                        "type": "string",
+                        "description": "Role name"
+                      },
+                      "state": {
+                        "type": "string",
+                        "description": "Access state"
+                      }
+                    }
+                  }
+                },
+                "paging": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "start": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/socialMetadata/{entityUrn}": {
+      "get": {
+        "operationId": "GetSocialMetadata",
+        "summary": "Get Social Metadata",
+        "description": "Retrieves social metadata (like counts, comment counts, share counts) for a post or entity.",
+        "tags": [
+          "Social Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "entityUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Entity URN",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "entity": {
+                  "type": "string",
+                  "description": "Entity URN"
+                },
+                "commentsSummary": {
+                  "type": "object",
+                  "description": "Comments summary",
+                  "properties": {
+                    "totalFirstLevelComments": {
+                      "type": "integer"
+                    },
+                    "aggregatedTotalComments": {
+                      "type": "integer"
+                    },
+                    "commentsState": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "reactionsSummary": {
+                  "type": "object",
+                  "description": "Reactions summary",
+                  "properties": {
+                    "totalCount": {
+                      "type": "integer"
+                    },
+                    "reactionTypeCounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "ToggleComments",
+        "summary": "Toggle Comments",
+        "description": "Enables or disables comments on a post.",
+        "tags": [
+          "Social Metadata"
+        ],
+        "parameters": [
+          {
+            "name": "entityUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Entity URN (e.g., urn:li:ugcPost:12345)",
+            "x-ms-summary": "Entity URN",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Actor URN performing the toggle (e.g., urn:li:organization:123)",
+            "x-ms-summary": "Actor URN"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "commentsDisabled"
+              ],
+              "properties": {
+                "commentsDisabled": {
+                  "type": "boolean",
+                  "description": "Set to true to disable comments, false to enable",
+                  "x-ms-summary": "Disable Comments"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Comments toggled"
+          }
+        }
+      }
+    },
+    "/images": {
+      "post": {
+        "operationId": "InitializeImageUpload",
+        "summary": "Initialize Image Upload",
+        "description": "Initializes an image upload and returns an upload URL. After receiving the URL, PUT your binary image data to it.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "initializeUpload",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "initializeUploadRequest"
+              ],
+              "properties": {
+                "initializeUploadRequest": {
+                  "type": "object",
+                  "required": [
+                    "owner"
+                  ],
+                  "properties": {
+                    "owner": {
+                      "type": "string",
+                      "description": "Owner URN (e.g., urn:li:organization:123)",
+                      "x-ms-summary": "Owner URN"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload initialized",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "object",
+                  "properties": {
+                    "uploadUrl": {
+                      "type": "string",
+                      "description": "URL to PUT image binary data to"
+                    },
+                    "image": {
+                      "type": "string",
+                      "description": "Image URN to reference in posts"
+                    },
+                    "uploadUrlExpiresAt": {
+                      "type": "integer",
+                      "description": "Upload URL expiration (epoch ms)"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/images/{imageUrn}": {
+      "get": {
+        "operationId": "GetImage",
+        "summary": "Get Image",
+        "description": "Retrieves image details by its URN.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "imageUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Image URN (e.g., urn:li:image:C5F12AQG...)",
+            "x-ms-summary": "Image URN",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Image URN"
+                },
+                "owner": {
+                  "type": "string",
+                  "description": "Owner URN"
+                },
+                "downloadUrl": {
+                  "type": "string",
+                  "description": "Download URL"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Processing status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/videos": {
+      "post": {
+        "operationId": "InitializeVideoUpload",
+        "summary": "Initialize Video Upload",
+        "description": "Initializes a video upload and returns upload instructions with URLs for each chunk. Videos are uploaded in 4MB chunks.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "initializeUpload",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "initializeUploadRequest"
+              ],
+              "properties": {
+                "initializeUploadRequest": {
+                  "type": "object",
+                  "required": [
+                    "owner",
+                    "fileSizeBytes"
+                  ],
+                  "properties": {
+                    "owner": {
+                      "type": "string",
+                      "description": "Owner URN (e.g., urn:li:organization:123)",
+                      "x-ms-summary": "Owner URN"
+                    },
+                    "fileSizeBytes": {
+                      "type": "integer",
+                      "description": "File size in bytes",
+                      "x-ms-summary": "File Size (Bytes)"
+                    },
+                    "uploadCaptions": {
+                      "type": "boolean",
+                      "description": "Whether caption upload is needed"
+                    },
+                    "uploadThumbnail": {
+                      "type": "boolean",
+                      "description": "Whether thumbnail upload is needed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload initialized",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "object",
+                  "properties": {
+                    "uploadInstructions": {
+                      "type": "array",
+                      "description": "Upload URLs for each chunk",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "uploadUrl": {
+                            "type": "string",
+                            "description": "URL to PUT chunk data to"
+                          },
+                          "firstByte": {
+                            "type": "integer"
+                          },
+                          "lastByte": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "video": {
+                      "type": "string",
+                      "description": "Video URN"
+                    },
+                    "uploadToken": {
+                      "type": "string",
+                      "description": "Token required for finalize"
+                    },
+                    "uploadUrlsExpireAt": {
+                      "type": "integer",
+                      "description": "Upload URLs expiration (epoch ms)"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/videos/finalize": {
+      "post": {
+        "operationId": "FinalizeVideoUpload",
+        "summary": "Finalize Video Upload",
+        "description": "Finalizes a video upload after all chunks have been uploaded. Requires the video URN, upload token, and ETags from each chunk upload.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "finalizeUploadRequest"
+              ],
+              "properties": {
+                "finalizeUploadRequest": {
+                  "type": "object",
+                  "required": [
+                    "video",
+                    "uploadToken",
+                    "uploadedPartIds"
+                  ],
+                  "properties": {
+                    "video": {
+                      "type": "string",
+                      "description": "Video URN from initialize response",
+                      "x-ms-summary": "Video URN"
+                    },
+                    "uploadToken": {
+                      "type": "string",
+                      "description": "Upload token from initialize response",
+                      "x-ms-summary": "Upload Token"
+                    },
+                    "uploadedPartIds": {
+                      "type": "array",
+                      "description": "Array of ETags from each chunk upload response",
+                      "items": {
+                        "type": "string"
+                      },
+                      "x-ms-summary": "Uploaded Part IDs"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Video upload finalized"
+          }
+        }
+      }
+    },
+    "/videos/{videoUrn}": {
+      "get": {
+        "operationId": "GetVideo",
+        "summary": "Get Video",
+        "description": "Retrieves video details by its URN.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "videoUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Video URN (e.g., urn:li:video:C5F06AQG...)",
+            "x-ms-summary": "Video URN",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Video URN"
+                },
+                "owner": {
+                  "type": "string",
+                  "description": "Owner URN"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Status: PROCESSING, AVAILABLE, PROCESSING_FAILED"
+                },
+                "downloadUrl": {
+                  "type": "string",
+                  "description": "Download URL"
+                },
+                "duration": {
+                  "type": "number",
+                  "description": "Duration in milliseconds"
+                },
+                "aspectRatio": {
+                  "type": "number",
+                  "description": "Video aspect ratio"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "post": {
+        "operationId": "InitializeDocumentUpload",
+        "summary": "Initialize Document Upload",
+        "description": "Initializes a document upload and returns an upload URL. Supports PPT, PPTX, DOC, DOCX, and PDF up to 100MB.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "initializeUpload",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "initializeUploadRequest"
+              ],
+              "properties": {
+                "initializeUploadRequest": {
+                  "type": "object",
+                  "required": [
+                    "owner"
+                  ],
+                  "properties": {
+                    "owner": {
+                      "type": "string",
+                      "description": "Owner URN (e.g., urn:li:organization:123)",
+                      "x-ms-summary": "Owner URN"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload initialized",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "object",
+                  "properties": {
+                    "uploadUrl": {
+                      "type": "string",
+                      "description": "URL to PUT document binary data to"
+                    },
+                    "document": {
+                      "type": "string",
+                      "description": "Document URN to reference in posts"
+                    },
+                    "uploadUrlExpiresAt": {
+                      "type": "integer",
+                      "description": "Upload URL expiration (epoch ms)"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{documentUrn}": {
+      "get": {
+        "operationId": "GetDocument",
+        "summary": "Get Document",
+        "description": "Retrieves document details by its URN.",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "documentUrn",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Document URN",
+            "x-ms-summary": "Document URN",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Document URN"
+                },
+                "owner": {
+                  "type": "string",
+                  "description": "Owner URN"
+                },
+                "downloadUrl": {
+                  "type": "string",
+                  "description": "Download URL"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Processing status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizationalEntityShareStatistics": {
+      "get": {
+        "operationId": "GetShareStatistics",
+        "summary": "Get Share Statistics",
+        "description": "Retrieves share (post) statistics for an organization. Includes impressions, clicks, comments, likes, shares, and engagement metrics. Data available for the past 12 months.",
+        "tags": [
+          "Statistics"
+        ],
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "organizationalEntity",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "organizationalEntity",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Organization URN (e.g., urn:li:organization:123)",
+            "x-ms-summary": "Organization URN"
+          },
+          {
+            "name": "timeIntervals",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Time interval in RESTli format: (timeRange:(start:{epochMs},end:{epochMs}),timeGranularityType:DAY). Omit for lifetime stats.",
+            "x-ms-summary": "Time Intervals"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Statistics elements",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "totalShareStatistics": {
+                        "type": "object",
+                        "description": "Aggregate statistics",
+                        "properties": {
+                          "clickCount": {
+                            "type": "integer"
+                          },
+                          "commentCount": {
+                            "type": "integer"
+                          },
+                          "engagement": {
+                            "type": "number"
+                          },
+                          "impressionCount": {
+                            "type": "integer"
+                          },
+                          "likeCount": {
+                            "type": "integer"
+                          },
+                          "shareCount": {
+                            "type": "integer"
+                          },
+                          "uniqueImpressionsCount": {
+                            "type": "integer"
+                          },
+                          "commentMentionsCount": {
+                            "type": "integer"
+                          },
+                          "shareMentionsCount": {
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "organizationalEntity": {
+                        "type": "string",
+                        "description": "Organization URN"
+                      },
+                      "timeRange": {
+                        "type": "object",
+                        "description": "Time range for this data point",
+                        "properties": {
+                          "start": {
+                            "type": "integer"
+                          },
+                          "end": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizationPageStatistics": {
+      "get": {
+        "operationId": "GetPageStatistics",
+        "summary": "Get Page Statistics",
+        "description": "Retrieves page view statistics for an organization page, segmented by geography, industry, function, seniority, and staff count range.",
+        "tags": [
+          "Statistics"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "organization",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "organization",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Organization URN (e.g., urn:li:organization:123)",
+            "x-ms-summary": "Organization URN"
+          },
+          {
+            "name": "timeIntervals",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Time interval in RESTli format. Omit for lifetime stats.",
+            "x-ms-summary": "Time Intervals"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Page statistics elements",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "totalPageStatistics": {
+                        "type": "object",
+                        "description": "Total page view statistics",
+                        "properties": {
+                          "views": {
+                            "type": "object",
+                            "description": "View counts by page and device",
+                            "properties": {
+                              "allDesktopPageViews": {
+                                "type": "integer"
+                              },
+                              "allMobilePageViews": {
+                                "type": "integer"
+                              },
+                              "allPageViews": {
+                                "type": "integer"
+                              },
+                              "overviewPageViews": {
+                                "type": "integer"
+                              },
+                              "jobsPageViews": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "organization": {
+                        "type": "string"
+                      },
+                      "timeRange": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "type": "integer"
+                          },
+                          "end": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizationalEntityFollowerStatistics": {
+      "get": {
+        "operationId": "GetFollowerStatistics",
+        "summary": "Get Follower Statistics",
+        "description": "Retrieves follower demographics and growth statistics for an organization. Lifetime stats include 7 facets (geo, function, industry, seniority, etc.). Time-bound stats show follower gains.",
+        "tags": [
+          "Statistics"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "default": "organizationalEntity",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "organizationalEntity",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Organization URN (e.g., urn:li:organization:123)",
+            "x-ms-summary": "Organization URN"
+          },
+          {
+            "name": "timeIntervals",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Time interval in RESTli format (granularity: DAY, WEEK, or MONTH). Omit for lifetime demographics.",
+            "x-ms-summary": "Time Intervals"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "elements": {
+                  "type": "array",
+                  "description": "Follower statistics elements",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "followerCountsByAssociationType": {
+                        "type": "array",
+                        "description": "Follower counts by association type",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "associationType": {
+                              "type": "string"
+                            },
+                            "followerCounts": {
+                              "type": "object",
+                              "properties": {
+                                "organicFollowerCount": {
+                                  "type": "integer"
+                                },
+                                "paidFollowerCount": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "followerCountsByGeoCountry": {
+                        "type": "array",
+                        "description": "Follower counts by country",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "geo": {
+                              "type": "string"
+                            },
+                            "followerCounts": {
+                              "type": "object",
+                              "properties": {
+                                "organicFollowerCount": {
+                                  "type": "integer"
+                                },
+                                "paidFollowerCount": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "followerCountsByFunction": {
+                        "type": "array",
+                        "description": "Follower counts by job function",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "function": {
+                              "type": "string"
+                            },
+                            "followerCounts": {
+                              "type": "object",
+                              "properties": {
+                                "organicFollowerCount": {
+                                  "type": "integer"
+                                },
+                                "paidFollowerCount": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "followerCountsByIndustry": {
+                        "type": "array",
+                        "description": "Follower counts by industry",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "industry": {
+                              "type": "string"
+                            },
+                            "followerCounts": {
+                              "type": "object",
+                              "properties": {
+                                "organicFollowerCount": {
+                                  "type": "integer"
+                                },
+                                "paidFollowerCount": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "followerCountsBySeniority": {
+                        "type": "array",
+                        "description": "Follower counts by seniority",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "seniority": {
+                              "type": "string"
+                            },
+                            "followerCounts": {
+                              "type": "object",
+                              "properties": {
+                                "organicFollowerCount": {
+                                  "type": "integer"
+                                },
+                                "paidFollowerCount": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "followerGains": {
+                        "type": "object",
+                        "description": "Follower gains (time-bound only)",
+                        "properties": {
+                          "organicFollowerGain": {
+                            "type": "integer"
+                          },
+                          "paidFollowerGain": {
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "organizationalEntity": {
+                        "type": "string"
+                      },
+                      "timeRange": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "type": "integer"
+                          },
+                          "end": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke LinkedIn Community Management MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides AI agents access to LinkedIn Community Management operations as tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "tags": [
+    {
+      "name": "Posts",
+      "description": "Create, read, update, and delete LinkedIn posts"
+    },
+    {
+      "name": "Comments",
+      "description": "Manage comments on posts"
+    },
+    {
+      "name": "Reactions",
+      "description": "Manage reactions on posts and comments"
+    },
+    {
+      "name": "Organizations",
+      "description": "Organization lookup and access control"
+    },
+    {
+      "name": "Social Metadata",
+      "description": "Social engagement metadata and comment toggling"
+    },
+    {
+      "name": "Media",
+      "description": "Image, video, and document upload management"
+    },
+    {
+      "name": "Statistics",
+      "description": "Organization analytics and reporting"
+    }
+  ],
+  "securityDefinitions": {
+    "oauth2": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://www.linkedin.com/oauth/v2/authorization",
+      "tokenUrl": "https://www.linkedin.com/oauth/v2/accessToken",
+      "scopes": {
+        "w_member_social": "Post, comment, and react on behalf of a member",
+        "w_organization_social": "Post, comment, and react on behalf of an organization",
+        "r_organization_social": "Retrieve organization posts, comments, and reactions",
+        "rw_organization_admin": "Manage organization pages and retrieve analytics",
+        "r_organization_admin": "Retrieve organization pages and analytics"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2": [
+        "w_organization_social",
+        "r_organization_social",
+        "rw_organization_admin"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://developer.linkedin.com/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://www.linkedin.com/legal/privacy-policy"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Social Media"
+    }
+  ]
+}
