@@ -1,0 +1,2114 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Graph Search and Intelligence",
+        "description": "Microsoft Graph connector for cross-workload search (KQL), Copilot semantic search, document insights, people intelligence, and OneDrive file access. Complements the Graph Mail and Calendar and Graph Meeting Transcripts connectors.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Graph Search and Intelligence MCP",
+                "description": "Sends JSON-RPC requests to invoke Microsoft Graph search and intelligence tools via MCP for Copilot Studio integration.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/v1.0/search/messages": {
+            "post": {
+                "operationId": "SearchMessages",
+                "summary": "Search Messages (KQL)",
+                "description": "Search Outlook email messages using KQL via Microsoft Graph Search API. Supports field-scoped queries like subject:, from:, to:, cc:, hasAttachment:true, received>=2025-01-01. Calls POST /v1.0/search/query with entityType message.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"subject:quarterly AND from:john\" or \"hasAttachment:true\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 500)",
+                                    "x-ms-summary": "Size"
+                                },
+                                "enableTopResults": {
+                                    "type": "boolean",
+                                    "description": "Enable hybrid sort for most relevant messages first",
+                                    "x-ms-summary": "Enable Top Results"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "subject": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "bodyPreview": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "from": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "emailAddress": {
+                                                                                        "type": "object",
+                                                                                        "properties": {
+                                                                                            "name": {
+                                                                                                "type": "string"
+                                                                                            },
+                                                                                            "address": {
+                                                                                                "type": "string"
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "receivedDateTime": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "webLink": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/chat-messages": {
+            "post": {
+                "operationId": "SearchChatMessages",
+                "summary": "Search Chat Messages (KQL)",
+                "description": "Search Teams chat and channel messages using KQL via Microsoft Graph Search API. Supports KQL like mentions:{userId}, IsMentioned:true, from:user, hasAttachment:true. Calls POST /v1.0/search/query with entityType chatMessage.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"IsMentioned:true\" or \"from:john\" or \"project update\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 500)",
+                                    "x-ms-summary": "Size"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "body": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "content": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "from": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "user": {
+                                                                                        "type": "object",
+                                                                                        "properties": {
+                                                                                            "displayName": {
+                                                                                                "type": "string"
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "createdDateTime": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "webUrl": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "channelIdentity": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "teamId": {
+                                                                                        "type": "string"
+                                                                                    },
+                                                                                    "channelId": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/events": {
+            "post": {
+                "operationId": "SearchEvents",
+                "summary": "Search Events (KQL)",
+                "description": "Search calendar events using KQL via Microsoft Graph Search API. Supports KQL like subject:, body:, organizer:, attendees:. Calls POST /v1.0/search/query with entityType event.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"subject:standup\" or \"organizer:cathy\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 25 for events)",
+                                    "x-ms-summary": "Size"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "subject": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "start": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "dateTime": {
+                                                                                        "type": "string"
+                                                                                    },
+                                                                                    "timeZone": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "end": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "dateTime": {
+                                                                                        "type": "string"
+                                                                                    },
+                                                                                    "timeZone": {
+                                                                                        "type": "string"
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "organizer": {
+                                                                                "type": "object",
+                                                                                "properties": {
+                                                                                    "emailAddress": {
+                                                                                        "type": "object",
+                                                                                        "properties": {
+                                                                                            "name": {
+                                                                                                "type": "string"
+                                                                                            },
+                                                                                            "address": {
+                                                                                                "type": "string"
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "webLink": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/files": {
+            "post": {
+                "operationId": "SearchFiles",
+                "summary": "Search Files (KQL)",
+                "description": "Search OneDrive and SharePoint files using KQL via Microsoft Graph Search API. Supports KQL like filename:, filetype:docx, author:, path:, content keywords. Calls POST /v1.0/search/query with entityType driveItem.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"filetype:docx budget\" or \"author:troy quarterly\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 500)",
+                                    "x-ms-summary": "Size"
+                                },
+                                "fields": {
+                                    "type": "string",
+                                    "description": "Comma-separated fields to return (e.g. \"name,webUrl,lastModifiedDateTime\")",
+                                    "x-ms-summary": "Fields"
+                                },
+                                "sortBy": {
+                                    "type": "string",
+                                    "description": "Property to sort by (e.g. \"lastModifiedDateTime\")",
+                                    "x-ms-summary": "Sort By"
+                                },
+                                "sortOrder": {
+                                    "type": "string",
+                                    "description": "Sort direction: asc or desc",
+                                    "x-ms-summary": "Sort Order",
+                                    "enum": [
+                                        "asc",
+                                        "desc"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "name": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "webUrl": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "lastModifiedDateTime": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "size": {
+                                                                                "type": "integer"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/sites": {
+            "post": {
+                "operationId": "SearchSites",
+                "summary": "Search Sites (KQL)",
+                "description": "Search SharePoint sites using KQL via Microsoft Graph Search API. Supports KQL like site name, description keywords. Calls POST /v1.0/search/query with entityType site.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"marketing\" or \"site name\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 500)",
+                                    "x-ms-summary": "Size"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "displayName": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "webUrl": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "description": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/list-items": {
+            "post": {
+                "operationId": "SearchListItems",
+                "summary": "Search List Items (KQL)",
+                "description": "Search SharePoint list items using KQL via Microsoft Graph Search API. Supports list column values and content keywords. Calls POST /v1.0/search/query with entityType listItem.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"status:active\" or \"project plan\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 500)",
+                                    "x-ms-summary": "Size"
+                                },
+                                "fields": {
+                                    "type": "string",
+                                    "description": "Comma-separated fields to return including custom columns",
+                                    "x-ms-summary": "Fields"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "fields": {
+                                                                                "type": "object"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/external": {
+            "post": {
+                "operationId": "SearchExternal",
+                "summary": "Search External Items (KQL)",
+                "description": "Search external content ingested via Microsoft Graph connectors using KQL. Requires specifying contentSources with connection IDs. Calls POST /v1.0/search/query with entityType externalItem.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query (e.g. \"sales report\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "contentSources": {
+                                    "type": "string",
+                                    "description": "Comma-separated connection IDs (e.g. \"/external/connections/myConnection\" or \"/external/connections/*\" for all)",
+                                    "x-ms-summary": "Content Sources"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25, max 500)",
+                                    "x-ms-summary": "Size"
+                                },
+                                "fields": {
+                                    "type": "string",
+                                    "description": "Comma-separated fields to return from the external schema",
+                                    "x-ms-summary": "Fields"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            },
+                                                                            "properties": {
+                                                                                "type": "object"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/interleaved": {
+            "post": {
+                "operationId": "SearchInterleaved",
+                "summary": "Search Interleaved (KQL)",
+                "description": "Search across Outlook messages and Teams chat messages in a single interleaved call using KQL. Returns results from both sources ranked by relevance. Calls POST /v1.0/search/query with entityTypes message and chatMessage.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "KQL query to search across both email and Teams chat (e.g. \"project update\" or \"from:cathy\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 25)",
+                                    "x-ms-summary": "Size"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Interleaved search results from email and Teams",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "searchTerms": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "hitsContainers": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "hits": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "hitId": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "rank": {
+                                                                        "type": "integer"
+                                                                    },
+                                                                    "summary": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "resource": {
+                                                                        "type": "object",
+                                                                        "properties": {
+                                                                            "@odata.type": {
+                                                                                "type": "string"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "total": {
+                                                            "type": "integer"
+                                                        },
+                                                        "moreResultsAvailable": {
+                                                            "type": "boolean"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/copilot/search": {
+            "post": {
+                "operationId": "SemanticSearch",
+                "summary": "Semantic Search Files (Beta)",
+                "description": "Perform hybrid semantic and lexical search across OneDrive for work or school content using natural language queries. Requires Microsoft 365 Copilot license. Beta endpoint — subject to change.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "query"
+                            ],
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "Natural language search query (e.g. \"Find the board deck from last quarter\")",
+                                    "x-ms-summary": "Query"
+                                },
+                                "filter": {
+                                    "type": "string",
+                                    "description": "KQL path filter (e.g. \"filetype:docx\" or KQL path expression)",
+                                    "x-ms-summary": "Filter"
+                                },
+                                "metadata": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": "Metadata fields to return (e.g. [\"title\", \"author\"])",
+                                    "x-ms-summary": "Metadata Fields"
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "Pagination offset (default 0)",
+                                    "x-ms-summary": "From"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "Page size (default 10)",
+                                    "x-ms-summary": "Size"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Semantic search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalCount": {
+                                    "type": "integer"
+                                },
+                                "searchHits": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "webUrl": {
+                                                "type": "string"
+                                            },
+                                            "preview": {
+                                                "type": "string"
+                                            },
+                                            "resourceType": {
+                                                "type": "string"
+                                            },
+                                            "resourceMetadata": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/insights/trending": {
+            "get": {
+                "operationId": "ListTrendingDocuments",
+                "summary": "List Trending Documents",
+                "description": "Get documents trending around the signed-in user based on activity of their closest network. Uses ML-powered analytics across OneDrive and SharePoint.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of results to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter (e.g. \"resourceVisualization/type eq 'PowerPoint'\")"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Sort order (e.g. \"weight desc\")"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Trending documents",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "weight": {
+                                                "type": "number"
+                                            },
+                                            "lastModifiedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "resourceVisualization": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "mediaType": {
+                                                        "type": "string"
+                                                    },
+                                                    "previewImageUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "previewText": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerDisplayName": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerWebUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerType": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "resourceReference": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "webUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/insights/shared": {
+            "get": {
+                "operationId": "ListSharedDocuments",
+                "summary": "List Shared Documents",
+                "description": "Get documents shared with or by the signed-in user, ordered by recency of share. Includes URLs, file attachments, and reference attachments from OneDrive, SharePoint, Outlook, and Teams.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of results to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter (e.g. \"lastShared/sharedBy/address eq 'cathy@contoso.com'\")"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Sort order"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Shared documents",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "lastShared": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "sharedBy": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "address": {
+                                                                "type": "string"
+                                                            },
+                                                            "displayName": {
+                                                                "type": "string"
+                                                            },
+                                                            "id": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "sharedDateTime": {
+                                                        "type": "string"
+                                                    },
+                                                    "sharingSubject": {
+                                                        "type": "string"
+                                                    },
+                                                    "sharingType": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "resourceVisualization": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "mediaType": {
+                                                        "type": "string"
+                                                    },
+                                                    "previewImageUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "previewText": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerDisplayName": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerWebUrl": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "resourceReference": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "webUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/insights/used": {
+            "get": {
+                "operationId": "ListUsedDocuments",
+                "summary": "List Used Documents",
+                "description": "Get documents recently viewed or modified by the signed-in user, ranked by recency. Includes OneDrive and SharePoint documents.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of results to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter (e.g. \"resourceVisualization/type eq 'Excel'\")"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Sort order"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Used documents",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "lastUsed": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "lastAccessedDateTime": {
+                                                        "type": "string"
+                                                    },
+                                                    "lastModifiedDateTime": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "resourceVisualization": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    },
+                                                    "mediaType": {
+                                                        "type": "string"
+                                                    },
+                                                    "previewImageUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "previewText": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerDisplayName": {
+                                                        "type": "string"
+                                                    },
+                                                    "containerWebUrl": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "resourceReference": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "webUrl": {
+                                                        "type": "string"
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/people": {
+            "get": {
+                "operationId": "ListPeople",
+                "summary": "List Relevant People",
+                "description": "Get people ranked by relevance to the signed-in user based on communication patterns, collaboration signals, and business relationships.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$search",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Search",
+                        "description": "Search for people by name or email (e.g. \"j\" matches names/emails starting with j)"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter (e.g. \"personType/class eq 'Person'\")"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of people to return (default 10)"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Skip",
+                        "description": "Number of results to skip for pagination"
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select",
+                        "description": "Fields to return (e.g. \"displayName,scoredEmailAddresses\")"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Sort order (e.g. \"displayName\")"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Relevant people",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "displayName": {
+                                                "type": "string"
+                                            },
+                                            "givenName": {
+                                                "type": "string"
+                                            },
+                                            "surname": {
+                                                "type": "string"
+                                            },
+                                            "companyName": {
+                                                "type": "string"
+                                            },
+                                            "jobTitle": {
+                                                "type": "string"
+                                            },
+                                            "department": {
+                                                "type": "string"
+                                            },
+                                            "scoredEmailAddresses": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "address": {
+                                                            "type": "string"
+                                                        },
+                                                        "relevanceScore": {
+                                                            "type": "number"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "phones": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "type": {
+                                                            "type": "string"
+                                                        },
+                                                        "number": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "personType": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "class": {
+                                                        "type": "string"
+                                                    },
+                                                    "subclass": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/recent": {
+            "get": {
+                "operationId": "ListRecentFiles",
+                "summary": "List Recent Files (Deprecated)",
+                "description": "List files recently accessed by the signed-in user. Note: This API is deprecated and will stop returning data after November 2026. Consider using ListUsedDocuments as an alternative.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Recent files",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "size": {
+                                                "type": "integer"
+                                            },
+                                            "webUrl": {
+                                                "type": "string"
+                                            },
+                                            "lastModifiedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "file": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "mimeType": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "remoteItem": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "file": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "mimeType": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "size": {
+                                                        "type": "integer"
+                                                    }
+                                                }
+                                            },
+                                            "fileSystemInfo": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "lastAccessedDateTime": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "parentReference": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "driveId": {
+                                                        "type": "string"
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/sharedWithMe": {
+            "get": {
+                "operationId": "ListSharedWithMe",
+                "summary": "List Shared With Me (Deprecated)",
+                "description": "Get files shared with the signed-in user. Note: This API is deprecated and will stop returning data after November 2026. Consider using ListSharedDocuments (insights) as an alternative.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Shared files",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "size": {
+                                                "type": "integer"
+                                            },
+                                            "webUrl": {
+                                                "type": "string"
+                                            },
+                                            "lastModifiedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "file": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "mimeType": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "remoteItem": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "file": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "mimeType": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "size": {
+                                                        "type": "integer"
+                                                    }
+                                                }
+                                            },
+                                            "parentReference": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "driveId": {
+                                                        "type": "string"
+                                                    },
+                                                    "id": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/items/{itemId}": {
+            "get": {
+                "operationId": "GetFileMetadata",
+                "summary": "Get File Metadata",
+                "description": "Get metadata for a specific file or folder in the signed-in user's OneDrive, including name, size, last modified, author, and parent location.",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Item ID",
+                        "description": "The unique ID of the drive item",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select",
+                        "description": "Fields to return (e.g. \"name,size,webUrl,lastModifiedDateTime\")"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File metadata",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "size": {
+                                    "type": "integer"
+                                },
+                                "webUrl": {
+                                    "type": "string"
+                                },
+                                "createdDateTime": {
+                                    "type": "string"
+                                },
+                                "lastModifiedDateTime": {
+                                    "type": "string"
+                                },
+                                "createdBy": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "type": "object",
+                                            "properties": {
+                                                "displayName": {
+                                                    "type": "string"
+                                                },
+                                                "id": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "lastModifiedBy": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "type": "object",
+                                            "properties": {
+                                                "displayName": {
+                                                    "type": "string"
+                                                },
+                                                "id": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "file": {
+                                    "type": "object",
+                                    "properties": {
+                                        "mimeType": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "folder": {
+                                    "type": "object",
+                                    "properties": {
+                                        "childCount": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "parentReference": {
+                                    "type": "object",
+                                    "properties": {
+                                        "driveId": {
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/items/{itemId}/content": {
+            "get": {
+                "operationId": "GetFileContent",
+                "summary": "Get File Content",
+                "description": "Get the content (download URL) for a file in the signed-in user's OneDrive. Returns a 302 redirect to a pre-authenticated download URL.",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Item ID",
+                        "description": "The unique ID of the drive item to download",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File content or download URL",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "@microsoft.graph.downloadUrl": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/items/{itemId}/children": {
+            "get": {
+                "operationId": "ListFolderChildren",
+                "summary": "List Folder Children",
+                "description": "List the contents of a folder in the signed-in user's OneDrive. Returns files and subfolders.",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Folder ID",
+                        "description": "The unique ID of the folder (use 'root' for the root folder)",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of items to return (default 200)"
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select",
+                        "description": "Fields to return (e.g. \"name,size,webUrl\")"
+                    },
+                    {
+                        "name": "$orderby",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Order By",
+                        "description": "Sort order (e.g. \"name asc\" or \"lastModifiedDateTime desc\")"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder children",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "size": {
+                                                "type": "integer"
+                                            },
+                                            "webUrl": {
+                                                "type": "string"
+                                            },
+                                            "lastModifiedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "file": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "mimeType": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "folder": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "childCount": {
+                                                        "type": "integer"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/root/search(q='{query}')": {
+            "get": {
+                "operationId": "SearchDrive",
+                "summary": "Search My Drive",
+                "description": "Search for files in the signed-in user's OneDrive by name or content. Lightweight file search scoped to the user's own drive.",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Search Query",
+                        "description": "Search text to find in file names and content",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of results to return"
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Select",
+                        "description": "Fields to return (e.g. \"name,size,webUrl\")"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "size": {
+                                                "type": "integer"
+                                            },
+                                            "webUrl": {
+                                                "type": "string"
+                                            },
+                                            "lastModifiedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "file": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "mimeType": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "searchResult": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Files.Read.All": "Read all files",
+                "Sites.Read.All": "Read all sites",
+                "Mail.Read": "Read mail",
+                "Calendars.Read": "Read calendars",
+                "Chat.Read": "Read chats",
+                "ChannelMessage.Read.All": "Read channel messages",
+                "People.Read": "Read relevant people list",
+                "ExternalItem.Read.All": "Read external items",
+                "offline_access": "Maintain access"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "Files.Read.All",
+                "Sites.Read.All",
+                "Mail.Read",
+                "Calendars.Read",
+                "Chat.Read",
+                "ChannelMessage.Read.All",
+                "People.Read",
+                "ExternalItem.Read.All",
+                "offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/graph/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Communication;Productivity"
+        }
+    ]
+}
