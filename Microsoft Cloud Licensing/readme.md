@@ -1,6 +1,6 @@
-# Cloud Licensing MCP
+# Microsoft Cloud Licensing
 
-Manage Microsoft Cloud Licensing through the Microsoft Graph cloudLicensing API (preview). This MCP connector exposes allotments, assignments, usage rights, assignment errors, and waiting members as tools for Copilot Studio agents.
+Manage Microsoft Cloud Licensing through the Microsoft Graph Cloud Licensing API (preview). This MCP connector exposes allotments, assignments, usage rights, assignment errors, and waiting members as tools for Copilot Studio agents.
 
 > **Note:** All endpoints use the Microsoft Graph **beta** API. There are no v1.0 endpoints available for the cloudLicensing namespace at this time.
 
