@@ -1,0 +1,1162 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft Cloud Licensing",
+        "description": "Manage Microsoft Cloud Licensing — allotments, assignments, usage rights, assignment errors, and waiting members using the Microsoft Graph Cloud Licensing API (preview).",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Cloud Licensing MCP",
+                "description": "Model Context Protocol endpoint for Cloud Licensing tools.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MCP response",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/allotments": {
+            "get": {
+                "operationId": "ListAllotments",
+                "summary": "List allotments",
+                "description": "Get a list of allotment objects and their properties.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of allotments to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression (e.g., skuId eq 'GUID')"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AllotmentCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/allotments/{allotmentId}": {
+            "get": {
+                "operationId": "GetAllotment",
+                "summary": "Get allotment",
+                "description": "Read the properties and relationships of an allotment.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "allotmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Allotment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the allotment"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/Allotment"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/allotments/{allotmentId}/assignments": {
+            "get": {
+                "operationId": "ListAllotmentAssignments",
+                "summary": "List assignments for allotment",
+                "description": "Get a list of license assignment objects that consume licenses from this allotment.",
+                "parameters": [
+                    {
+                        "name": "allotmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Allotment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the allotment"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of assignments to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentCollection"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateAllotmentAssignment",
+                "summary": "Create assignment for allotment",
+                "description": "Create a new license assignment by posting to the assignments collection of an allotment.",
+                "parameters": [
+                    {
+                        "name": "allotmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Allotment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the allotment"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateAssignmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Assignment"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/allotments/{allotmentId}/waitingMembers": {
+            "get": {
+                "operationId": "ListAllotmentWaitingMembers",
+                "summary": "List waiting members for allotment",
+                "description": "Get a list of over-assigned users who are in the waiting room for this allotment due to license capacity limits.",
+                "parameters": [
+                    {
+                        "name": "allotmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Allotment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the allotment"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of waiting members to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WaitingMemberCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/allotments/{allotmentId}/waitingMembers/{waitingMemberId}": {
+            "get": {
+                "operationId": "GetAllotmentWaitingMember",
+                "summary": "Get waiting member for allotment",
+                "description": "Read the properties and relationships of a waiting member for a specific allotment.",
+                "parameters": [
+                    {
+                        "name": "allotmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Allotment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the allotment"
+                    },
+                    {
+                        "name": "waitingMemberId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Waiting Member ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the waiting member"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WaitingMember"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/assignments": {
+            "get": {
+                "operationId": "ListAssignments",
+                "summary": "List assignments",
+                "description": "Get a list of license assignment objects within the organization.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of assignments to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/assignments/{assignmentId}": {
+            "get": {
+                "operationId": "GetAssignment",
+                "summary": "Get assignment",
+                "description": "Read the properties and relationships of an assignment object.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "assignmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Assignment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the assignment"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/Assignment"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateAssignment",
+                "summary": "Update assignment",
+                "description": "Update an assignment object to enable or disable services.",
+                "parameters": [
+                    {
+                        "name": "assignmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Assignment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the assignment"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateAssignmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/Assignment"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteAssignment",
+                "summary": "Delete assignment",
+                "description": "Delete an assignment object.",
+                "parameters": [
+                    {
+                        "name": "assignmentId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Assignment ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the assignment"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/assignmentErrors": {
+            "get": {
+                "operationId": "ListAssignmentErrors",
+                "summary": "List assignment errors",
+                "description": "Get a list of the assignmentError objects within the organization.",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of errors to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentErrorCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/admin/cloudLicensing/assignmentErrors/{assignmentErrorId}": {
+            "get": {
+                "operationId": "GetAssignmentError",
+                "summary": "Get assignment error",
+                "description": "Read the properties and relationships of an assignmentError object.",
+                "parameters": [
+                    {
+                        "name": "assignmentErrorId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Assignment Error ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the assignment error"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentError"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/users/{userId}/cloudLicensing/usageRights": {
+            "get": {
+                "operationId": "ListUserUsageRights",
+                "summary": "List usage rights for user",
+                "description": "Get a list of the usageRight objects granted to a user.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The ID or userPrincipalName of the user"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of usage rights to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression (e.g., skuId eq 'GUID')"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UsageRightCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/users/{userId}/cloudLicensing/usageRights/{usageRightId}": {
+            "get": {
+                "operationId": "GetUserUsageRight",
+                "summary": "Get usage right for user",
+                "description": "Get the properties and relationships of a usageRight for a user.",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The ID or userPrincipalName of the user"
+                    },
+                    {
+                        "name": "usageRightId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Usage Right ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the usage right"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UsageRight"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/groups/{groupId}/cloudLicensing/usageRights": {
+            "get": {
+                "operationId": "ListGroupUsageRights",
+                "summary": "List usage rights for group",
+                "description": "Get a list of the usageRight objects granted to a group.",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Group ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the group"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of usage rights to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression (e.g., skuId eq 'GUID')"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UsageRightCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/groups/{groupId}/cloudLicensing/usageRights/{usageRightId}": {
+            "get": {
+                "operationId": "GetGroupUsageRight",
+                "summary": "Get usage right for group",
+                "description": "Get the properties and relationships of a usageRight for a group.",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Group ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the group"
+                    },
+                    {
+                        "name": "usageRightId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Usage Right ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the usage right"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UsageRight"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/users/{userId}/cloudLicensing/assignments": {
+            "get": {
+                "operationId": "ListUserAssignments",
+                "summary": "List assignments for user",
+                "description": "Get a list of license assignment objects for a specific user.",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The ID or userPrincipalName of the user"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of assignments to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/groups/{groupId}/cloudLicensing/assignments": {
+            "get": {
+                "operationId": "ListGroupAssignments",
+                "summary": "List assignments for group",
+                "description": "Get a list of license assignment objects for a specific group.",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Group ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The unique identifier of the group"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of assignments to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/users/{userId}/cloudLicensing/assignmentErrors": {
+            "get": {
+                "operationId": "ListUserAssignmentErrors",
+                "summary": "List assignment errors for user",
+                "description": "Get a list of the assignmentError objects affecting a specific user.",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The ID or userPrincipalName of the user"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of errors to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentErrorCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/users/{userId}/cloudLicensing/waitingMembers": {
+            "get": {
+                "operationId": "ListUserWaitingMembers",
+                "summary": "List waiting members for user",
+                "description": "Get a list of allotments that a specific user is waiting for.",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The ID or userPrincipalName of the user"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of waiting members to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WaitingMemberCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/users/{userId}/cloudLicensing/assignments/reprocessAssignments": {
+            "post": {
+                "operationId": "ReprocessUserAssignments",
+                "summary": "Reprocess assignments for user",
+                "description": "Reprocess existing license assignments for a user to resolve synchronization issues.",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single",
+                        "description": "The ID or userPrincipalName of the user"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/beta/me/cloudLicensing/usageRights": {
+            "get": {
+                "operationId": "ListMyUsageRights",
+                "summary": "List my usage rights",
+                "description": "Get a list of the usageRight objects granted to the signed-in user.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of usage rights to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression (e.g., skuId eq 'GUID')"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UsageRightCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/me/cloudLicensing/assignments": {
+            "get": {
+                "operationId": "ListMyAssignments",
+                "summary": "List my assignments",
+                "description": "Get a list of license assignment objects for the signed-in user.",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of assignments to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/me/cloudLicensing/waitingMembers": {
+            "get": {
+                "operationId": "ListMyWaitingMembers",
+                "summary": "List my waiting members",
+                "description": "Get a list of allotments that the signed-in user is waiting for.",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of waiting members to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/WaitingMemberCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/me/cloudLicensing/assignmentErrors": {
+            "get": {
+                "operationId": "ListMyAssignmentErrors",
+                "summary": "List my assignment errors",
+                "description": "Get a list of the assignmentError objects affecting the signed-in user.",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Maximum number of errors to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AssignmentErrorCollection"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Service": {
+            "type": "object",
+            "properties": {
+                "assignableTo": {
+                    "type": "string",
+                    "description": "Types of directory objects the service can be assigned to (user, group, device)"
+                },
+                "planId": {
+                    "type": "string",
+                    "description": "The unique identifier for the service plan"
+                },
+                "planName": {
+                    "type": "string",
+                    "description": "The name of the service plan"
+                }
+            }
+        },
+        "Subscription": {
+            "type": "object",
+            "properties": {
+                "subscriptionId": {
+                    "type": "string",
+                    "description": "The unique identifier for the subscription"
+                },
+                "nextLifecycleDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The next lifecycle date for the subscription"
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The start date of the subscription"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "The state of the subscription (active, expired, etc.)"
+                },
+                "tags": {
+                    "type": "string",
+                    "description": "Tags associated with the subscription"
+                }
+            }
+        },
+        "Allotment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the allotment"
+                },
+                "allottedUnits": {
+                    "type": "integer",
+                    "description": "The number of licenses contained within the allotment"
+                },
+                "assignableTo": {
+                    "type": "string",
+                    "description": "Types of directory objects to which the allotment can be assigned (user, group, device)"
+                },
+                "consumedUnits": {
+                    "type": "integer",
+                    "description": "The number of licenses currently consumed by assignments"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Service"
+                    },
+                    "description": "The list of services that might be enabled or disabled"
+                },
+                "skuId": {
+                    "type": "string",
+                    "description": "Unique identifier (GUID) for the service SKU"
+                },
+                "skuPartNumber": {
+                    "type": "string",
+                    "description": "Unique SKU display name (e.g., AAD_Premium)"
+                },
+                "subscriptions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Subscription"
+                    },
+                    "description": "Basic information about the subscriptions supporting this allotment"
+                }
+            }
+        },
+        "AllotmentCollection": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Allotment"
+                    },
+                    "description": "Collection of allotments"
+                },
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "URL for the next page of results"
+                }
+            }
+        },
+        "Assignment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the assignment"
+                },
+                "disabledServicePlanIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "The list of disabled service plan IDs for this assignment"
+                }
+            }
+        },
+        "AssignmentCollection": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Assignment"
+                    },
+                    "description": "Collection of assignments"
+                },
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "URL for the next page of results"
+                }
+            }
+        },
+        "CreateAssignmentRequest": {
+            "type": "object",
+            "required": [
+                "assignedToUri",
+                "disabledServicePlanIds"
+            ],
+            "properties": {
+                "assignedToUri": {
+                    "type": "string",
+                    "x-ms-summary": "Assigned To URI",
+                    "description": "The Graph URI of the user or group (e.g., https://graph.microsoft.com/beta/users/{userId})"
+                },
+                "disabledServicePlanIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "x-ms-summary": "Disabled Service Plan IDs",
+                    "description": "List of service plan GUIDs to disable. Use empty array to enable all."
+                }
+            }
+        },
+        "UpdateAssignmentRequest": {
+            "type": "object",
+            "required": [
+                "disabledServicePlanIds"
+            ],
+            "properties": {
+                "disabledServicePlanIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "x-ms-summary": "Disabled Service Plan IDs",
+                    "description": "List of service plan GUIDs to disable. Use empty array to enable all."
+                }
+            }
+        },
+        "UsageRight": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the usage right"
+                },
+                "skuId": {
+                    "type": "string",
+                    "description": "Unique identifier (GUID) for the service SKU"
+                },
+                "skuPartNumber": {
+                    "type": "string",
+                    "description": "Unique SKU display name (e.g., Microsoft_365_Copilot)"
+                },
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Service"
+                    },
+                    "description": "The services associated with the usage right"
+                }
+            }
+        },
+        "UsageRightCollection": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UsageRight"
+                    },
+                    "description": "Collection of usage rights"
+                },
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "URL for the next page of results"
+                }
+            }
+        },
+        "AssignmentError": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the assignment error"
+                },
+                "code": {
+                    "type": "string",
+                    "description": "The error code associated with the assignment synchronization failure"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "The error message associated with the failure"
+                },
+                "occurrenceDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date and time at which the error most recently occurred"
+                },
+                "skuId": {
+                    "type": "string",
+                    "description": "Unique identifier (GUID) for the service SKU"
+                }
+            }
+        },
+        "AssignmentErrorCollection": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AssignmentError"
+                    },
+                    "description": "Collection of assignment errors"
+                },
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "URL for the next page of results"
+                }
+            }
+        },
+        "WaitingMember": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier for the waiting member"
+                },
+                "waitingSinceDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The moment when the user or device first started waiting for this license"
+                }
+            }
+        },
+        "WaitingMemberCollection": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WaitingMember"
+                    },
+                    "description": "Collection of waiting members"
+                },
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "URL for the next page of results"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "CloudLicensing.ReadWrite.All": "Read and write cloud licensing data",
+                "User.Read.All": "Read all users' profiles",
+                "Group.Read.All": "Read all groups",
+                "Directory.Read.All": "Read directory data",
+                "offline_access": "Maintain access"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "CloudLicensing.ReadWrite.All",
+                "User.Read.All",
+                "Group.Read.All",
+                "Directory.Read.All",
+                "offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/graph/api/resources/cloud-licensing-api-overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
