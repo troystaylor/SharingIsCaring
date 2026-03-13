@@ -1,0 +1,2777 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft Planner",
+        "description": "Microsoft Graph Planner API connector for managing plans, tasks, buckets, rosters, and business scenarios (preview).",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Planner MCP",
+                "description": "Sends JSON-RPC requests to invoke Planner tools via MCP.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/v1.0/groups/{groupId}/planner/plans": {
+            "get": {
+                "summary": "List Group Plans",
+                "description": "Get all Planner plans for a Microsoft 365 group.",
+                "operationId": "ListGroupPlans",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Group ID",
+                        "description": "The ID of the Microsoft 365 group"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerPlan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/plans/{planId}": {
+            "get": {
+                "summary": "Get Plan",
+                "description": "Get a specific Planner plan by ID.",
+                "operationId": "GetPlan",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlan"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Plan",
+                "description": "Update a Planner plan.",
+                "operationId": "UpdatePlan",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the plan for concurrency control"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "x-ms-summary": "Title",
+                                    "description": "New title for the plan"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlan"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Plan",
+                "description": "Delete a Planner plan.",
+                "operationId": "DeletePlan",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the plan for concurrency control"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/plans": {
+            "post": {
+                "summary": "Create Plan",
+                "description": "Create a new Planner plan.",
+                "operationId": "CreatePlan",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "title",
+                                "container"
+                            ],
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "x-ms-summary": "Title",
+                                    "description": "The title of the plan"
+                                },
+                                "container": {
+                                    "type": "object",
+                                    "description": "The container for the plan",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "x-ms-summary": "Container URL",
+                                            "description": "URL of the container (group)"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "x-ms-summary": "Container Type",
+                                            "description": "The type of container (e.g., group, roster)",
+                                            "enum": [
+                                                "group",
+                                                "roster"
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlan"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/plans/{planId}/details": {
+            "get": {
+                "summary": "Get Plan Details",
+                "description": "Get the details of a Planner plan including category descriptions and shared-with info.",
+                "operationId": "GetPlanDetails",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlanDetails"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Plan Details",
+                "description": "Update plan details such as category labels.",
+                "operationId": "UpdatePlanDetails",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the plan details"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "categoryDescriptions": {
+                                    "type": "object",
+                                    "description": "Category label descriptions",
+                                    "properties": {
+                                        "category1": {
+                                            "type": "string",
+                                            "x-ms-summary": "Category 1"
+                                        },
+                                        "category2": {
+                                            "type": "string",
+                                            "x-ms-summary": "Category 2"
+                                        },
+                                        "category3": {
+                                            "type": "string",
+                                            "x-ms-summary": "Category 3"
+                                        },
+                                        "category4": {
+                                            "type": "string",
+                                            "x-ms-summary": "Category 4"
+                                        },
+                                        "category5": {
+                                            "type": "string",
+                                            "x-ms-summary": "Category 5"
+                                        },
+                                        "category6": {
+                                            "type": "string",
+                                            "x-ms-summary": "Category 6"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlanDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/plans/{planId}/buckets": {
+            "get": {
+                "summary": "List Plan Buckets",
+                "description": "Get all buckets in a Planner plan.",
+                "operationId": "ListPlanBuckets",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerBucket"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/plans/{planId}/tasks": {
+            "get": {
+                "summary": "List Plan Tasks",
+                "description": "Get all tasks in a Planner plan.",
+                "operationId": "ListPlanTasks",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerTask"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/tasks/{taskId}": {
+            "get": {
+                "summary": "Get Task",
+                "description": "Get a specific Planner task by ID.",
+                "operationId": "GetTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTask"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Task",
+                "description": "Update a Planner task.",
+                "operationId": "UpdateTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the task for concurrency control"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTask"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Task",
+                "description": "Delete a Planner task.",
+                "operationId": "DeleteTask",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the task for concurrency control"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/tasks": {
+            "post": {
+                "summary": "Create Task",
+                "description": "Create a new Planner task.",
+                "operationId": "CreateTask",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTask"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/tasks/{taskId}/details": {
+            "get": {
+                "summary": "Get Task Details",
+                "description": "Get the details of a Planner task including description, checklist, and references.",
+                "operationId": "GetTaskDetails",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskDetails"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Task Details",
+                "description": "Update the details of a Planner task.",
+                "operationId": "UpdateTaskDetails",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the task details"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "description": {
+                                    "type": "string",
+                                    "x-ms-summary": "Description",
+                                    "description": "Description of the task"
+                                },
+                                "previewType": {
+                                    "type": "string",
+                                    "x-ms-summary": "Preview Type",
+                                    "description": "Type of preview shown on the task",
+                                    "enum": [
+                                        "automatic",
+                                        "noPreview",
+                                        "checklist",
+                                        "description",
+                                        "reference"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskDetails"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/buckets/{bucketId}": {
+            "get": {
+                "summary": "Get Bucket",
+                "description": "Get a specific Planner bucket by ID.",
+                "operationId": "GetBucket",
+                "parameters": [
+                    {
+                        "name": "bucketId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Bucket ID",
+                        "description": "The ID of the bucket"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerBucket"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Bucket",
+                "description": "Update a Planner bucket.",
+                "operationId": "UpdateBucket",
+                "parameters": [
+                    {
+                        "name": "bucketId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Bucket ID",
+                        "description": "The ID of the bucket"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the bucket for concurrency control"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "x-ms-summary": "Name",
+                                    "description": "New name for the bucket"
+                                },
+                                "orderHint": {
+                                    "type": "string",
+                                    "x-ms-summary": "Order Hint",
+                                    "description": "Hint for ordering the bucket"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerBucket"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Bucket",
+                "description": "Delete a Planner bucket.",
+                "operationId": "DeleteBucket",
+                "parameters": [
+                    {
+                        "name": "bucketId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Bucket ID",
+                        "description": "The ID of the bucket"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The ETag of the bucket for concurrency control"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/buckets": {
+            "post": {
+                "summary": "Create Bucket",
+                "description": "Create a new Planner bucket.",
+                "operationId": "CreateBucket",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "planId"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "x-ms-summary": "Name",
+                                    "description": "The name of the bucket"
+                                },
+                                "planId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Plan ID",
+                                    "description": "The ID of the plan the bucket belongs to"
+                                },
+                                "orderHint": {
+                                    "type": "string",
+                                    "x-ms-summary": "Order Hint",
+                                    "description": "Hint for ordering the bucket"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerBucket"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/buckets/{bucketId}/tasks": {
+            "get": {
+                "summary": "List Bucket Tasks",
+                "description": "Get all tasks in a Planner bucket.",
+                "operationId": "ListBucketTasks",
+                "parameters": [
+                    {
+                        "name": "bucketId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Bucket ID",
+                        "description": "The ID of the bucket"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerTask"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/planner/tasks": {
+            "get": {
+                "summary": "List My Tasks",
+                "description": "Get all Planner tasks assigned to the current user.",
+                "operationId": "ListMyTasks",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of tasks to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerTask"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/planner/plans/{planId}/archive": {
+            "post": {
+                "summary": "Archive Plan",
+                "description": "Archive a Planner plan. Archived plans and their tasks/buckets become read-only. Requires If-Match ETag header.",
+                "operationId": "ArchivePlan",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan to archive"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The @odata.etag value from the plan"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "justification": {
+                                    "type": "string",
+                                    "x-ms-summary": "Justification",
+                                    "description": "Reason for archiving the plan"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/beta/planner/plans/{planId}/unarchive": {
+            "post": {
+                "summary": "Unarchive Plan",
+                "description": "Unarchive a previously archived Planner plan. Requires If-Match ETag header.",
+                "operationId": "UnarchivePlan",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan to unarchive"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The @odata.etag value from the plan"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "justification": {
+                                    "type": "string",
+                                    "x-ms-summary": "Justification",
+                                    "description": "Reason for unarchiving the plan"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/beta/planner/plans/{planId}/moveToContainer": {
+            "post": {
+                "summary": "Move Plan to Container",
+                "description": "Move a Planner plan from one container to another (e.g., from a user container to a group container).",
+                "operationId": "MovePlanToContainer",
+                "parameters": [
+                    {
+                        "name": "planId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Plan ID",
+                        "description": "The ID of the plan to move"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["container"],
+                            "properties": {
+                                "container": {
+                                    "type": "object",
+                                    "description": "The target container for the plan",
+                                    "required": ["containerId", "type"],
+                                    "properties": {
+                                        "containerId": {
+                                            "type": "string",
+                                            "x-ms-summary": "Container ID",
+                                            "description": "The ID of the target container (e.g., group ID)"
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "x-ms-summary": "Container Type",
+                                            "description": "The type of the target container (e.g., group, roster, user)"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlan"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/planner/plans": {
+            "get": {
+                "summary": "List My Plans",
+                "description": "Get all Planner plans for the current user.",
+                "operationId": "ListMyPlans",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of plans to return"
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "description": "OData filter expression"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerPlan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/me/planner/favoritePlans": {
+            "get": {
+                "summary": "List Favorite Plans",
+                "description": "Get all Planner plans marked as favorites by the current user.",
+                "operationId": "ListFavoritePlans",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of plans to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerPlan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/me/planner/recentPlans": {
+            "get": {
+                "summary": "List Recent Plans",
+                "description": "Get all Planner plans recently viewed by the current user.",
+                "operationId": "ListRecentPlans",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of plans to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerPlan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/me/planner/myDayTasks": {
+            "get": {
+                "summary": "List My Day Tasks",
+                "description": "Get all Planner tasks in the current user's My Day view.",
+                "operationId": "ListMyDayTasks",
+                "parameters": [
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Top",
+                        "description": "Number of tasks to return"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerTask"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/tasks/{taskId}/assignedToTaskBoardFormat": {
+            "get": {
+                "summary": "Get Assigned-To Board Format",
+                "description": "Get the board format for a task on the Assigned To view of task board.",
+                "operationId": "GetAssignedToTaskBoardFormat",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerAssignedToTaskBoardFormat"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Assigned-To Board Format",
+                "description": "Update the board format for a task on the Assigned To view. Requires If-Match ETag header.",
+                "operationId": "UpdateAssignedToTaskBoardFormat",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The @odata.etag value"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerAssignedToTaskBoardFormat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerAssignedToTaskBoardFormat"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/tasks/{taskId}/progressTaskBoardFormat": {
+            "get": {
+                "summary": "Get Progress Board Format",
+                "description": "Get the board format for a task on the Progress view of task board.",
+                "operationId": "GetProgressTaskBoardFormat",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerProgressTaskBoardFormat"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Progress Board Format",
+                "description": "Update the board format for a task on the Progress view. Requires If-Match ETag header.",
+                "operationId": "UpdateProgressTaskBoardFormat",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The @odata.etag value"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerProgressTaskBoardFormat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerProgressTaskBoardFormat"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/planner/tasks/{taskId}/bucketTaskBoardFormat": {
+            "get": {
+                "summary": "Get Bucket Board Format",
+                "description": "Get the board format for a task on the Bucket view of task board.",
+                "operationId": "GetBucketTaskBoardFormat",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerBucketTaskBoardFormat"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Bucket Board Format",
+                "description": "Update the board format for a task on the Bucket view. Requires If-Match ETag header.",
+                "operationId": "UpdateBucketTaskBoardFormat",
+                "parameters": [
+                    {
+                        "name": "taskId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Task ID",
+                        "description": "The ID of the task"
+                    },
+                    {
+                        "name": "If-Match",
+                        "in": "header",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "ETag",
+                        "description": "The @odata.etag value"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerBucketTaskBoardFormat"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerBucketTaskBoardFormat"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/planner/tasks/delta": {
+            "get": {
+                "summary": "Get Task Delta",
+                "description": "Get newly created, updated, or deleted Planner tasks using delta query. Use the deltaLink from the response for subsequent calls to get incremental changes.",
+                "operationId": "GetTaskDelta",
+                "parameters": [
+                    {
+                        "name": "$deltatoken",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Delta Token",
+                        "description": "The delta token from a previous response for incremental changes"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerTask"
+                                    }
+                                },
+                                "@odata.nextLink": {
+                                    "type": "string",
+                                    "description": "URL for the next page of results"
+                                },
+                                "@odata.deltaLink": {
+                                    "type": "string",
+                                    "description": "URL to get incremental changes since this response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/planner/rosters": {
+            "post": {
+                "summary": "Create Roster",
+                "description": "Create a new Planner roster (a non-group container for plans).",
+                "operationId": "CreateRoster",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {}
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerRoster"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/planner/rosters/{rosterId}": {
+            "get": {
+                "summary": "Get Roster",
+                "description": "Get a specific Planner roster by ID.",
+                "operationId": "GetRoster",
+                "parameters": [
+                    {
+                        "name": "rosterId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Roster ID",
+                        "description": "The ID of the roster"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerRoster"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Roster",
+                "description": "Delete a Planner roster.",
+                "operationId": "DeleteRoster",
+                "parameters": [
+                    {
+                        "name": "rosterId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Roster ID",
+                        "description": "The ID of the roster"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/beta/planner/rosters/{rosterId}/members": {
+            "get": {
+                "summary": "List Roster Members",
+                "description": "Get all members of a Planner roster.",
+                "operationId": "ListRosterMembers",
+                "parameters": [
+                    {
+                        "name": "rosterId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Roster ID",
+                        "description": "The ID of the roster"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerRosterMember"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Add Roster Member",
+                "description": "Add a member to a Planner roster.",
+                "operationId": "AddRosterMember",
+                "parameters": [
+                    {
+                        "name": "rosterId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Roster ID",
+                        "description": "The ID of the roster"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "userId"
+                            ],
+                            "properties": {
+                                "userId": {
+                                    "type": "string",
+                                    "x-ms-summary": "User ID",
+                                    "description": "The ID of the user to add"
+                                },
+                                "tenantId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Tenant ID",
+                                    "description": "The tenant ID of the user (optional)"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerRosterMember"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/planner/rosters/{rosterId}/members/{memberId}": {
+            "delete": {
+                "summary": "Remove Roster Member",
+                "description": "Remove a member from a Planner roster.",
+                "operationId": "RemoveRosterMember",
+                "parameters": [
+                    {
+                        "name": "rosterId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Roster ID",
+                        "description": "The ID of the roster"
+                    },
+                    {
+                        "name": "memberId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Member ID",
+                        "description": "The ID of the roster member"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/beta/planner/rosters/{rosterId}/plans": {
+            "get": {
+                "summary": "List Roster Plans",
+                "description": "Get all plans in a Planner roster.",
+                "operationId": "ListRosterPlans",
+                "parameters": [
+                    {
+                        "name": "rosterId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Roster ID",
+                        "description": "The ID of the roster"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PlannerPlan"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios": {
+            "get": {
+                "summary": "List Business Scenarios",
+                "description": "Get all business scenarios in the tenant.",
+                "operationId": "ListBusinessScenarios",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/BusinessScenario"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Business Scenario",
+                "description": "Create a new business scenario for Planner integration.",
+                "operationId": "CreateBusinessScenario",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "displayName",
+                                "uniqueName"
+                            ],
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "x-ms-summary": "Display Name",
+                                    "description": "Display name of the business scenario"
+                                },
+                                "uniqueName": {
+                                    "type": "string",
+                                    "x-ms-summary": "Unique Name",
+                                    "description": "Unique name in reverse DNS format (e.g., com.contoso.apps.myScenario)"
+                                },
+                                "ownerAppIds": {
+                                    "type": "array",
+                                    "x-ms-summary": "Owner App IDs",
+                                    "description": "App IDs that own this scenario",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/BusinessScenario"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios/{scenarioId}": {
+            "get": {
+                "summary": "Get Business Scenario",
+                "description": "Get a specific business scenario by ID.",
+                "operationId": "GetBusinessScenario",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/BusinessScenario"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Business Scenario",
+                "description": "Update a business scenario.",
+                "operationId": "UpdateBusinessScenario",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "x-ms-summary": "Display Name",
+                                    "description": "New display name"
+                                },
+                                "ownerAppIds": {
+                                    "type": "array",
+                                    "x-ms-summary": "Owner App IDs",
+                                    "description": "Updated owner app IDs",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/BusinessScenario"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Business Scenario",
+                "description": "Delete a business scenario and all its associated data.",
+                "operationId": "DeleteBusinessScenario",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios/{scenarioId}/planner": {
+            "get": {
+                "summary": "Get Scenario Planner",
+                "description": "Get the Planner configuration for a business scenario.",
+                "operationId": "GetScenarioPlanner",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "@odata.type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios/{scenarioId}/planner/getPlan": {
+            "post": {
+                "summary": "Get Scenario Plan",
+                "description": "Get the plan reference for a business scenario targeting a specific group.",
+                "operationId": "GetScenarioPlan",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "target"
+                            ],
+                            "properties": {
+                                "target": {
+                                    "type": "object",
+                                    "description": "Target for the plan",
+                                    "required": [
+                                        "@odata.type",
+                                        "taskTargetKind",
+                                        "groupId"
+                                    ],
+                                    "properties": {
+                                        "@odata.type": {
+                                            "type": "string",
+                                            "default": "#microsoft.graph.businessScenarioGroupTarget",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "taskTargetKind": {
+                                            "type": "string",
+                                            "default": "group",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "groupId": {
+                                            "type": "string",
+                                            "x-ms-summary": "Group ID",
+                                            "description": "The ID of the target group"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "planId": {
+                                    "type": "string",
+                                    "description": "The ID of the plan"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "The title of the plan"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios/{scenarioId}/planner/tasks": {
+            "get": {
+                "summary": "List Scenario Tasks",
+                "description": "Get all tasks for a business scenario.",
+                "operationId": "ListScenarioTasks",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/BusinessScenarioTask"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Scenario Task",
+                "description": "Create a new task for a business scenario.",
+                "operationId": "CreateScenarioTask",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "title",
+                                "target",
+                                "businessScenarioProperties"
+                            ],
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "x-ms-summary": "Title",
+                                    "description": "Title of the task"
+                                },
+                                "target": {
+                                    "type": "object",
+                                    "description": "Target for the task",
+                                    "required": [
+                                        "@odata.type",
+                                        "taskTargetKind",
+                                        "groupId"
+                                    ],
+                                    "properties": {
+                                        "@odata.type": {
+                                            "type": "string",
+                                            "default": "#microsoft.graph.businessScenarioGroupTarget",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "taskTargetKind": {
+                                            "type": "string",
+                                            "default": "group",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "groupId": {
+                                            "type": "string",
+                                            "x-ms-summary": "Group ID",
+                                            "description": "The ID of the target group"
+                                        }
+                                    }
+                                },
+                                "businessScenarioProperties": {
+                                    "type": "object",
+                                    "description": "Scenario properties for the task",
+                                    "required": [
+                                        "externalObjectId"
+                                    ],
+                                    "properties": {
+                                        "externalObjectId": {
+                                            "type": "string",
+                                            "x-ms-summary": "External Object ID",
+                                            "description": "Unique external ID for the task within the tenant"
+                                        },
+                                        "externalContextId": {
+                                            "type": "string",
+                                            "x-ms-summary": "External Context ID",
+                                            "description": "Context ID to group tasks"
+                                        },
+                                        "externalBucketId": {
+                                            "type": "string",
+                                            "x-ms-summary": "External Bucket ID",
+                                            "description": "External bucket ID for plan configuration buckets"
+                                        }
+                                    }
+                                },
+                                "percentComplete": {
+                                    "type": "integer",
+                                    "x-ms-summary": "Percent Complete",
+                                    "description": "Percentage of task completion (0-100)"
+                                },
+                                "priority": {
+                                    "type": "integer",
+                                    "x-ms-summary": "Priority",
+                                    "description": "Priority of the task (0-10, lower is higher priority)"
+                                },
+                                "dueDateTime": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "x-ms-summary": "Due Date",
+                                    "description": "Due date in ISO 8601 format"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/BusinessScenarioTask"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios/{scenarioId}/planner/planConfiguration": {
+            "get": {
+                "summary": "Get Plan Configuration",
+                "description": "Get the Planner plan configuration for a business scenario.",
+                "operationId": "GetPlanConfiguration",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlanConfiguration"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Plan Configuration",
+                "description": "Update the Planner plan configuration for a business scenario.",
+                "operationId": "UpdatePlanConfiguration",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlanConfiguration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerPlanConfiguration"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/solutions/businessScenarios/{scenarioId}/planner/taskConfiguration": {
+            "get": {
+                "summary": "Get Task Configuration",
+                "description": "Get the Planner task configuration for a business scenario.",
+                "operationId": "GetTaskConfiguration",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskConfiguration"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Task Configuration",
+                "description": "Update the Planner task configuration for a business scenario.",
+                "operationId": "UpdateTaskConfiguration",
+                "parameters": [
+                    {
+                        "name": "scenarioId",
+                        "in": "path",
+                        "x-ms-url-encoding": "single",
+                        "type": "string",
+                        "required": true,
+                        "x-ms-summary": "Scenario ID",
+                        "description": "The ID of the business scenario"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskConfiguration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/PlannerTaskConfiguration"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "PlannerPlan": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the plan"
+                },
+                "@odata.etag": {
+                    "type": "string",
+                    "description": "ETag for concurrency control"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Title of the plan"
+                },
+                "owner": {
+                    "type": "string",
+                    "description": "ID of the group that owns the plan"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Date and time the plan was created"
+                },
+                "createdBy": {
+                    "type": "object",
+                    "properties": {
+                        "user": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "displayName": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "application": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "displayName": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "container": {
+                    "type": "object",
+                    "properties": {
+                        "containerId": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "type": "string"
+                        },
+                        "url": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "PlannerPlanDetails": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "@odata.etag": {
+                    "type": "string"
+                },
+                "categoryDescriptions": {
+                    "type": "object",
+                    "properties": {
+                        "category1": {
+                            "type": "string"
+                        },
+                        "category2": {
+                            "type": "string"
+                        },
+                        "category3": {
+                            "type": "string"
+                        },
+                        "category4": {
+                            "type": "string"
+                        },
+                        "category5": {
+                            "type": "string"
+                        },
+                        "category6": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "PlannerTask": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the task"
+                },
+                "@odata.etag": {
+                    "type": "string",
+                    "description": "ETag for concurrency control"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Title of the task"
+                },
+                "planId": {
+                    "type": "string",
+                    "description": "Plan ID the task belongs to"
+                },
+                "bucketId": {
+                    "type": "string",
+                    "description": "Bucket ID the task belongs to"
+                },
+                "percentComplete": {
+                    "type": "integer",
+                    "description": "Percentage of task completion"
+                },
+                "priority": {
+                    "type": "integer",
+                    "description": "Priority (0-10)"
+                },
+                "startDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "dueDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "completedDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "orderHint": {
+                    "type": "string"
+                },
+                "hasDescription": {
+                    "type": "boolean"
+                },
+                "activeChecklistItemCount": {
+                    "type": "integer"
+                },
+                "checklistItemCount": {
+                    "type": "integer"
+                },
+                "referenceCount": {
+                    "type": "integer"
+                },
+                "conversationThreadId": {
+                    "type": "string"
+                },
+                "assignments": {
+                    "type": "object",
+                    "description": "Assignments map (userId -> assignment)"
+                },
+                "appliedCategories": {
+                    "type": "object",
+                    "description": "Applied category labels"
+                },
+                "createdBy": {
+                    "type": "object",
+                    "properties": {
+                        "user": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "displayName": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "PlannerTaskCreate": {
+            "type": "object",
+            "required": [
+                "planId",
+                "title"
+            ],
+            "properties": {
+                "planId": {
+                    "type": "string",
+                    "x-ms-summary": "Plan ID",
+                    "description": "The plan to create the task in"
+                },
+                "title": {
+                    "type": "string",
+                    "x-ms-summary": "Title",
+                    "description": "Title of the task"
+                },
+                "bucketId": {
+                    "type": "string",
+                    "x-ms-summary": "Bucket ID",
+                    "description": "The bucket for the task"
+                },
+                "percentComplete": {
+                    "type": "integer",
+                    "x-ms-summary": "Percent Complete",
+                    "description": "Percentage complete (0-100)"
+                },
+                "priority": {
+                    "type": "integer",
+                    "x-ms-summary": "Priority",
+                    "description": "Priority (0=urgent, 5=medium, 9=low)"
+                },
+                "dueDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Due Date",
+                    "description": "Due date in ISO 8601"
+                },
+                "startDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Start Date",
+                    "description": "Start date in ISO 8601"
+                },
+                "assignments": {
+                    "type": "object",
+                    "x-ms-summary": "Assignments",
+                    "description": "User assignments object"
+                },
+                "appliedCategories": {
+                    "type": "object",
+                    "x-ms-summary": "Categories",
+                    "description": "Applied categories object"
+                },
+                "orderHint": {
+                    "type": "string",
+                    "x-ms-summary": "Order Hint",
+                    "description": "Hint for ordering"
+                }
+            }
+        },
+        "PlannerTaskUpdate": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "x-ms-summary": "Title"
+                },
+                "bucketId": {
+                    "type": "string",
+                    "x-ms-summary": "Bucket ID"
+                },
+                "percentComplete": {
+                    "type": "integer",
+                    "x-ms-summary": "Percent Complete"
+                },
+                "priority": {
+                    "type": "integer",
+                    "x-ms-summary": "Priority"
+                },
+                "dueDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Due Date"
+                },
+                "startDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "x-ms-summary": "Start Date"
+                },
+                "assignments": {
+                    "type": "object",
+                    "x-ms-summary": "Assignments"
+                },
+                "appliedCategories": {
+                    "type": "object",
+                    "x-ms-summary": "Categories"
+                },
+                "orderHint": {
+                    "type": "string",
+                    "x-ms-summary": "Order Hint"
+                }
+            }
+        },
+        "PlannerTaskDetails": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "@odata.etag": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Description of the task"
+                },
+                "previewType": {
+                    "type": "string"
+                },
+                "checklist": {
+                    "type": "object",
+                    "description": "Checklist items"
+                },
+                "references": {
+                    "type": "object",
+                    "description": "External references"
+                }
+            }
+        },
+        "PlannerBucket": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the bucket"
+                },
+                "@odata.etag": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the bucket"
+                },
+                "planId": {
+                    "type": "string",
+                    "description": "Plan ID the bucket belongs to"
+                },
+                "orderHint": {
+                    "type": "string",
+                    "description": "Order hint for the bucket"
+                }
+            }
+        },
+        "PlannerRoster": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the roster"
+                }
+            }
+        },
+        "PlannerRosterMember": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "string"
+                },
+                "tenantId": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "BusinessScenario": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name"
+                },
+                "uniqueName": {
+                    "type": "string",
+                    "description": "Unique name in reverse DNS format"
+                },
+                "createdBy": {
+                    "type": "object",
+                    "properties": {
+                        "application": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string"
+                                },
+                                "displayName": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "ownerAppIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "BusinessScenarioTask": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "@odata.etag": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "planId": {
+                    "type": "string"
+                },
+                "bucketId": {
+                    "type": "string"
+                },
+                "percentComplete": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "dueDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "businessScenarioProperties": {
+                    "type": "object",
+                    "properties": {
+                        "externalObjectId": {
+                            "type": "string"
+                        },
+                        "externalContextId": {
+                            "type": "string"
+                        },
+                        "externalBucketId": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "target": {
+                    "type": "object",
+                    "properties": {
+                        "@odata.type": {
+                            "type": "string"
+                        },
+                        "taskTargetKind": {
+                            "type": "string"
+                        },
+                        "groupId": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "PlannerPlanConfiguration": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "defaultLanguage": {
+                    "type": "string",
+                    "description": "Default language code"
+                },
+                "buckets": {
+                    "type": "array",
+                    "description": "Configured buckets",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "externalBucketId": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "localizations": {
+                    "type": "array",
+                    "description": "Localized names for plan and buckets",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "languageTag": {
+                                "type": "string"
+                            },
+                            "planTitle": {
+                                "type": "string"
+                            },
+                            "buckets": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "externalBucketId": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "PlannerTaskConfiguration": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "editPolicy": {
+                    "type": "object",
+                    "description": "Edit policy for scenario tasks",
+                    "properties": {
+                        "rules": {
+                            "type": "array",
+                            "description": "Task property rules by role",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "role": {
+                                        "type": "string"
+                                    },
+                                    "defaultRule": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "PlannerAssignedToTaskBoardFormat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Read-only. ID of the resource"
+                },
+                "@odata.etag": {
+                    "type": "string",
+                    "description": "ETag for concurrency control"
+                },
+                "unassignedOrderHint": {
+                    "type": "string",
+                    "description": "Order hint for unassigned column"
+                },
+                "orderHintsByAssignee": {
+                    "type": "object",
+                    "description": "Dictionary of order hints keyed by assignee user ID"
+                }
+            }
+        },
+        "PlannerProgressTaskBoardFormat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Read-only. ID of the resource"
+                },
+                "@odata.etag": {
+                    "type": "string",
+                    "description": "ETag for concurrency control"
+                },
+                "orderHint": {
+                    "type": "string",
+                    "description": "Order hint for the Progress view"
+                }
+            }
+        },
+        "PlannerBucketTaskBoardFormat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Read-only. ID of the resource"
+                },
+                "@odata.etag": {
+                    "type": "string",
+                    "description": "ETag for concurrency control"
+                },
+                "orderHint": {
+                    "type": "string",
+                    "description": "Order hint for the Bucket view"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Tasks.ReadWrite": "Read and write user tasks",
+                "Group.ReadWrite.All": "Read and write all groups",
+                "BusinessScenarioConfig.ReadWrite.OwnedBy": "Read and write business scenario configurations",
+                "BusinessScenarioData.ReadWrite.OwnedBy": "Read and write business scenario data",
+                "offline_access": "Maintain access"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "Tasks.ReadWrite",
+                "Group.ReadWrite.All",
+                "BusinessScenarioConfig.ReadWrite.OwnedBy",
+                "BusinessScenarioData.ReadWrite.OwnedBy",
+                "offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/graph/api/resources/planner-overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Productivity"
+        }
+    ]
+}
