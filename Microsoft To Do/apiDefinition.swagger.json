@@ -1,0 +1,2049 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft To Do",
+    "description": "Microsoft Graph To Do API connector for managing task lists, tasks, checklist items, and linked resources.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Microsoft To Do MCP",
+        "description": "Sends JSON-RPC requests to invoke Microsoft To Do tools via MCP.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists": {
+      "get": {
+        "summary": "List Task Lists",
+        "description": "Get all the task lists in the user's mailbox.",
+        "operationId": "ListTaskLists",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of task lists to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/todoTaskListCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Task List",
+        "description": "Create a new task list in the user's mailbox.",
+        "operationId": "CreateTaskList",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createTaskListRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/todoTaskList"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}": {
+      "get": {
+        "summary": "Get Task List",
+        "description": "Read the properties of a specific task list.",
+        "operationId": "GetTaskList",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/todoTaskList"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Task List",
+        "description": "Update the properties of a task list.",
+        "operationId": "UpdateTaskList",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateTaskListRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/todoTaskList"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Task List",
+        "description": "Delete a task list.",
+        "operationId": "DeleteTaskList",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks": {
+      "get": {
+        "summary": "List Tasks",
+        "description": "Get all tasks in a specific task list.",
+        "operationId": "ListTasks",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of tasks to return"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Filter",
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Order By",
+            "description": "Order results (e.g., createdDateTime desc)"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Select",
+            "description": "Properties to include in response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/todoTaskCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Task",
+        "description": "Create a new task in a specific task list.",
+        "operationId": "CreateTask",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createTaskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/todoTask"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}": {
+      "get": {
+        "summary": "Get Task",
+        "description": "Read the properties of a specific task.",
+        "operationId": "GetTask",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/todoTask"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Task",
+        "description": "Update the properties of a task.",
+        "operationId": "UpdateTask",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateTaskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/todoTask"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Task",
+        "description": "Delete a task.",
+        "operationId": "DeleteTask",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-path": "id",
+              "value-collection": "value",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}/checklistItems": {
+      "get": {
+        "summary": "List Checklist Items",
+        "description": "Get all checklist items for a specific task.",
+        "operationId": "ListChecklistItems",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/checklistItemCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Checklist Item",
+        "description": "Create a new checklist item for a task.",
+        "operationId": "CreateChecklistItem",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createChecklistItemRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/checklistItem"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}/checklistItems/{checklistItemId}": {
+      "get": {
+        "summary": "Get Checklist Item",
+        "description": "Read the properties of a specific checklist item.",
+        "operationId": "GetChecklistItem",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "checklistItemId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Checklist Item ID",
+            "description": "The ID of the checklist item"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/checklistItem"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Checklist Item",
+        "description": "Update the properties of a checklist item.",
+        "operationId": "UpdateChecklistItem",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "checklistItemId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Checklist Item ID",
+            "description": "The ID of the checklist item"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateChecklistItemRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/checklistItem"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Checklist Item",
+        "description": "Delete a checklist item.",
+        "operationId": "DeleteChecklistItem",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "checklistItemId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Checklist Item ID",
+            "description": "The ID of the checklist item"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}/linkedResources": {
+      "get": {
+        "summary": "List Linked Resources",
+        "description": "Get all linked resources for a specific task.",
+        "operationId": "ListLinkedResources",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/linkedResourceCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Linked Resource",
+        "description": "Create a new linked resource for a task.",
+        "operationId": "CreateLinkedResource",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createLinkedResourceRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/linkedResource"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}/linkedResources/{linkedResourceId}": {
+      "get": {
+        "summary": "Get Linked Resource",
+        "description": "Read the properties of a specific linked resource.",
+        "operationId": "GetLinkedResource",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "linkedResourceId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Linked Resource ID",
+            "description": "The ID of the linked resource"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/linkedResource"
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update Linked Resource",
+        "description": "Update the properties of a linked resource.",
+        "operationId": "UpdateLinkedResource",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "linkedResourceId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Linked Resource ID",
+            "description": "The ID of the linked resource"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateLinkedResourceRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/linkedResource"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Linked Resource",
+        "description": "Delete a linked resource.",
+        "operationId": "DeleteLinkedResource",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "linkedResourceId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Linked Resource ID",
+            "description": "The ID of the linked resource"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}/attachments": {
+      "get": {
+        "summary": "List Task Attachments",
+        "description": "Get a list of the file attachments for a task.",
+        "operationId": "ListTaskAttachments",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/taskFileAttachmentCollectionResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Task Attachment",
+        "description": "Attach a small file (up to 3 MB) to a task.",
+        "operationId": "CreateTaskAttachment",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createTaskAttachmentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": {
+              "$ref": "#/definitions/taskFileAttachment"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/{todoTaskId}/attachments/{attachmentId}": {
+      "get": {
+        "summary": "Get Task Attachment",
+        "description": "Get a file attachment and its content bytes for a task.",
+        "operationId": "GetTaskAttachment",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "description": "The ID of the attachment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/taskFileAttachment"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Task Attachment",
+        "description": "Delete a file attachment from a task.",
+        "operationId": "DeleteTaskAttachment",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "todoTaskId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task ID",
+            "description": "The ID of the task"
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Attachment ID",
+            "description": "The ID of the attachment"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/{todoTaskListId}/tasks/delta": {
+      "get": {
+        "summary": "Get Task Changes (Delta)",
+        "description": "Get tasks that have been added, deleted, or updated in a task list since the last sync.",
+        "operationId": "GetTasksDelta",
+        "parameters": [
+          {
+            "name": "todoTaskListId",
+            "in": "path",
+            "x-ms-url-encoding": "single",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Task List ID",
+            "description": "The ID of the task list",
+            "x-ms-dynamic-values": {
+              "operationId": "ListTaskLists",
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "$deltatoken",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Delta Token",
+            "description": "State token from previous delta call to get incremental changes",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$skiptoken",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Skip Token",
+            "description": "State token for pagination within a delta result set",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "x-ms-summary": "Top",
+            "description": "Number of tasks to return per page",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/taskDeltaResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/todo/lists/delta": {
+      "get": {
+        "summary": "Get Task List Changes (Delta)",
+        "description": "Get task lists that have been added, deleted, or updated since the last sync.",
+        "operationId": "GetTaskListsDelta",
+        "parameters": [
+          {
+            "name": "$deltatoken",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Delta Token",
+            "description": "State token from previous delta call to get incremental changes",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$skiptoken",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "Skip Token",
+            "description": "State token for pagination within a delta result set",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/taskListDeltaResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v1.0/me/outlook/masterCategories": {
+      "get": {
+        "summary": "List Outlook Categories",
+        "description": "Get all the categories defined for the user. Categories can be used to tag tasks.",
+        "operationId": "ListOutlookCategories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/outlookCategoryCollectionResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "todoTaskList": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID",
+          "description": "Unique identifier for the task list"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The name of the task list"
+        },
+        "isOwner": {
+          "type": "boolean",
+          "x-ms-summary": "Is Owner",
+          "description": "True if the user is owner of the task list"
+        },
+        "isShared": {
+          "type": "boolean",
+          "x-ms-summary": "Is Shared",
+          "description": "True if the task list is shared with other users"
+        },
+        "wellknownListName": {
+          "type": "string",
+          "x-ms-summary": "Well-Known List Name",
+          "description": "Property indicating the list name if the given list is a well-known list",
+          "enum": [
+            "none",
+            "defaultList",
+            "flaggedEmails",
+            "unknownFutureValue"
+          ]
+        }
+      }
+    },
+    "todoTaskListCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/todoTaskList"
+          }
+        }
+      }
+    },
+    "createTaskListRequest": {
+      "type": "object",
+      "required": [
+        "displayName"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The name of the task list"
+        }
+      }
+    },
+    "updateTaskListRequest": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The new name of the task list"
+        }
+      }
+    },
+    "dateTimeTimeZone": {
+      "type": "object",
+      "properties": {
+        "dateTime": {
+          "type": "string",
+          "x-ms-summary": "Date Time",
+          "description": "A date and time in ISO 8601 format (e.g., 2024-12-31T23:59:00.0000000)"
+        },
+        "timeZone": {
+          "type": "string",
+          "x-ms-summary": "Time Zone",
+          "description": "The time zone (e.g., UTC, Pacific Standard Time)"
+        }
+      }
+    },
+    "itemBody": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "x-ms-summary": "Content",
+          "description": "The content of the body"
+        },
+        "contentType": {
+          "type": "string",
+          "x-ms-summary": "Content Type",
+          "description": "The type of content",
+          "enum": [
+            "text",
+            "html"
+          ]
+        }
+      }
+    },
+    "patternedRecurrence": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "$ref": "#/definitions/recurrencePattern"
+        },
+        "range": {
+          "$ref": "#/definitions/recurrenceRange"
+        }
+      }
+    },
+    "recurrencePattern": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "x-ms-summary": "Recurrence Type",
+          "description": "The recurrence pattern type",
+          "enum": [
+            "daily",
+            "weekly",
+            "absoluteMonthly",
+            "relativeMonthly",
+            "absoluteYearly",
+            "relativeYearly"
+          ]
+        },
+        "interval": {
+          "type": "integer",
+          "x-ms-summary": "Interval",
+          "description": "The number of units between occurrences"
+        },
+        "daysOfWeek": {
+          "type": "array",
+          "x-ms-summary": "Days of Week",
+          "description": "Days of the week for the recurrence",
+          "items": {
+            "type": "string",
+            "enum": [
+              "sunday",
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday"
+            ]
+          }
+        },
+        "dayOfMonth": {
+          "type": "integer",
+          "x-ms-summary": "Day of Month",
+          "description": "The day of the month for the recurrence"
+        },
+        "month": {
+          "type": "integer",
+          "x-ms-summary": "Month",
+          "description": "The month for the recurrence (1-12)"
+        },
+        "firstDayOfWeek": {
+          "type": "string",
+          "x-ms-summary": "First Day of Week",
+          "description": "The first day of the week",
+          "enum": [
+            "sunday",
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday"
+          ]
+        },
+        "index": {
+          "type": "string",
+          "x-ms-summary": "Index",
+          "description": "The week index for relativeMonthly/relativeYearly patterns",
+          "enum": [
+            "first",
+            "second",
+            "third",
+            "fourth",
+            "last"
+          ]
+        }
+      }
+    },
+    "recurrenceRange": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "x-ms-summary": "Range Type",
+          "description": "The recurrence range type",
+          "enum": [
+            "endDate",
+            "noEnd",
+            "numbered"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "x-ms-summary": "Start Date",
+          "description": "The start date of the recurrence (yyyy-MM-dd)"
+        },
+        "endDate": {
+          "type": "string",
+          "x-ms-summary": "End Date",
+          "description": "The end date of the recurrence (yyyy-MM-dd)"
+        },
+        "numberOfOccurrences": {
+          "type": "integer",
+          "x-ms-summary": "Number of Occurrences",
+          "description": "The number of times to repeat the task"
+        },
+        "recurrenceTimeZone": {
+          "type": "string",
+          "x-ms-summary": "Recurrence Time Zone",
+          "description": "The time zone for the start and end dates"
+        }
+      }
+    },
+    "todoTask": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID",
+          "description": "Unique identifier for the task"
+        },
+        "title": {
+          "type": "string",
+          "x-ms-summary": "Title",
+          "description": "A brief description of the task"
+        },
+        "body": {
+          "$ref": "#/definitions/itemBody"
+        },
+        "importance": {
+          "type": "string",
+          "x-ms-summary": "Importance",
+          "description": "The importance of the task",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "x-ms-summary": "Status",
+          "description": "The state or progress of the task",
+          "enum": [
+            "notStarted",
+            "inProgress",
+            "completed",
+            "waitingOnOthers",
+            "deferred"
+          ]
+        },
+        "isReminderOn": {
+          "type": "boolean",
+          "x-ms-summary": "Is Reminder On",
+          "description": "Set to true if an alert is set to remind the user"
+        },
+        "hasAttachments": {
+          "type": "boolean",
+          "x-ms-summary": "Has Attachments",
+          "description": "Indicates whether the task has attachments"
+        },
+        "categories": {
+          "type": "array",
+          "x-ms-summary": "Categories",
+          "description": "The categories associated with the task",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dueDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "startDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "completedDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "reminderDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "recurrence": {
+          "$ref": "#/definitions/patternedRecurrence"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Created Date Time",
+          "description": "The date and time when the task was created"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Last Modified Date Time",
+          "description": "The date and time when the task was last modified"
+        },
+        "bodyLastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Body Last Modified Date Time",
+          "description": "The date and time when the task body was last modified"
+        }
+      }
+    },
+    "todoTaskCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/todoTask"
+          }
+        }
+      }
+    },
+    "createTaskRequest": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "x-ms-summary": "Title",
+          "description": "A brief description of the task"
+        },
+        "body": {
+          "$ref": "#/definitions/itemBody"
+        },
+        "importance": {
+          "type": "string",
+          "x-ms-summary": "Importance",
+          "description": "The importance of the task",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ],
+          "x-ms-visibility": "advanced"
+        },
+        "status": {
+          "type": "string",
+          "x-ms-summary": "Status",
+          "description": "The state or progress of the task",
+          "enum": [
+            "notStarted",
+            "inProgress",
+            "completed",
+            "waitingOnOthers",
+            "deferred"
+          ],
+          "x-ms-visibility": "advanced"
+        },
+        "isReminderOn": {
+          "type": "boolean",
+          "x-ms-summary": "Is Reminder On",
+          "description": "Set to true if an alert is set to remind the user",
+          "x-ms-visibility": "advanced"
+        },
+        "categories": {
+          "type": "array",
+          "x-ms-summary": "Categories",
+          "description": "The categories associated with the task",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-visibility": "advanced"
+        },
+        "dueDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "startDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "reminderDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "recurrence": {
+          "$ref": "#/definitions/patternedRecurrence"
+        }
+      }
+    },
+    "updateTaskRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "x-ms-summary": "Title",
+          "description": "A brief description of the task"
+        },
+        "body": {
+          "$ref": "#/definitions/itemBody"
+        },
+        "importance": {
+          "type": "string",
+          "x-ms-summary": "Importance",
+          "description": "The importance of the task",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "x-ms-summary": "Status",
+          "description": "The state or progress of the task",
+          "enum": [
+            "notStarted",
+            "inProgress",
+            "completed",
+            "waitingOnOthers",
+            "deferred"
+          ]
+        },
+        "isReminderOn": {
+          "type": "boolean",
+          "x-ms-summary": "Is Reminder On",
+          "description": "Set to true if an alert is set to remind the user"
+        },
+        "categories": {
+          "type": "array",
+          "x-ms-summary": "Categories",
+          "description": "The categories associated with the task",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dueDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "startDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "completedDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "reminderDateTime": {
+          "$ref": "#/definitions/dateTimeTimeZone"
+        },
+        "recurrence": {
+          "$ref": "#/definitions/patternedRecurrence"
+        }
+      }
+    },
+    "checklistItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID",
+          "description": "Server generated ID for the checklist item"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The title of the checklist item"
+        },
+        "isChecked": {
+          "type": "boolean",
+          "x-ms-summary": "Is Checked",
+          "description": "State that indicates whether the item is checked off or not"
+        },
+        "checkedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Checked Date Time",
+          "description": "The date and time when the item was finished"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Created Date Time",
+          "description": "The date and time when the item was created"
+        }
+      }
+    },
+    "checklistItemCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/checklistItem"
+          }
+        }
+      }
+    },
+    "createChecklistItemRequest": {
+      "type": "object",
+      "required": [
+        "displayName"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The title of the checklist item"
+        },
+        "isChecked": {
+          "type": "boolean",
+          "x-ms-summary": "Is Checked",
+          "description": "Set to true to mark the item as checked",
+          "x-ms-visibility": "advanced"
+        }
+      }
+    },
+    "updateChecklistItemRequest": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The title of the checklist item"
+        },
+        "isChecked": {
+          "type": "boolean",
+          "x-ms-summary": "Is Checked",
+          "description": "State that indicates whether the item is checked off or not"
+        }
+      }
+    },
+    "linkedResource": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID",
+          "description": "Server generated ID for the linked resource"
+        },
+        "applicationName": {
+          "type": "string",
+          "x-ms-summary": "Application Name",
+          "description": "The app name of the source that sends the linked resource"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The title of the linked resource"
+        },
+        "externalId": {
+          "type": "string",
+          "x-ms-summary": "External ID",
+          "description": "ID of the object associated with this task on the third-party system"
+        },
+        "webUrl": {
+          "type": "string",
+          "x-ms-summary": "Web URL",
+          "description": "Deep link to the linked resource"
+        }
+      }
+    },
+    "linkedResourceCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/linkedResource"
+          }
+        }
+      }
+    },
+    "createLinkedResourceRequest": {
+      "type": "object",
+      "required": [
+        "applicationName",
+        "displayName"
+      ],
+      "properties": {
+        "applicationName": {
+          "type": "string",
+          "x-ms-summary": "Application Name",
+          "description": "The app name of the source"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The title of the linked resource"
+        },
+        "externalId": {
+          "type": "string",
+          "x-ms-summary": "External ID",
+          "description": "ID of the object on the third-party system"
+        },
+        "webUrl": {
+          "type": "string",
+          "x-ms-summary": "Web URL",
+          "description": "Deep link to the linked resource"
+        }
+      }
+    },
+    "updateLinkedResourceRequest": {
+      "type": "object",
+      "properties": {
+        "applicationName": {
+          "type": "string",
+          "x-ms-summary": "Application Name",
+          "description": "The app name of the source"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The title of the linked resource"
+        },
+        "externalId": {
+          "type": "string",
+          "x-ms-summary": "External ID",
+          "description": "ID of the object on the third-party system"
+        },
+        "webUrl": {
+          "type": "string",
+          "x-ms-summary": "Web URL",
+          "description": "Deep link to the linked resource"
+        }
+      }
+    },
+    "taskFileAttachment": {
+      "type": "object",
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "x-ms-summary": "OData Type",
+          "description": "The OData type of the attachment"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID",
+          "description": "Unique identifier for the attachment"
+        },
+        "name": {
+          "type": "string",
+          "x-ms-summary": "Name",
+          "description": "The display name of the attachment"
+        },
+        "contentType": {
+          "type": "string",
+          "x-ms-summary": "Content Type",
+          "description": "The MIME type of the attachment"
+        },
+        "contentBytes": {
+          "type": "string",
+          "format": "byte",
+          "x-ms-summary": "Content Bytes",
+          "description": "The base64-encoded contents of the file"
+        },
+        "size": {
+          "type": "integer",
+          "format": "int32",
+          "x-ms-summary": "Size",
+          "description": "The size in bytes of the attachment"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Last Modified Date Time",
+          "description": "The date and time when the attachment was last modified"
+        }
+      }
+    },
+    "taskFileAttachmentCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/taskFileAttachment"
+          }
+        }
+      }
+    },
+    "createTaskAttachmentRequest": {
+      "type": "object",
+      "required": [
+        "@odata.type",
+        "name",
+        "contentBytes"
+      ],
+      "properties": {
+        "@odata.type": {
+          "type": "string",
+          "default": "#microsoft.graph.taskFileAttachment",
+          "x-ms-visibility": "internal",
+          "title": ""
+        },
+        "name": {
+          "type": "string",
+          "x-ms-summary": "File Name",
+          "description": "The name of the file (e.g., report.pdf)"
+        },
+        "contentType": {
+          "type": "string",
+          "x-ms-summary": "Content Type",
+          "description": "The MIME type (e.g., application/pdf)",
+          "x-ms-visibility": "advanced"
+        },
+        "contentBytes": {
+          "type": "string",
+          "format": "byte",
+          "x-ms-summary": "Content Bytes",
+          "description": "The base64-encoded contents of the file"
+        }
+      }
+    },
+    "taskDeltaResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Link",
+          "description": "URL to get the next page of changes (contains skipToken)"
+        },
+        "@odata.deltaLink": {
+          "type": "string",
+          "x-ms-summary": "Delta Link",
+          "description": "URL to get future changes (contains deltaToken). Save this for the next sync."
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/todoTask"
+          }
+        }
+      }
+    },
+    "taskListDeltaResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "@odata.nextLink": {
+          "type": "string",
+          "x-ms-summary": "Next Link",
+          "description": "URL to get the next page of changes (contains skipToken)"
+        },
+        "@odata.deltaLink": {
+          "type": "string",
+          "x-ms-summary": "Delta Link",
+          "description": "URL to get future changes (contains deltaToken). Save this for the next sync."
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/todoTaskList"
+          }
+        }
+      }
+    },
+    "outlookCategory": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID",
+          "description": "Unique identifier for the category"
+        },
+        "displayName": {
+          "type": "string",
+          "x-ms-summary": "Display Name",
+          "description": "The name of the category"
+        },
+        "color": {
+          "type": "string",
+          "x-ms-summary": "Color",
+          "description": "The color preset for the category"
+        }
+      }
+    },
+    "outlookCategoryCollectionResponse": {
+      "type": "object",
+      "properties": {
+        "@odata.context": {
+          "type": "string"
+        },
+        "value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/outlookCategory"
+          }
+        }
+      }
+    }
+  },
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "Tasks.ReadWrite MailboxSettings.Read offline_access": "Read and write tasks and read mailbox settings"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "Tasks.ReadWrite MailboxSettings.Read offline_access"
+      ]
+    }
+  ],
+  "tags": [],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Productivity"
+    },
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://graph.microsoft.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+    }
+  ]
+}
