@@ -1,11 +1,11 @@
-# Power MCP Template v2 — Copilot Instructions
+# Power MCP Template v2.1 — Copilot Instructions
 
 ## What This Is
 
 A Power Platform custom connector template implementing the Model Context Protocol (MCP) 2025-11-25 specification. The `script.csx` file contains two clearly marked sections:
 
-1. **Section 1: MCP Framework** (~lines 1–430) — The `McpRequestHandler`, `McpSchemaBuilder`, content helpers, and all supporting types. **Do not modify** unless extending the framework itself.
-2. **Section 2: Connector Entry Point** (~lines 430+) — Server config, `RegisterTools()` with tool definitions, `ExecuteAsync()`, helpers, and Application Insights logging. **This is where all user work happens.**
+1. **Section 1: Connector Entry Point** (~lines 1–385) — Server config, `RegisterCapabilities()` with tool/resource/prompt definitions, `ExecuteAsync()`, helpers, and Application Insights logging. **This is where all user work happens.**
+2. **Section 2: MCP Framework** (~lines 387+) — The `McpRequestHandler`, `McpSchemaBuilder`, content helpers, and all supporting types. **Do not modify** unless extending the framework itself.
 
 ## Critical Constraints
 
@@ -42,7 +42,7 @@ body.ToString(Newtonsoft.Json.Formatting.None)
 
 ## How to Add a Tool
 
-All tool work happens in `RegisterTools()`. Add a single `handler.AddTool()` call:
+All tool work happens in `RegisterCapabilities()`. Add a single `handler.AddTool()` call:
 
 ```csharp
 handler.AddTool("tool_name", "What this tool does — be descriptive for AI.",
@@ -108,20 +108,69 @@ return McpRequestHandler.ToolResult(
 | `GetArgument(args, "name", "default")` | Get optional string argument with fallback |
 | `GetConnectionParameter("name")` | Read a connector connection parameter (null-safe) |
 | `SendExternalRequestAsync(method, url, body)` | Forward-auth HTTP request to external API |
+| `McpRequestHandler.ExtractUriParameters(template, uri)` | Extract `{param}` values from a URI given a template |
+
+## How to Add a Resource
+
+Register resources in `RegisterCapabilities()`. Static resources use `AddResource`, dynamic ones use `AddResourceTemplate`:
+
+```csharp
+// Static resource (fixed URI)
+handler.AddResource("data://config/info", "Config Info", "Server configuration.",
+    handler: async (ct) => new JArray
+    {
+        new JObject { ["uri"] = "data://config/info", ["mimeType"] = "application/json",
+            ["text"] = new JObject { ["version"] = "1.0" }.ToString(Newtonsoft.Json.Formatting.Indented) }
+    });
+
+// Dynamic resource template
+handler.AddResourceTemplate("data://records/{id}", "Record by ID", "Fetch a record.",
+    handler: async (uri, ct) =>
+    {
+        var p = McpRequestHandler.ExtractUriParameters("data://records/{id}", uri);
+        return new JArray { new JObject { ["uri"] = uri, ["mimeType"] = "application/json",
+            ["text"] = new JObject { ["id"] = p["id"] }.ToString(Newtonsoft.Json.Formatting.Indented) } };
+    });
+```
+
+## How to Add a Prompt
+
+Register prompts in `RegisterCapabilities()`. The handler returns a `JArray` of message objects:
+
+```csharp
+handler.AddPrompt("summarize", "Summarize the given text.",
+    arguments: new List<McpPromptArgument>
+    {
+        new McpPromptArgument { Name = "text", Description = "Text to summarize", Required = true }
+    },
+    handler: async (args, ct) =>
+    {
+        var text = args.Value<string>("text") ?? "";
+        return new JArray
+        {
+            new JObject
+            {
+                ["role"] = "user",
+                ["content"] = new JObject { ["type"] = "text", ["text"] = $"Summarize: {text}" }
+            }
+        };
+    });
+```
 
 ## What NOT to Change
 
-- **Section 1** classes: `McpRequestHandler`, `McpSchemaBuilder`, `McpToolDefinition`, `McpServerInfo`, `McpCapabilities`, `McpServerOptions`, `McpErrorCode`, `McpException`
+- **Section 1** classes: `McpRequestHandler`, `McpSchemaBuilder`, `McpToolDefinition`, `McpResourceDefinition`, `McpResourceTemplateDefinition`, `McpPromptDefinition`, `McpPromptArgument`, `McpServerInfo`, `McpCapabilities`, `McpServerOptions`, `McpErrorCode`, `McpException`
 - **HandleAsync switch statement**: Protocol method routing is complete for the spec
 - **JSON-RPC serialization methods**: `SerializeSuccess`, `SerializeError`
 - **Content helpers**: `TextContent`, `ImageContent`, `AudioContent`, `ResourceContent`, `ToolResult`
+- **URI template helpers**: `MatchesUriTemplate`, `ExtractUriParameters`
 
 ## What IS Safe to Change
 
 - `McpServerOptions` values (server name, version, title, capabilities)
 - `APP_INSIGHTS_CONNECTION_STRING` constant
 - `Instructions` text
-- `RegisterTools()` contents — add/remove/modify tool registrations
+- `RegisterCapabilities()` contents — add/remove/modify tool, resource, and prompt registrations
 - Add new private helper methods in the `Script` class
 - `ExecuteAsync()` if you need custom pre/post processing
 

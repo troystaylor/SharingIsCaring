@@ -10,22 +10,398 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 // ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║  SECTION 1: MCP FRAMEWORK                                                    ║
-// ║                                                                              ║
-// ║  Built-in McpRequestHandler that brings MCP C# SDK patterns to Power         ║
-// ║  Platform. If Microsoft enables the official SDK namespaces, this section    ║
-// ║  becomes a using statement instead of inline code.                           ║
-// ║                                                                              ║
-// ║  Spec coverage: MCP 2025-11-25                                               ║
-// ║  Handles: initialize, ping, tools/*, resources/*, prompts/*,                 ║
-// ║           completion/complete, logging/setLevel, all notifications           ║
-// ║                                                                              ║
-// ║  Stateless limitations (Power Platform cannot send async notifications):     ║
-// ║   - Tasks (experimental, requires persistent state between requests)         ║
-// ║   - Server→client requests (sampling, elicitation, roots/list)               ║
-// ║   - Server→client notifications (progress, logging/message, list_changed)    ║
-// ║                                                                              ║
-// ║  Do not modify unless extending the framework itself.                        ║
+// ║  SECTION 1: CONNECTOR ENTRY POINT                                          ║
+// ║                                                                            ║
+// ║  Configure your server, register tools/resources/prompts, wire up          ║
+// ║  telemetry. Use the fluent AddTool, AddResource, AddResourceTemplate,      ║
+// ║  and AddPrompt APIs in the RegisterCapabilities method below.              ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+
+public class Script : ScriptBase
+{
+    // ── Server Configuration ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Application Insights connection string (leave empty to disable telemetry).
+    /// Format: InstrumentationKey=YOUR-KEY;IngestionEndpoint=https://REGION.in.applicationinsights.azure.com/;...
+    /// </summary>
+    private const string APP_INSIGHTS_CONNECTION_STRING = "";
+
+    private static readonly McpServerOptions Options = new McpServerOptions
+    {
+        ServerInfo = new McpServerInfo
+        {
+            Name = "power-mcp-server",
+            Version = "1.0.0",
+            Title = "Power MCP Server",
+            Description = "Power Platform custom connector implementing Model Context Protocol"
+        },
+        ProtocolVersion = "2025-11-25",
+        Capabilities = new McpCapabilities
+        {
+            Tools = true,
+            Resources = true,
+            Prompts = true,
+            Logging = true,
+            Completions = true
+        },
+        Instructions = "" // Optional guidance for the client
+    };
+
+    // ── Entry Point ──────────────────────────────────────────────────────
+
+    public override async Task<HttpResponseMessage> ExecuteAsync()
+    {
+        var correlationId = Guid.NewGuid().ToString();
+        var startTime = DateTime.UtcNow;
+
+        // 1. Create the handler
+        var handler = new McpRequestHandler(Options);
+
+        // 2. Register tools, resources, and prompts
+        RegisterCapabilities(handler);
+
+        // 3. Wire up logging (optional)
+        handler.OnLog = (eventName, data) =>
+        {
+            this.Context.Logger.LogInformation($"[{correlationId}] {eventName}");
+            _ = LogToAppInsights(eventName, data, correlationId);
+        };
+
+        // 4. Handle the request — one line does everything
+        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var result = await handler.HandleAsync(body, this.CancellationToken).ConfigureAwait(false);
+
+        var duration = DateTime.UtcNow - startTime;
+        this.Context.Logger.LogInformation($"[{correlationId}] Completed in {duration.TotalMilliseconds}ms");
+
+        // 5. Return the response
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(result, Encoding.UTF8, "application/json")
+        };
+    }
+
+    // ── Capability Registration ─────────────────────────────────────────
+    //
+    //    Register tools, resources, and prompts here.
+    //    Tools:     handler.AddTool(name, description, schema, handler)
+    //    Resources: handler.AddResource(uri, name, description, handler)
+    //    Templates: handler.AddResourceTemplate(uriTemplate, name, description, handler)
+    //    Prompts:   handler.AddPrompt(name, description, arguments, handler)
+    //
+
+    private void RegisterCapabilities(McpRequestHandler handler)
+    {
+        // Example: Echo tool
+        handler.AddTool("echo", "Echoes back the provided message. Useful for testing connectivity.",
+            schema: s => s.String("message", "The message to echo back", required: true),
+            handler: async (args, ct) =>
+            {
+                return new JObject
+                {
+                    ["echo"] = args.Value<string>("message") ?? "No message provided",
+                    ["timestamp"] = DateTime.UtcNow.ToString("o")
+                };
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        // Example: Get Data tool
+        handler.AddTool("get_data", "Retrieves data by ID from the connected data source.",
+            schema: s => s.String("id", "The unique identifier of the data to retrieve", required: true),
+            handler: async (args, ct) =>
+            {
+                var id = RequireArgument(args, "id");
+
+                // TODO: Replace with actual API call using SendExternalRequestAsync
+                // return await SendExternalRequestAsync(HttpMethod.Get, $"https://api.example.com/data/{id}");
+
+                return new JObject
+                {
+                    ["id"] = id,
+                    ["data"] = "Sample data response",
+                    ["retrievedAt"] = DateTime.UtcNow.ToString("o")
+                };
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        // TODO: Add your custom tools here
+        //
+        // handler.AddTool("your_tool_name", "Description of what this tool does",
+        //     schema: s => s
+        //         .String("param1", "First parameter", required: true)
+        //         .Integer("top", "Maximum items to return", defaultValue: 10),
+        //     handler: async (args, ct) =>
+        //     {
+        //         var param1 = args.Value<string>("param1");
+        //         var top = args.Value<int?>("top") ?? 10;
+        //         // Your tool logic here
+        //         return new JObject { ["result"] = "your result" };
+        //     });
+
+        // ── Resource Registration ────────────────────────────────────────
+
+        // Example: Static resource (always available, fixed URI)
+        handler.AddResource("data://config/server-info", "Server Info",
+            "Current server configuration and version.",
+            handler: async (ct) =>
+            {
+                return new JArray
+                {
+                    new JObject
+                    {
+                        ["uri"] = "data://config/server-info",
+                        ["mimeType"] = "application/json",
+                        ["text"] = new JObject
+                        {
+                            ["name"] = Options.ServerInfo.Name,
+                            ["version"] = Options.ServerInfo.Version,
+                            ["timestamp"] = DateTime.UtcNow.ToString("o")
+                        }.ToString(Newtonsoft.Json.Formatting.Indented)
+                    }
+                };
+            });
+
+        // Example: Resource template (dynamic URI with parameters)
+        handler.AddResourceTemplate("data://records/{id}", "Record by ID",
+            "Retrieve a specific record by its identifier.",
+            handler: async (uri, ct) =>
+            {
+                var parameters = McpRequestHandler.ExtractUriParameters("data://records/{id}", uri);
+                var id = parameters.ContainsKey("id") ? parameters["id"] : "unknown";
+
+                // TODO: Replace with actual data fetch
+                return new JArray
+                {
+                    new JObject
+                    {
+                        ["uri"] = uri,
+                        ["mimeType"] = "application/json",
+                        ["text"] = new JObject
+                        {
+                            ["id"] = id,
+                            ["data"] = "Sample record data",
+                            ["retrievedAt"] = DateTime.UtcNow.ToString("o")
+                        }.ToString(Newtonsoft.Json.Formatting.Indented)
+                    }
+                };
+            });
+
+        // TODO: Add your custom resources here
+        //
+        // handler.AddResource("data://my-resource", "My Resource",
+        //     "Description of the resource.",
+        //     handler: async (ct) => new JArray { new JObject { ["uri"] = "data://my-resource", ["mimeType"] = "text/plain", ["text"] = "content" } });
+        //
+        // handler.AddResourceTemplate("data://items/{category}/{id}", "Item by Category",
+        //     "Retrieve an item by category and ID.",
+        //     handler: async (uri, ct) =>
+        //     {
+        //         var p = McpRequestHandler.ExtractUriParameters("data://items/{category}/{id}", uri);
+        //         return new JArray { new JObject { ["uri"] = uri, ["mimeType"] = "application/json", ["text"] = "{}" } };
+        //     });
+
+        // ── Prompt Registration ───────────────────────────────────────────
+
+        // Example: Summarize prompt
+        handler.AddPrompt("summarize", "Summarize the given text concisely.",
+            arguments: new List<McpPromptArgument>
+            {
+                new McpPromptArgument { Name = "text", Description = "The text to summarize", Required = true },
+                new McpPromptArgument { Name = "style", Description = "Summary style: brief, detailed, or bullets", Required = false }
+            },
+            handler: async (args, ct) =>
+            {
+                var text = args.Value<string>("text") ?? "";
+                var style = args.Value<string>("style") ?? "brief";
+
+                return new JArray
+                {
+                    new JObject
+                    {
+                        ["role"] = "user",
+                        ["content"] = new JObject
+                        {
+                            ["type"] = "text",
+                            ["text"] = $"Please provide a {style} summary of the following text:\n\n{text}"
+                        }
+                    }
+                };
+            });
+
+        // TODO: Add your custom prompts here
+        //
+        // handler.AddPrompt("analyze", "Analyze data and provide insights.",
+        //     arguments: new List<McpPromptArgument>
+        //     {
+        //         new McpPromptArgument { Name = "data", Description = "The data to analyze", Required = true }
+        //     },
+        //     handler: async (args, ct) =>
+        //     {
+        //         var data = args.Value<string>("data") ?? "";
+        //         return new JArray
+        //         {
+        //             new JObject
+        //             {
+        //                 ["role"] = "user",
+        //                 ["content"] = new JObject { ["type"] = "text", ["text"] = $"Analyze this data: {data}" }
+        //             }
+        //         };
+        //     });
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Send a request to an external API.
+    /// Forwards the connector's Authorization header and handles response parsing.
+    /// </summary>
+    private async Task<JObject> SendExternalRequestAsync(HttpMethod method, string url, JObject body = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+
+        if (this.Context.Request.Headers.Authorization != null)
+            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (body != null && (method == HttpMethod.Post || method.Method == "PATCH" || method.Method == "PUT"))
+            request.Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"API request failed ({(int)response.StatusCode}): {content}");
+
+        if (string.IsNullOrWhiteSpace(content))
+            return new JObject { ["success"] = true, ["status"] = (int)response.StatusCode };
+
+        try { return JObject.Parse(content); }
+        catch { return new JObject { ["text"] = content }; }
+    }
+
+    /// <summary>Get a required string argument; throws ArgumentException if missing.</summary>
+    private static string RequireArgument(JObject args, string name)
+    {
+        var value = args?[name]?.ToString();
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentException($"'{name}' is required");
+        return value;
+    }
+
+    /// <summary>Get an optional string argument with a default fallback.</summary>
+    private static string GetArgument(JObject args, string name, string defaultValue = null)
+    {
+        var value = args?[name]?.ToString();
+        return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
+    }
+
+    /// <summary>Read a connection parameter by name (null-safe).</summary>
+    private string GetConnectionParameter(string name)
+    {
+        try
+        {
+            var raw = this.Context.ConnectionParameters[name]?.ToString();
+            return string.IsNullOrWhiteSpace(raw) ? null : raw;
+        }
+        catch { return null; }
+    }
+
+    // ── Application Insights (Optional) ──────────────────────────────────
+
+    private async Task LogToAppInsights(string eventName, object properties, string correlationId)
+    {
+        try
+        {
+            var instrumentationKey = ExtractConnectionStringPart(APP_INSIGHTS_CONNECTION_STRING, "InstrumentationKey");
+            var ingestionEndpoint = ExtractConnectionStringPart(APP_INSIGHTS_CONNECTION_STRING, "IngestionEndpoint")
+                ?? "https://dc.services.visualstudio.com/";
+
+            if (string.IsNullOrEmpty(instrumentationKey))
+                return;
+
+            var propsDict = new Dictionary<string, string>
+            {
+                ["ServerName"] = Options.ServerInfo.Name,
+                ["ServerVersion"] = Options.ServerInfo.Version,
+                ["CorrelationId"] = correlationId
+            };
+
+            if (properties != null)
+            {
+                var propsJson = JsonConvert.SerializeObject(properties);
+                var propsObj = JObject.Parse(propsJson);
+                foreach (var prop in propsObj.Properties())
+                {
+                    propsDict[prop.Name] = prop.Value?.ToString() ?? "";
+                }
+            }
+
+            var telemetryData = new
+            {
+                name = $"Microsoft.ApplicationInsights.{instrumentationKey}.Event",
+                time = DateTime.UtcNow.ToString("o"),
+                iKey = instrumentationKey,
+                data = new
+                {
+                    baseType = "EventData",
+                    baseData = new
+                    {
+                        ver = 2,
+                        name = eventName,
+                        properties = propsDict
+                    }
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(telemetryData);
+            var telemetryUrl = new Uri(ingestionEndpoint.TrimEnd('/') + "/v2/track");
+
+            var telemetryRequest = new HttpRequestMessage(HttpMethod.Post, telemetryUrl)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+
+            await this.Context.SendAsync(telemetryRequest, this.CancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Suppress telemetry errors
+        }
+    }
+
+    private static string ExtractConnectionStringPart(string connectionString, string key)
+    {
+        if (string.IsNullOrEmpty(connectionString)) return null;
+        var prefix = key + "=";
+        var parts = connectionString.Split(';');
+        foreach (var part in parts)
+        {
+            if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return part.Substring(prefix.Length);
+        }
+        return null;
+    }
+}
+
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║  SECTION 2: MCP FRAMEWORK                                                  ║
+// ║                                                                            ║
+// ║  Built-in McpRequestHandler that brings MCP C# SDK patterns to Power       ║
+// ║  Platform. If Microsoft enables the official SDK namespaces, this section   ║
+// ║  becomes a using statement instead of inline code.                          ║
+// ║                                                                            ║
+// ║  Spec coverage: MCP 2025-11-25                                             ║
+// ║  Handles: initialize, ping, tools/*, resources/*, prompts/*,               ║
+// ║           completion/complete, logging/setLevel, all notifications          ║
+// ║                                                                            ║
+// ║  Stateless limitations (Power Platform cannot send async notifications):   ║
+// ║   - Tasks (experimental, requires persistent state between requests)       ║
+// ║   - Server→client requests (sampling, elicitation, roots/list)             ║
+// ║   - Server→client notifications (progress, logging/message, list_changed)  ║
+// ║                                                                            ║
+// ║  Do not modify unless extending the framework itself.                      ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
 // ── Configuration Types ──────────────────────────────────────────────────────
@@ -170,6 +546,46 @@ internal class McpToolDefinition
     public Func<JObject, CancellationToken, Task<object>> Handler { get; set; }
 }
 
+// ── Internal Resource Registration ───────────────────────────────────────────
+
+internal class McpResourceDefinition
+{
+    public string Uri { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string MimeType { get; set; }
+    public JObject Annotations { get; set; }
+    public Func<CancellationToken, Task<JArray>> Handler { get; set; }
+}
+
+internal class McpResourceTemplateDefinition
+{
+    public string UriTemplate { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string MimeType { get; set; }
+    public JObject Annotations { get; set; }
+    public Func<string, CancellationToken, Task<JArray>> Handler { get; set; }
+}
+
+// ── Internal Prompt Registration ─────────────────────────────────────────────
+
+/// <summary>Describes a single prompt argument.</summary>
+public class McpPromptArgument
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public bool Required { get; set; }
+}
+
+internal class McpPromptDefinition
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public List<McpPromptArgument> Arguments { get; set; } = new List<McpPromptArgument>();
+    public Func<JObject, CancellationToken, Task<JArray>> Handler { get; set; }
+}
+
 // ── McpRequestHandler ────────────────────────────────────────────────────────
 //
 //    The core bridge class. Stateless, no DI, no ASP.NET Core.
@@ -188,6 +604,9 @@ public class McpRequestHandler
 {
     private readonly McpServerOptions _options;
     private readonly Dictionary<string, McpToolDefinition> _tools;
+    private readonly Dictionary<string, McpResourceDefinition> _resources;
+    private readonly List<McpResourceTemplateDefinition> _resourceTemplates;
+    private readonly Dictionary<string, McpPromptDefinition> _prompts;
 
     /// <summary>
     /// Optional logging callback. Wire this up to Application Insights,
@@ -199,6 +618,9 @@ public class McpRequestHandler
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _tools = new Dictionary<string, McpToolDefinition>(StringComparer.OrdinalIgnoreCase);
+        _resources = new Dictionary<string, McpResourceDefinition>(StringComparer.OrdinalIgnoreCase);
+        _resourceTemplates = new List<McpResourceTemplateDefinition>();
+        _prompts = new Dictionary<string, McpPromptDefinition>(StringComparer.OrdinalIgnoreCase);
     }
 
     // ── Tool Registration ────────────────────────────────────────────────
@@ -243,6 +665,95 @@ public class McpRequestHandler
             OutputSchema = outputSchema,
             Annotations = annotations,
             Handler = async (args, ct) => await handler(args, ct).ConfigureAwait(false)
+        };
+
+        return this;
+    }
+
+    // ── Resource Registration ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Register a static resource. The handler returns the resource contents
+    /// as a JArray of {uri, text, mimeType} or {uri, blob, mimeType} objects.
+    /// </summary>
+    public McpRequestHandler AddResource(
+        string uri,
+        string name,
+        string description,
+        Func<CancellationToken, Task<JArray>> handler,
+        string mimeType = "application/json",
+        Action<JObject> annotationsConfig = null)
+    {
+        JObject annotations = null;
+        if (annotationsConfig != null)
+        {
+            annotations = new JObject();
+            annotationsConfig(annotations);
+        }
+
+        _resources[uri] = new McpResourceDefinition
+        {
+            Uri = uri,
+            Name = name,
+            Description = description,
+            MimeType = mimeType,
+            Annotations = annotations,
+            Handler = handler
+        };
+
+        return this;
+    }
+
+    /// <summary>
+    /// Register a resource template. The handler receives the resolved URI
+    /// and returns the resource contents as a JArray.
+    /// </summary>
+    public McpRequestHandler AddResourceTemplate(
+        string uriTemplate,
+        string name,
+        string description,
+        Func<string, CancellationToken, Task<JArray>> handler,
+        string mimeType = "application/json",
+        Action<JObject> annotationsConfig = null)
+    {
+        JObject annotations = null;
+        if (annotationsConfig != null)
+        {
+            annotations = new JObject();
+            annotationsConfig(annotations);
+        }
+
+        _resourceTemplates.Add(new McpResourceTemplateDefinition
+        {
+            UriTemplate = uriTemplate,
+            Name = name,
+            Description = description,
+            MimeType = mimeType,
+            Annotations = annotations,
+            Handler = handler
+        });
+
+        return this;
+    }
+
+    // ── Prompt Registration ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Register a prompt. The handler receives the argument values as a JObject
+    /// and returns a JArray of message objects ({role, content: {type, text}}).
+    /// </summary>
+    public McpRequestHandler AddPrompt(
+        string name,
+        string description,
+        List<McpPromptArgument> arguments,
+        Func<JObject, CancellationToken, Task<JArray>> handler)
+    {
+        _prompts[name] = new McpPromptDefinition
+        {
+            Name = name,
+            Description = description,
+            Arguments = arguments ?? new List<McpPromptArgument>(),
+            Handler = handler
         };
 
         return this;
@@ -300,15 +811,15 @@ public class McpRequestHandler
                 case "tools/call":
                     return await HandleToolsCallAsync(id, request, cancellationToken).ConfigureAwait(false);
 
-                // Resources (respond based on declared capabilities)
+                // Resources
                 case "resources/list":
-                    return SerializeSuccess(id, new JObject { ["resources"] = new JArray() });
+                    return HandleResourcesList(id);
 
                 case "resources/templates/list":
-                    return SerializeSuccess(id, new JObject { ["resourceTemplates"] = new JArray() });
+                    return HandleResourceTemplatesList(id);
 
                 case "resources/read":
-                    return SerializeError(id, McpErrorCode.InvalidParams, "Resource not found");
+                    return await HandleResourcesReadAsync(id, request, cancellationToken).ConfigureAwait(false);
 
                 case "resources/subscribe":
                 case "resources/unsubscribe":
@@ -316,10 +827,10 @@ public class McpRequestHandler
 
                 // Prompts
                 case "prompts/list":
-                    return SerializeSuccess(id, new JObject { ["prompts"] = new JArray() });
+                    return HandlePromptsList(id);
 
                 case "prompts/get":
-                    return SerializeError(id, McpErrorCode.InvalidParams, "Prompt not found");
+                    return await HandlePromptsGetAsync(id, request, cancellationToken).ConfigureAwait(false);
 
                 // Completions
                 case "completion/complete":
@@ -425,6 +936,211 @@ public class McpRequestHandler
 
         Log("McpToolsListed", new { Count = _tools.Count });
         return SerializeSuccess(id, new JObject { ["tools"] = toolsArray });
+    }
+
+    private string HandleResourcesList(JToken id)
+    {
+        var resourcesArray = new JArray();
+        foreach (var res in _resources.Values)
+        {
+            var obj = new JObject
+            {
+                ["uri"] = res.Uri,
+                ["name"] = res.Name
+            };
+            if (!string.IsNullOrWhiteSpace(res.Description))
+                obj["description"] = res.Description;
+            if (!string.IsNullOrWhiteSpace(res.MimeType))
+                obj["mimeType"] = res.MimeType;
+            if (res.Annotations != null && res.Annotations.Count > 0)
+                obj["annotations"] = res.Annotations;
+            resourcesArray.Add(obj);
+        }
+
+        Log("McpResourcesListed", new { Count = _resources.Count });
+        return SerializeSuccess(id, new JObject { ["resources"] = resourcesArray });
+    }
+
+    private string HandleResourceTemplatesList(JToken id)
+    {
+        var templatesArray = new JArray();
+        foreach (var tmpl in _resourceTemplates)
+        {
+            var obj = new JObject
+            {
+                ["uriTemplate"] = tmpl.UriTemplate,
+                ["name"] = tmpl.Name
+            };
+            if (!string.IsNullOrWhiteSpace(tmpl.Description))
+                obj["description"] = tmpl.Description;
+            if (!string.IsNullOrWhiteSpace(tmpl.MimeType))
+                obj["mimeType"] = tmpl.MimeType;
+            if (tmpl.Annotations != null && tmpl.Annotations.Count > 0)
+                obj["annotations"] = tmpl.Annotations;
+            templatesArray.Add(obj);
+        }
+
+        Log("McpResourceTemplatesListed", new { Count = _resourceTemplates.Count });
+        return SerializeSuccess(id, new JObject { ["resourceTemplates"] = templatesArray });
+    }
+
+    private async Task<string> HandleResourcesReadAsync(JToken id, JObject request, CancellationToken ct)
+    {
+        var paramsObj = request["params"] as JObject;
+        var uri = paramsObj?.Value<string>("uri");
+
+        if (string.IsNullOrWhiteSpace(uri))
+            return SerializeError(id, McpErrorCode.InvalidParams, "Resource URI is required");
+
+        // 1. Try exact match on registered static resources
+        if (_resources.TryGetValue(uri, out var resource))
+        {
+            Log("McpResourceReadStarted", new { Uri = uri });
+            try
+            {
+                var contents = await resource.Handler(ct).ConfigureAwait(false);
+                Log("McpResourceReadCompleted", new { Uri = uri });
+                return SerializeSuccess(id, new JObject { ["contents"] = contents });
+            }
+            catch (Exception ex)
+            {
+                Log("McpResourceReadError", new { Uri = uri, Error = ex.Message });
+                return SerializeError(id, McpErrorCode.InternalError, ex.Message);
+            }
+        }
+
+        // 2. Try matching against registered resource templates
+        foreach (var tmpl in _resourceTemplates)
+        {
+            if (MatchesUriTemplate(tmpl.UriTemplate, uri))
+            {
+                Log("McpResourceReadStarted", new { Uri = uri, Template = tmpl.UriTemplate });
+                try
+                {
+                    var contents = await tmpl.Handler(uri, ct).ConfigureAwait(false);
+                    Log("McpResourceReadCompleted", new { Uri = uri });
+                    return SerializeSuccess(id, new JObject { ["contents"] = contents });
+                }
+                catch (Exception ex)
+                {
+                    Log("McpResourceReadError", new { Uri = uri, Error = ex.Message });
+                    return SerializeError(id, McpErrorCode.InternalError, ex.Message);
+                }
+            }
+        }
+
+        return SerializeError(id, McpErrorCode.InvalidParams, $"Resource not found: {uri}");
+    }
+
+    /// <summary>
+    /// Simple URI template matcher. Checks if a concrete URI matches a template
+    /// with {param} placeholders (e.g., "data://records/{id}" matches "data://records/123").
+    /// </summary>
+    private static bool MatchesUriTemplate(string template, string uri)
+    {
+        // Split both on '/' and compare segments
+        var templateParts = template.Split('/');
+        var uriParts = uri.Split('/');
+
+        if (templateParts.Length != uriParts.Length) return false;
+
+        for (int i = 0; i < templateParts.Length; i++)
+        {
+            var seg = templateParts[i];
+            if (seg.StartsWith("{") && seg.EndsWith("}")) continue; // wildcard
+            if (!string.Equals(seg, uriParts[i], StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Extract named parameters from a URI given a template pattern.
+    /// E.g., template "data://records/{id}" with uri "data://records/123" returns { "id": "123" }.
+    /// </summary>
+    public static Dictionary<string, string> ExtractUriParameters(string template, string uri)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var templateParts = template.Split('/');
+        var uriParts = uri.Split('/');
+
+        if (templateParts.Length != uriParts.Length) return result;
+
+        for (int i = 0; i < templateParts.Length; i++)
+        {
+            var seg = templateParts[i];
+            if (seg.StartsWith("{") && seg.EndsWith("}"))
+            {
+                var paramName = seg.Substring(1, seg.Length - 2);
+                result[paramName] = uriParts[i];
+            }
+        }
+        return result;
+    }
+
+    private string HandlePromptsList(JToken id)
+    {
+        var promptsArray = new JArray();
+        foreach (var prompt in _prompts.Values)
+        {
+            var obj = new JObject
+            {
+                ["name"] = prompt.Name
+            };
+            if (!string.IsNullOrWhiteSpace(prompt.Description))
+                obj["description"] = prompt.Description;
+
+            if (prompt.Arguments.Count > 0)
+            {
+                var argsArray = new JArray();
+                foreach (var arg in prompt.Arguments)
+                {
+                    var argObj = new JObject { ["name"] = arg.Name };
+                    if (!string.IsNullOrWhiteSpace(arg.Description))
+                        argObj["description"] = arg.Description;
+                    if (arg.Required)
+                        argObj["required"] = true;
+                    argsArray.Add(argObj);
+                }
+                obj["arguments"] = argsArray;
+            }
+
+            promptsArray.Add(obj);
+        }
+
+        Log("McpPromptsListed", new { Count = _prompts.Count });
+        return SerializeSuccess(id, new JObject { ["prompts"] = promptsArray });
+    }
+
+    private async Task<string> HandlePromptsGetAsync(JToken id, JObject request, CancellationToken ct)
+    {
+        var paramsObj = request["params"] as JObject;
+        var promptName = paramsObj?.Value<string>("name");
+        var arguments = paramsObj?["arguments"] as JObject ?? new JObject();
+
+        if (string.IsNullOrWhiteSpace(promptName))
+            return SerializeError(id, McpErrorCode.InvalidParams, "Prompt name is required");
+
+        if (!_prompts.TryGetValue(promptName, out var prompt))
+            return SerializeError(id, McpErrorCode.InvalidParams, $"Prompt not found: {promptName}");
+
+        Log("McpPromptGetStarted", new { Prompt = promptName });
+
+        try
+        {
+            var messages = await prompt.Handler(arguments, ct).ConfigureAwait(false);
+            Log("McpPromptGetCompleted", new { Prompt = promptName, MessageCount = messages.Count });
+
+            var result = new JObject { ["messages"] = messages };
+            if (!string.IsNullOrWhiteSpace(prompt.Description))
+                result["description"] = prompt.Description;
+
+            return SerializeSuccess(id, result);
+        }
+        catch (Exception ex)
+        {
+            Log("McpPromptGetError", new { Prompt = promptName, Error = ex.Message });
+            return SerializeError(id, McpErrorCode.InternalError, ex.Message);
+        }
     }
 
     private async Task<string> HandleToolsCallAsync(JToken id, JObject request, CancellationToken ct)
@@ -597,270 +1313,5 @@ public class McpRequestHandler
     private void Log(string eventName, object data)
     {
         OnLog?.Invoke(eventName, data);
-    }
-}
-
-// ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║  SECTION 2: CONNECTOR ENTRY POINT                                          ║
-// ║                                                                            ║
-// ║  Configure your server, register your tools, and wire up telemetry.        ║
-// ║  Tool registration uses the fluent AddTool API — add your tools in the     ║
-// ║  RegisterTools method below.                                               ║
-// ╚══════════════════════════════════════════════════════════════════════════════╝
-
-public class Script : ScriptBase
-{
-    // ── Server Configuration ─────────────────────────────────────────────
-
-    private static readonly McpServerOptions Options = new McpServerOptions
-    {
-        ServerInfo = new McpServerInfo
-        {
-            Name = "power-mcp-server",
-            Version = "1.0.0",
-            Title = "Power MCP Server",
-            Description = "Power Platform custom connector implementing Model Context Protocol"
-        },
-        ProtocolVersion = "2025-11-25",
-        Capabilities = new McpCapabilities
-        {
-            Tools = true,
-            Resources = true,
-            Prompts = true,
-            Logging = true,
-            Completions = true
-        },
-        Instructions = "" // Optional guidance for the client
-    };
-
-    /// <summary>
-    /// Application Insights connection string (leave empty to disable telemetry).
-    /// Format: InstrumentationKey=YOUR-KEY;IngestionEndpoint=https://REGION.in.applicationinsights.azure.com/;...
-    /// </summary>
-    private const string APP_INSIGHTS_CONNECTION_STRING = "";
-
-    // ── Entry Point ──────────────────────────────────────────────────────
-
-    public override async Task<HttpResponseMessage> ExecuteAsync()
-    {
-        var correlationId = Guid.NewGuid().ToString();
-        var startTime = DateTime.UtcNow;
-
-        // 1. Create the handler
-        var handler = new McpRequestHandler(Options);
-
-        // 2. Register tools
-        RegisterTools(handler);
-
-        // 3. Wire up logging (optional)
-        handler.OnLog = (eventName, data) =>
-        {
-            this.Context.Logger.LogInformation($"[{correlationId}] {eventName}");
-            _ = LogToAppInsights(eventName, data, correlationId);
-        };
-
-        // 4. Handle the request — one line does everything
-        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var result = await handler.HandleAsync(body, this.CancellationToken).ConfigureAwait(false);
-
-        var duration = DateTime.UtcNow - startTime;
-        this.Context.Logger.LogInformation($"[{correlationId}] Completed in {duration.TotalMilliseconds}ms");
-
-        // 5. Return the response
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(result, Encoding.UTF8, "application/json")
-        };
-    }
-
-    // ── Tool Registration ────────────────────────────────────────────────
-    //
-    //    Add your tools here using handler.AddTool().
-    //    Each tool needs: name, description, schema, and handler.
-    //    Use McpSchemaBuilder to define the inputSchema.
-    //    Throw McpException for structured errors, ArgumentException for bad input.
-    //
-
-    private void RegisterTools(McpRequestHandler handler)
-    {
-        // Example: Echo tool
-        handler.AddTool("echo", "Echoes back the provided message. Useful for testing connectivity.",
-            schema: s => s.String("message", "The message to echo back", required: true),
-            handler: async (args, ct) =>
-            {
-                return new JObject
-                {
-                    ["echo"] = args.Value<string>("message") ?? "No message provided",
-                    ["timestamp"] = DateTime.UtcNow.ToString("o")
-                };
-            },
-            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
-
-        // Example: Get Data tool
-        handler.AddTool("get_data", "Retrieves data by ID from the connected data source.",
-            schema: s => s.String("id", "The unique identifier of the data to retrieve", required: true),
-            handler: async (args, ct) =>
-            {
-                var id = RequireArgument(args, "id");
-
-                // TODO: Replace with actual API call using SendExternalRequestAsync
-                // return await SendExternalRequestAsync(HttpMethod.Get, $"https://api.example.com/data/{id}");
-
-                return new JObject
-                {
-                    ["id"] = id,
-                    ["data"] = "Sample data response",
-                    ["retrievedAt"] = DateTime.UtcNow.ToString("o")
-                };
-            },
-            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
-
-        // TODO: Add your custom tools here
-        //
-        // handler.AddTool("your_tool_name", "Description of what this tool does",
-        //     schema: s => s
-        //         .String("param1", "First parameter", required: true)
-        //         .Integer("top", "Maximum items to return", defaultValue: 10),
-        //     handler: async (args, ct) =>
-        //     {
-        //         var param1 = args.Value<string>("param1");
-        //         var top = args.Value<int?>("top") ?? 10;
-        //         // Your tool logic here
-        //         return new JObject { ["result"] = "your result" };
-        //     });
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Send a request to an external API.
-    /// Forwards the connector's Authorization header and handles response parsing.
-    /// </summary>
-    private async Task<JObject> SendExternalRequestAsync(HttpMethod method, string url, JObject body = null)
-    {
-        var request = new HttpRequestMessage(method, url);
-
-        if (this.Context.Request.Headers.Authorization != null)
-            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
-
-        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-        if (body != null && (method == HttpMethod.Post || method.Method == "PATCH" || method.Method == "PUT"))
-            request.Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
-
-        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
-        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"API request failed ({(int)response.StatusCode}): {content}");
-
-        if (string.IsNullOrWhiteSpace(content))
-            return new JObject { ["success"] = true, ["status"] = (int)response.StatusCode };
-
-        try { return JObject.Parse(content); }
-        catch { return new JObject { ["text"] = content }; }
-    }
-
-    /// <summary>Get a required string argument; throws ArgumentException if missing.</summary>
-    private static string RequireArgument(JObject args, string name)
-    {
-        var value = args?[name]?.ToString();
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException($"'{name}' is required");
-        return value;
-    }
-
-    /// <summary>Get an optional string argument with a default fallback.</summary>
-    private static string GetArgument(JObject args, string name, string defaultValue = null)
-    {
-        var value = args?[name]?.ToString();
-        return string.IsNullOrWhiteSpace(value) ? defaultValue : value;
-    }
-
-    /// <summary>Read a connection parameter by name (null-safe).</summary>
-    private string GetConnectionParameter(string name)
-    {
-        try
-        {
-            var raw = this.Context.ConnectionParameters[name]?.ToString();
-            return string.IsNullOrWhiteSpace(raw) ? null : raw;
-        }
-        catch { return null; }
-    }
-
-    // ── Application Insights (Optional) ──────────────────────────────────
-
-    private async Task LogToAppInsights(string eventName, object properties, string correlationId)
-    {
-        try
-        {
-            var instrumentationKey = ExtractConnectionStringPart(APP_INSIGHTS_CONNECTION_STRING, "InstrumentationKey");
-            var ingestionEndpoint = ExtractConnectionStringPart(APP_INSIGHTS_CONNECTION_STRING, "IngestionEndpoint")
-                ?? "https://dc.services.visualstudio.com/";
-
-            if (string.IsNullOrEmpty(instrumentationKey))
-                return;
-
-            var propsDict = new Dictionary<string, string>
-            {
-                ["ServerName"] = Options.ServerInfo.Name,
-                ["ServerVersion"] = Options.ServerInfo.Version,
-                ["CorrelationId"] = correlationId
-            };
-
-            if (properties != null)
-            {
-                var propsJson = JsonConvert.SerializeObject(properties);
-                var propsObj = JObject.Parse(propsJson);
-                foreach (var prop in propsObj.Properties())
-                {
-                    propsDict[prop.Name] = prop.Value?.ToString() ?? "";
-                }
-            }
-
-            var telemetryData = new
-            {
-                name = $"Microsoft.ApplicationInsights.{instrumentationKey}.Event",
-                time = DateTime.UtcNow.ToString("o"),
-                iKey = instrumentationKey,
-                data = new
-                {
-                    baseType = "EventData",
-                    baseData = new
-                    {
-                        ver = 2,
-                        name = eventName,
-                        properties = propsDict
-                    }
-                }
-            };
-
-            var json = JsonConvert.SerializeObject(telemetryData);
-            var telemetryUrl = new Uri(ingestionEndpoint.TrimEnd('/') + "/v2/track");
-
-            var telemetryRequest = new HttpRequestMessage(HttpMethod.Post, telemetryUrl)
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-
-            await this.Context.SendAsync(telemetryRequest, this.CancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            // Suppress telemetry errors
-        }
-    }
-
-    private static string ExtractConnectionStringPart(string connectionString, string key)
-    {
-        if (string.IsNullOrEmpty(connectionString)) return null;
-        var prefix = key + "=";
-        var parts = connectionString.Split(';');
-        foreach (var part in parts)
-        {
-            if (part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                return part.Substring(prefix.Length);
-        }
-        return null;
     }
 }
