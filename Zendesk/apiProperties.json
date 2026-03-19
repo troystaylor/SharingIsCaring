@@ -1,0 +1,56 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "token": {
+        "type": "oauthSetting",
+        "oAuthSettings": {
+          "identityProvider": "oauth2generic",
+          "clientId": "",
+          "scopes": ["read", "write"],
+          "redirectMode": "GlobalPerConnector",
+          "redirectUrl": "https://global.consent.azure-apim.net/redirect",
+          "properties": {
+            "IsFirstParty": "False",
+            "IsOnbehalfofLoginSupported": false
+          },
+          "customParameters": {
+            "authorizationUrlTemplate": {
+              "value": "https://yoursubdomain.zendesk.com/oauth/authorizations/new"
+            },
+            "authorizationUrlQueryStringTemplate": {
+              "value": "?client_id={ClientId}&response_type=code&redirect_uri={RedirectUrl}&scope=read+write&state={State}"
+            },
+            "tokenUrlTemplate": {
+              "value": "https://yoursubdomain.zendesk.com/oauth/tokens"
+            },
+            "tokenBodyTemplate": {
+              "value": "grant_type=authorization_code&code={Code}&client_id={ClientId}&client_secret={ClientSecret}&redirect_uri={RedirectUrl}&scope=read+write"
+            },
+            "refreshUrlTemplate": {
+              "value": "https://yoursubdomain.zendesk.com/oauth/tokens"
+            },
+            "refreshBodyTemplate": {
+              "value": "grant_type=refresh_token&client_id={ClientId}&client_secret={ClientSecret}&refresh_token={RefreshToken}"
+            }
+          }
+        },
+        "uiDefinition": {
+          "displayName": "Zendesk OAuth Connection",
+          "description": "Connect to your Zendesk account using OAuth 2.0",
+          "constraints": {
+            "required": "true",
+            "hidden": "false"
+          }
+        }
+      }
+    },
+    "policyTemplateInstances": [],
+    "iconBrandColor": "#03363d",
+    "scriptOperations": [
+      "InvokeMCP"
+    ],
+    "capabilities": [],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Zendesk"
+  }
+}

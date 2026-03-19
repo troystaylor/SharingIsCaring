@@ -1,0 +1,1785 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Zendesk",
+        "version": "1.0.0",
+        "description": "Comprehensive Zendesk Support connector covering Tickets, Users, Organizations, Groups, Search, Ticket Comments, Satisfaction Ratings, Views, Tags, Ticket Metrics, Help Center / Knowledge Base, SLA Policies, Ticket Attachments, User Identities, Organization Memberships, and Group Memberships via the Zendesk REST API v2. MCP-enabled for Copilot Studio integration.",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "yoursubdomain.zendesk.com",
+    "basePath": "/api/v2",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/search": {
+            "get": {
+                "operationId": "Search",
+                "summary": "Search",
+                "description": "Search for tickets, users, organizations, and other objects using Zendesk search syntax.",
+                "tags": ["Search"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Zendesk search query (e.g., type:ticket status:open priority:urgent)",
+                        "x-ms-summary": "Search Query"
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort by (created_at, updated_at, priority, status, ticket_type)",
+                        "x-ms-summary": "Sort By"
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "enum": ["asc", "desc"],
+                        "description": "Sort order",
+                        "x-ms-summary": "Sort Order"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "result_type": { "type": "string" },
+                                            "url": { "type": "string" }
+                                        }
+                                    }
+                                },
+                                "count": { "type": "integer" },
+                                "next_page": { "type": "string" },
+                                "previous_page": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets": {
+            "get": {
+                "operationId": "ListTickets",
+                "summary": "List Tickets",
+                "description": "Returns a list of tickets in the account. Returns a maximum of 100 records per page.",
+                "tags": ["Tickets"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort by field (id, subject, created_at, updated_at, status, requester, assignee, group)",
+                        "x-ms-summary": "Sort By"
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "enum": ["asc", "desc"],
+                        "description": "Sort order",
+                        "x-ms-summary": "Sort Order"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page (max 100)",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "tickets": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer", "description": "Ticket ID" },
+                                            "subject": { "type": "string", "description": "Ticket subject" },
+                                            "status": { "type": "string", "description": "Ticket status" },
+                                            "priority": { "type": "string", "description": "Ticket priority" },
+                                            "type": { "type": "string", "description": "Ticket type" },
+                                            "requester_id": { "type": "integer", "description": "Requester user ID" },
+                                            "assignee_id": { "type": "integer", "description": "Assignee user ID" },
+                                            "group_id": { "type": "integer", "description": "Assigned group ID" },
+                                            "tags": { "type": "array", "items": { "type": "string" }, "description": "Ticket tags" },
+                                            "created_at": { "type": "string", "description": "Created timestamp" },
+                                            "updated_at": { "type": "string", "description": "Updated timestamp" }
+                                        }
+                                    }
+                                },
+                                "count": { "type": "integer" },
+                                "next_page": { "type": "string" },
+                                "previous_page": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateTicket",
+                "summary": "Create Ticket",
+                "description": "Creates a new ticket.",
+                "tags": ["Tickets"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["ticket"],
+                            "properties": {
+                                "ticket": {
+                                    "type": "object",
+                                    "required": ["comment"],
+                                    "properties": {
+                                        "subject": { "type": "string", "description": "Ticket subject", "x-ms-summary": "Subject" },
+                                        "comment": {
+                                            "type": "object",
+                                            "required": ["body"],
+                                            "properties": {
+                                                "body": { "type": "string", "description": "Ticket description / first comment", "x-ms-summary": "Comment Body" }
+                                            }
+                                        },
+                                        "priority": { "type": "string", "enum": ["urgent", "high", "normal", "low"], "description": "Ticket priority", "x-ms-summary": "Priority" },
+                                        "type": { "type": "string", "enum": ["problem", "incident", "question", "task"], "description": "Ticket type", "x-ms-summary": "Type" },
+                                        "status": { "type": "string", "enum": ["new", "open", "pending", "hold", "solved"], "description": "Ticket status", "x-ms-summary": "Status" },
+                                        "assignee_id": { "type": "integer", "description": "Agent user ID", "x-ms-summary": "Assignee ID" },
+                                        "group_id": { "type": "integer", "description": "Group ID", "x-ms-summary": "Group ID" },
+                                        "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags", "x-ms-summary": "Tags" },
+                                        "external_id": { "type": "string", "description": "External ID", "x-ms-summary": "External ID" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ticket": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "subject": { "type": "string" },
+                                        "status": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{ticket_id}": {
+            "get": {
+                "operationId": "ShowTicket",
+                "summary": "Show Ticket",
+                "description": "Returns a specific ticket by ID.",
+                "tags": ["Tickets"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ticket": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "subject": { "type": "string" },
+                                        "description": { "type": "string" },
+                                        "status": { "type": "string" },
+                                        "priority": { "type": "string" },
+                                        "type": { "type": "string" },
+                                        "requester_id": { "type": "integer" },
+                                        "assignee_id": { "type": "integer" },
+                                        "group_id": { "type": "integer" },
+                                        "tags": { "type": "array", "items": { "type": "string" } },
+                                        "created_at": { "type": "string" },
+                                        "updated_at": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateTicket",
+                "summary": "Update Ticket",
+                "description": "Updates a ticket. Can change status, priority, assignee, add comments, and modify tags.",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket to update",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["ticket"],
+                            "properties": {
+                                "ticket": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": { "type": "string", "enum": ["new", "open", "pending", "hold", "solved", "closed"], "x-ms-summary": "Status" },
+                                        "priority": { "type": "string", "enum": ["urgent", "high", "normal", "low"], "x-ms-summary": "Priority" },
+                                        "type": { "type": "string", "enum": ["problem", "incident", "question", "task"], "x-ms-summary": "Type" },
+                                        "subject": { "type": "string", "x-ms-summary": "Subject" },
+                                        "assignee_id": { "type": "integer", "x-ms-summary": "Assignee ID" },
+                                        "group_id": { "type": "integer", "x-ms-summary": "Group ID" },
+                                        "comment": {
+                                            "type": "object",
+                                            "properties": {
+                                                "body": { "type": "string", "x-ms-summary": "Comment Body" },
+                                                "public": { "type": "boolean", "x-ms-summary": "Public" }
+                                            }
+                                        },
+                                        "tags": { "type": "array", "items": { "type": "string" }, "x-ms-summary": "Tags" },
+                                        "additional_tags": { "type": "array", "items": { "type": "string" }, "x-ms-summary": "Additional Tags" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ticket": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "status": { "type": "string" },
+                                        "updated_at": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteTicket",
+                "summary": "Delete Ticket",
+                "description": "Soft-deletes a ticket. Requires admin or agent with delete permission.",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket to delete",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "No Content" }
+                }
+            }
+        },
+        "/tickets/{ticket_id}/merge": {
+            "post": {
+                "operationId": "MergeTickets",
+                "summary": "Merge Tickets",
+                "description": "Merges one or more tickets into a target ticket. Source tickets are closed.",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The target ticket ID to merge into",
+                        "x-ms-summary": "Target Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["ids"],
+                            "properties": {
+                                "ids": {
+                                    "type": "array",
+                                    "items": { "type": "integer" },
+                                    "description": "Source ticket IDs to merge",
+                                    "x-ms-summary": "Source Ticket IDs"
+                                },
+                                "target_comment": { "type": "string", "description": "Comment on target ticket", "x-ms-summary": "Target Comment" },
+                                "source_comment": { "type": "string", "description": "Comment on source tickets", "x-ms-summary": "Source Comment" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/tickets/{ticket_id}/comments": {
+            "get": {
+                "operationId": "ListTicketComments",
+                "summary": "List Ticket Comments",
+                "description": "Returns all comments on a ticket including public and private comments.",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "enum": ["asc", "desc"],
+                        "description": "Sort order: asc (oldest first) or desc (newest first)",
+                        "x-ms-summary": "Sort Order"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "comments": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "body": { "type": "string" },
+                                            "author_id": { "type": "integer" },
+                                            "public": { "type": "boolean" },
+                                            "created_at": { "type": "string" },
+                                            "attachments": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": { "type": "integer" },
+                                                        "file_name": { "type": "string" },
+                                                        "content_url": { "type": "string" },
+                                                        "content_type": { "type": "string" },
+                                                        "size": { "type": "integer" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{ticket_id}/metrics": {
+            "get": {
+                "operationId": "GetTicketMetrics",
+                "summary": "Get Ticket Metrics",
+                "description": "Returns time metrics for a ticket: first reply time, full resolution time, requester wait time, agent wait time.",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ticket_metric": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "ticket_id": { "type": "integer" },
+                                        "reply_time_in_minutes": { "type": "object", "properties": { "calendar": { "type": "integer" }, "business": { "type": "integer" } } },
+                                        "full_resolution_time_in_minutes": { "type": "object", "properties": { "calendar": { "type": "integer" }, "business": { "type": "integer" } } },
+                                        "requester_wait_time_in_minutes": { "type": "object", "properties": { "calendar": { "type": "integer" }, "business": { "type": "integer" } } },
+                                        "agent_wait_time_in_minutes": { "type": "object", "properties": { "calendar": { "type": "integer" }, "business": { "type": "integer" } } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{ticket_id}/related": {
+            "get": {
+                "operationId": "GetTicketRelated",
+                "summary": "Get Ticket Related Info",
+                "description": "Returns related information for a ticket (incidents count, Jira issues, followup sources).",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/tickets/{ticket_id}/audits": {
+            "get": {
+                "operationId": "GetTicketAudits",
+                "summary": "Get Ticket Audits",
+                "description": "Returns the full audit trail for a ticket, showing all changes and events.",
+                "tags": ["Tickets"],
+                "parameters": [
+                    {
+                        "name": "ticket_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the ticket",
+                        "x-ms-summary": "Ticket ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/ticket_fields": {
+            "get": {
+                "operationId": "ListTicketFields",
+                "summary": "List Ticket Fields",
+                "description": "Returns all system and custom ticket fields and their configurations.",
+                "tags": ["Tickets"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "ticket_fields": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "title": { "type": "string" },
+                                            "type": { "type": "string" },
+                                            "active": { "type": "boolean" },
+                                            "required": { "type": "boolean" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "operationId": "ListUsers",
+                "summary": "List Users",
+                "description": "Returns a list of users in the account.",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "enum": ["end-user", "agent", "admin"],
+                        "description": "Filter by role",
+                        "x-ms-summary": "Role"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page (max 100)",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "users": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "name": { "type": "string" },
+                                            "email": { "type": "string" },
+                                            "role": { "type": "string" },
+                                            "active": { "type": "boolean" },
+                                            "organization_id": { "type": "integer" },
+                                            "created_at": { "type": "string" }
+                                        }
+                                    }
+                                },
+                                "count": { "type": "integer" },
+                                "next_page": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateUser",
+                "summary": "Create User",
+                "description": "Creates a new user (end-user, agent, or admin).",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["user"],
+                            "properties": {
+                                "user": {
+                                    "type": "object",
+                                    "required": ["name", "email"],
+                                    "properties": {
+                                        "name": { "type": "string", "description": "User full name", "x-ms-summary": "Name" },
+                                        "email": { "type": "string", "description": "User email", "x-ms-summary": "Email" },
+                                        "role": { "type": "string", "enum": ["end-user", "agent", "admin"], "description": "User role", "x-ms-summary": "Role" },
+                                        "phone": { "type": "string", "description": "Phone number", "x-ms-summary": "Phone" },
+                                        "organization_id": { "type": "integer", "description": "Organization ID", "x-ms-summary": "Organization ID" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": { "description": "Created" }
+                }
+            }
+        },
+        "/users/{user_id}": {
+            "get": {
+                "operationId": "ShowUser",
+                "summary": "Show User",
+                "description": "Returns a specific user by ID.",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the user",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "user": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "name": { "type": "string" },
+                                        "email": { "type": "string" },
+                                        "role": { "type": "string" },
+                                        "active": { "type": "boolean" },
+                                        "organization_id": { "type": "integer" },
+                                        "phone": { "type": "string" },
+                                        "created_at": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateUser",
+                "summary": "Update User",
+                "description": "Updates an existing user's profile.",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the user to update",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["user"],
+                            "properties": {
+                                "user": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string", "x-ms-summary": "Name" },
+                                        "email": { "type": "string", "x-ms-summary": "Email" },
+                                        "phone": { "type": "string", "x-ms-summary": "Phone" },
+                                        "role": { "type": "string", "enum": ["end-user", "agent", "admin"], "x-ms-summary": "Role" },
+                                        "organization_id": { "type": "integer", "x-ms-summary": "Organization ID" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/users/{user_id}/tickets/{type}": {
+            "get": {
+                "operationId": "GetUserTickets",
+                "summary": "Get User Tickets",
+                "description": "Returns tickets requested by, CC'd to, or assigned to a specific user.",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the user",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "type",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "enum": ["requested", "ccd", "assigned"],
+                        "description": "Ticket relationship type",
+                        "x-ms-summary": "Relationship Type",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/users/{user_id}/identities": {
+            "get": {
+                "operationId": "ListUserIdentities",
+                "summary": "List User Identities",
+                "description": "Returns all identities (email addresses, phone numbers, X/Twitter handles) for a user.",
+                "tags": ["Users"],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the user",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "identities": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "type": { "type": "string", "description": "Identity type (email, phone_number, twitter, etc.)" },
+                                            "value": { "type": "string", "description": "Identity value" },
+                                            "primary": { "type": "boolean" },
+                                            "verified": { "type": "boolean" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations": {
+            "get": {
+                "operationId": "ListOrganizations",
+                "summary": "List Organizations",
+                "description": "Returns a list of organizations in the account.",
+                "tags": ["Organizations"],
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page (max 100)",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "organizations": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "name": { "type": "string" },
+                                            "details": { "type": "string" },
+                                            "notes": { "type": "string" },
+                                            "group_id": { "type": "integer" },
+                                            "created_at": { "type": "string" },
+                                            "updated_at": { "type": "string" }
+                                        }
+                                    }
+                                },
+                                "count": { "type": "integer" },
+                                "next_page": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateOrganization",
+                "summary": "Create Organization",
+                "description": "Creates a new organization.",
+                "tags": ["Organizations"],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["organization"],
+                            "properties": {
+                                "organization": {
+                                    "type": "object",
+                                    "required": ["name"],
+                                    "properties": {
+                                        "name": { "type": "string", "description": "Organization name", "x-ms-summary": "Name" },
+                                        "details": { "type": "string", "description": "Details", "x-ms-summary": "Details" },
+                                        "notes": { "type": "string", "description": "Notes", "x-ms-summary": "Notes" },
+                                        "group_id": { "type": "integer", "description": "Default group ID", "x-ms-summary": "Group ID" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": { "description": "Created" }
+                }
+            }
+        },
+        "/organizations/{organization_id}": {
+            "get": {
+                "operationId": "ShowOrganization",
+                "summary": "Show Organization",
+                "description": "Returns a specific organization by ID.",
+                "tags": ["Organizations"],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the organization",
+                        "x-ms-summary": "Organization ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "organization": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "name": { "type": "string" },
+                                        "details": { "type": "string" },
+                                        "notes": { "type": "string" },
+                                        "group_id": { "type": "integer" },
+                                        "created_at": { "type": "string" },
+                                        "updated_at": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{organization_id}/tickets": {
+            "get": {
+                "operationId": "GetOrganizationTickets",
+                "summary": "Get Organization Tickets",
+                "description": "Returns tickets for a specific organization.",
+                "tags": ["Organizations"],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the organization",
+                        "x-ms-summary": "Organization ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/organization_memberships": {
+            "get": {
+                "operationId": "ListOrganizationMemberships",
+                "summary": "List Organization Memberships",
+                "description": "Returns all organization memberships showing which users belong to which organizations.",
+                "tags": ["Organizations"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "organization_memberships": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "user_id": { "type": "integer" },
+                                            "organization_id": { "type": "integer" },
+                                            "default": { "type": "boolean" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/groups": {
+            "get": {
+                "operationId": "ListGroups",
+                "summary": "List Groups",
+                "description": "Returns all agent groups.",
+                "tags": ["Groups"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "groups": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "name": { "type": "string" },
+                                            "description": { "type": "string" },
+                                            "default": { "type": "boolean" },
+                                            "created_at": { "type": "string" },
+                                            "updated_at": { "type": "string" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/groups/{group_id}": {
+            "get": {
+                "operationId": "ShowGroup",
+                "summary": "Show Group",
+                "description": "Returns a specific group by ID.",
+                "tags": ["Groups"],
+                "parameters": [
+                    {
+                        "name": "group_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the group",
+                        "x-ms-summary": "Group ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/group_memberships": {
+            "get": {
+                "operationId": "ListGroupMemberships",
+                "summary": "List Group Memberships",
+                "description": "Returns all group memberships showing which agents belong to which groups.",
+                "tags": ["Groups"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "group_memberships": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "user_id": { "type": "integer" },
+                                            "group_id": { "type": "integer" },
+                                            "default": { "type": "boolean" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/views": {
+            "get": {
+                "operationId": "ListViews",
+                "summary": "List Views",
+                "description": "Returns all shared and personal views available to the current user.",
+                "tags": ["Views"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "views": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "title": { "type": "string" },
+                                            "active": { "type": "boolean" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/views/{view_id}/tickets": {
+            "get": {
+                "operationId": "GetViewTickets",
+                "summary": "Get View Tickets",
+                "description": "Executes a view and returns the tickets it contains.",
+                "tags": ["Views"],
+                "parameters": [
+                    {
+                        "name": "view_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the view",
+                        "x-ms-summary": "View ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page (max 100)",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/views/{view_id}/count": {
+            "get": {
+                "operationId": "GetViewCount",
+                "summary": "Get View Count",
+                "description": "Returns the ticket count for a view.",
+                "tags": ["Views"],
+                "parameters": [
+                    {
+                        "name": "view_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the view",
+                        "x-ms-summary": "View ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "view_count": {
+                                    "type": "object",
+                                    "properties": {
+                                        "view_id": { "type": "integer" },
+                                        "value": { "type": "integer" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/satisfaction_ratings": {
+            "get": {
+                "operationId": "ListSatisfactionRatings",
+                "summary": "List Satisfaction Ratings",
+                "description": "Returns satisfaction ratings. Can filter by score and date range.",
+                "tags": ["Satisfaction Ratings"],
+                "parameters": [
+                    {
+                        "name": "score",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filter by score (good, bad, offered, unoffered, etc.)",
+                        "x-ms-summary": "Score"
+                    },
+                    {
+                        "name": "start_time",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start time (ISO 8601)",
+                        "x-ms-summary": "Start Time"
+                    },
+                    {
+                        "name": "end_time",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End time (ISO 8601)",
+                        "x-ms-summary": "End Time"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "satisfaction_ratings": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "score": { "type": "string" },
+                                            "comment": { "type": "string" },
+                                            "ticket_id": { "type": "integer" },
+                                            "requester_id": { "type": "integer" },
+                                            "assignee_id": { "type": "integer" },
+                                            "created_at": { "type": "string" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tags": {
+            "get": {
+                "operationId": "ListTags",
+                "summary": "List Tags",
+                "description": "Returns the most popular recent tags in the account.",
+                "tags": ["Tags"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "tags": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": { "type": "string" },
+                                            "count": { "type": "integer" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/macros": {
+            "get": {
+                "operationId": "ListMacros",
+                "summary": "List Macros",
+                "description": "Returns available macros (predefined ticket actions).",
+                "tags": ["Macros"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "macros": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "title": { "type": "string" },
+                                            "active": { "type": "boolean" },
+                                            "description": { "type": "string" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/help_center/articles": {
+            "get": {
+                "operationId": "ListArticles",
+                "summary": "List Articles",
+                "description": "Returns Help Center articles. Can be filtered by label.",
+                "tags": ["Help Center"],
+                "parameters": [
+                    {
+                        "name": "label_names",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated label names to filter by",
+                        "x-ms-summary": "Label Names"
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort by (position, title, created_at, updated_at)",
+                        "x-ms-summary": "Sort By"
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "enum": ["asc", "desc"],
+                        "description": "Sort order",
+                        "x-ms-summary": "Sort Order"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page (max 100)",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "articles": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "title": { "type": "string" },
+                                            "body": { "type": "string" },
+                                            "locale": { "type": "string" },
+                                            "draft": { "type": "boolean" },
+                                            "section_id": { "type": "integer" },
+                                            "label_names": { "type": "array", "items": { "type": "string" } },
+                                            "created_at": { "type": "string" },
+                                            "updated_at": { "type": "string" }
+                                        }
+                                    }
+                                },
+                                "count": { "type": "integer" },
+                                "next_page": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/help_center/articles/{article_id}": {
+            "get": {
+                "operationId": "ShowArticle",
+                "summary": "Show Article",
+                "description": "Returns a specific Help Center article by ID including body, labels, and metadata.",
+                "tags": ["Help Center"],
+                "parameters": [
+                    {
+                        "name": "article_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the article",
+                        "x-ms-summary": "Article ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "article": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "integer" },
+                                        "title": { "type": "string" },
+                                        "body": { "type": "string" },
+                                        "locale": { "type": "string" },
+                                        "draft": { "type": "boolean" },
+                                        "section_id": { "type": "integer" },
+                                        "author_id": { "type": "integer" },
+                                        "label_names": { "type": "array", "items": { "type": "string" } },
+                                        "created_at": { "type": "string" },
+                                        "updated_at": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/help_center/articles/search": {
+            "get": {
+                "operationId": "SearchArticles",
+                "summary": "Search Articles",
+                "description": "Searches Help Center articles by keyword.",
+                "tags": ["Help Center"],
+                "parameters": [
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "Search query string",
+                        "x-ms-summary": "Search Query"
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Filter to a specific category ID",
+                        "x-ms-summary": "Category ID"
+                    },
+                    {
+                        "name": "section",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Filter to a specific section ID",
+                        "x-ms-summary": "Section ID"
+                    },
+                    {
+                        "name": "label_names",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated label names to filter by",
+                        "x-ms-summary": "Label Names"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "title": { "type": "string" },
+                                            "body": { "type": "string" },
+                                            "locale": { "type": "string" },
+                                            "section_id": { "type": "integer" },
+                                            "snippet": { "type": "string" }
+                                        }
+                                    }
+                                },
+                                "count": { "type": "integer" },
+                                "next_page": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/help_center/sections/{section_id}/articles": {
+            "get": {
+                "operationId": "ListArticlesBySection",
+                "summary": "List Articles by Section",
+                "description": "Returns Help Center articles in a specific section.",
+                "tags": ["Help Center"],
+                "parameters": [
+                    {
+                        "name": "section_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the section",
+                        "x-ms-summary": "Section ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Number of records per page",
+                        "x-ms-summary": "Per Page"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            },
+            "post": {
+                "operationId": "CreateArticle",
+                "summary": "Create Article",
+                "description": "Creates a new Help Center article in a specific section.",
+                "tags": ["Help Center"],
+                "parameters": [
+                    {
+                        "name": "section_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The section ID to create the article in",
+                        "x-ms-summary": "Section ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["article"],
+                            "properties": {
+                                "article": {
+                                    "type": "object",
+                                    "required": ["title", "body", "locale"],
+                                    "properties": {
+                                        "title": { "type": "string", "description": "Article title", "x-ms-summary": "Title" },
+                                        "body": { "type": "string", "description": "Article body (HTML)", "x-ms-summary": "Body" },
+                                        "locale": { "type": "string", "description": "Article locale (e.g., en-us)", "x-ms-summary": "Locale" },
+                                        "draft": { "type": "boolean", "description": "Whether the article is a draft", "x-ms-summary": "Draft" },
+                                        "label_names": { "type": "array", "items": { "type": "string" }, "description": "Labels", "x-ms-summary": "Labels" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": { "description": "Created" }
+                }
+            }
+        },
+        "/help_center/sections": {
+            "get": {
+                "operationId": "ListSections",
+                "summary": "List Sections",
+                "description": "Returns Help Center sections.",
+                "tags": ["Help Center"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "sections": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "name": { "type": "string" },
+                                            "category_id": { "type": "integer" },
+                                            "locale": { "type": "string" },
+                                            "position": { "type": "integer" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/help_center/categories": {
+            "get": {
+                "operationId": "ListCategories",
+                "summary": "List Categories",
+                "description": "Returns Help Center categories.",
+                "tags": ["Help Center"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "categories": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "name": { "type": "string" },
+                                            "locale": { "type": "string" },
+                                            "position": { "type": "integer" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/help_center/categories/{category_id}/sections": {
+            "get": {
+                "operationId": "ListSectionsByCategory",
+                "summary": "List Sections by Category",
+                "description": "Returns Help Center sections in a specific category.",
+                "tags": ["Help Center"],
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the category",
+                        "x-ms-summary": "Category ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/slas/policies": {
+            "get": {
+                "operationId": "ListSLAPolicies",
+                "summary": "List SLA Policies",
+                "description": "Returns all SLA policies and their targets.",
+                "tags": ["SLA Policies"],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "sla_policies": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": { "type": "integer" },
+                                            "title": { "type": "string" },
+                                            "description": { "type": "string" },
+                                            "position": { "type": "integer" },
+                                            "filter": { "type": "object" },
+                                            "policy_metrics": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "priority": { "type": "string" },
+                                                        "metric": { "type": "string" },
+                                                        "target": { "type": "integer" },
+                                                        "business_hours": { "type": "boolean" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/slas/policies/{policy_id}": {
+            "get": {
+                "operationId": "ShowSLAPolicy",
+                "summary": "Show SLA Policy",
+                "description": "Returns a specific SLA policy by ID including filter conditions and metric targets.",
+                "tags": ["SLA Policies"],
+                "parameters": [
+                    {
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer",
+                        "description": "The ID of the SLA policy",
+                        "x-ms-summary": "Policy ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Success" }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Zendesk MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides AI agents access to Zendesk Support operations as tools.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "tags": [
+        {
+            "name": "Tickets",
+            "description": "Ticket CRUD and lifecycle operations"
+        },
+        {
+            "name": "Users",
+            "description": "User management and identities"
+        },
+        {
+            "name": "Organizations",
+            "description": "Organization management and memberships"
+        },
+        {
+            "name": "Groups",
+            "description": "Agent group management and memberships"
+        },
+        {
+            "name": "Search",
+            "description": "Full-text search across all objects"
+        },
+        {
+            "name": "Views",
+            "description": "Ticket views and counts"
+        },
+        {
+            "name": "Satisfaction Ratings",
+            "description": "Customer satisfaction ratings"
+        },
+        {
+            "name": "Tags",
+            "description": "Tag management"
+        },
+        {
+            "name": "Macros",
+            "description": "Predefined ticket actions"
+        },
+        {
+            "name": "Help Center",
+            "description": "Knowledge base articles, sections, and categories"
+        },
+        {
+            "name": "SLA Policies",
+            "description": "Service Level Agreement policies and targets"
+        }
+    ],
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://yoursubdomain.zendesk.com/oauth/authorizations/new",
+            "tokenUrl": "https://yoursubdomain.zendesk.com/oauth/tokens",
+            "scopes": {
+                "read": "Read access to Zendesk resources",
+                "write": "Write access to Zendesk resources",
+                "hc:read": "Read access to Help Center articles",
+                "hc:write": "Write access to Help Center articles"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "read",
+                "write",
+                "hc:read", 
+                "hc:write"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.zendesk.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.zendesk.com/company/agreements-and-terms/privacy-notice/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Sales and CRM;IT Operations"
+        }
+    ]
+}
