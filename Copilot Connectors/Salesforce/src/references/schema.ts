@@ -1,0 +1,681 @@
+// ── Schema Definition for Graph External Connection ──
+// Maps Salesforce fields to Microsoft Graph external item properties.
+
+import { ExternalSchema, SchemaProperty } from "../models/graphTypes";
+
+const schemaProperties: SchemaProperty[] = [
+  // ── Common properties ──
+  {
+    name: "title",
+    type: "String",
+    isSearchable: true,
+    isQueryable: true,
+    isRetrievable: true,
+    labels: ["title"],
+    aliases: ["name", "subject"],
+  },
+  {
+    name: "description",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "url",
+    type: "String",
+    isRetrievable: true,
+    labels: ["url"],
+  },
+  {
+    name: "objectType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["type", "recordType", "SalesforceObject"],
+  },
+  {
+    name: "salesforceId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isExactMatchRequired: true,
+  },
+  {
+    name: "lastModifiedDateTime",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    labels: ["lastModifiedDateTime"],
+  },
+  {
+    name: "lastModifiedBy",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+    labels: ["lastModifiedBy"],
+  },
+
+  // ── Account ──
+  {
+    name: "industry",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["sector", "vertical"],
+  },
+  {
+    name: "website",
+    type: "String",
+    isRetrievable: true,
+  },
+  {
+    name: "phone",
+    type: "String",
+    isRetrievable: true,
+  },
+  {
+    name: "billingCity",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["city"],
+  },
+  {
+    name: "billingState",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["state"],
+  },
+  {
+    name: "billingCountry",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["country"],
+  },
+  {
+    name: "annualRevenue",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["revenue"],
+  },
+  {
+    name: "numberOfEmployees",
+    type: "Int64",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["employees", "headcount"],
+  },
+  {
+    name: "accountType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+  },
+
+  // ── Contact ──
+  {
+    name: "firstName",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "lastName",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "email",
+    type: "String",
+    isSearchable: true,
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["emailAddress"],
+  },
+  {
+    name: "contactTitle",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+    aliases: ["jobTitle", "role"],
+  },
+  {
+    name: "department",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "accountId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Opportunity ──
+  {
+    name: "stageName",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["stage", "dealStage", "opportunityStage", "pipelineStage"],
+  },
+  {
+    name: "amount",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["dealAmount", "dealValue", "opportunityAmount"],
+  },
+  {
+    name: "closeDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["expectedClose"],
+  },
+  {
+    name: "probability",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["winProbability"],
+  },
+  {
+    name: "opportunityType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "leadSource",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["source", "leadOrigin"],
+  },
+  {
+    name: "isClosed",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "isWon",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Case ──
+  {
+    name: "caseNumber",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isExactMatchRequired: true,
+    aliases: ["caseNum", "ticketNumber"],
+  },
+  {
+    name: "status",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["caseStatus"],
+  },
+  {
+    name: "priority",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["casePriority", "urgency"],
+  },
+  {
+    name: "origin",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["caseOrigin", "channel"],
+  },
+  {
+    name: "caseType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "contactId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "closedDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Lead ──
+  {
+    name: "company",
+    type: "String",
+    isSearchable: true,
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["organization", "companyName"],
+  },
+  {
+    name: "leadTitle",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "leadStatus",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["leadStage"],
+  },
+  {
+    name: "rating",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["leadRating", "leadQuality"],
+  },
+  {
+    name: "isConverted",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Chatter ──
+  {
+    name: "authorName",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "authorId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "parentId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "parentType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "commentCount",
+    type: "Int64",
+    isRetrievable: true,
+  },
+  {
+    name: "likeCount",
+    type: "Int64",
+    isRetrievable: true,
+  },
+  {
+    name: "createdDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    labels: ["createdDateTime"],
+  },
+
+  // ── Reports ──
+  {
+    name: "reportFormat",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "reportType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "folderName",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["folder"],
+  },
+  {
+    name: "lastRunDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Knowledge ──
+  {
+    name: "articleNumber",
+    type: "String",
+    isSearchable: true,
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["articleNum"],
+  },
+  {
+    name: "publishStatus",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Analytics ──
+  {
+    name: "datasetType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "folderLabel",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Task & Event (Phase 2) ──
+  {
+    name: "activityDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["dueDate", "taskDate"],
+  },
+  {
+    name: "whoId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "whatId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "taskSubtype",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "isHighPriority",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "location",
+    type: "String",
+    isSearchable: true,
+    isRetrievable: true,
+    aliases: ["meetingLocation", "venue"],
+  },
+  {
+    name: "startDateTime",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["eventStart", "meetingStart"],
+  },
+  {
+    name: "endDateTime",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["eventEnd", "meetingEnd"],
+  },
+  {
+    name: "durationInMinutes",
+    type: "Int64",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["duration"],
+  },
+  {
+    name: "eventSubtype",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "isAllDayEvent",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "showAs",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+
+  // ── Product (Phase 2) ──
+  {
+    name: "productCode",
+    type: "String",
+    isSearchable: true,
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["sku", "partNumber"],
+  },
+  {
+    name: "productFamily",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["productCategory", "family"],
+  },
+  {
+    name: "isActive",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "unitPrice",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    isRefinable: true,
+    aliases: ["price", "listPrice"],
+  },
+  {
+    name: "pricebookName",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["pricebook", "priceList"],
+  },
+
+  // ── Quote (Phase 3) ──
+  {
+    name: "quoteNumber",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    isExactMatchRequired: true,
+    aliases: ["quoteNum"],
+  },
+  {
+    name: "quoteStatus",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "totalPrice",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["total"],
+  },
+  {
+    name: "grandTotal",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "discount",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "expirationDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["validUntil"],
+  },
+  {
+    name: "opportunityId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "quoteId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "quantity",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["qty"],
+  },
+
+  // ── Campaign (Phase 3) ──
+  {
+    name: "campaignType",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["campaignCategory"],
+  },
+  {
+    name: "campaignStatus",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "startDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["campaignStart"],
+  },
+  {
+    name: "endDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["campaignEnd"],
+  },
+  {
+    name: "budgetedCost",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+    aliases: ["budget"],
+  },
+  {
+    name: "actualCost",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "expectedRevenue",
+    type: "Double",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "numberOfContacts",
+    type: "Int64",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "numberOfLeads",
+    type: "Int64",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "campaignId",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "memberStatus",
+    type: "String",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "hasResponded",
+    type: "Boolean",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+  {
+    name: "firstRespondedDate",
+    type: "DateTime",
+    isQueryable: true,
+    isRetrievable: true,
+  },
+];
+
+export function getSchema(): ExternalSchema {
+  return {
+    baseType: "microsoft.graph.externalItem",
+    properties: schemaProperties,
+  };
+}

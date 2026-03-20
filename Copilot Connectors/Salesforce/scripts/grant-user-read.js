@@ -1,0 +1,58 @@
+// Grant User.Read.All to the app's service principal
+// User.Read.All app role ID: df021288-bdef-4463-88db-98f22de89214
+//
+// Requires: AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in .env.local
+// Optionally set APP_SP_ID/GRAPH_SP_ID to skip auto-discovery.
+
+const { ClientSecretCredential } = require("@azure/identity");
+require("dotenv").config({ path: ".env.local" });
+
+const TENANT_ID = process.env.AZURE_TENANT_ID;
+const CLIENT_ID = process.env.AZURE_CLIENT_ID;
+const CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET;
+const USER_READ_ALL_ROLE = "df021288-bdef-4463-88db-98f22de89214";
+
+async function findSp(token, filter) {
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/servicePrincipals?$filter=${encodeURIComponent(filter)}&$select=id,appId,displayName`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  const data = await res.json();
+  return data.value?.[0];
+}
+
+async function main() {
+  if (!TENANT_ID || !CLIENT_ID || !CLIENT_SECRET) {
+    console.error("Set AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET in .env.local");
+    process.exit(1);
+  }
+
+  const cred = new ClientSecretCredential(TENANT_ID, CLIENT_ID, CLIENT_SECRET);
+  const tokenResponse = await cred.getToken("https://graph.microsoft.com/.default");
+  const token = tokenResponse.token;
+
+  // Auto-discover service principal IDs
+  const appSp = process.env.APP_SP_ID
+    ? { id: process.env.APP_SP_ID }
+    : await findSp(token, `appId eq '${CLIENT_ID}'`);
+  const graphSp = process.env.GRAPH_SP_ID
+    ? { id: process.env.GRAPH_SP_ID }
+    : await findSp(token, "appId eq '00000003-0000-0000-c000-000000000000'");
+
+  if (!appSp) { console.error(`Could not find service principal for appId ${CLIENT_ID}`); process.exit(1); }
+  if (!graphSp) { console.error("Could not find Microsoft Graph service principal"); process.exit(1); }
+
+  console.log(`App SP: ${appSp.id}  |  Graph SP: ${graphSp.id}`);
+  console.log("");
+  console.log("To grant User.Read.All, open this as Global Admin:");
+  console.log(`https://login.microsoftonline.com/${TENANT_ID}/adminconsent?client_id=${CLIENT_ID}`);
+  console.log("");
+  console.log("Or grant via Graph API using admin credentials:");
+  console.log(`POST https://graph.microsoft.com/v1.0/servicePrincipals/${appSp.id}/appRoleAssignments`);
+  console.log(JSON.stringify({
+    principalId: appSp.id,
+    resourceId: graphSp.id,
+    appRoleId: USER_READ_ALL_ROLE,
+  }, null, 2));
+}
+main();
