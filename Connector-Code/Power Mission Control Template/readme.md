@@ -1,4 +1,4 @@
-# Power Mission Control — MCP Template v3
+# Power Mission Control — Power MCP Template v3
 
 Progressive API discovery for Copilot Studio agents. Instead of registering dozens of typed tools (which consume context window tokens), this template exposes **3 mission control tools** that cover any API surface:
 
