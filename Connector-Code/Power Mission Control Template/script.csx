@@ -16,7 +16,7 @@ using Newtonsoft.Json.Linq;
 // ║  Power Mission Control — MCP Orchestration Template                         ║
 // ║                                                                            ║
 // ║  Configure your server and mission control options. The framework auto-     ║
-// ║  registers scan_{service}, launch_{service}, and launch_batch_{service}   ║
+// ║  registers scan_{service}, launch_{service}, and sequence_{service}       ║
 // ║  tools. You can also add custom tools via handler.AddTool().               ║
 // ║                                                                            ║
 // ║  Discovery modes:                                                          ║
@@ -153,7 +153,7 @@ public class Script : ScriptBase
         // 1. Create the handler
         var handler = new McpRequestHandler(Options);
 
-        // 2. Register mission control tools (scan, launch, launch_batch)
+        // 2. Register mission control tools (scan, launch, sequence)
         MissionControl.RegisterMission(handler, McOptions, CAPABILITY_INDEX, this);
 
         // 3. Register any additional custom tools
@@ -182,7 +182,7 @@ public class Script : ScriptBase
 
     // ── Custom Tools (Optional) ──────────────────────────────────────────
     //
-    //    Add any connector-specific tools beyond scan/launch/launch_batch here.
+    //    Add any connector-specific tools beyond scan/launch/sequence here.
     //    These appear alongside the mission control tools in tools/list.
     //
 
@@ -1432,7 +1432,7 @@ public class DiscoveryEngine
 public static class MissionControl
 {
     /// <summary>
-    /// Register scan, launch, and launch_batch tools on the MCP handler.
+    /// Register scan, launch, and sequence tools on the MCP handler.
     /// This is the main entry point for mission control mode.
     /// </summary>
     public static void RegisterMission(
@@ -1497,13 +1497,13 @@ public static class MissionControl
                 return await proxy.InvokeAsync(context, endpoint, method, body, queryParams, apiVersion, index).ConfigureAwait(false);
             });
 
-        // ── launch_batch_{service} ───────────────────────────────────────
+        // ── sequence_{service} ───────────────────────────────────────────
 
-        var batchDescription = $"Launch multiple {serviceName} API operations in a single call. " +
-            $"Maximum {options.MaxBatchSize} requests per batch. " +
+        var batchDescription = $"Launch a sequence of multiple {serviceName} API operations in a single call. " +
+            $"Maximum {options.MaxBatchSize} requests per sequence. " +
             $"Each request needs an id, endpoint, and method.";
 
-        handler.AddTool($"launch_batch_{serviceName}", batchDescription,
+        handler.AddTool($"sequence_{serviceName}", batchDescription,
             schema: s => s
                 .Array("requests", "Array of API requests to execute",
                     itemSchema: new JObject

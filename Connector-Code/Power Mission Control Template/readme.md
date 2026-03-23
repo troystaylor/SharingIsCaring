@@ -4,7 +4,7 @@ Progressive API discovery for Copilot Studio agents. Instead of registering doze
 
 - **`scan_{service}`** — Scan for available operations by intent
 - **`launch_{service}`** — Launch any API endpoint with auth forwarding
-- **`launch_batch_{service}`** — Launch multiple operations in one call
+- **`sequence_{service}`** — Launch a sequence of multiple operations in one call
 
 ## Token Impact
 
@@ -91,7 +91,7 @@ Deploy as a custom connector in Power Platform. Add to your Copilot Studio agent
 ```
 Copilot Studio Planner
     │
-    ├─ tools/list → [scan_myservice, launch_myservice, launch_batch_myservice]
+    ├─ tools/list → [scan_myservice, launch_myservice, sequence_myservice]
     │                (~1,500 tokens)
     │
     ├─ tools/call: scan_myservice({query: "create customer"})
@@ -107,7 +107,7 @@ Copilot Studio Planner
     │   ├─ Translate 401/403/404 to friendly errors
     │   └─ Summarize response (strip HTML, truncate)
     │
-    └─ tools/call: launch_batch_myservice({requests: [...]})
+    └─ tools/call: sequence_myservice({requests: [...]})
         ├─ Sequential: execute one at a time, in order
         └─ BatchEndpoint: single POST to $batch path
 ```
@@ -124,7 +124,7 @@ Copilot Studio Planner
 | `DefaultApiVersion` | — | API version appended to URL |
 | `BatchMode` | `Sequential` | `Sequential` or `BatchEndpoint` |
 | `BatchEndpointPath` | `"/$batch"` | Path for native batch endpoint |
-| `MaxBatchSize` | `20` | Max requests per batch |
+| `MaxBatchSize` | `20` | Max requests per sequence |
 | `DefaultPageSize` | `25` | Auto-injected `$top` for GET collections |
 | `CacheExpiryMinutes` | `10` | Discovery cache TTL |
 | `DescribeCacheTTL` | `30` | Describe/metadata cache TTL (Hybrid) |
@@ -199,7 +199,7 @@ All v2 constructs work unchanged. You can use `handler.AddTool()`, `handler.AddR
 
 | | v2 (Typed Tools) | v3 (Mission Control) |
 |---|---|---|
-| **Pattern** | One `AddTool()` per API operation | 3 meta-tools: discover, invoke, batch |
+| **Pattern** | One `AddTool()` per API operation | 3 mission control tools: scan, launch, sequence |
 | **Tool count** | Grows with API surface (10–50+) | Fixed at 3 (+ optional custom tools) |
 | **Discovery** | `tools/list` dumps all schemas upfront | Progressive: planner asks `discover` first |
 | **Schema delivery** | Full JSON Schema per tool, always loaded | On-demand via `include_schema=true` |
@@ -224,7 +224,7 @@ All v2 constructs work unchanged. You can use `handler.AddTool()`, `handler.AddR
 | **Response processing** | Manual per-tool | Built-in summarization (HTML strip, truncate) |
 | **Retry logic** | Manual per-tool | Built-in 429 retry with Retry-After |
 | **Pagination** | Manual per-tool | Built-in `$top` injection + `nextLink` detection |
-| **Batch operations** | Not supported | Built-in sequential or `$batch` endpoint |
+| **Sequence operations** | Not supported | Built-in sequential or `$batch` endpoint |
 
 ### Capabilities
 
