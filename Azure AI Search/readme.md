@@ -10,24 +10,58 @@ Power Mission Control connector for Azure AI Search. Exposes the full Azure AI S
 
 ## Setup
 
-### 1. Create the Custom Connector
+### 1. Configure the Service URL
 
-1. Go to [make.powerapps.com](https://make.powerapps.com) > **Custom connectors**
-2. Select **New custom connector** > **Import an OpenAPI file**
-3. Upload `apiDefinition.swagger.json`
-4. On the **Code** tab, paste the contents of `script.csx`
-5. Save and test
+Update the `host` field in `apiDefinition.swagger.json` with your Azure AI Search service name:
 
-### 2. Create a Connection
+```json
+"host": "your-service.search.windows.net"
+```
 
-When creating a connection, provide:
+### 2. Deploy the Connector
+
+#### Option A: PAC CLI (recommended)
+
+```powershell
+# Authenticate to your Power Platform environment (if not authenticated)
+pac auth create --environment "https://yourorg.crm.dynamics.com"
+
+# Create the connector
+pac connector create --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json --script-file script.csx
+
+# Or update an existing connector
+pac connector update --connector-id <CONNECTOR_ID> --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json --script-file script.csx
+```
+
+> **Note:** If `--script-file` fails with a compute provisioning error, deploy without it and add the code manually:
+> ```powershell
+> pac connector create --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json
+> ```
+> Then edit the connector in the portal > **Code** tab > toggle on > paste `script.csx` > select **InvokeMCP** > **Update connector**.
+
+### 3. Create a Connection
+
+When creating a connection, you'll be prompted to choose an authentication type:
+
+#### Option A: API Key
 
 | Parameter | Value |
 |---|---|
-| **Search Service URL** | `https://your-service.search.windows.net` |
 | **API Key** | Your admin or query API key from the Azure portal |
 
-### 3. Add to Copilot Studio
+#### Option B: Microsoft Entra ID (OAuth)
+
+Requires an [Entra app registration](https://learn.microsoft.com/entra/identity-platform/quickstart-register-app) with:
+- **API permissions**: `https://search.azure.com/.default` (delegated)
+- **Redirect URI**: `https://global.consent.azure-apim.net/redirect`
+- **RBAC roles** on your search service: `Search Index Data Reader`, `Search Index Data Contributor`, or `Search Service Contributor`
+
+| Parameter | Value |
+|---|---|
+| **Client ID** | Application (client) ID from your app registration |
+| **Client Secret** | Client secret from your app registration |
+
+### 4. Add to Copilot Studio
 
 1. Open your agent in Copilot Studio
 2. Go to **Tools** > **Add a tool** > **Custom connector**
@@ -157,7 +191,7 @@ Copilot Studio Agent
     │
     ├─ launch_search({endpoint, method, body})
     │   ├─ Builds URL: {serviceUrl}/{endpoint}?api-version=2025-09-01
-    │   ├─ Injects api-key header from connection parameter
+    │   ├─ Forwards auth (api-key header or OAuth bearer token)
     │   ├─ Handles 429 retry with Retry-After
     │   └─ Summarizes response (strip HTML, truncate)
     │
@@ -167,16 +201,24 @@ Copilot Studio Agent
 
 ## Authentication
 
-This connector uses Azure AI Search API key authentication. The API key is stored as a connection parameter and injected as the `api-key` header on every request via the `CustomHeaders` mechanism in the Power Mission Control framework.
+This connector supports **multi-auth** — choose either method when creating a connection:
+
+### API Key
+The API key is injected as the `api-key` header on every request via the swagger security definition.
 
 - **Admin key**: Full access to all operations (manage indexes, indexers, data sources, etc.)
 - **Query key**: Read-only access to search and document retrieval operations
 
 Get your keys from the Azure portal: **Search service** > **Settings** > **Keys**.
 
+### Microsoft Entra ID (OAuth 2.0)
+Uses OAuth 2.0 with RBAC. The bearer token is forwarded on every request via the `Authorization` header. Requires [RBAC enabled](https://learn.microsoft.com/azure/search/search-security-enable-roles) on your search service and appropriate role assignments.
+
+The service URL is derived from the `host` field in `apiDefinition.swagger.json`.
+
 ## Built With
 
-[Power Mission Control Template v3](../Connector-Code/Power%20MCP%20Template%20v3/Power%20Mission%20Control%20Template/) — progressive API discovery for Copilot Studio agents.
+[Power Mission Control Template v3](https://github.com/troystaylor/SharingIsCaring/tree/main/Connector-Code/Power%20Mission%20Control%20Template) — progressive API discovery for Copilot Studio agents.
 
 ## API Reference
 

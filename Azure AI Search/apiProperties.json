@@ -1,28 +1,100 @@
 {
     "properties": {
-        "connectionParameters": {
-            "serviceUrl": {
-                "type": "string",
-                "uiDefinition": {
-                    "displayName": "Search Service URL",
-                    "description": "Your Azure AI Search service URL (e.g., https://your-service.search.windows.net)",
-                    "tooltip": "Enter the full URL of your Azure AI Search service",
-                    "constraints": {
-                        "required": "true"
-                    }
-                }
+        "connectionParameterSets": {
+            "uiDefinition": {
+                "displayName": "Authentication Type",
+                "description": "Select how to authenticate with Azure AI Search."
             },
-            "apiKey": {
-                "type": "securestring",
-                "uiDefinition": {
-                    "displayName": "API Key",
-                    "description": "Admin or query API key for your Azure AI Search service",
-                    "tooltip": "Use an admin key for index management or a query key for search-only access",
-                    "constraints": {
-                        "required": "true"
+            "values": [
+                {
+                    "name": "api-key-auth",
+                    "uiDefinition": {
+                        "displayName": "API Key",
+                        "description": "Authenticate using an Azure AI Search admin or query API key."
+                    },
+                    "parameters": {
+                        "apiKey": {
+                            "type": "securestring",
+                            "uiDefinition": {
+                                "displayName": "API Key",
+                                "schema": {
+                                    "description": "Admin or query API key for your Azure AI Search service",
+                                    "type": "securestring"
+                                },
+                                "tooltip": "Use an admin key for index management or a query key for search-only access",
+                                "constraints": {
+                                    "required": "true",
+                                    "clearText": false
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "oauth-entra",
+                    "uiDefinition": {
+                        "displayName": "Microsoft Entra ID (OAuth)",
+                        "description": "Authenticate using Microsoft Entra ID with role-based access control."
+                    },
+                    "parameters": {
+                        "token": {
+                            "type": "oauthSetting",
+                            "oAuthSettings": {
+                                "identityProvider": "aad",
+                                "clientId": "[[REPLACE_WITH_APP_REGISTRATION_CLIENT_ID]]",
+                                "scopes": [
+                                    "https://search.azure.com/.default offline_access"
+                                ],
+                                "redirectMode": "Global",
+                                "redirectUrl": "https://global.consent.azure-apim.net/redirect",
+                                "properties": {
+                                    "IsFirstParty": "False",
+                                    "AzureActiveDirectoryResourceId": "https://search.azure.com"
+                                },
+                                "customParameters": {
+                                    "loginUri": {
+                                        "value": "https://login.microsoftonline.com"
+                                    },
+                                    "tenantId": {
+                                        "value": "common"
+                                    },
+                                    "resourceUri": {
+                                        "value": "https://search.azure.com"
+                                    }
+                                }
+                            }
+                        },
+                        "token:clientId": {
+                            "type": "string",
+                            "uiDefinition": {
+                                "displayName": "Client ID",
+                                "schema": {
+                                    "description": "Application (client) ID from your Entra app registration",
+                                    "type": "string"
+                                },
+                                "tooltip": "Provide the Client ID of your Entra app registration",
+                                "constraints": {
+                                    "required": "true"
+                                }
+                            }
+                        },
+                        "token:clientSecret": {
+                            "type": "securestring",
+                            "uiDefinition": {
+                                "displayName": "Client Secret",
+                                "schema": {
+                                    "description": "Client secret from your Entra app registration",
+                                    "type": "securestring"
+                                },
+                                "tooltip": "Provide the Client Secret of your Entra app registration",
+                                "constraints": {
+                                    "required": "true"
+                                }
+                            }
+                        }
                     }
                 }
-            }
+            ]
         },
         "iconBrandColor": "#0078d4",
         "capabilities": [

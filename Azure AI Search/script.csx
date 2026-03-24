@@ -20,6 +20,8 @@ using Newtonsoft.Json.Linq;
 
 public class Script : ScriptBase
 {
+    // ── Configuration (edit these) ────────────────────────────────────────
+
     private const string APP_INSIGHTS_CONNECTION_STRING = "";
 
     private static readonly McpServerOptions Options = new McpServerOptions
@@ -414,20 +416,18 @@ public class Script : ScriptBase
         var correlationId = Guid.NewGuid().ToString();
         var startTime = DateTime.UtcNow;
 
-        // Set base URL from connection parameter
-        var serviceUrl = GetConnectionParameter("serviceUrl");
-        if (!string.IsNullOrWhiteSpace(serviceUrl))
-            McOptions.BaseApiUrl = serviceUrl.TrimEnd('/');
+        // Derive base URL from the swagger host (set in apiDefinition.swagger.json)
+        var requestUri = this.Context.Request.RequestUri;
+        McOptions.BaseApiUrl = $"{requestUri.Scheme}://{requestUri.Host}";
 
-        // Set API key as custom header for Azure AI Search
-        var apiKey = GetConnectionParameter("apiKey");
-        if (!string.IsNullOrWhiteSpace(apiKey))
-        {
-            McOptions.CustomHeaders = new Dictionary<string, string>
-            {
-                ["api-key"] = apiKey
-            };
-        }
+        // Forward auth headers from inbound request to outbound Azure AI Search calls
+        var customHeaders = new Dictionary<string, string>();
+        if (this.Context.Request.Headers.TryGetValues("api-key", out var apiKeyValues))
+            customHeaders["api-key"] = apiKeyValues.FirstOrDefault() ?? "";
+        if (this.Context.Request.Headers.Authorization != null)
+            customHeaders["Authorization"] = this.Context.Request.Headers.Authorization.ToString();
+        if (customHeaders.Count > 0)
+            McOptions.CustomHeaders = customHeaders;
 
         var handler = new McpRequestHandler(Options);
         MissionControl.RegisterMission(handler, McOptions, CAPABILITY_INDEX, this);
@@ -577,16 +577,6 @@ public class Script : ScriptBase
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
-
-    private string GetConnectionParameter(string name)
-    {
-        try
-        {
-            var raw = this.Context.ConnectionParameters[name]?.ToString();
-            return string.IsNullOrWhiteSpace(raw) ? null : raw;
-        }
-        catch { return null; }
-    }
 
     private async Task LogToAppInsights(string eventName, object properties, string correlationId)
     {
@@ -1778,7 +1768,7 @@ public static class MissionControl
             $"Use include_schema=true to get full input parameter details for a specific operation.";
 
         handler.AddTool($"scan_{serviceName}", scanDescription,
-            schema: s => s
+            schemaConfig: s => s
                 .String("query", "Natural language description of what you want to do (e.g., 'create a customer', 'list orders')", required: true)
                 .String("domain", $"Filter by domain category (optional)", required: false)
                 .Boolean("include_schema", "Set true to include full input parameter schemas in the results (costs more tokens)", required: false),
@@ -1790,7 +1780,7 @@ public static class MissionControl
 
                 return await discovery.DiscoverAsync(context, query, domain, includeSchema).ConfigureAwait(false);
             },
-            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+            annotationsConfig: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
 
         // ── launch_{service} ─────────────────────────────────────────────
 
@@ -1799,7 +1789,7 @@ public static class MissionControl
             $"Replace any {{id}} placeholders in the endpoint with actual values.";
 
         handler.AddTool($"launch_{serviceName}", launchDescription,
-            schema: s => s
+            schemaConfig: s => s
                 .String("endpoint", "API endpoint path (e.g., '/customers', '/orders/123')", required: true)
                 .String("method", "HTTP method", required: true, enumValues: new[] { "GET", "POST", "PATCH", "PUT", "DELETE" })
                 .Object("body", "Request body for POST/PATCH/PUT operations", nested => { }, required: false)
@@ -1823,7 +1813,7 @@ public static class MissionControl
             $"Each request needs an id, endpoint, and method.";
 
         handler.AddTool($"sequence_{serviceName}", batchDescription,
-            schema: s => s
+            schemaConfig: s => s
                 .Array("requests", "Array of API requests to execute",
                     itemSchema: new JObject
                     {
