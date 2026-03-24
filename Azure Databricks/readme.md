@@ -5,44 +5,64 @@ Power Mission Control MCP connector for Azure Databricks. Provides progressive A
 ## Prerequisites
 
 - An Azure Databricks workspace
-- Account admin access to the Databricks account console at `https://accounts.azuredatabricks.net`
+- A Microsoft Entra ID (Azure AD) tenant with permissions to register applications
 - A Power Platform environment with Copilot Studio or Power Automate
 
 ## Security Configuration
 
-This connector uses OAuth 2.0 Authorization Code flow with Databricks native OIDC endpoints (not Azure AD). You must register a custom OAuth application in Databricks as a **confidential client** since Power Platform connectors do not support PKCE.
+This connector uses OAuth 2.0 Authorization Code flow with Microsoft Entra ID to authenticate users against Azure Databricks. The Entra ID token is scoped to the `AzureDatabricks` resource (`2ff814a6-3304-4ab8-85cb-cd0e6f879c1d`) with `user_impersonation` delegation.
 
-### Step 1: Create the Custom Connector
+### Step 1: Register an App in Microsoft Entra ID
 
-1. Import the connector into your Power Platform environment using the PAC CLI or the maker portal.
-2. After creation, go to the connector's **Security** tab.
-3. Copy the **Redirect URL** — this is auto-generated and unique to your connector instance (`GlobalPerConnector` mode).
+1. Sign in to the [Azure Portal](https://portal.azure.com).
+2. Navigate to **Microsoft Entra ID** > **App registrations** > **New registration**.
+3. Configure the application:
+   - **Name**: `Azure Databricks Connector` (or any descriptive name)
+   - **Supported account types**: Accounts in this organizational directory only (Single tenant)
+   - **Redirect URI**: Select **Web** and enter `https://global.consent.azure-apim.net/redirect` (you'll update this after deploying)
+4. Click **Register**.
+5. On the Overview page, copy the **Application (client) ID** and **Directory (tenant) ID**.
 
-### Step 2: Register an OAuth App in Databricks
+### Step 2: Create a Client Secret
 
-1. Sign in to the [Databricks Account Console](https://accounts.azuredatabricks.net).
-2. Navigate to **Settings** > **App connections**.
-3. Click **Add app connection**.
-4. Configure the application:
-   - **Name**: Power Platform Connector (or any descriptive name)
-   - **Redirect URLs**: Paste the redirect URL copied from Step 1
-   - **Access scopes**: Select `all-apis` and `offline_access`
-   - **App type**: Select **Confidential** (this generates a client secret)
-5. Click **Add**.
-6. Copy the **Client ID** and **Client Secret**.
+1. In your app registration, go to **Certificates & secrets** > **New client secret**.
+2. Add a description and select an expiry period.
+3. Click **Add** and copy the **Value** (not the Secret ID).
 
-### Step 3: Get Your Account ID
+### Step 3: Add API Permissions
 
-1. In the Databricks Account Console, click your username in the top bar.
-2. Select **Account settings**.
-3. Copy your **Account ID** (a UUID).
+1. Go to **API permissions** > **Add a permission**.
+2. Select the **APIs my organization uses** tab.
+3. Search for `AzureDatabricks` (or `2ff814a6-3304-4ab8-85cb-cd0e6f879c1d`).
+4. Select **Delegated permissions** > check **user_impersonation**.
+5. Click **Add permissions**.
+6. Click **Add a permission** again > select **Microsoft Graph** > **Delegated permissions**.
+7. Search for and check **offline_access** and **User.Read**.
+8. Click **Add permissions**.
+9. Click **Grant admin consent for [your tenant]**.
 
-### Step 4: Get Your Workspace URL
+Your final API permissions should be:
+
+| API | Permission | Type |
+|---|---|---|
+| AzureDatabricks | user_impersonation | Delegated |
+| Microsoft Graph | offline_access | Delegated |
+| Microsoft Graph | User.Read | Delegated |
+
+### Step 4: Ensure User Has Databricks Workspace Access
+
+The user signing in must be added to the Azure Databricks workspace:
+
+1. Open your Databricks workspace (e.g., `https://adb-XXXXX.azuredatabricks.net`).
+2. Go to **Admin Settings** > **Users**.
+3. Add the user's email if not already present.
+
+### Step 5: Get Your Workspace URL
 
 1. In the Azure portal, navigate to your Azure Databricks workspace resource.
 2. Copy the **Workspace URL** from the overview page (e.g., `adb-1234567890123456.7.azuredatabricks.net`).
 
-### Step 5: Update Connector Files
+### Step 6: Update Connector Files
 
 Before deploying, update the following placeholders in the connector files:
 
@@ -51,14 +71,13 @@ Before deploying, update the following placeholders in the connector files:
 | Placeholder | Replace With | Example |
 |---|---|---|
 | `adb-YOUR_WORKSPACE_ID.azuredatabricks.net` | Your workspace URL | `adb-1234567890123456.7.azuredatabricks.net` |
-| `YOUR_ACCOUNT_ID` (in securityDefinitions) | Your Databricks account ID | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
 
 **apiProperties.json:**
 
-| Placeholder | Replace With | Example |
+| Field | Replace With | Example |
 |---|---|---|
-| `YOUR_CUSTOM_APP_CLIENT_ID` | Client ID from Step 2 | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
-| `YOUR_ACCOUNT_ID` (in URL templates) | Your Databricks account ID | `a1b2c3d4-e5f6-7890-abcd-ef1234567890` |
+| `clientId` | Application (client) ID from Step 1 | `21f7780d-c98e-45f3-bf32-76cd646bbdec` |
+| Tenant ID in auth URLs | Directory (tenant) ID from Step 1 | `fe69ead4-dc67-4951-85c2-a5e6505fec7d` |
 
 **script.csx:**
 
@@ -66,29 +85,29 @@ Before deploying, update the following placeholders in the connector files:
 |---|---|---|
 | `adb-YOUR_WORKSPACE_ID.azuredatabricks.net` (in BaseApiUrl) | Your workspace URL | `adb-1234567890123456.7.azuredatabricks.net` |
 
-The **Client Secret** is entered in the connector's Security tab in the Power Platform maker portal — it is not stored in the connector files.
+### Step 7: Deploy the Connector
 
-### Step 6: Deploy and Test
-
-1. Deploy the updated connector using PAC CLI:
+1. Deploy the connector using PAC CLI:
    ```
-   paconn create --api-def apiDefinition.swagger.json --api-prop apiProperties.json --script script.csx
+   pac connector create --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json --script-file script.csx
    ```
 2. In the maker portal, edit the connector and go to the **Security** tab.
 3. Enter the **Client Secret** from Step 2.
-4. Save and test by creating a new connection — you should be redirected to the Databricks login page.
+4. Copy the **Redirect URL** shown on the Security tab.
+5. Go back to your Entra app registration > **Authentication** > **Web** > add the redirect URL from the previous step.
+6. Save and test by creating a new connection.
 
 ## OAuth Flow Summary
 
 | Component | Value |
 |---|---|
-| Identity provider | `oauth2generic` (Databricks native OIDC) |
-| Authorization endpoint | `https://accounts.azuredatabricks.net/oidc/accounts/{account-id}/v1/authorize` |
-| Token endpoint | `https://accounts.azuredatabricks.net/oidc/accounts/{account-id}/v1/token` |
-| Grant type | Authorization Code (no PKCE) |
-| Client type | Confidential (client_id + client_secret) |
-| Scopes | `all-apis offline_access` |
-| Token lifetime | 1 hour (auto-refreshed via refresh token) |
+| Identity provider | Microsoft Entra ID (OAuth 2.0) |
+| Authorization endpoint | `https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize` |
+| Token endpoint | `https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token` |
+| Grant type | Authorization Code |
+| Resource ID | `2ff814a6-3304-4ab8-85cb-cd0e6f879c1d` (AzureDatabricks) |
+| Scopes | `2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/user_impersonation offline_access` |
+| Token lifetime | ~1 hour (auto-refreshed via refresh token) |
 
 ## How It Works
 
