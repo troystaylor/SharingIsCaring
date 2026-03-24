@@ -1,0 +1,55 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "token": {
+                "type": "oauthSetting",
+                "oAuthSettings": {
+                    "identityProvider": "oauth2generic",
+                    "clientId": "YOUR_CUSTOM_APP_CLIENT_ID",
+                    "scopes": [
+                        "all-apis",
+                        "offline_access"
+                    ],
+                    "redirectMode": "GlobalPerConnector",
+                    "properties": {
+                        "IsFirstParty": "False",
+                        "IsOnbehalfofLoginSupported": false
+                    },
+                    "customParameters": {
+                        "authorizationUrlTemplate": {
+                            "value": "https://accounts.azuredatabricks.net/oidc/accounts/YOUR_ACCOUNT_ID/v1/authorize"
+                        },
+                        "authorizationUrlQueryStringTemplate": {
+                            "value": "client_id={ClientId}&response_type=code&redirect_uri={RedirectUrl}&scope=all-apis+offline_access"
+                        },
+                        "tokenUrlTemplate": {
+                            "value": "https://accounts.azuredatabricks.net/oidc/accounts/YOUR_ACCOUNT_ID/v1/token"
+                        },
+                        "tokenBodyTemplate": {
+                            "value": "grant_type=authorization_code&code={Code}&client_id={ClientId}&client_secret={ClientSecret}&redirect_uri={RedirectUrl}"
+                        },
+                        "refreshUrlTemplate": {
+                            "value": "https://accounts.azuredatabricks.net/oidc/accounts/YOUR_ACCOUNT_ID/v1/token"
+                        },
+                        "refreshBodyTemplate": {
+                            "value": "grant_type=refresh_token&refresh_token={RefreshToken}&client_id={ClientId}&client_secret={ClientSecret}"
+                        }
+                    }
+                },
+                "uiDefinition": {
+                    "displayName": "Databricks OAuth",
+                    "description": "OAuth 2.0 U2M authentication with Azure Databricks"
+                }
+            }
+        },
+        "iconBrandColor": "#da3b01",
+        "capabilities": [
+            "actions"
+        ],
+        "publisher": "Troy Taylor",
+        "stackOwner": "Microsoft",
+        "scriptOperations": [
+            "InvokeMCP"
+        ]
+    }
+}

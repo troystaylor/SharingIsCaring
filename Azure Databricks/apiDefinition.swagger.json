@@ -1,0 +1,73 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Azure Databricks",
+        "description": "Power Mission Control MCP server for Azure Databricks. Progressive API discovery with scan, launch, and sequence tools for managing clusters, jobs, SQL warehouses, notebooks, Unity Catalog, and more via Databricks REST API.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "adb-YOUR_WORKSPACE_ID.azuredatabricks.net",
+    "basePath": "/mcp",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "summary": "Invoke Azure Databricks MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Azure Databricks REST API operations via JSON-RPC 2.0 with progressive discovery through scan, launch, and sequence tools.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://accounts.azuredatabricks.net/oidc/accounts/YOUR_ACCOUNT_ID/v1/authorize",
+            "tokenUrl": "https://accounts.azuredatabricks.net/oidc/accounts/YOUR_ACCOUNT_ID/v1/token",
+            "scopes": {
+                "all-apis offline_access": "Access all Databricks APIs with refresh token support"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "all-apis offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://azure.microsoft.com/products/databricks"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Data;AI"
+        }
+    ]
+}
