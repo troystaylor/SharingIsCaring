@@ -413,6 +413,13 @@ public class Script : ScriptBase
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
+        // REST operations (non-MCP) pass through directly to Azure AI Search
+        if (this.Context.OperationId != "InvokeMCP")
+        {
+            return await this.Context.SendAsync(this.Context.Request, this.CancellationToken).ConfigureAwait(false);
+        }
+
+        // MCP handler (InvokeMCP) — Copilot Studio
         var correlationId = Guid.NewGuid().ToString();
         var startTime = DateTime.UtcNow;
 

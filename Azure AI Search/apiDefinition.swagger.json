@@ -10,7 +10,7 @@
         }
     },
     "host": "your-service.search.windows.net",
-    "basePath": "/mcp",
+    "basePath": "/",
     "schemes": [
         "https"
     ],
@@ -21,7 +21,7 @@
         "application/json"
     ],
     "paths": {
-        "/": {
+        "/mcp": {
             "post": {
                 "summary": "Invoke Azure AI Search MCP",
                 "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Azure AI Search operations via JSON-RPC 2.0 with progressive discovery through scan, launch, and sequence tools.",
@@ -33,9 +33,1205 @@
                     }
                 }
             }
+        },
+        "/indexes": {
+            "get": {
+                "operationId": "ListIndexes",
+                "summary": "List Indexes",
+                "description": "List all search indexes in the service.",
+                "tags": ["Indexes"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Comma-separated list of fields to include",
+                        "x-ms-summary": "Select Fields",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Index list",
+                        "schema": { "$ref": "#/definitions/IndexListResponse" }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateIndex",
+                "summary": "Create Index",
+                "description": "Create a new search index with fields, analyzers, and scoring profiles.",
+                "tags": ["Indexes"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "fields"],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Index name",
+                                    "x-ms-summary": "Index Name"
+                                },
+                                "fields": {
+                                    "type": "array",
+                                    "description": "Field definitions for the index",
+                                    "x-ms-summary": "Fields",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": { "type": "string", "description": "Field name" },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Field data type",
+                                                "enum": ["Edm.String", "Edm.Int32", "Edm.Int64", "Edm.Double", "Edm.Boolean", "Edm.DateTimeOffset", "Edm.GeographyPoint", "Collection(Edm.String)", "Collection(Edm.Single)"]
+                                            },
+                                            "searchable": { "type": "boolean" },
+                                            "filterable": { "type": "boolean" },
+                                            "sortable": { "type": "boolean" },
+                                            "facetable": { "type": "boolean" },
+                                            "key": { "type": "boolean" },
+                                            "retrievable": { "type": "boolean" },
+                                            "analyzer": { "type": "string" }
+                                        }
+                                    }
+                                },
+                                "semantic": {
+                                    "type": "object",
+                                    "description": "Semantic search configuration",
+                                    "x-ms-summary": "Semantic Config",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "suggesters": {
+                                    "type": "array",
+                                    "description": "Suggester definitions",
+                                    "x-ms-summary": "Suggesters",
+                                    "x-ms-visibility": "advanced",
+                                    "items": { "type": "object" }
+                                },
+                                "scoringProfiles": {
+                                    "type": "array",
+                                    "description": "Scoring profiles for relevance tuning",
+                                    "x-ms-summary": "Scoring Profiles",
+                                    "x-ms-visibility": "advanced",
+                                    "items": { "type": "object" }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Index created",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}": {
+            "get": {
+                "operationId": "GetIndex",
+                "summary": "Get Index",
+                "description": "Get the definition of a specific search index including its fields and configuration.",
+                "tags": ["Indexes"],
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Index definition",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateIndex",
+                "summary": "Update Index",
+                "description": "Update an existing search index definition.",
+                "tags": ["Indexes"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index to update",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "fields"],
+                            "properties": {
+                                "name": { "type": "string", "x-ms-summary": "Index Name" },
+                                "fields": { "type": "array", "x-ms-summary": "Fields", "items": { "type": "object" } }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Index updated",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteIndex",
+                "summary": "Delete Index",
+                "description": "Delete a search index and all its documents permanently.",
+                "tags": ["Indexes"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index to delete",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "204": { "description": "Index deleted" }
+                }
+            }
+        },
+        "/indexes/{indexName}/stats": {
+            "get": {
+                "operationId": "GetIndexStatistics",
+                "summary": "Get Index Statistics",
+                "description": "Get document count and storage size for a specific index.",
+                "tags": ["Indexes"],
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Index statistics",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "documentCount": { "type": "integer", "format": "int64", "x-ms-summary": "Document Count" },
+                                "storageSize": { "type": "integer", "format": "int64", "x-ms-summary": "Storage Size (bytes)" },
+                                "vectorIndexSize": { "type": "integer", "format": "int64", "x-ms-summary": "Vector Index Size (bytes)" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/analyze": {
+            "post": {
+                "operationId": "AnalyzeText",
+                "summary": "Analyze Text",
+                "description": "Analyze how a specific analyzer breaks text into tokens for debugging search behavior.",
+                "tags": ["Indexes"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["text", "analyzer"],
+                            "properties": {
+                                "text": { "type": "string", "description": "Text to analyze", "x-ms-summary": "Text" },
+                                "analyzer": { "type": "string", "description": "Analyzer name (e.g., standard.lucene, en.microsoft)", "x-ms-summary": "Analyzer" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analysis result",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/docs/search": {
+            "post": {
+                "operationId": "SearchDocuments",
+                "summary": "Search Documents",
+                "description": "Search for documents in an index using full-text search, filters, facets, and semantic ranking.",
+                "tags": ["Search"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index to search",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "search": { "type": "string", "description": "Full-text search query (use * for all documents)", "x-ms-summary": "Search Query" },
+                                "filter": { "type": "string", "description": "OData filter expression", "x-ms-summary": "Filter" },
+                                "orderby": { "type": "string", "description": "Comma-separated list of fields to sort by", "x-ms-summary": "Order By", "x-ms-visibility": "advanced" },
+                                "select": { "type": "string", "description": "Comma-separated fields to return", "x-ms-summary": "Select Fields" },
+                                "top": { "type": "integer", "description": "Maximum number of results to return", "x-ms-summary": "Top" },
+                                "skip": { "type": "integer", "description": "Number of results to skip for paging", "x-ms-summary": "Skip", "x-ms-visibility": "advanced" },
+                                "count": { "type": "boolean", "description": "Include total result count", "x-ms-summary": "Include Count", "x-ms-visibility": "advanced" },
+                                "searchFields": { "type": "string", "description": "Comma-separated fields to search in", "x-ms-summary": "Search Fields", "x-ms-visibility": "advanced" },
+                                "queryType": {
+                                    "type": "string",
+                                    "description": "Query syntax type",
+                                    "x-ms-summary": "Query Type",
+                                    "enum": ["simple", "full", "semantic"],
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "searchMode": {
+                                    "type": "string",
+                                    "description": "Search mode for multiple terms",
+                                    "x-ms-summary": "Search Mode",
+                                    "enum": ["any", "all"],
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "semanticConfiguration": { "type": "string", "description": "Semantic configuration name for semantic search", "x-ms-summary": "Semantic Config", "x-ms-visibility": "advanced" },
+                                "answers": { "type": "string", "description": "Extractive answers setting (e.g., extractive|count-3)", "x-ms-summary": "Answers", "x-ms-visibility": "advanced" },
+                                "captions": { "type": "string", "description": "Captions setting for semantic search", "x-ms-summary": "Captions", "x-ms-visibility": "advanced" },
+                                "highlight": { "type": "string", "description": "Comma-separated fields for hit highlighting", "x-ms-summary": "Highlight Fields", "x-ms-visibility": "advanced" },
+                                "scoringProfile": { "type": "string", "description": "Scoring profile name", "x-ms-summary": "Scoring Profile", "x-ms-visibility": "advanced" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": { "$ref": "#/definitions/SearchResultResponse" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/docs/{key}": {
+            "get": {
+                "operationId": "GetDocument",
+                "summary": "Get Document",
+                "description": "Retrieve a specific document from an index by its key.",
+                "tags": ["Search"],
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Document key value",
+                        "x-ms-summary": "Document Key",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Comma-separated fields to return",
+                        "x-ms-summary": "Select Fields",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Document",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/docs/$count": {
+            "get": {
+                "operationId": "CountDocuments",
+                "summary": "Count Documents",
+                "description": "Get the total number of documents in an index.",
+                "tags": ["Search"],
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Document count",
+                        "schema": { "type": "integer", "format": "int64" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/docs/index": {
+            "post": {
+                "operationId": "IndexDocuments",
+                "summary": "Index Documents",
+                "description": "Upload, merge, or delete documents in an index using a batch of actions.",
+                "tags": ["Documents"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["value"],
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "description": "Array of document actions. Each must include @search.action (upload, merge, mergeOrUpload, delete) and document fields.",
+                                    "x-ms-summary": "Document Actions",
+                                    "items": { "type": "object" }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Indexing results",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/docs/autocomplete": {
+            "post": {
+                "operationId": "Autocomplete",
+                "summary": "Autocomplete",
+                "description": "Get autocomplete suggestions for partial query text based on index content.",
+                "tags": ["Search"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["search", "suggesterName"],
+                            "properties": {
+                                "search": { "type": "string", "description": "Partial search text", "x-ms-summary": "Search Text" },
+                                "suggesterName": { "type": "string", "description": "Suggester name defined in the index", "x-ms-summary": "Suggester Name" },
+                                "autocompleteMode": {
+                                    "type": "string",
+                                    "description": "Autocomplete mode",
+                                    "x-ms-summary": "Mode",
+                                    "enum": ["oneTerm", "twoTerms", "oneTermWithContext"],
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "filter": { "type": "string", "description": "OData filter", "x-ms-summary": "Filter", "x-ms-visibility": "advanced" },
+                                "top": { "type": "integer", "description": "Max suggestions", "x-ms-summary": "Top", "x-ms-visibility": "advanced" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Autocomplete suggestions",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexes/{indexName}/docs/suggest": {
+            "post": {
+                "operationId": "Suggest",
+                "summary": "Suggest",
+                "description": "Get document suggestions matching partial query text for type-ahead experiences.",
+                "tags": ["Search"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "indexName",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "Name of the index",
+                        "x-ms-summary": "Index Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["search", "suggesterName"],
+                            "properties": {
+                                "search": { "type": "string", "description": "Partial search text", "x-ms-summary": "Search Text" },
+                                "suggesterName": { "type": "string", "description": "Suggester name", "x-ms-summary": "Suggester Name" },
+                                "filter": { "type": "string", "description": "OData filter", "x-ms-summary": "Filter", "x-ms-visibility": "advanced" },
+                                "select": { "type": "string", "description": "Fields to return", "x-ms-summary": "Select", "x-ms-visibility": "advanced" },
+                                "top": { "type": "integer", "description": "Max suggestions", "x-ms-summary": "Top", "x-ms-visibility": "advanced" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Suggestions",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexers": {
+            "get": {
+                "operationId": "ListIndexers",
+                "summary": "List Indexers",
+                "description": "List all indexers configured in the search service.",
+                "tags": ["Indexers"],
+                "parameters": [
+                    {
+                        "name": "$select",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Fields to include",
+                        "x-ms-summary": "Select Fields",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Indexer list",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateIndexer",
+                "summary": "Create Indexer",
+                "description": "Create a new indexer to automatically pull data from a data source into an index.",
+                "tags": ["Indexers"],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "type": "string",
+                        "required": true,
+                        "default": "2025-05-01-preview",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "API Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "dataSourceName", "targetIndexName"],
+                            "properties": {
+                                "name": { "type": "string", "description": "Indexer name", "x-ms-summary": "Indexer Name" },
+                                "dataSourceName": { "type": "string", "description": "Data source to pull from", "x-ms-summary": "Data Source Name" },
+                                "targetIndexName": { "type": "string", "description": "Target index for documents", "x-ms-summary": "Target Index" },
+                                "skillsetName": { "type": "string", "description": "Skillset for AI enrichment", "x-ms-summary": "Skillset", "x-ms-visibility": "advanced" },
+                                "schedule": {
+                                    "type": "object",
+                                    "description": "Run schedule",
+                                    "x-ms-summary": "Schedule",
+                                    "x-ms-visibility": "advanced",
+                                    "properties": {
+                                        "interval": { "type": "string", "description": "ISO 8601 duration (e.g., PT5M, PT1H, P1D)" },
+                                        "startTime": { "type": "string", "format": "date-time" }
+                                    }
+                                },
+                                "fieldMappings": { "type": "array", "description": "Source-to-index field mappings", "x-ms-summary": "Field Mappings", "x-ms-visibility": "advanced", "items": { "type": "object" } },
+                                "outputFieldMappings": { "type": "array", "description": "Skillset output-to-index field mappings", "x-ms-summary": "Output Field Mappings", "x-ms-visibility": "advanced", "items": { "type": "object" } }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Indexer created",
+                        "schema": { "$ref": "#/definitions/SearchResponse" }
+                    }
+                }
+            }
+        },
+        "/indexers/{indexerName}": {
+            "get": {
+                "operationId": "GetIndexer",
+                "summary": "Get Indexer",
+                "description": "Get the definition of a specific indexer.",
+                "tags": ["Indexers"],
+                "parameters": [
+                    { "name": "indexerName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Indexer Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Indexer definition", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "put": {
+                "operationId": "UpdateIndexer",
+                "summary": "Update Indexer",
+                "description": "Update an existing indexer configuration.",
+                "tags": ["Indexers"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "indexerName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Indexer Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "dataSourceName", "targetIndexName"],
+                            "properties": {
+                                "name": { "type": "string", "x-ms-summary": "Indexer Name" },
+                                "dataSourceName": { "type": "string", "x-ms-summary": "Data Source" },
+                                "targetIndexName": { "type": "string", "x-ms-summary": "Target Index" },
+                                "skillsetName": { "type": "string", "x-ms-summary": "Skillset", "x-ms-visibility": "advanced" },
+                                "schedule": { "type": "object", "x-ms-summary": "Schedule", "x-ms-visibility": "advanced" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Indexer updated", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteIndexer",
+                "summary": "Delete Indexer",
+                "description": "Delete an indexer from the search service.",
+                "tags": ["Indexers"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "indexerName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Indexer Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "204": { "description": "Indexer deleted" }
+                }
+            }
+        },
+        "/indexers/{indexerName}/run": {
+            "post": {
+                "operationId": "RunIndexer",
+                "summary": "Run Indexer",
+                "description": "Trigger an indexer to run immediately and import data from its data source.",
+                "tags": ["Indexers"],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "indexerName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Indexer Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "202": { "description": "Indexer run accepted" }
+                }
+            }
+        },
+        "/indexers/{indexerName}/status": {
+            "get": {
+                "operationId": "GetIndexerStatus",
+                "summary": "Get Indexer Status",
+                "description": "Get the current status and execution history of an indexer.",
+                "tags": ["Indexers"],
+                "parameters": [
+                    { "name": "indexerName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Indexer Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Indexer status", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            }
+        },
+        "/indexers/{indexerName}/reset": {
+            "post": {
+                "operationId": "ResetIndexer",
+                "summary": "Reset Indexer",
+                "description": "Reset an indexer so its next run reprocesses all documents from scratch.",
+                "tags": ["Indexers"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "indexerName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Indexer Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "204": { "description": "Indexer reset" }
+                }
+            }
+        },
+        "/datasources": {
+            "get": {
+                "operationId": "ListDataSources",
+                "summary": "List Data Sources",
+                "description": "List all data source connections configured in the search service.",
+                "tags": ["Data Sources"],
+                "parameters": [
+                    { "name": "$select", "in": "query", "type": "string", "required": false, "x-ms-summary": "Select Fields", "x-ms-visibility": "advanced" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Data source list", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "post": {
+                "operationId": "CreateDataSource",
+                "summary": "Create Data Source",
+                "description": "Create a new data source connection for indexers to pull data from.",
+                "tags": ["Data Sources"],
+                "parameters": [
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "type", "credentials", "container"],
+                            "properties": {
+                                "name": { "type": "string", "description": "Data source name", "x-ms-summary": "Data Source Name" },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Data source type",
+                                    "x-ms-summary": "Type",
+                                    "enum": ["azuresql", "cosmosdb", "azureblob", "azuretable", "adlsgen2", "sharepoint"]
+                                },
+                                "credentials": {
+                                    "type": "object",
+                                    "description": "Connection credentials",
+                                    "x-ms-summary": "Credentials",
+                                    "properties": {
+                                        "connectionString": { "type": "string", "description": "Connection string" }
+                                    }
+                                },
+                                "container": {
+                                    "type": "object",
+                                    "description": "Data container",
+                                    "x-ms-summary": "Container",
+                                    "properties": {
+                                        "name": { "type": "string", "description": "Table, collection, or container name" },
+                                        "query": { "type": "string", "description": "Optional query to filter data" }
+                                    }
+                                },
+                                "description": { "type": "string", "description": "Description", "x-ms-summary": "Description", "x-ms-visibility": "advanced" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": { "description": "Data source created", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            }
+        },
+        "/datasources/{dataSourceName}": {
+            "get": {
+                "operationId": "GetDataSource",
+                "summary": "Get Data Source",
+                "description": "Get the definition of a specific data source connection.",
+                "tags": ["Data Sources"],
+                "parameters": [
+                    { "name": "dataSourceName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Data Source Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Data source definition", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "put": {
+                "operationId": "UpdateDataSource",
+                "summary": "Update Data Source",
+                "description": "Update an existing data source connection.",
+                "tags": ["Data Sources"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "dataSourceName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Data Source Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "type", "credentials", "container"],
+                            "properties": {
+                                "name": { "type": "string", "x-ms-summary": "Data Source Name" },
+                                "type": { "type": "string", "x-ms-summary": "Type", "enum": ["azuresql", "cosmosdb", "azureblob", "azuretable", "adlsgen2", "sharepoint"] },
+                                "credentials": { "type": "object", "x-ms-summary": "Credentials", "properties": { "connectionString": { "type": "string" } } },
+                                "container": { "type": "object", "x-ms-summary": "Container", "properties": { "name": { "type": "string" }, "query": { "type": "string" } } }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Data source updated", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteDataSource",
+                "summary": "Delete Data Source",
+                "description": "Delete a data source connection.",
+                "tags": ["Data Sources"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "dataSourceName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Data Source Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "204": { "description": "Data source deleted" }
+                }
+            }
+        },
+        "/skillsets": {
+            "get": {
+                "operationId": "ListSkillsets",
+                "summary": "List Skillsets",
+                "description": "List all AI enrichment skillsets in the search service.",
+                "tags": ["Skillsets"],
+                "parameters": [
+                    { "name": "$select", "in": "query", "type": "string", "required": false, "x-ms-summary": "Select Fields", "x-ms-visibility": "advanced" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Skillset list", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "post": {
+                "operationId": "CreateSkillset",
+                "summary": "Create Skillset",
+                "description": "Create a new AI enrichment skillset with cognitive skills for document processing.",
+                "tags": ["Skillsets"],
+                "parameters": [
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "skills"],
+                            "properties": {
+                                "name": { "type": "string", "description": "Skillset name", "x-ms-summary": "Skillset Name" },
+                                "description": { "type": "string", "description": "Description", "x-ms-summary": "Description", "x-ms-visibility": "advanced" },
+                                "skills": { "type": "array", "description": "Array of cognitive skill definitions", "x-ms-summary": "Skills", "items": { "type": "object" } },
+                                "cognitiveServices": { "type": "object", "description": "Cognitive Services key for billable skills", "x-ms-summary": "Cognitive Services", "x-ms-visibility": "advanced" },
+                                "knowledgeStore": { "type": "object", "description": "Knowledge store projection configuration", "x-ms-summary": "Knowledge Store", "x-ms-visibility": "advanced" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": { "description": "Skillset created", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            }
+        },
+        "/skillsets/{skillsetName}": {
+            "get": {
+                "operationId": "GetSkillset",
+                "summary": "Get Skillset",
+                "description": "Get the definition of a specific AI enrichment skillset.",
+                "tags": ["Skillsets"],
+                "parameters": [
+                    { "name": "skillsetName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Skillset Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Skillset definition", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "put": {
+                "operationId": "UpdateSkillset",
+                "summary": "Update Skillset",
+                "description": "Update an existing AI enrichment skillset.",
+                "tags": ["Skillsets"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "skillsetName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Skillset Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "skills"],
+                            "properties": {
+                                "name": { "type": "string", "x-ms-summary": "Skillset Name" },
+                                "skills": { "type": "array", "x-ms-summary": "Skills", "items": { "type": "object" } }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Skillset updated", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteSkillset",
+                "summary": "Delete Skillset",
+                "description": "Delete an AI enrichment skillset.",
+                "tags": ["Skillsets"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "skillsetName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Skillset Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "204": { "description": "Skillset deleted" }
+                }
+            }
+        },
+        "/synonymmaps": {
+            "get": {
+                "operationId": "ListSynonymMaps",
+                "summary": "List Synonym Maps",
+                "description": "List all synonym maps in the search service.",
+                "tags": ["Synonym Maps"],
+                "parameters": [
+                    { "name": "$select", "in": "query", "type": "string", "required": false, "x-ms-summary": "Select Fields", "x-ms-visibility": "advanced" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Synonym map list", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "post": {
+                "operationId": "CreateSynonymMap",
+                "summary": "Create Synonym Map",
+                "description": "Create a new synonym map to expand or replace search terms during query processing.",
+                "tags": ["Synonym Maps"],
+                "parameters": [
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "synonyms"],
+                            "properties": {
+                                "name": { "type": "string", "description": "Synonym map name", "x-ms-summary": "Synonym Map Name" },
+                                "format": { "type": "string", "description": "Format (always solr)", "default": "solr", "x-ms-summary": "Format", "x-ms-visibility": "internal" },
+                                "synonyms": { "type": "string", "description": "Synonym rules in Solr format, one rule per line", "x-ms-summary": "Synonym Rules" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": { "description": "Synonym map created", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            }
+        },
+        "/synonymmaps/{synonymMapName}": {
+            "get": {
+                "operationId": "GetSynonymMap",
+                "summary": "Get Synonym Map",
+                "description": "Get the definition of a specific synonym map including its rules.",
+                "tags": ["Synonym Maps"],
+                "parameters": [
+                    { "name": "synonymMapName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Synonym Map Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Synonym map definition", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "put": {
+                "operationId": "UpdateSynonymMap",
+                "summary": "Update Synonym Map",
+                "description": "Update an existing synonym map with new synonym rules.",
+                "tags": ["Synonym Maps"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "synonymMapName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Synonym Map Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "synonyms"],
+                            "properties": {
+                                "name": { "type": "string", "x-ms-summary": "Synonym Map Name" },
+                                "format": { "type": "string", "default": "solr", "x-ms-visibility": "internal" },
+                                "synonyms": { "type": "string", "x-ms-summary": "Synonym Rules" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Synonym map updated", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteSynonymMap",
+                "summary": "Delete Synonym Map",
+                "description": "Delete a synonym map from the search service.",
+                "tags": ["Synonym Maps"],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    { "name": "synonymMapName", "in": "path", "type": "string", "required": true, "x-ms-summary": "Synonym Map Name", "x-ms-url-encoding": "single" },
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "204": { "description": "Synonym map deleted" }
+                }
+            }
+        },
+        "/servicestats": {
+            "get": {
+                "operationId": "GetServiceStatistics",
+                "summary": "Get Service Statistics",
+                "description": "Get service-level statistics including document counts, storage usage, and resource counters.",
+                "tags": ["Admin"],
+                "parameters": [
+                    { "name": "api-version", "in": "query", "type": "string", "required": true, "default": "2025-05-01-preview", "x-ms-visibility": "internal", "x-ms-summary": "API Version" }
+                ],
+                "responses": {
+                    "200": { "description": "Service statistics", "schema": { "$ref": "#/definitions/SearchResponse" } }
+                }
+            }
         }
     },
-    "definitions": {},
+    "definitions": {
+        "SearchResponse": {
+            "type": "object",
+            "description": "Generic Azure AI Search API response"
+        },
+        "IndexListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "Array of index definitions",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": { "type": "string", "description": "Index name", "x-ms-summary": "Name" },
+                            "fields": { "type": "array", "description": "Index fields", "items": { "type": "object" } }
+                        }
+                    }
+                }
+            }
+        },
+        "SearchResultResponse": {
+            "type": "object",
+            "properties": {
+                "@odata.count": { "type": "integer", "format": "int64", "description": "Total matching documents", "x-ms-summary": "Total Count" },
+                "value": {
+                    "type": "array",
+                    "description": "Array of matching documents",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "@search.score": { "type": "number", "description": "Relevance score", "x-ms-summary": "Score" }
+                        }
+                    }
+                },
+                "@search.nextPageParameters": { "type": "object", "description": "Parameters for next page" },
+                "@odata.nextLink": { "type": "string", "description": "URL for next page of results" }
+            }
+        }
+    },
     "parameters": {},
     "responses": {},
     "securityDefinitions": {
