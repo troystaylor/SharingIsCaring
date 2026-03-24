@@ -1,0 +1,550 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Slack",
+        "description": "Power Mission Control MCP server for Slack. Provides progressive API discovery with scan, launch, and sequence tools plus high-value typed tools for messaging, channels, users, search, reactions, and files.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "slack.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Slack MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Slack API operations via JSON-RPC 2.0 with progressive discovery through scan, launch, and sequence tools plus typed tools for common messaging operations.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/api/chat.postMessage": {
+            "post": {
+                "operationId": "SendMessage",
+                "summary": "Send Message",
+                "description": "Send a message to a Slack channel, DM, or group conversation.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["channel", "text"],
+                            "properties": {
+                                "channel": {
+                                    "type": "string",
+                                    "description": "Channel ID, DM ID, or conversation ID",
+                                    "x-ms-summary": "Channel"
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "Message text (supports Slack mrkdwn formatting)",
+                                    "x-ms-summary": "Message Text"
+                                },
+                                "thread_ts": {
+                                    "type": "string",
+                                    "description": "Timestamp of parent message to reply in a thread",
+                                    "x-ms-summary": "Thread Timestamp",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "reply_broadcast": {
+                                    "type": "boolean",
+                                    "description": "Also post to channel when replying in a thread",
+                                    "x-ms-summary": "Reply Broadcast",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "unfurl_links": {
+                                    "type": "boolean",
+                                    "description": "Enable link previews",
+                                    "x-ms-summary": "Unfurl Links",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message sent",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/search.messages": {
+            "post": {
+                "operationId": "SearchMessages",
+                "summary": "Search Messages",
+                "description": "Search for messages across the Slack workspace.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["query"],
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "Search query text",
+                                    "x-ms-summary": "Query"
+                                },
+                                "count": {
+                                    "type": "integer",
+                                    "description": "Number of results per page (default 20)",
+                                    "x-ms-summary": "Count",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "sort": {
+                                    "type": "string",
+                                    "description": "Sort by score or timestamp",
+                                    "x-ms-summary": "Sort By",
+                                    "enum": ["score", "timestamp"],
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "sort_dir": {
+                                    "type": "string",
+                                    "description": "Sort direction",
+                                    "x-ms-summary": "Sort Direction",
+                                    "enum": ["asc", "desc"],
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/conversations.list": {
+            "post": {
+                "operationId": "ListChannels",
+                "summary": "List Channels",
+                "description": "List channels in the Slack workspace.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "exclude_archived": {
+                                    "type": "boolean",
+                                    "description": "Exclude archived channels (default true)",
+                                    "x-ms-summary": "Exclude Archived"
+                                },
+                                "types": {
+                                    "type": "string",
+                                    "description": "Comma-separated: public_channel, private_channel, mpim, im",
+                                    "x-ms-summary": "Channel Types",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "description": "Maximum channels to return (default 100, max 1000)",
+                                    "x-ms-summary": "Limit",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Pagination cursor for next page",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Channel list",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/conversations.history": {
+            "post": {
+                "operationId": "GetChannelHistory",
+                "summary": "Get Channel History",
+                "description": "Get recent messages from a Slack channel or conversation.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["channel"],
+                            "properties": {
+                                "channel": {
+                                    "type": "string",
+                                    "description": "Channel ID to get history from",
+                                    "x-ms-summary": "Channel"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "description": "Number of messages to return (default 25, max 1000)",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "oldest": {
+                                    "type": "string",
+                                    "description": "Start of time range (Unix timestamp)",
+                                    "x-ms-summary": "Oldest",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "latest": {
+                                    "type": "string",
+                                    "description": "End of time range (Unix timestamp)",
+                                    "x-ms-summary": "Latest",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Pagination cursor for next page",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Channel messages",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users.info": {
+            "post": {
+                "operationId": "GetUserInfo",
+                "summary": "Get User Info",
+                "description": "Get detailed profile information about a Slack user.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["user"],
+                            "properties": {
+                                "user": {
+                                    "type": "string",
+                                    "description": "User ID (e.g., U0123456789)",
+                                    "x-ms-summary": "User ID"
+                                },
+                                "include_locale": {
+                                    "type": "boolean",
+                                    "description": "Include locale information",
+                                    "x-ms-summary": "Include Locale",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users.list": {
+            "post": {
+                "operationId": "ListUsers",
+                "summary": "List Users",
+                "description": "List all users in the Slack workspace.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "limit": {
+                                    "type": "integer",
+                                    "description": "Maximum users to return (default 100)",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "cursor": {
+                                    "type": "string",
+                                    "description": "Pagination cursor for next page",
+                                    "x-ms-summary": "Cursor",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "include_locale": {
+                                    "type": "boolean",
+                                    "description": "Include locale information",
+                                    "x-ms-summary": "Include Locale",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User list",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reactions.add": {
+            "post": {
+                "operationId": "AddReaction",
+                "summary": "Add Reaction",
+                "description": "Add an emoji reaction to a message.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["channel", "name", "timestamp"],
+                            "properties": {
+                                "channel": {
+                                    "type": "string",
+                                    "description": "Channel ID containing the message",
+                                    "x-ms-summary": "Channel"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Emoji name without colons (e.g., thumbsup, heart, rocket)",
+                                    "x-ms-summary": "Emoji Name"
+                                },
+                                "timestamp": {
+                                    "type": "string",
+                                    "description": "Timestamp of the message to react to",
+                                    "x-ms-summary": "Message Timestamp"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reaction added",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/files.upload": {
+            "post": {
+                "operationId": "UploadFile",
+                "summary": "Upload File",
+                "description": "Upload a text-based file to Slack and optionally share it to channels.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["content"],
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "description": "File content as text",
+                                    "x-ms-summary": "Content"
+                                },
+                                "filename": {
+                                    "type": "string",
+                                    "description": "Name for the file (e.g., report.txt)",
+                                    "x-ms-summary": "Filename"
+                                },
+                                "filetype": {
+                                    "type": "string",
+                                    "description": "File type (e.g., text, javascript, python, csv, json)",
+                                    "x-ms-summary": "File Type",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Title for the file",
+                                    "x-ms-summary": "Title"
+                                },
+                                "channels": {
+                                    "type": "string",
+                                    "description": "Comma-separated channel IDs to share the file to",
+                                    "x-ms-summary": "Channels"
+                                },
+                                "initial_comment": {
+                                    "type": "string",
+                                    "description": "Message text to accompany the file",
+                                    "x-ms-summary": "Comment",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File uploaded",
+                        "schema": {
+                            "$ref": "#/definitions/SlackResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "SlackResponse": {
+            "type": "object",
+            "properties": {
+                "ok": {
+                    "type": "boolean",
+                    "description": "Whether the API call was successful",
+                    "x-ms-summary": "OK"
+                },
+                "success": {
+                    "type": "boolean",
+                    "description": "Success indicator",
+                    "x-ms-summary": "Success"
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error code if the call failed",
+                    "x-ms-summary": "Error"
+                },
+                "friendlyMessage": {
+                    "type": "string",
+                    "description": "Human-readable error description",
+                    "x-ms-summary": "Error Message"
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://slack.com/oauth/v2/authorize",
+            "tokenUrl": "https://slack.com/api/oauth.v2.access",
+            "scopes": {
+                "channels:read": "View basic information about public channels in a workspace",
+                "channels:history": "View messages and other content in public channels",
+                "channels:write": "Manage public channels and create new ones",
+                "chat:write": "Send messages as the user",
+                "users:read": "View people in a workspace",
+                "users:read.email": "View email addresses of people in a workspace",
+                "users.profile:read": "View profile details about people in a workspace",
+                "files:read": "View files shared in channels and conversations",
+                "files:write": "Upload, edit, and delete files",
+                "reactions:read": "View emoji reactions in channels and conversations",
+                "reactions:write": "Add and edit emoji reactions",
+                "pins:read": "View pinned content in channels and conversations",
+                "pins:write": "Add and remove pinned messages and files",
+                "search:read": "Search a workspace's content",
+                "groups:read": "View basic information about private channels",
+                "groups:history": "View messages in private channels",
+                "im:read": "View basic information about direct messages",
+                "im:history": "View messages in direct messages",
+                "mpim:read": "View basic information about group direct messages",
+                "mpim:history": "View messages in group direct messages",
+                "reminders:read": "View reminders",
+                "reminders:write": "Create and manage reminders",
+                "bookmarks:read": "View bookmarks in channels",
+                "bookmarks:write": "Add and remove bookmarks in channels",
+                "usergroups:read": "View user groups",
+                "usergroups:write": "Create and manage user groups",
+                "emoji:read": "View custom emoji",
+                "dnd:read": "View Do Not Disturb status",
+                "dnd:write": "Set Do Not Disturb status",
+                "team:read": "View workspace information"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "channels:read",
+                "channels:history",
+                "channels:write",
+                "chat:write",
+                "users:read",
+                "users:read.email",
+                "users.profile:read",
+                "files:read",
+                "files:write",
+                "reactions:read",
+                "reactions:write",
+                "pins:read",
+                "pins:write",
+                "search:read",
+                "groups:read",
+                "groups:history",
+                "im:read",
+                "im:history",
+                "mpim:read",
+                "mpim:history",
+                "reminders:read",
+                "reminders:write",
+                "bookmarks:read",
+                "bookmarks:write",
+                "usergroups:read",
+                "usergroups:write",
+                "emoji:read",
+                "dnd:read",
+                "dnd:write",
+                "team:read"
+            ]
+        }
+    ]
+}
