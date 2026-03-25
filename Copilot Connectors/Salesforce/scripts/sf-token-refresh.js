@@ -131,7 +131,7 @@ function main() {
       `?response_type=code`,
       `&client_id=${encodeURIComponent(env.SF_CLIENT_ID)}`,
       `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`,
-      `&scope=full+refresh_token`,
+      `&scope=api+refresh_token`,
     ].join("");
 
     console.log(`\nListening on http://localhost:${PORT}/callback`);
