@@ -28,6 +28,18 @@ function readEnvFile() {
       vars[trimmed.substring(0, eqIndex)] = trimmed.substring(eqIndex + 1);
     }
   }
+
+  // Normalize SF_INSTANCE_URL so users can store just the instance name
+  if (vars.SF_INSTANCE_URL) {
+    let url = vars.SF_INSTANCE_URL.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = /\.salesforce\.com$/i.test(url)
+        ? `https://${url}`
+        : `https://${url}.my.salesforce.com`;
+    }
+    vars.SF_INSTANCE_URL = url.replace(/\/+$/, "");
+  }
+
   return vars;
 }
 

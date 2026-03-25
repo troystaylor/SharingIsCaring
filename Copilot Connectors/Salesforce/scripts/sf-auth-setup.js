@@ -11,7 +11,7 @@
  *   - A Salesforce Connected App with OAuth enabled
  *
  * Usage:
- *   node scripts/sf-auth-setup.js --instance-url https://yourorg.my.salesforce.com --client-id YOUR_CLIENT_ID
+ *   node scripts/sf-auth-setup.js --instance-url yourorg --client-id YOUR_CLIENT_ID
  *
  * What it does:
  *   1. Opens your browser for Salesforce login via `sf org login web`
@@ -52,19 +52,48 @@ function printUsage() {
 Salesforce OAuth Setup Script
 
 Usage:
-  node scripts/sf-auth-setup.js --instance-url <url> --client-id <id>
+  node scripts/sf-auth-setup.js --instance-url <instance> --client-id <id>
 
 Options:
-  --instance-url  Salesforce org URL (e.g., https://yourorg.my.salesforce.com)
+  --instance-url  Salesforce instance name or full URL
+                  Just the instance:  mycompany-dev-ed
+                  Full URL also works: https://mycompany-dev-ed.my.salesforce.com
   --client-id     Connected App consumer key
   --alias         SF CLI org alias (default: copilot-connector)
   --help, -h      Show this help message
 
-Example:
+Examples:
   node scripts/sf-auth-setup.js \\
-    --instance-url https://mycompany.my.salesforce.com \\
+    --instance-url mycompany-dev-ed \\
+    --client-id 3MVG9IHf89I1t8hrvswazsWedXWY0i...
+
+  node scripts/sf-auth-setup.js \\
+    --instance-url https://mycompany-dev-ed.my.salesforce.com \\
     --client-id 3MVG9IHf89I1t8hrvswazsWedXWY0i...
 `);
+}
+
+/**
+ * Normalize an instance-url input to a full Salesforce URL.
+ *   "mycompany-dev-ed"                      → https://mycompany-dev-ed.my.salesforce.com
+ *   "mycompany-dev-ed.my.salesforce.com"     → https://mycompany-dev-ed.my.salesforce.com
+ *   "https://mycompany-dev-ed.my.salesforce.com" → unchanged
+ */
+function normalizeInstanceUrl(input) {
+  let url = input.trim();
+
+  // Already a full URL
+  if (/^https?:\/\//i.test(url)) {
+    return url.replace(/\/+$/, "");
+  }
+
+  // Looks like a domain (contains a dot with salesforce in it)
+  if (/\.salesforce\.com$/i.test(url)) {
+    return `https://${url}`.replace(/\/+$/, "");
+  }
+
+  // Just the instance name → build the My Domain URL
+  return `https://${url}.my.salesforce.com`;
 }
 
 function checkSfCli() {
@@ -204,13 +233,16 @@ async function main() {
     process.exit(1);
   }
 
+  const instanceUrl = normalizeInstanceUrl(args.instanceUrl);
+  console.log(`Instance URL: ${instanceUrl}`);
+
   const alias = args.alias || ALIAS;
 
   // Step 1: Verify SF CLI is installed
   checkSfCli();
 
   // Step 2: Browser-based login
-  loginToSalesforce(args.instanceUrl, args.clientId, alias);
+  loginToSalesforce(instanceUrl, args.clientId, alias);
 
   // Step 3: Extract org credentials
   const orgInfo = extractOrgInfo(alias);
