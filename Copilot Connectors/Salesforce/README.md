@@ -90,7 +90,7 @@ Then edit `.env.local` with your Salesforce and Entra credentials:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SF_INSTANCE_URL` | Yes | Your Salesforce org URL (e.g. `https://yourorg.my.salesforce.com`) |
+| `SF_INSTANCE_URL` | Yes | Salesforce instance name or full URL (e.g. `yourorg-dev-ed` or `https://yourorg-dev-ed.my.salesforce.com`) |
 | `SF_CLIENT_ID` | Yes | Connected App Consumer Key |
 | `SF_CLIENT_SECRET` | Yes | Connected App Consumer Secret |
 | `SF_REFRESH_TOKEN` | Yes* | OAuth refresh token (*not needed if using `client_credentials` flow) |
@@ -149,7 +149,7 @@ az functionapp config appsettings set \
   --name <your-function-app-name> \
   --resource-group <your-resource-group> \
   --settings \
-    SF_INSTANCE_URL=https://yourorg.my.salesforce.com \
+    SF_INSTANCE_URL=yourorg \
     SF_CLIENT_ID=your_consumer_key \
     SF_CLIENT_SECRET=your_consumer_secret \
     SF_REFRESH_TOKEN=your_refresh_token
