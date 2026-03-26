@@ -55,6 +55,9 @@ function updateEnvVar(key, value) {
 }
 
 async function exchangeCodeForTokens(code, env) {
+  const tokenUrl = `${env.SF_INSTANCE_URL}/services/oauth2/token`;
+  console.log(`  Token endpoint: ${tokenUrl}`);
+
   const params = new URLSearchParams({
     grant_type: "authorization_code",
     code,
@@ -63,14 +66,20 @@ async function exchangeCodeForTokens(code, env) {
     redirect_uri: REDIRECT_URI,
   });
 
-  const response = await fetch(
-    `${env.SF_INSTANCE_URL}/services/oauth2/token`,
-    {
+  let response;
+  try {
+    response = await fetch(tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
-    }
-  );
+    });
+  } catch (err) {
+    throw new Error(
+      `Could not reach ${tokenUrl} — ${err.message}\n` +
+      `  Check that SF_INSTANCE_URL is correct in .env.local.\n` +
+      `  Current value: ${env.SF_INSTANCE_URL}`
+    );
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -87,6 +96,8 @@ function main() {
     console.error("Error: SF_CLIENT_ID and SF_INSTANCE_URL must be set in .env.local");
     process.exit(1);
   }
+
+  console.log(`\nUsing SF_INSTANCE_URL: ${env.SF_INSTANCE_URL}`);
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
