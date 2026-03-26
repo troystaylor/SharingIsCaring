@@ -62,6 +62,8 @@ az login
 
 This creates an Entra app registration with the required Graph permissions (`ExternalConnection.ReadWrite.OwnedBy`, `ExternalItem.ReadWrite.OwnedBy`), generates a client secret, and updates `.env.local` automatically.
 
+If `.env.local` does not exist yet, the script creates it from `.env.local.template` first.
+
 > A **Global Admin** must grant admin consent for the app afterward — either through the Entra admin center or via the link the script outputs.
 
 ### 4. Authenticate with Salesforce
@@ -80,13 +82,13 @@ Configure a [Client Credentials Connected App](https://help.salesforce.com/s/art
 
 ### 5. Configure environment variables
 
-Copy the template and fill in your values:
+If you did not run `./scripts/entra-app-setup.ps1`, copy the template first:
 
 ```bash
 cp .env.local.template .env.local
 ```
 
-Then edit `.env.local` with your Salesforce and Entra credentials:
+Then edit `.env.local` with your Salesforce credentials and any connector settings you want to change. If you already ran `./scripts/entra-app-setup.ps1`, the Entra values will already be populated.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -102,6 +104,14 @@ Then edit `.env.local` with your Salesforce and Entra credentials:
 | `AZURE_TENANT_ID` | Yes | Your Microsoft Entra tenant ID |
 | `AZURE_CLIENT_ID` | Yes | Entra app registration client ID |
 | `AZURE_CLIENT_SECRET` | Yes | Entra app registration client secret |
+
+If you want to run the Azure Functions host locally, generate `local.settings.json` from `.env.local`:
+
+```bash
+npm run generate-local-settings
+```
+
+This writes a local-only `local.settings.json` file for Azure Functions Core Tools and VS Code F5 runs using the values from `.env.local`. The file is gitignored and should not be committed.
 
 ### 6. Test locally (optional)
 
@@ -245,8 +255,9 @@ Salesforce/
 │   │   └── schema.ts            # Schema definition (~90 properties)
 │   └── index.ts                 # Azure Functions entry point (12 endpoints)
 ├── azure.yaml                   # Azure Developer CLI configuration
-├── .env.local.template          # Environment variable template (copy to .env.local)
+├── .env.local.template          # Environment variable template used to bootstrap .env.local
 ├── .env.local                   # Environment variables (not committed)
+├── local.settings.json          # Generated local Azure Functions settings (not committed)
 ├── .funcignore                  # Deployment package exclusions
 ├── host.json                    # Azure Functions host configuration
 ├── package.json
