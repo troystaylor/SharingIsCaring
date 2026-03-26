@@ -1,0 +1,115 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "mcpHost": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Remote MCP Host",
+          "description": "Host name of your remote Tableau MCP server.",
+          "tooltip": "Example: tableau-mcp.contoso.com",
+          "constraints": {
+            "required": "true"
+          }
+        }
+      },
+      "tableauServerUrl": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Tableau Server URL",
+          "description": "Required for PAT mode only. Tableau Cloud or Server base URL.",
+          "tooltip": "Example: https://prod-useast-c.online.tableau.com",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      },
+      "siteName": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Site Content URL",
+          "description": "Tableau site contentUrl for PAT mode. Leave blank for default site on Tableau Server.",
+          "tooltip": "Example: marketing",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      },
+      "username": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "PAT Name",
+          "description": "Tableau personal access token name for PAT mode.",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      },
+      "password": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "PAT Secret",
+          "description": "Tableau personal access token secret for PAT mode.",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      },
+      "oauthBearerToken": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "OAuth Bearer Token",
+          "description": "Optional bearer token for OAuth mode. If not provided, Authorization header from caller is used.",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#E97627",
+    "capabilities": [
+      "actions"
+    ],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Tableau",
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Tableau MCP Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('mcpHost')/tableau-mcp"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Tableau Server URL Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "x-tableau-server-url",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('tableauServerUrl')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Tableau Site Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "x-tableau-site-name",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('siteName')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set OAuth Bearer Token Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "x-oauth-bearer-token",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('oauthBearerToken')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ],
+    "scriptOperations": []
+  }
+}
