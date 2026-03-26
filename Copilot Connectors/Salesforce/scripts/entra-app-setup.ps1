@@ -6,7 +6,7 @@
     Creates an app registration with the required Microsoft Graph permissions:
     - ExternalConnection.ReadWrite.OwnedBy
     - ExternalItem.ReadWrite.OwnedBy
-    Then creates a client secret and outputs the values needed for .env.local / local.settings.json.
+    Then creates a client secret, updates .env.local, and instructs you to generate local.settings.json from it.
 
 .NOTES
     Prerequisites:
@@ -107,7 +107,7 @@ $clientSecret = $secret.password
 Write-Host "`n[6/6] Setup complete!" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-Write-Host "║  Add these to .env.local and local.settings.json:            ║" -ForegroundColor Yellow
+Write-Host "║  Add these to .env.local:                                    ║" -ForegroundColor Yellow
 Write-Host "╚═══════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "AZURE_TENANT_ID=$tenantId"
@@ -115,29 +115,31 @@ Write-Host "AZURE_CLIENT_ID=$appId"
 Write-Host "AZURE_CLIENT_SECRET=$clientSecret"
 Write-Host ""
 
-# ── Update .env.local if it exists ──
+# ── Create or update .env.local ──
 $envFile = Join-Path $PSScriptRoot ".." ".env.local"
-if (Test-Path $envFile) {
-    Write-Host "Updating .env.local..." -ForegroundColor Cyan
-    $content = Get-Content $envFile -Raw
-    $content = $content -replace 'AZURE_TENANT_ID=.*', "AZURE_TENANT_ID=$tenantId"
-    $content = $content -replace 'AZURE_CLIENT_ID=.*', "AZURE_CLIENT_ID=$appId"
-    $content = $content -replace 'AZURE_CLIENT_SECRET=.*', "AZURE_CLIENT_SECRET=$clientSecret"
-    Set-Content $envFile -Value $content -NoNewline
-    Write-Host "  .env.local updated" -ForegroundColor Green
+$envTemplateFile = Join-Path $PSScriptRoot ".." ".env.local.template"
+
+if (-not (Test-Path $envFile)) {
+    if (-not (Test-Path $envTemplateFile)) {
+        Write-Error ".env.local.template not found at $envTemplateFile"
+        exit 1
+    }
+
+    Write-Host "Creating .env.local from .env.local.template..." -ForegroundColor Cyan
+    Copy-Item $envTemplateFile $envFile
+    Write-Host "  .env.local created" -ForegroundColor Green
 }
 
-# ── Update local.settings.json if it exists ──
-$settingsFile = Join-Path $PSScriptRoot ".." "local.settings.json"
-if (Test-Path $settingsFile) {
-    Write-Host "Updating local.settings.json..." -ForegroundColor Cyan
-    $settings = Get-Content $settingsFile -Raw | ConvertFrom-Json
-    $settings.Values.AZURE_TENANT_ID = $tenantId
-    $settings.Values.AZURE_CLIENT_ID = $appId
-    $settings.Values.AZURE_CLIENT_SECRET = $clientSecret
-    $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsFile
-    Write-Host "  local.settings.json updated" -ForegroundColor Green
-}
+Write-Host "Updating .env.local..." -ForegroundColor Cyan
+$content = Get-Content $envFile -Raw
+$content = $content -replace 'AZURE_TENANT_ID=.*', "AZURE_TENANT_ID=$tenantId"
+$content = $content -replace 'AZURE_CLIENT_ID=.*', "AZURE_CLIENT_ID=$appId"
+$content = $content -replace 'AZURE_CLIENT_SECRET=.*', "AZURE_CLIENT_SECRET=$clientSecret"
+Set-Content $envFile -Value $content -NoNewline
+Write-Host "  .env.local updated" -ForegroundColor Green
+
+Write-Host "To generate local.settings.json for local Azure Functions runs:" -ForegroundColor Cyan
+Write-Host "  npm run generate-local-settings" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════════╗" -ForegroundColor Red
