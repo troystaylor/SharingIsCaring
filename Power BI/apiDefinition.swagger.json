@@ -1,0 +1,772 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power BI",
+        "description": "MCP-enabled connector for Power BI REST API. Provides progressive discovery of workspaces, reports, dashboards, datasets, apps, DAX query execution, and report export operations via scan, launch, and sequence tools.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.powerbi.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Power BI MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Power BI operations via JSON-RPC 2.0 with progressive discovery through scan, launch, and sequence tools.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/groups": {
+            "get": {
+                "operationId": "ListWorkspaces",
+                "summary": "List Workspaces",
+                "description": "Returns a list of workspaces the user has access to.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "description": "OData filter expression",
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results to return",
+                        "x-ms-summary": "Top",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results to skip",
+                        "x-ms-summary": "Skip",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of workspaces",
+                        "schema": {
+                            "$ref": "#/definitions/WorkspaceListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/reports": {
+            "get": {
+                "operationId": "ListReports",
+                "summary": "List Reports",
+                "description": "Returns a list of reports from My workspace.",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of reports",
+                        "schema": {
+                            "$ref": "#/definitions/ReportListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/groups/{groupId}/reports": {
+            "get": {
+                "operationId": "ListWorkspaceReports",
+                "summary": "List Workspace Reports",
+                "description": "Returns a list of reports from the specified workspace.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace (group) ID",
+                        "x-ms-summary": "Workspace ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of reports",
+                        "schema": {
+                            "$ref": "#/definitions/ReportListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/reports/{reportId}": {
+            "get": {
+                "operationId": "GetReport",
+                "summary": "Get Report",
+                "description": "Returns the specified report from My workspace.",
+                "parameters": [
+                    {
+                        "name": "reportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The report ID",
+                        "x-ms-summary": "Report ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Report details",
+                        "schema": {
+                            "$ref": "#/definitions/Report"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/reports/{reportId}/pages": {
+            "get": {
+                "operationId": "GetReportPages",
+                "summary": "Get Report Pages",
+                "description": "Returns a list of pages within the specified report from My workspace.",
+                "parameters": [
+                    {
+                        "name": "reportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The report ID",
+                        "x-ms-summary": "Report ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of report pages",
+                        "schema": {
+                            "$ref": "#/definitions/PageListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/dashboards": {
+            "get": {
+                "operationId": "ListDashboards",
+                "summary": "List Dashboards",
+                "description": "Returns a list of dashboards from My workspace.",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of dashboards",
+                        "schema": {
+                            "$ref": "#/definitions/DashboardListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/groups/{groupId}/dashboards": {
+            "get": {
+                "operationId": "ListWorkspaceDashboards",
+                "summary": "List Workspace Dashboards",
+                "description": "Returns a list of dashboards from the specified workspace.",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace (group) ID",
+                        "x-ms-summary": "Workspace ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of dashboards",
+                        "schema": {
+                            "$ref": "#/definitions/DashboardListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/dashboards/{dashboardId}/tiles": {
+            "get": {
+                "operationId": "ListDashboardTiles",
+                "summary": "List Dashboard Tiles",
+                "description": "Returns a list of tiles within the specified dashboard from My workspace.",
+                "parameters": [
+                    {
+                        "name": "dashboardId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The dashboard ID",
+                        "x-ms-summary": "Dashboard ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of tiles",
+                        "schema": {
+                            "$ref": "#/definitions/TileListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/datasets": {
+            "get": {
+                "operationId": "ListDatasets",
+                "summary": "List Datasets",
+                "description": "Returns a list of datasets from My workspace.",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of datasets",
+                        "schema": {
+                            "$ref": "#/definitions/DatasetListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/groups/{groupId}/datasets": {
+            "get": {
+                "operationId": "ListWorkspaceDatasets",
+                "summary": "List Workspace Datasets",
+                "description": "Returns a list of datasets from the specified workspace.",
+                "parameters": [
+                    {
+                        "name": "groupId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace (group) ID",
+                        "x-ms-summary": "Workspace ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of datasets",
+                        "schema": {
+                            "$ref": "#/definitions/DatasetListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/datasets/{datasetId}/executeQueries": {
+            "post": {
+                "operationId": "ExecuteQueries",
+                "summary": "Execute DAX Query",
+                "description": "Executes DAX queries against the provided dataset. Limited to 100,000 rows or 1,000,000 values per query.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "datasetId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The dataset ID",
+                        "x-ms-summary": "Dataset ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["queries"],
+                            "properties": {
+                                "queries": {
+                                    "type": "array",
+                                    "description": "The list of DAX queries to execute",
+                                    "x-ms-summary": "Queries",
+                                    "items": {
+                                        "type": "object",
+                                        "required": ["query"],
+                                        "properties": {
+                                            "query": {
+                                                "type": "string",
+                                                "description": "The DAX query to execute (e.g., EVALUATE VALUES(MyTable))",
+                                                "x-ms-summary": "DAX Query"
+                                            }
+                                        }
+                                    }
+                                },
+                                "serializerSettings": {
+                                    "type": "object",
+                                    "description": "Serialization settings for the result set",
+                                    "x-ms-summary": "Serializer Settings",
+                                    "x-ms-visibility": "advanced",
+                                    "properties": {
+                                        "includeNulls": {
+                                            "type": "boolean",
+                                            "description": "Whether null values should be included in the result set. Default false.",
+                                            "x-ms-summary": "Include Nulls"
+                                        }
+                                    }
+                                },
+                                "impersonatedUserName": {
+                                    "type": "string",
+                                    "description": "UPN of a user to impersonate. Only applies if the model has RLS enabled.",
+                                    "x-ms-summary": "Impersonated User",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Query results",
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteQueriesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/datasets/{datasetId}/refreshes": {
+            "get": {
+                "operationId": "GetRefreshHistory",
+                "summary": "Get Refresh History",
+                "description": "Returns the refresh history for the specified dataset from My workspace.",
+                "parameters": [
+                    {
+                        "name": "datasetId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The dataset ID",
+                        "x-ms-summary": "Dataset ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of refresh entries to return",
+                        "x-ms-summary": "Top",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Refresh history",
+                        "schema": {
+                            "$ref": "#/definitions/RefreshListResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "RefreshDataset",
+                "summary": "Refresh Dataset",
+                "description": "Triggers a refresh for the specified dataset from My workspace.",
+                "parameters": [
+                    {
+                        "name": "datasetId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The dataset ID",
+                        "x-ms-summary": "Dataset ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "notifyOption": {
+                                    "type": "string",
+                                    "description": "Notification option",
+                                    "x-ms-summary": "Notify Option",
+                                    "enum": ["MailOnFailure", "NoNotification"]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Refresh triggered"
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/apps": {
+            "get": {
+                "operationId": "ListApps",
+                "summary": "List Apps",
+                "description": "Returns a list of installed Power BI apps for the current user.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of apps",
+                        "schema": {
+                            "$ref": "#/definitions/AppListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/reports/{reportId}/ExportTo": {
+            "post": {
+                "operationId": "ExportReport",
+                "summary": "Export Report",
+                "description": "Triggers an export of a report to PDF, PPTX, or PNG. This is asynchronous — use Get Export Status to poll for completion.",
+                "parameters": [
+                    {
+                        "name": "reportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The report ID",
+                        "x-ms-summary": "Report ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["format"],
+                            "properties": {
+                                "format": {
+                                    "type": "string",
+                                    "description": "Export file format",
+                                    "x-ms-summary": "Format",
+                                    "enum": ["PDF", "PPTX", "PNG"]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Export job accepted",
+                        "schema": {
+                            "$ref": "#/definitions/Export"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/myorg/reports/{reportId}/exports/{exportId}": {
+            "get": {
+                "operationId": "GetExportStatus",
+                "summary": "Get Export Status",
+                "description": "Returns the current status of an export job. When status is Succeeded, resourceLocation contains the download URL.",
+                "parameters": [
+                    {
+                        "name": "reportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The report ID",
+                        "x-ms-summary": "Report ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "exportId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The export job ID",
+                        "x-ms-summary": "Export ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Export status",
+                        "schema": {
+                            "$ref": "#/definitions/Export"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "WorkspaceListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Workspace"
+                    }
+                }
+            }
+        },
+        "Workspace": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "The workspace ID" },
+                "name": { "type": "string", "description": "The workspace name" },
+                "isReadOnly": { "type": "boolean", "description": "Whether the workspace is read-only" },
+                "isOnDedicatedCapacity": { "type": "boolean", "description": "Whether the workspace is on dedicated capacity" },
+                "type": { "type": "string", "description": "The workspace type" }
+            }
+        },
+        "ReportListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Report"
+                    }
+                }
+            }
+        },
+        "Report": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "The report ID" },
+                "name": { "type": "string", "description": "The report name" },
+                "webUrl": { "type": "string", "description": "The web URL of the report" },
+                "embedUrl": { "type": "string", "description": "The embed URL of the report" },
+                "datasetId": { "type": "string", "description": "The dataset ID associated with the report" },
+                "reportType": { "type": "string", "description": "The report type (PowerBIReport or PaginatedReport)" }
+            }
+        },
+        "PageListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": { "type": "string", "description": "The page name" },
+                            "displayName": { "type": "string", "description": "The display name of the page" },
+                            "order": { "type": "integer", "description": "The page order" }
+                        }
+                    }
+                }
+            }
+        },
+        "DashboardListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Dashboard"
+                    }
+                }
+            }
+        },
+        "Dashboard": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "The dashboard ID" },
+                "displayName": { "type": "string", "description": "The dashboard display name" },
+                "webUrl": { "type": "string", "description": "The web URL of the dashboard" },
+                "embedUrl": { "type": "string", "description": "The embed URL of the dashboard" },
+                "isReadOnly": { "type": "boolean", "description": "Whether the dashboard is read-only" }
+            }
+        },
+        "TileListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": { "type": "string", "description": "The tile ID" },
+                            "title": { "type": "string", "description": "The tile title" },
+                            "embedUrl": { "type": "string", "description": "The embed URL of the tile" },
+                            "reportId": { "type": "string", "description": "The report ID associated with the tile" },
+                            "datasetId": { "type": "string", "description": "The dataset ID associated with the tile" }
+                        }
+                    }
+                }
+            }
+        },
+        "DatasetListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Dataset"
+                    }
+                }
+            }
+        },
+        "Dataset": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "The dataset ID" },
+                "name": { "type": "string", "description": "The dataset name" },
+                "webUrl": { "type": "string", "description": "The web URL of the dataset" },
+                "isRefreshable": { "type": "boolean", "description": "Whether the dataset can be refreshed" },
+                "isEffectiveIdentityRequired": { "type": "boolean", "description": "Whether effective identity is required" },
+                "configuredBy": { "type": "string", "description": "The user who configured the dataset" }
+            }
+        },
+        "ExecuteQueriesResponse": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "description": "The list of results, one per input query",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "tables": {
+                                "type": "array",
+                                "description": "A list of tables data for a query",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "rows": {
+                                            "type": "array",
+                                            "description": "A list of rows",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "error": {
+                                "type": "object",
+                                "properties": {
+                                    "code": { "type": "string" },
+                                    "message": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "RefreshListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "requestId": { "type": "string", "description": "The refresh request ID" },
+                            "refreshType": { "type": "string", "description": "The refresh type" },
+                            "startTime": { "type": "string", "description": "The start time of the refresh" },
+                            "endTime": { "type": "string", "description": "The end time of the refresh" },
+                            "status": { "type": "string", "description": "The refresh status" },
+                            "serviceExceptionJson": { "type": "string", "description": "Error details if the refresh failed" }
+                        }
+                    }
+                }
+            }
+        },
+        "AppListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": { "type": "string", "description": "The app ID" },
+                            "name": { "type": "string", "description": "The app name" },
+                            "description": { "type": "string", "description": "The app description" },
+                            "publishedBy": { "type": "string", "description": "Published by" },
+                            "lastUpdate": { "type": "string", "description": "Last update date" }
+                        }
+                    }
+                }
+            }
+        },
+        "Export": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string", "description": "The export job ID" },
+                "createdDateTime": { "type": "string", "description": "Start date and time of the export job" },
+                "lastActionDateTime": { "type": "string", "description": "Last change date and time" },
+                "reportId": { "type": "string", "description": "The ID of the exported report" },
+                "reportName": { "type": "string", "description": "The name of the exported report" },
+                "status": { "type": "string", "description": "Job state: NotStarted, Running, Succeeded, Failed" },
+                "percentComplete": { "type": "integer", "description": "Job progress 0-100" },
+                "resourceLocation": { "type": "string", "description": "The download URL for the exported file (available when Succeeded)" },
+                "resourceFileExtension": { "type": "string", "description": "The file extension of the exported file" },
+                "expirationTime": { "type": "string", "description": "Expiration time of the download URL" }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Dashboard.Read.All Dataset.Read.All Dataset.ReadWrite.All Report.Read.All Workspace.Read.All App.Read.All offline_access": "Read Power BI workspaces, reports, dashboards, datasets, and apps"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "Dashboard.Read.All Dataset.Read.All Dataset.ReadWrite.All Report.Read.All Workspace.Read.All App.Read.All offline_access"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Business Intelligence"
+        },
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://powerbi.microsoft.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        }
+    ]
+}
