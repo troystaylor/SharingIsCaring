@@ -1,0 +1,226 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "6sense MCP",
+        "description": "MCP server for 6sense Revenue AI. Provides tools for company identification, firmographic enrichment, lead scoring, people enrichment, and people search via Model Context Protocol for Copilot Studio.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.6sense.com",
+    "basePath": "/",
+    "schemes": ["https"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "paths": {
+        "/v3/company/details": {
+            "get": {
+                "operationId": "IdentifyCompany",
+                "summary": "Identify Company",
+                "description": "Identify an anonymous website visitor's company by IP address. Returns company firmographics, segments, and 6QA scores.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "ip", "in": "query", "type": "string", "required": true, "description": "IPv4 address of the website visitor.", "x-ms-summary": "IP Address" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company identification result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "company": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string", "description": "Company name" },
+                                        "domain": { "type": "string", "description": "Company domain" },
+                                        "industry": { "type": "string", "description": "Industry" },
+                                        "employee_range": { "type": "string", "description": "Employee count range" },
+                                        "revenue_range": { "type": "string", "description": "Revenue range" },
+                                        "country": { "type": "string", "description": "Country" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/enrichment/company": {
+            "post": {
+                "operationId": "EnrichCompany",
+                "summary": "Enrich Company",
+                "description": "Enrich a lead with company firmographics using email, domain, or company name. At least one identifier is required.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body", "in": "body", "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": { "type": "string", "description": "Email address of the lead", "x-ms-summary": "Email" },
+                                "domain": { "type": "string", "description": "Company domain (e.g., 6sense.com)", "x-ms-summary": "Domain" },
+                                "company": { "type": "string", "description": "Company name", "x-ms-summary": "Company" },
+                                "country": { "type": "string", "description": "Country name", "x-ms-summary": "Country" },
+                                "industry": { "type": "string", "description": "Industry name", "x-ms-summary": "Industry" },
+                                "title": { "type": "string", "description": "Job title", "x-ms-summary": "Title" },
+                                "role": { "type": "string", "description": "Job role", "x-ms-summary": "Role" },
+                                "firstname": { "type": "string", "description": "First name", "x-ms-summary": "First Name" },
+                                "lastname": { "type": "string", "description": "Last name", "x-ms-summary": "Last Name" },
+                                "leadsource": { "type": "string", "description": "Lead source", "x-ms-summary": "Lead Source" }
+                            }
+                        }
+                    }
+                ],
+                "responses": { "200": { "description": "Company enrichment result", "schema": { "type": "object" } } }
+            }
+        },
+        "/v2/people/full": {
+            "post": {
+                "operationId": "ScoreAndEnrichLead",
+                "summary": "Score and Enrich Lead",
+                "description": "Combine lead scoring and company firmographics enrichment in a single call.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body", "in": "body", "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["email"],
+                            "properties": {
+                                "email": { "type": "string", "description": "Email address of the lead", "x-ms-summary": "Email" },
+                                "company": { "type": "string", "description": "Company name", "x-ms-summary": "Company" },
+                                "website": { "type": "string", "description": "Company website", "x-ms-summary": "Website" },
+                                "country": { "type": "string", "description": "Country name", "x-ms-summary": "Country" },
+                                "title": { "type": "string", "description": "Job title", "x-ms-summary": "Title" },
+                                "role": { "type": "string", "description": "Job role", "x-ms-summary": "Role" },
+                                "firstname": { "type": "string", "description": "First name", "x-ms-summary": "First Name" },
+                                "lastname": { "type": "string", "description": "Last name", "x-ms-summary": "Last Name" },
+                                "leadsource": { "type": "string", "description": "Lead source", "x-ms-summary": "Lead Source" },
+                                "industry": { "type": "string", "description": "Industry name", "x-ms-summary": "Industry" }
+                            }
+                        }
+                    }
+                ],
+                "responses": { "200": { "description": "Lead scoring and enrichment result", "schema": { "type": "object" } } }
+            }
+        },
+        "/v2/people/score": {
+            "post": {
+                "operationId": "ScoreLead",
+                "summary": "Score Lead",
+                "description": "Score a lead with 6sense predictive scores by email address.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body", "in": "body", "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["email"],
+                            "properties": {
+                                "email": { "type": "string", "description": "Email address of the lead", "x-ms-summary": "Email" },
+                                "company": { "type": "string", "description": "Company name", "x-ms-summary": "Company" },
+                                "website": { "type": "string", "description": "Company website", "x-ms-summary": "Website" },
+                                "country": { "type": "string", "description": "Country name", "x-ms-summary": "Country" },
+                                "title": { "type": "string", "description": "Job title", "x-ms-summary": "Title" },
+                                "role": { "type": "string", "description": "Job role", "x-ms-summary": "Role" },
+                                "firstname": { "type": "string", "description": "First name", "x-ms-summary": "First Name" },
+                                "lastname": { "type": "string", "description": "Last name", "x-ms-summary": "Last Name" },
+                                "leadsource": { "type": "string", "description": "Lead source", "x-ms-summary": "Lead Source" },
+                                "industry": { "type": "string", "description": "Industry name", "x-ms-summary": "Industry" }
+                            }
+                        }
+                    }
+                ],
+                "responses": { "200": { "description": "Lead scoring result", "schema": { "type": "object" } } }
+            }
+        },
+        "/v2/enrichment/people": {
+            "post": {
+                "operationId": "EnrichPeople",
+                "summary": "Enrich People",
+                "description": "Enrich contacts with detailed person-level data. Accepts up to 25 queries per call using email, LinkedIn URL, or peopleId.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body", "in": "body", "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "email": { "type": "string", "description": "Email address", "x-ms-summary": "Email" },
+                                    "linkedInUrl": { "type": "string", "description": "LinkedIn profile URL", "x-ms-summary": "LinkedIn URL" },
+                                    "peopleId": { "type": "string", "description": "6sense people ID", "x-ms-summary": "People ID" }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": { "200": { "description": "People enrichment results", "schema": { "type": "array", "items": { "type": "object" } } } }
+            }
+        },
+        "/v2/search/people": {
+            "post": {
+                "operationId": "SearchPeople",
+                "summary": "Search People",
+                "description": "Search for B2B contacts using filters like domain, job title, industry, location, and more.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body", "in": "body", "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "domain": { "type": "array", "items": { "type": "string" }, "description": "Company domains", "x-ms-summary": "Domains" },
+                                "industryNAICS": { "type": "array", "items": { "type": "string" }, "description": "NAICS codes", "x-ms-summary": "Industry NAICS" },
+                                "email": { "type": "array", "items": { "type": "string" }, "description": "Emails", "x-ms-summary": "Emails" },
+                                "linkedinUrl": { "type": "array", "items": { "type": "string" }, "description": "LinkedIn URLs", "x-ms-summary": "LinkedIn URLs" },
+                                "country": { "type": "array", "items": { "type": "string" }, "description": "Countries", "x-ms-summary": "Countries" },
+                                "jobTitle": { "type": "array", "items": { "type": "string" }, "description": "Job titles", "x-ms-summary": "Job Titles" },
+                                "function": { "type": "array", "items": { "type": "string" }, "description": "Job functions", "x-ms-summary": "Functions" },
+                                "division": { "type": "array", "items": { "type": "string" }, "description": "Divisions", "x-ms-summary": "Divisions" },
+                                "level": { "type": "array", "items": { "type": "string" }, "description": "Seniority levels", "x-ms-summary": "Levels" },
+                                "city": { "type": "array", "items": { "type": "string" }, "description": "Cities", "x-ms-summary": "Cities" },
+                                "state": { "type": "array", "items": { "type": "string" }, "description": "States", "x-ms-summary": "States" },
+                                "hasEmail": { "type": "boolean", "description": "Filter to contacts with email", "x-ms-summary": "Has Email" },
+                                "hasPhone": { "type": "boolean", "description": "Filter to contacts with phone", "x-ms-summary": "Has Phone" },
+                                "emailConfidence": { "type": "string", "description": "Min email confidence (e.g., A+)", "x-ms-summary": "Email Confidence" },
+                                "pageNo": { "type": "integer", "description": "Page number (default 1)", "x-ms-summary": "Page Number" },
+                                "pageSize": { "type": "integer", "description": "Results per page (max 1000)", "x-ms-summary": "Page Size" }
+                            }
+                        }
+                    }
+                ],
+                "responses": { "200": { "description": "People search results", "schema": { "type": "object" } } }
+            }
+        },
+        "/v1/dictionary/peopleSearch": {
+            "get": {
+                "operationId": "SearchPeopleDictionary",
+                "summary": "Search People Dictionary",
+                "description": "Get available filter values for a specific domain. Use before SearchPeople to discover valid filter values.",
+                "parameters": [
+                    { "name": "domainName", "in": "query", "type": "string", "required": true, "description": "Company domain (e.g., 6sense.com).", "x-ms-summary": "Domain Name" },
+                    { "name": "pageNumber", "in": "query", "type": "integer", "required": false, "description": "Page number (default 1).", "x-ms-summary": "Page Number" },
+                    { "name": "pageSize", "in": "query", "type": "integer", "required": false, "description": "Results per page (default 999).", "x-ms-summary": "Page Size" }
+                ],
+                "responses": { "200": { "description": "Dictionary values", "schema": { "type": "object" } } }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "summary": "Invoke 6sense MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes 6sense Revenue AI tools via JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": { "200": { "description": "MCP JSON-RPC 2.0 response" } }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {}
+}

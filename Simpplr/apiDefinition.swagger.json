@@ -1,0 +1,286 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Simpplr MCP",
+        "description": "MCP server for Simpplr. Progressive API discovery with scan, launch, and sequence tools for managing content, feeds, sites, users, audiences, alerts, notifications, enterprise search, service desk tickets, and more.",
+        "version": "1.0.0",
+        "contact": { "name": "Troy Taylor", "email": "troy@troystaylor.com" }
+    },
+    "host": "platform.app.simpplr.com",
+    "basePath": "/v1/b2b",
+    "schemes": ["https"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "paths": {
+        "/content/sites/content": {
+            "get": {
+                "operationId": "SearchContent",
+                "summary": "Search Content",
+                "description": "Search Simpplr content across sites with optional filtering.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "siteId", "in": "query", "type": "string", "description": "Filter by site ID.", "x-ms-summary": "Site ID" },
+                    { "name": "type", "in": "query", "type": "string", "description": "Content type filter.", "x-ms-summary": "Type" },
+                    { "name": "status", "in": "query", "type": "string", "description": "Status filter.", "x-ms-summary": "Status" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset for pagination.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Content list", "schema": { "type": "object" } } }
+            }
+        },
+        "/content/sites/{siteId}/content/{contentId}": {
+            "get": {
+                "operationId": "GetContent",
+                "summary": "Get Content",
+                "description": "Get a specific content item by site and content ID.",
+                "parameters": [
+                    { "name": "siteId", "in": "path", "type": "string", "required": true, "description": "Site ID.", "x-ms-summary": "Site ID", "x-ms-url-encoding": "single" },
+                    { "name": "contentId", "in": "path", "type": "string", "required": true, "description": "Content ID.", "x-ms-summary": "Content ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "Content item", "schema": { "type": "object" } } }
+            },
+            "delete": {
+                "operationId": "DeleteContent",
+                "summary": "Delete Content",
+                "description": "Delete content from a Simpplr site.",
+                "parameters": [
+                    { "name": "siteId", "in": "path", "type": "string", "required": true, "description": "Site ID.", "x-ms-summary": "Site ID", "x-ms-url-encoding": "single" },
+                    { "name": "contentId", "in": "path", "type": "string", "required": true, "description": "Content ID.", "x-ms-summary": "Content ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "Deleted" } }
+            }
+        },
+        "/content/sites/{siteId}/content/page": {
+            "post": {
+                "operationId": "AddPage",
+                "summary": "Add Page",
+                "description": "Create a new page in a Simpplr site.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "siteId", "in": "path", "type": "string", "required": true, "description": "Site ID.", "x-ms-summary": "Site ID", "x-ms-url-encoding": "single" },
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string", "description": "Page title", "x-ms-summary": "Title" }, "body": { "type": "string", "description": "Page body HTML", "x-ms-summary": "Body" }, "categoryId": { "type": "string", "description": "Category ID", "x-ms-summary": "Category ID" } } } }
+                ],
+                "responses": { "200": { "description": "Page created", "schema": { "type": "object" } } }
+            }
+        },
+        "/content/sites/{siteId}/content/event": {
+            "post": {
+                "operationId": "AddEvent",
+                "summary": "Add Event",
+                "description": "Add a new event to a Simpplr site.",
+                "parameters": [
+                    { "name": "siteId", "in": "path", "type": "string", "required": true, "description": "Site ID.", "x-ms-summary": "Site ID", "x-ms-url-encoding": "single" },
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "properties": { "title": { "type": "string", "x-ms-summary": "Title" }, "description": { "type": "string", "x-ms-summary": "Description" }, "startDate": { "type": "string", "x-ms-summary": "Start Date" }, "endDate": { "type": "string", "x-ms-summary": "End Date" }, "location": { "type": "string", "x-ms-summary": "Location" } } } }
+                ],
+                "responses": { "200": { "description": "Event created", "schema": { "type": "object" } } }
+            }
+        },
+        "/feed": {
+            "post": {
+                "operationId": "CreateFeed",
+                "summary": "Create Feed",
+                "description": "Create a new feed post in Simpplr.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["body"], "properties": { "body": { "type": "string", "description": "Feed post body", "x-ms-summary": "Body" }, "siteId": { "type": "string", "description": "Target site ID", "x-ms-summary": "Site ID" }, "audienceId": { "type": "string", "description": "Target audience ID", "x-ms-summary": "Audience ID" } } } }
+                ],
+                "responses": { "200": { "description": "Feed created", "schema": { "type": "object" } } }
+            },
+            "get": {
+                "operationId": "GetFeeds",
+                "summary": "Get Feeds",
+                "description": "Get feed posts from Simpplr.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Feed list", "schema": { "type": "object" } } }
+            }
+        },
+        "/feed/{feedId}": {
+            "get": {
+                "operationId": "GetFeed",
+                "summary": "Get Feed",
+                "description": "Get a specific feed post by ID.",
+                "parameters": [
+                    { "name": "feedId", "in": "path", "type": "string", "required": true, "description": "Feed ID.", "x-ms-summary": "Feed ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "Feed post", "schema": { "type": "object" } } }
+            },
+            "put": {
+                "operationId": "UpdateFeed",
+                "summary": "Update Feed",
+                "description": "Update an existing feed post.",
+                "parameters": [
+                    { "name": "feedId", "in": "path", "type": "string", "required": true, "description": "Feed ID.", "x-ms-summary": "Feed ID", "x-ms-url-encoding": "single" },
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "properties": { "body": { "type": "string", "x-ms-summary": "Body" } } } }
+                ],
+                "responses": { "200": { "description": "Feed updated", "schema": { "type": "object" } } }
+            },
+            "delete": {
+                "operationId": "DeleteFeed",
+                "summary": "Delete Feed",
+                "description": "Delete a feed post.",
+                "parameters": [
+                    { "name": "feedId", "in": "path", "type": "string", "required": true, "description": "Feed ID.", "x-ms-summary": "Feed ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "Feed deleted" } }
+            }
+        },
+        "/feed/{feedId}/comment": {
+            "post": {
+                "operationId": "CreateComment",
+                "summary": "Create Comment",
+                "description": "Add a comment to a feed post.",
+                "parameters": [
+                    { "name": "feedId", "in": "path", "type": "string", "required": true, "description": "Feed ID.", "x-ms-summary": "Feed ID", "x-ms-url-encoding": "single" },
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "properties": { "body": { "type": "string", "x-ms-summary": "Comment Body" } } } }
+                ],
+                "responses": { "200": { "description": "Comment created", "schema": { "type": "object" } } }
+            },
+            "get": {
+                "operationId": "GetComments",
+                "summary": "Get Comments",
+                "description": "Get comments on a feed post.",
+                "parameters": [
+                    { "name": "feedId", "in": "path", "type": "string", "required": true, "description": "Feed ID.", "x-ms-summary": "Feed ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "Comments", "schema": { "type": "object" } } }
+            }
+        },
+        "/sites": {
+            "get": {
+                "operationId": "GetSites",
+                "summary": "Get Sites",
+                "description": "Get list of Simpplr sites.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Sites list", "schema": { "type": "object" } } }
+            }
+        },
+        "/sites/{siteId}/members": {
+            "get": {
+                "operationId": "GetSiteMembers",
+                "summary": "Get Site Members",
+                "description": "Get members of a Simpplr site.",
+                "parameters": [
+                    { "name": "siteId", "in": "path", "type": "string", "required": true, "description": "Site ID.", "x-ms-summary": "Site ID", "x-ms-url-encoding": "single" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Members list", "schema": { "type": "object" } } }
+            }
+        },
+        "/identity/users": {
+            "get": {
+                "operationId": "GetUsers",
+                "summary": "Get Users",
+                "description": "Get list of Simpplr users with optional search.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "search", "in": "query", "type": "string", "description": "Search query.", "x-ms-summary": "Search" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Users list", "schema": { "type": "object" } } }
+            }
+        },
+        "/identity/users/{userId}": {
+            "get": {
+                "operationId": "GetUser",
+                "summary": "Get User",
+                "description": "Get a specific user by ID.",
+                "parameters": [
+                    { "name": "userId", "in": "path", "type": "string", "required": true, "description": "User ID.", "x-ms-summary": "User ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "User details", "schema": { "type": "object" } } }
+            }
+        },
+        "/enterprise-search/search": {
+            "post": {
+                "operationId": "EnterpriseSearch",
+                "summary": "Enterprise Search",
+                "description": "Perform enterprise-wide search across all Simpplr content.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Search query", "x-ms-summary": "Query" }, "type": { "type": "string", "description": "Filter by type", "x-ms-summary": "Type" }, "limit": { "type": "integer", "description": "Max results", "x-ms-summary": "Limit" }, "offset": { "type": "integer", "description": "Offset", "x-ms-summary": "Offset" } } } }
+                ],
+                "responses": { "200": { "description": "Search results", "schema": { "type": "object" } } }
+            }
+        },
+        "/enterprise-search/smartanswers": {
+            "post": {
+                "operationId": "SmartAnswers",
+                "summary": "Smart Answers",
+                "description": "Get AI-powered smart answers from Simpplr content.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["query"], "properties": { "query": { "type": "string", "description": "Question to answer", "x-ms-summary": "Query" } } } }
+                ],
+                "responses": { "200": { "description": "Smart answer", "schema": { "type": "object" } } }
+            }
+        },
+        "/alerts": {
+            "get": {
+                "operationId": "SearchAlerts",
+                "summary": "Search Alerts",
+                "description": "Search for alerts in Simpplr.",
+                "parameters": [
+                    { "name": "status", "in": "query", "type": "string", "description": "Status filter.", "x-ms-summary": "Status" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Alerts list", "schema": { "type": "object" } } }
+            },
+            "post": {
+                "operationId": "CreateAlert",
+                "summary": "Create Alert",
+                "description": "Create a new alert.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string", "description": "Alert title", "x-ms-summary": "Title" }, "body": { "type": "string", "description": "Alert body", "x-ms-summary": "Body" }, "type": { "type": "string", "description": "Alert type", "x-ms-summary": "Type" }, "severity": { "type": "string", "description": "Severity level", "x-ms-summary": "Severity" } } } }
+                ],
+                "responses": { "200": { "description": "Alert created", "schema": { "type": "object" } } }
+            }
+        },
+        "/service-desk/tickets": {
+            "post": {
+                "operationId": "CreateTicket",
+                "summary": "Create Ticket",
+                "description": "Create a new service desk ticket.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["subject"], "properties": { "subject": { "type": "string", "description": "Ticket subject", "x-ms-summary": "Subject" }, "description": { "type": "string", "description": "Ticket description", "x-ms-summary": "Description" }, "categoryId": { "type": "string", "description": "Category ID", "x-ms-summary": "Category ID" }, "priority": { "type": "string", "description": "Priority level", "x-ms-summary": "Priority" } } } }
+                ],
+                "responses": { "200": { "description": "Ticket created", "schema": { "type": "object" } } }
+            }
+        },
+        "/service-desk/tickets/{ticketId}": {
+            "get": {
+                "operationId": "GetTicket",
+                "summary": "Get Ticket",
+                "description": "Get a specific service desk ticket by ID.",
+                "parameters": [
+                    { "name": "ticketId", "in": "path", "type": "string", "required": true, "description": "Ticket ID.", "x-ms-summary": "Ticket ID", "x-ms-url-encoding": "single" }
+                ],
+                "responses": { "200": { "description": "Ticket details", "schema": { "type": "object" } } }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Simpplr MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Simpplr B2B API operations via JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": { "200": { "description": "MCP JSON-RPC 2.0 response" } }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {}
+}

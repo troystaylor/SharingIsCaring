@@ -1,0 +1,319 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Planhat MCP",
+        "description": "MCP server for Planhat. Progressive API discovery with scan, launch, and sequence tools for managing companies, endusers, licenses, assets, notes, conversations, tasks, revenue, NPS, and more.",
+        "version": "1.0.0",
+        "contact": { "name": "Troy Taylor", "email": "troy@troystaylor.com" }
+    },
+    "host": "api.planhat.com",
+    "basePath": "/",
+    "schemes": ["https"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "paths": {
+        "/companies": {
+            "get": {
+                "operationId": "ListCompanies",
+                "summary": "List Companies",
+                "description": "List companies in Planhat with pagination and sorting.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results (default 100).", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset for pagination.", "x-ms-summary": "Offset" },
+                    { "name": "sort", "in": "query", "type": "string", "description": "Sort field (prefix with - for descending).", "x-ms-summary": "Sort" },
+                    { "name": "select", "in": "query", "type": "string", "description": "Comma-separated fields to return.", "x-ms-summary": "Select" }
+                ],
+                "responses": { "200": { "description": "Companies list", "schema": { "type": "array", "items": { "type": "object", "properties": { "_id": { "type": "string" }, "name": { "type": "string" }, "phase": { "type": "string" }, "mrr": { "type": "number" }, "status": { "type": "string" } } } } } }
+            },
+            "post": {
+                "operationId": "CreateCompany",
+                "summary": "Create Company",
+                "description": "Create a new company in Planhat.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "description": "Company name", "x-ms-summary": "Name" }, "externalId": { "type": "string", "description": "External ID (e.g., CRM ID)", "x-ms-summary": "External ID" }, "phase": { "type": "string", "description": "Lifecycle phase", "x-ms-summary": "Phase" }, "status": { "type": "string", "description": "Status", "x-ms-summary": "Status" }, "owner": { "type": "string", "description": "Owner user ID", "x-ms-summary": "Owner" }, "coOwner": { "type": "string", "description": "Co-owner user ID", "x-ms-summary": "Co-Owner" } } } }
+                ],
+                "responses": { "200": { "description": "Company created", "schema": { "type": "object" } } }
+            }
+        },
+        "/companies/{id}": {
+            "get": {
+                "operationId": "GetCompany",
+                "summary": "Get Company",
+                "description": "Get a single company by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [ { "name": "id", "in": "path", "type": "string", "required": true, "description": "Company ID.", "x-ms-summary": "Company ID", "x-ms-url-encoding": "single" } ],
+                "responses": { "200": { "description": "Company details", "schema": { "type": "object" } } }
+            },
+            "put": {
+                "operationId": "UpdateCompany",
+                "summary": "Update Company",
+                "description": "Update an existing company.",
+                "parameters": [
+                    { "name": "id", "in": "path", "type": "string", "required": true, "description": "Company ID.", "x-ms-summary": "Company ID", "x-ms-url-encoding": "single" },
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "properties": { "name": { "type": "string", "x-ms-summary": "Name" }, "phase": { "type": "string", "x-ms-summary": "Phase" }, "status": { "type": "string", "x-ms-summary": "Status" }, "owner": { "type": "string", "x-ms-summary": "Owner" } } } }
+                ],
+                "responses": { "200": { "description": "Company updated", "schema": { "type": "object" } } }
+            },
+            "delete": {
+                "operationId": "DeleteCompany",
+                "summary": "Delete Company",
+                "description": "Delete a company.",
+                "parameters": [ { "name": "id", "in": "path", "type": "string", "required": true, "description": "Company ID.", "x-ms-summary": "Company ID", "x-ms-url-encoding": "single" } ],
+                "responses": { "200": { "description": "Company deleted" } }
+            }
+        },
+        "/endusers": {
+            "get": {
+                "operationId": "ListEndusers",
+                "summary": "List Endusers",
+                "description": "List endusers (contacts) with optional company filter.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Endusers list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateEnduser",
+                "summary": "Create Enduser",
+                "description": "Create a new enduser (contact) linked to a company.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "email": { "type": "string", "description": "Email", "x-ms-summary": "Email" }, "firstName": { "type": "string", "description": "First name", "x-ms-summary": "First Name" }, "lastName": { "type": "string", "description": "Last name", "x-ms-summary": "Last Name" }, "externalId": { "type": "string", "description": "External ID", "x-ms-summary": "External ID" } } } }
+                ],
+                "responses": { "200": { "description": "Enduser created", "schema": { "type": "object" } } }
+            }
+        },
+        "/licenses": {
+            "get": {
+                "operationId": "ListLicenses",
+                "summary": "List Licenses",
+                "description": "List licenses with optional company filter.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Licenses list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateLicense",
+                "summary": "Create License",
+                "description": "Create a new license for a company.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "product": { "type": "string", "description": "Product name", "x-ms-summary": "Product" }, "mrr": { "type": "number", "description": "Monthly recurring revenue", "x-ms-summary": "MRR" }, "startDate": { "type": "string", "description": "Start date (ISO 8601)", "x-ms-summary": "Start Date" }, "renewalDate": { "type": "string", "description": "Renewal date (ISO 8601)", "x-ms-summary": "Renewal Date" } } } }
+                ],
+                "responses": { "200": { "description": "License created", "schema": { "type": "object" } } }
+            }
+        },
+        "/notes": {
+            "get": {
+                "operationId": "ListNotes",
+                "summary": "List Notes",
+                "description": "List notes with optional company filter.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Notes list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateNote",
+                "summary": "Create Note",
+                "description": "Create a new note for a company.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "title": { "type": "string", "description": "Note title", "x-ms-summary": "Title" }, "text": { "type": "string", "description": "Note body text", "x-ms-summary": "Text" }, "type": { "type": "string", "description": "Note type", "x-ms-summary": "Type" } } } }
+                ],
+                "responses": { "200": { "description": "Note created", "schema": { "type": "object" } } }
+            }
+        },
+        "/tasks": {
+            "get": {
+                "operationId": "ListTasks",
+                "summary": "List Tasks",
+                "description": "List tasks with optional company and status filter.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "status", "in": "query", "type": "string", "description": "Filter by status.", "x-ms-summary": "Status" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Tasks list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateTask",
+                "summary": "Create Task",
+                "description": "Create a new task for a company.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId", "title"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "title": { "type": "string", "description": "Task title", "x-ms-summary": "Title" }, "description": { "type": "string", "description": "Task description", "x-ms-summary": "Description" }, "dueDate": { "type": "string", "description": "Due date (ISO 8601)", "x-ms-summary": "Due Date" }, "owner": { "type": "string", "description": "Owner user ID", "x-ms-summary": "Owner" }, "status": { "type": "string", "description": "Task status", "x-ms-summary": "Status" } } } }
+                ],
+                "responses": { "200": { "description": "Task created", "schema": { "type": "object" } } }
+            }
+        },
+        "/conversations": {
+            "get": {
+                "operationId": "ListConversations",
+                "summary": "List Conversations",
+                "description": "List conversations (emails, calls, meetings) with optional company filter.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "type", "in": "query", "type": "string", "description": "Filter by type (email, call, meeting).", "x-ms-summary": "Type" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Conversations list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateConversation",
+                "summary": "Create Conversation",
+                "description": "Log a new conversation (email, call, or meeting) for a company.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "type": { "type": "string", "description": "Type: email, call, or meeting", "x-ms-summary": "Type", "enum": ["email", "call", "meeting"] }, "title": { "type": "string", "description": "Conversation title", "x-ms-summary": "Title" }, "description": { "type": "string", "description": "Description/notes", "x-ms-summary": "Description" }, "date": { "type": "string", "description": "Date (ISO 8601)", "x-ms-summary": "Date" } } } }
+                ],
+                "responses": { "200": { "description": "Conversation created", "schema": { "type": "object" } } }
+            }
+        },
+        "/nps": {
+            "get": {
+                "operationId": "ListNps",
+                "summary": "List NPS",
+                "description": "List NPS (Net Promoter Score) responses with optional company filter.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "NPS list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateNps",
+                "summary": "Create NPS",
+                "description": "Create a new NPS response.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId", "score"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "score": { "type": "integer", "description": "NPS score (0-10)", "x-ms-summary": "Score" }, "comment": { "type": "string", "description": "Comment", "x-ms-summary": "Comment" }, "endUserId": { "type": "string", "description": "Enduser ID", "x-ms-summary": "Enduser ID" } } } }
+                ],
+                "responses": { "200": { "description": "NPS created", "schema": { "type": "object" } } }
+            }
+        },
+        "/tickets": {
+            "get": {
+                "operationId": "ListTickets",
+                "summary": "List Tickets",
+                "description": "List support tickets.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "status", "in": "query", "type": "string", "description": "Filter by status.", "x-ms-summary": "Status" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Tickets list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateTicket",
+                "summary": "Create Ticket",
+                "description": "Create a new support ticket.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "title": { "type": "string", "description": "Ticket title", "x-ms-summary": "Title" }, "description": { "type": "string", "description": "Description", "x-ms-summary": "Description" }, "priority": { "type": "string", "description": "Priority", "x-ms-summary": "Priority" }, "status": { "type": "string", "description": "Status", "x-ms-summary": "Status" } } } }
+                ],
+                "responses": { "200": { "description": "Ticket created", "schema": { "type": "object" } } }
+            }
+        },
+        "/revenues": {
+            "get": {
+                "operationId": "ListRevenue",
+                "summary": "List Revenue",
+                "description": "List revenue entries (MRR/ARR tracking).",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Revenue list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateRevenue",
+                "summary": "Create Revenue",
+                "description": "Create a revenue entry.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "type": { "type": "string", "description": "Revenue type", "x-ms-summary": "Type" }, "amount": { "type": "number", "description": "Amount", "x-ms-summary": "Amount" }, "currency": { "type": "string", "description": "Currency", "x-ms-summary": "Currency" }, "date": { "type": "string", "description": "Date (ISO 8601)", "x-ms-summary": "Date" } } } }
+                ],
+                "responses": { "200": { "description": "Revenue created", "schema": { "type": "object" } } }
+            }
+        },
+        "/objectives": {
+            "get": {
+                "operationId": "ListObjectives",
+                "summary": "List Objectives",
+                "description": "List objectives (goals/success plans).",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Objectives list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            }
+        },
+        "/users": {
+            "get": {
+                "operationId": "ListUsers",
+                "summary": "List Users",
+                "description": "List Planhat users (team members).",
+                "parameters": [
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Users list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            }
+        },
+        "/assets": {
+            "get": {
+                "operationId": "ListAssets",
+                "summary": "List Assets",
+                "description": "List all assets.",
+                "parameters": [
+                    { "name": "companyId", "in": "query", "type": "string", "description": "Filter by company ID.", "x-ms-summary": "Company ID" },
+                    { "name": "limit", "in": "query", "type": "integer", "description": "Max results.", "x-ms-summary": "Limit" },
+                    { "name": "offset", "in": "query", "type": "integer", "description": "Offset.", "x-ms-summary": "Offset" }
+                ],
+                "responses": { "200": { "description": "Assets list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            },
+            "post": {
+                "operationId": "CreateAsset",
+                "summary": "Create Asset",
+                "description": "Create a new asset.",
+                "parameters": [
+                    { "name": "body", "in": "body", "required": true, "schema": { "type": "object", "required": ["companyId"], "properties": { "companyId": { "type": "string", "description": "Company ID", "x-ms-summary": "Company ID" }, "name": { "type": "string", "description": "Asset name", "x-ms-summary": "Name" }, "externalId": { "type": "string", "description": "External ID", "x-ms-summary": "External ID" } } } }
+                ],
+                "responses": { "200": { "description": "Asset created", "schema": { "type": "object" } } }
+            }
+        },
+        "/customfields": {
+            "get": {
+                "operationId": "ListCustomFields",
+                "summary": "List Custom Fields",
+                "description": "List custom field definitions.",
+                "parameters": [
+                    { "name": "model", "in": "query", "type": "string", "description": "Filter by model name.", "x-ms-summary": "Model" }
+                ],
+                "responses": { "200": { "description": "Custom fields list", "schema": { "type": "array", "items": { "type": "object" } } } }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Planhat MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Planhat Customer Success platform operations via JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": { "200": { "description": "MCP JSON-RPC 2.0 response" } }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {}
+}
