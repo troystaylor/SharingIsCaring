@@ -1,0 +1,633 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry OptiMind",
+    "description": "Connect to Microsoft Foundry OptiMind to translate business optimization problems described in natural language into mathematical formulations and executable GurobiPy code. Supports supply chain planning, scheduling, resource allocation, routing, and other optimization scenarios. Includes MCP protocol support and borrowed chat completion for result explanation.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.services.ai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/chat/completions": {
+      "post": {
+        "operationId": "FormulateOptimization",
+        "summary": "Formulate Optimization Problem",
+        "description": "Translate a business optimization problem described in natural language into a mathematical formulation (MILP) and executable GurobiPy Python code. Supports scheduling, routing, supply chain, resource allocation, network design, and other optimization categories.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "problem_description"
+              ],
+              "properties": {
+                "problem_description": {
+                  "type": "string",
+                  "description": "The optimization problem described in natural language. Include decisions to be made, constraints, and the objective (minimize cost, maximize profit, etc.).",
+                  "x-ms-summary": "Problem Description"
+                },
+                "additional_context": {
+                  "type": "string",
+                  "description": "Optional additional context, data, or constraints for the optimization problem.",
+                  "x-ms-summary": "Additional Context",
+                  "x-ms-visibility": "advanced"
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.9 (recommended for OptiMind).",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.9,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of tokens to generate. Default: 4096.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Optimization formulation generated successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "formulation": {
+                  "type": "string",
+                  "description": "The full response containing mathematical formulation and GurobiPy code.",
+                  "x-ms-summary": "Formulation"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "The model used for generation.",
+                  "x-ms-summary": "Model"
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/chat/completions": {
+      "post": {
+        "operationId": "ChatCompletion",
+        "summary": "Chat Completion",
+        "description": "Send a general chat completion request to the OptiMind model. Use this to explain optimization results, ask follow-up questions, or have a conversation about optimization concepts.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "messages"
+              ],
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "description": "The collection of context messages for the chat completions request.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "The role of the message author.",
+                        "x-ms-summary": "Role",
+                        "enum": [
+                          "system",
+                          "user",
+                          "assistant"
+                        ]
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "The content of the message.",
+                        "x-ms-summary": "Content"
+                      }
+                    },
+                    "required": [
+                      "role",
+                      "content"
+                    ]
+                  }
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.9.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.9,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "top_p": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Nucleus sampling probability mass (0-1). Default: 1.",
+                  "x-ms-summary": "Top P",
+                  "x-ms-visibility": "advanced",
+                  "default": 1.0,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The maximum number of tokens to generate.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat completion response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the completion.",
+                  "x-ms-summary": "Completion ID"
+                },
+                "choices": {
+                  "type": "array",
+                  "description": "List of completion choices.",
+                  "x-ms-summary": "Choices",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Index of the choice.",
+                        "x-ms-summary": "Index"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "The generated message.",
+                        "x-ms-summary": "Message",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "description": "The role of the message author.",
+                            "x-ms-summary": "Role"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the message.",
+                            "x-ms-summary": "Content"
+                          }
+                        }
+                      },
+                      "finish_reason": {
+                        "type": "string",
+                        "description": "The reason the model stopped generating.",
+                        "x-ms-summary": "Finish Reason"
+                      }
+                    }
+                  }
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/optimind/parse": {
+      "post": {
+        "operationId": "ParseFormulation",
+        "summary": "Parse Optimization Formulation",
+        "description": "Parse an OptiMind formulation response into separate components: reasoning, mathematical model, and Python code. This operation runs entirely in the connector — no API call is made.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "formulation"
+              ],
+              "properties": {
+                "formulation": {
+                  "type": "string",
+                  "description": "The raw formulation text returned by the Formulate Optimization operation.",
+                  "x-ms-summary": "Formulation Text"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parsed formulation components.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reasoning": {
+                  "type": "string",
+                  "description": "The step-by-step reasoning and thinking from the model.",
+                  "x-ms-summary": "Reasoning"
+                },
+                "mathematical_model": {
+                  "type": "string",
+                  "description": "The mathematical formulation (MILP/LP) extracted from the response.",
+                  "x-ms-summary": "Mathematical Model"
+                },
+                "python_code": {
+                  "type": "string",
+                  "description": "The extracted GurobiPy Python code block.",
+                  "x-ms-summary": "Python Code"
+                },
+                "has_code": {
+                  "type": "boolean",
+                  "description": "Whether the formulation contains a Python code block.",
+                  "x-ms-summary": "Has Code"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The formulation text is missing or empty."
+          }
+        }
+      }
+    },
+    "/optimind/refine": {
+      "post": {
+        "operationId": "RefineOptimization",
+        "summary": "Refine Optimization Formulation",
+        "description": "Refine a previous optimization formulation based on feedback. Pass the original formulation and describe what should change — added constraints, different objective, modified parameters.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "original_formulation",
+                "feedback"
+              ],
+              "properties": {
+                "original_formulation": {
+                  "type": "string",
+                  "description": "The previous formulation output to refine.",
+                  "x-ms-summary": "Original Formulation"
+                },
+                "feedback": {
+                  "type": "string",
+                  "description": "What to change — e.g. 'add a constraint that no driver works more than 8 hours' or 'minimize time instead of cost'.",
+                  "x-ms-summary": "Feedback"
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.9.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.9,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of tokens to generate. Default: 4096.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refined optimization formulation.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "formulation": {
+                  "type": "string",
+                  "description": "The refined formulation with updated constraints, objective, or code.",
+                  "x-ms-summary": "Formulation"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "The model used for generation.",
+                  "x-ms-summary": "Model"
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/optimind/explain": {
+      "post": {
+        "operationId": "ExplainOptimization",
+        "summary": "Explain Optimization Formulation",
+        "description": "Get a plain-English explanation of an optimization formulation. Returns a non-technical summary of what the model optimizes, what decisions it makes, and what constraints it enforces.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "formulation"
+              ],
+              "properties": {
+                "formulation": {
+                  "type": "string",
+                  "description": "The optimization formulation to explain.",
+                  "x-ms-summary": "Formulation Text"
+                },
+                "audience": {
+                  "type": "string",
+                  "description": "Target audience for the explanation. Default: 'business stakeholder'.",
+                  "x-ms-summary": "Audience",
+                  "x-ms-visibility": "advanced",
+                  "default": "business stakeholder",
+                  "enum": [
+                    "business stakeholder",
+                    "technical manager",
+                    "data scientist"
+                  ]
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of tokens to generate. Default: 2048.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 2048,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plain-English explanation of the formulation.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "explanation": {
+                  "type": "string",
+                  "description": "Non-technical summary of the optimization formulation.",
+                  "x-ms-summary": "Explanation"
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry OptiMind MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for optimization formulation, refinement, parsing, explanation, and chat completion tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://ai.azure.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI"
+    }
+  ]
+}
