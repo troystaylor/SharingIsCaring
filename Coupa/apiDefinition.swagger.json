@@ -1,0 +1,3502 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Coupa",
+        "description": "Connector for the Coupa procurement platform. Access purchase orders, invoices, requisitions, suppliers, and other procurement resources via the Coupa Core API.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "YOUR_INSTANCE.coupahost.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Coupa MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Coupa Core API operations via JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/api/suppliers": {
+            "get": {
+                "operationId": "ListSuppliers",
+                "summary": "List Suppliers",
+                "description": "Query suppliers in Coupa. Returns up to 50 results per page by default.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset for pagination.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum number of records to return (max 50).",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date (YYYY-MM-DDTHH:MM:SS+HH:MMZ).",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by supplier status.",
+                        "x-ms-summary": "Status",
+                        "enum": [
+                            "active",
+                            "inactive",
+                            "draft"
+                        ]
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by supplier name.",
+                        "x-ms-summary": "Name"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of suppliers",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Supplier"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateSupplier",
+                "summary": "Create Supplier",
+                "description": "Create a new supplier in Coupa.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "name"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Supplier name.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "display-name": {
+                                    "type": "string",
+                                    "description": "Display name.",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "number": {
+                                    "type": "string",
+                                    "description": "Supplier number.",
+                                    "x-ms-summary": "Number"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Status.",
+                                    "x-ms-summary": "Status",
+                                    "enum": [
+                                        "active",
+                                        "inactive",
+                                        "draft"
+                                    ]
+                                },
+                                "po-method": {
+                                    "type": "string",
+                                    "description": "PO transmission method.",
+                                    "x-ms-summary": "PO Method",
+                                    "enum": [
+                                        "cxml",
+                                        "xml",
+                                        "email",
+                                        "prompt",
+                                        "mark_as_sent",
+                                        "buy_online"
+                                    ]
+                                },
+                                "po-email": {
+                                    "type": "string",
+                                    "description": "Email for PO transmission.",
+                                    "x-ms-summary": "PO Email"
+                                },
+                                "payment-method": {
+                                    "type": "string",
+                                    "description": "Default payment method.",
+                                    "x-ms-summary": "Payment Method",
+                                    "enum": [
+                                        "invoice",
+                                        "pcard",
+                                        "invoice_only",
+                                        "pcard_only",
+                                        "virtual_card"
+                                    ]
+                                },
+                                "invoice-matching-level": {
+                                    "type": "string",
+                                    "description": "Invoice matching level.",
+                                    "x-ms-summary": "Invoice Matching Level",
+                                    "enum": [
+                                        "2-way",
+                                        "3-way",
+                                        "3-way-direct",
+                                        "none"
+                                    ]
+                                },
+                                "tax-id": {
+                                    "type": "string",
+                                    "description": "Tax ID.",
+                                    "x-ms-summary": "Tax ID"
+                                },
+                                "duns": {
+                                    "type": "string",
+                                    "description": "DUNS number.",
+                                    "x-ms-summary": "DUNS"
+                                },
+                                "website": {
+                                    "type": "string",
+                                    "description": "Website URL.",
+                                    "x-ms-summary": "Website"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created supplier",
+                        "schema": {
+                            "$ref": "#/definitions/Supplier"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/suppliers/{id}": {
+            "get": {
+                "operationId": "GetSupplier",
+                "summary": "Get Supplier",
+                "description": "Get a specific supplier by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Supplier ID.",
+                        "x-ms-summary": "Supplier ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Supplier details",
+                        "schema": {
+                            "$ref": "#/definitions/Supplier"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateSupplier",
+                "summary": "Update Supplier",
+                "description": "Update an existing supplier.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Supplier ID.",
+                        "x-ms-summary": "Supplier ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Supplier name.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "display-name": {
+                                    "type": "string",
+                                    "description": "Display name.",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Status.",
+                                    "x-ms-summary": "Status",
+                                    "enum": [
+                                        "active",
+                                        "inactive"
+                                    ]
+                                },
+                                "po-method": {
+                                    "type": "string",
+                                    "description": "PO transmission method.",
+                                    "x-ms-summary": "PO Method",
+                                    "enum": [
+                                        "cxml",
+                                        "xml",
+                                        "email",
+                                        "prompt",
+                                        "mark_as_sent",
+                                        "buy_online"
+                                    ]
+                                },
+                                "po-email": {
+                                    "type": "string",
+                                    "description": "Email for PO transmission.",
+                                    "x-ms-summary": "PO Email"
+                                },
+                                "payment-method": {
+                                    "type": "string",
+                                    "description": "Default payment method.",
+                                    "x-ms-summary": "Payment Method",
+                                    "enum": [
+                                        "invoice",
+                                        "pcard",
+                                        "invoice_only",
+                                        "pcard_only",
+                                        "virtual_card"
+                                    ]
+                                },
+                                "invoice-matching-level": {
+                                    "type": "string",
+                                    "description": "Invoice matching level.",
+                                    "x-ms-summary": "Invoice Matching Level",
+                                    "enum": [
+                                        "2-way",
+                                        "3-way",
+                                        "3-way-direct",
+                                        "none"
+                                    ]
+                                },
+                                "tax-id": {
+                                    "type": "string",
+                                    "description": "Tax ID.",
+                                    "x-ms-summary": "Tax ID"
+                                },
+                                "website": {
+                                    "type": "string",
+                                    "description": "Website URL.",
+                                    "x-ms-summary": "Website"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated supplier",
+                        "schema": {
+                            "$ref": "#/definitions/Supplier"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users": {
+            "get": {
+                "operationId": "ListUsers",
+                "summary": "List Users",
+                "description": "Query users in Coupa.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by email.",
+                        "x-ms-summary": "Email"
+                    },
+                    {
+                        "name": "login",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by login.",
+                        "x-ms-summary": "Login"
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "type": "boolean",
+                        "required": false,
+                        "description": "Filter by active status.",
+                        "x-ms-summary": "Active"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/User"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateUser",
+                "summary": "Create User",
+                "description": "Create a new user in Coupa.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "login",
+                                "email",
+                                "firstname",
+                                "lastname"
+                            ],
+                            "properties": {
+                                "login": {
+                                    "type": "string",
+                                    "description": "Login name.",
+                                    "x-ms-summary": "Login"
+                                },
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email address.",
+                                    "x-ms-summary": "Email"
+                                },
+                                "firstname": {
+                                    "type": "string",
+                                    "description": "First name.",
+                                    "x-ms-summary": "First Name"
+                                },
+                                "lastname": {
+                                    "type": "string",
+                                    "description": "Last name.",
+                                    "x-ms-summary": "Last Name"
+                                },
+                                "active": {
+                                    "type": "boolean",
+                                    "description": "Active status.",
+                                    "x-ms-summary": "Active"
+                                },
+                                "employee-number": {
+                                    "type": "string",
+                                    "description": "Employee number.",
+                                    "x-ms-summary": "Employee Number"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created user",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "get": {
+                "operationId": "GetUser",
+                "summary": "Get User",
+                "description": "Get a specific user by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "User ID.",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateUser",
+                "summary": "Update User",
+                "description": "Update an existing user.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "User ID.",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "description": "Email address.",
+                                    "x-ms-summary": "Email"
+                                },
+                                "firstname": {
+                                    "type": "string",
+                                    "description": "First name.",
+                                    "x-ms-summary": "First Name"
+                                },
+                                "lastname": {
+                                    "type": "string",
+                                    "description": "Last name.",
+                                    "x-ms-summary": "Last Name"
+                                },
+                                "active": {
+                                    "type": "boolean",
+                                    "description": "Active status.",
+                                    "x-ms-summary": "Active"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated user",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/accounts": {
+            "get": {
+                "operationId": "ListAccounts",
+                "summary": "List Accounts",
+                "description": "Query chart of accounts.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "type": "boolean",
+                        "required": false,
+                        "description": "Filter by active status.",
+                        "x-ms-summary": "Active"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of accounts",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Account"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/accounts/{id}": {
+            "get": {
+                "operationId": "GetAccount",
+                "summary": "Get Account",
+                "description": "Get a specific account by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Account ID.",
+                        "x-ms-summary": "Account ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account details",
+                        "schema": {
+                            "$ref": "#/definitions/Account"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/departments": {
+            "get": {
+                "operationId": "ListDepartments",
+                "summary": "List Departments",
+                "description": "Query departments.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "type": "boolean",
+                        "required": false,
+                        "description": "Filter by active status.",
+                        "x-ms-summary": "Active"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of departments",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Department"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/departments/{id}": {
+            "get": {
+                "operationId": "GetDepartment",
+                "summary": "Get Department",
+                "description": "Get a specific department by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Department ID.",
+                        "x-ms-summary": "Department ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Department details",
+                        "schema": {
+                            "$ref": "#/definitions/Department"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/addresses": {
+            "get": {
+                "operationId": "ListAddresses",
+                "summary": "List Addresses",
+                "description": "Query addresses.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of addresses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Address"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/addresses/{id}": {
+            "get": {
+                "operationId": "GetAddress",
+                "summary": "Get Address",
+                "description": "Get a specific address by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Address ID.",
+                        "x-ms-summary": "Address ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Address details",
+                        "schema": {
+                            "$ref": "#/definitions/Address"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/items": {
+            "get": {
+                "operationId": "ListItems",
+                "summary": "List Items",
+                "description": "Query catalog items.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "type": "boolean",
+                        "required": false,
+                        "description": "Filter by active status.",
+                        "x-ms-summary": "Active"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of items",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Item"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/items/{id}": {
+            "get": {
+                "operationId": "GetItem",
+                "summary": "Get Item",
+                "description": "Get a specific catalog item by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Item ID.",
+                        "x-ms-summary": "Item ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item details",
+                        "schema": {
+                            "$ref": "#/definitions/Item"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/currencies": {
+            "get": {
+                "operationId": "ListCurrencies",
+                "summary": "List Currencies",
+                "description": "Query currencies.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of currencies",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Currency"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payment_terms": {
+            "get": {
+                "operationId": "ListPaymentTerms",
+                "summary": "List Payment Terms",
+                "description": "Query payment terms.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of payment terms",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PaymentTerm"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/exchange_rates": {
+            "get": {
+                "operationId": "ListExchangeRates",
+                "summary": "List Exchange Rates",
+                "description": "Query exchange rates.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of exchange rates",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ExchangeRate"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/lookup_values": {
+            "get": {
+                "operationId": "ListLookupValues",
+                "summary": "List Lookup Values",
+                "description": "Query lookup values.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "type": "boolean",
+                        "required": false,
+                        "description": "Filter by active status.",
+                        "x-ms-summary": "Active"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of lookup values",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/LookupValue"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/projects": {
+            "get": {
+                "operationId": "ListProjects",
+                "summary": "List Projects",
+                "description": "Query projects.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "type": "boolean",
+                        "required": false,
+                        "description": "Filter by active status.",
+                        "x-ms-summary": "Active"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of projects",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Project"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/projects/{id}": {
+            "get": {
+                "operationId": "GetProject",
+                "summary": "Get Project",
+                "description": "Get a specific project by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Project ID.",
+                        "x-ms-summary": "Project ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project details",
+                        "schema": {
+                            "$ref": "#/definitions/Project"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/purchase_orders": {
+            "get": {
+                "operationId": "ListPurchaseOrders",
+                "summary": "List Purchase Orders",
+                "description": "Query purchase orders. For large data sets, always limit results with query criteria.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by PO status.",
+                        "x-ms-summary": "Status",
+                        "enum": [
+                            "draft",
+                            "issued",
+                            "closed",
+                            "cancelled",
+                            "buyer_hold",
+                            "supplier_hold"
+                        ]
+                    },
+                    {
+                        "name": "po-number",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by PO number.",
+                        "x-ms-summary": "PO Number"
+                    },
+                    {
+                        "name": "supplier[name]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by supplier name.",
+                        "x-ms-summary": "Supplier Name"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of purchase orders",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PurchaseOrder"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreatePurchaseOrder",
+                "summary": "Create Purchase Order",
+                "description": "Create a purchase order as part of the external purchase orders feature. Do not use for Coupa-based POs.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "po-number",
+                                "supplier"
+                            ],
+                            "properties": {
+                                "po-number": {
+                                    "type": "string",
+                                    "description": "PO number.",
+                                    "x-ms-summary": "PO Number"
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "description": "Type (ExternalOrderHeader for external POs).",
+                                    "x-ms-summary": "Type",
+                                    "default": "ExternalOrderHeader"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "PO status.",
+                                    "x-ms-summary": "Status"
+                                },
+                                "supplier": {
+                                    "type": "object",
+                                    "description": "Supplier reference.",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Supplier ID.",
+                                            "x-ms-summary": "Supplier ID"
+                                        },
+                                        "number": {
+                                            "type": "string",
+                                            "description": "Supplier number.",
+                                            "x-ms-summary": "Supplier Number"
+                                        }
+                                    }
+                                },
+                                "ship-to-address": {
+                                    "type": "object",
+                                    "description": "Ship to address.",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Address ID.",
+                                            "x-ms-summary": "Address ID"
+                                        }
+                                    }
+                                },
+                                "currency": {
+                                    "type": "object",
+                                    "description": "Currency reference.",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Currency code (e.g., USD).",
+                                            "x-ms-summary": "Currency Code"
+                                        }
+                                    }
+                                },
+                                "payment-term": {
+                                    "type": "object",
+                                    "description": "Payment term reference.",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Payment term code.",
+                                            "x-ms-summary": "Payment Term Code"
+                                        }
+                                    }
+                                },
+                                "order-lines": {
+                                    "type": "array",
+                                    "description": "Order lines.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Line description.",
+                                                "x-ms-summary": "Description"
+                                            },
+                                            "line-num": {
+                                                "type": "integer",
+                                                "description": "Line number.",
+                                                "x-ms-summary": "Line Number"
+                                            },
+                                            "quantity": {
+                                                "type": "number",
+                                                "description": "Quantity.",
+                                                "x-ms-summary": "Quantity"
+                                            },
+                                            "price": {
+                                                "type": "number",
+                                                "description": "Unit price.",
+                                                "x-ms-summary": "Price"
+                                            },
+                                            "total": {
+                                                "type": "number",
+                                                "description": "Line total.",
+                                                "x-ms-summary": "Total"
+                                            },
+                                            "currency": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "code": {
+                                                        "type": "string",
+                                                        "description": "Currency code.",
+                                                        "x-ms-summary": "Currency Code"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created purchase order",
+                        "schema": {
+                            "$ref": "#/definitions/PurchaseOrder"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/purchase_orders/{id}": {
+            "get": {
+                "operationId": "GetPurchaseOrder",
+                "summary": "Get Purchase Order",
+                "description": "Get a specific purchase order by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Purchase order ID.",
+                        "x-ms-summary": "Purchase Order ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Purchase order details",
+                        "schema": {
+                            "$ref": "#/definitions/PurchaseOrder"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdatePurchaseOrder",
+                "summary": "Update Purchase Order",
+                "description": "Update an existing purchase order.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Purchase order ID.",
+                        "x-ms-summary": "Purchase Order ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "PO status.",
+                                    "x-ms-summary": "Status"
+                                },
+                                "ship-to-address": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Address ID.",
+                                            "x-ms-summary": "Address ID"
+                                        }
+                                    }
+                                },
+                                "payment-term": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Payment term code.",
+                                            "x-ms-summary": "Payment Term Code"
+                                        }
+                                    }
+                                },
+                                "exported": {
+                                    "type": "boolean",
+                                    "description": "Mark as exported.",
+                                    "x-ms-summary": "Exported"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated purchase order",
+                        "schema": {
+                            "$ref": "#/definitions/PurchaseOrder"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/purchase_orders/{id}/issue": {
+            "put": {
+                "operationId": "IssuePurchaseOrder",
+                "summary": "Issue Purchase Order",
+                "description": "Issue and send a purchase order to the supplier.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Purchase order ID.",
+                        "x-ms-summary": "Purchase Order ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Issued purchase order",
+                        "schema": {
+                            "$ref": "#/definitions/PurchaseOrder"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/purchase_orders/{id}/cancel": {
+            "put": {
+                "operationId": "CancelPurchaseOrder",
+                "summary": "Cancel Purchase Order",
+                "description": "Cancel a purchase order.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Purchase order ID.",
+                        "x-ms-summary": "Purchase Order ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cancelled purchase order",
+                        "schema": {
+                            "$ref": "#/definitions/PurchaseOrder"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/purchase_orders/{id}/close": {
+            "put": {
+                "operationId": "ClosePurchaseOrder",
+                "summary": "Close Purchase Order",
+                "description": "Close a purchase order.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Purchase order ID.",
+                        "x-ms-summary": "Purchase Order ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Closed purchase order",
+                        "schema": {
+                            "$ref": "#/definitions/PurchaseOrder"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/purchase_order_lines": {
+            "get": {
+                "operationId": "ListPurchaseOrderLines",
+                "summary": "List Purchase Order Lines",
+                "description": "Query purchase order lines.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "order-header-id",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Filter by purchase order ID.",
+                        "x-ms-summary": "Purchase Order ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of purchase order lines",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PurchaseOrderLine"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invoices": {
+            "get": {
+                "operationId": "ListInvoices",
+                "summary": "List Invoices",
+                "description": "Query invoices. For large data sets, always limit results with query criteria.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by invoice status.",
+                        "x-ms-summary": "Status",
+                        "enum": [
+                            "draft",
+                            "pending_approval",
+                            "approved",
+                            "voided",
+                            "disputed",
+                            "pending_receipt",
+                            "rejected",
+                            "on_hold"
+                        ]
+                    },
+                    {
+                        "name": "invoice-number",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by invoice number.",
+                        "x-ms-summary": "Invoice Number"
+                    },
+                    {
+                        "name": "supplier[name]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by supplier name.",
+                        "x-ms-summary": "Supplier Name"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of invoices",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Invoice"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateInvoice",
+                "summary": "Create Invoice",
+                "description": "Create an invoice in draft status.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "invoice-number",
+                                "invoice-date",
+                                "supplier"
+                            ],
+                            "properties": {
+                                "invoice-number": {
+                                    "type": "string",
+                                    "description": "Invoice number.",
+                                    "x-ms-summary": "Invoice Number"
+                                },
+                                "invoice-date": {
+                                    "type": "string",
+                                    "description": "Invoice date (YYYY-MM-DD).",
+                                    "x-ms-summary": "Invoice Date"
+                                },
+                                "document-type": {
+                                    "type": "string",
+                                    "description": "Document type.",
+                                    "x-ms-summary": "Document Type",
+                                    "enum": [
+                                        "Invoice",
+                                        "Credit Note"
+                                    ]
+                                },
+                                "supplier": {
+                                    "type": "object",
+                                    "description": "Supplier reference.",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Supplier ID.",
+                                            "x-ms-summary": "Supplier ID"
+                                        },
+                                        "number": {
+                                            "type": "string",
+                                            "description": "Supplier number.",
+                                            "x-ms-summary": "Supplier Number"
+                                        }
+                                    }
+                                },
+                                "currency": {
+                                    "type": "object",
+                                    "description": "Currency reference.",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Currency code.",
+                                            "x-ms-summary": "Currency Code"
+                                        }
+                                    }
+                                },
+                                "payment-term": {
+                                    "type": "object",
+                                    "description": "Payment term reference.",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Payment term code.",
+                                            "x-ms-summary": "Payment Term Code"
+                                        }
+                                    }
+                                },
+                                "line-level-taxation": {
+                                    "type": "boolean",
+                                    "description": "Whether taxes are at line level.",
+                                    "x-ms-summary": "Line Level Taxation"
+                                },
+                                "shipping-amount": {
+                                    "type": "number",
+                                    "description": "Shipping amount.",
+                                    "x-ms-summary": "Shipping Amount"
+                                },
+                                "tax-amount": {
+                                    "type": "number",
+                                    "description": "Tax amount (header level).",
+                                    "x-ms-summary": "Tax Amount"
+                                },
+                                "invoice-lines": {
+                                    "type": "array",
+                                    "description": "Invoice lines.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Line description.",
+                                                "x-ms-summary": "Description"
+                                            },
+                                            "line-num": {
+                                                "type": "integer",
+                                                "description": "Line number.",
+                                                "x-ms-summary": "Line Number"
+                                            },
+                                            "quantity": {
+                                                "type": "number",
+                                                "description": "Quantity.",
+                                                "x-ms-summary": "Quantity"
+                                            },
+                                            "price": {
+                                                "type": "number",
+                                                "description": "Unit price.",
+                                                "x-ms-summary": "Price"
+                                            },
+                                            "total": {
+                                                "type": "number",
+                                                "description": "Line total.",
+                                                "x-ms-summary": "Total"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created invoice",
+                        "schema": {
+                            "$ref": "#/definitions/Invoice"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invoices/{id}": {
+            "get": {
+                "operationId": "GetInvoice",
+                "summary": "Get Invoice",
+                "description": "Get a specific invoice by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Invoice ID.",
+                        "x-ms-summary": "Invoice ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice details",
+                        "schema": {
+                            "$ref": "#/definitions/Invoice"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateInvoice",
+                "summary": "Update Invoice",
+                "description": "Update an existing invoice.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Invoice ID.",
+                        "x-ms-summary": "Invoice ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "invoice-date": {
+                                    "type": "string",
+                                    "description": "Invoice date.",
+                                    "x-ms-summary": "Invoice Date"
+                                },
+                                "comments": {
+                                    "type": "string",
+                                    "description": "Comments.",
+                                    "x-ms-summary": "Comments"
+                                },
+                                "internal-note": {
+                                    "type": "string",
+                                    "description": "Internal note.",
+                                    "x-ms-summary": "Internal Note"
+                                },
+                                "exported": {
+                                    "type": "boolean",
+                                    "description": "Mark as exported.",
+                                    "x-ms-summary": "Exported"
+                                },
+                                "payment-date": {
+                                    "type": "string",
+                                    "description": "Payment date.",
+                                    "x-ms-summary": "Payment Date"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated invoice",
+                        "schema": {
+                            "$ref": "#/definitions/Invoice"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invoices/{id}/submit": {
+            "put": {
+                "operationId": "SubmitInvoice",
+                "summary": "Submit Invoice",
+                "description": "Submit a draft invoice for approval.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Invoice ID.",
+                        "x-ms-summary": "Invoice ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submitted invoice",
+                        "schema": {
+                            "$ref": "#/definitions/Invoice"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invoices/{id}/void": {
+            "put": {
+                "operationId": "VoidInvoice",
+                "summary": "Void Invoice",
+                "description": "Void an approved invoice. Only works on invoices in approved, pending_receipt, or draft status.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Invoice ID.",
+                        "x-ms-summary": "Invoice ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Voided invoice",
+                        "schema": {
+                            "$ref": "#/definitions/Invoice"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/requisitions": {
+            "get": {
+                "operationId": "ListRequisitions",
+                "summary": "List Requisitions",
+                "description": "Query requisitions.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by status.",
+                        "x-ms-summary": "Status",
+                        "enum": [
+                            "draft",
+                            "pending_buyer_action",
+                            "pending_approval",
+                            "approved",
+                            "ordered",
+                            "partially_received",
+                            "received",
+                            "abandoned"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of requisitions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Requisition"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "CreateRequisition",
+                "summary": "Create Requisition",
+                "description": "Create a requisition in draft status.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "requisition-lines"
+                            ],
+                            "properties": {
+                                "justification": {
+                                    "type": "string",
+                                    "description": "Justification comments.",
+                                    "x-ms-summary": "Justification"
+                                },
+                                "need-by-date": {
+                                    "type": "string",
+                                    "description": "Need by date (YYYY-MM-DD).",
+                                    "x-ms-summary": "Need By Date"
+                                },
+                                "ship-to-address": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Address ID.",
+                                            "x-ms-summary": "Address ID"
+                                        }
+                                    }
+                                },
+                                "department": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "Department ID.",
+                                            "x-ms-summary": "Department ID"
+                                        }
+                                    }
+                                },
+                                "requisition-lines": {
+                                    "type": "array",
+                                    "description": "Requisition lines.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Line description.",
+                                                "x-ms-summary": "Description"
+                                            },
+                                            "line-num": {
+                                                "type": "integer",
+                                                "description": "Line number.",
+                                                "x-ms-summary": "Line Number"
+                                            },
+                                            "quantity": {
+                                                "type": "number",
+                                                "description": "Quantity.",
+                                                "x-ms-summary": "Quantity"
+                                            },
+                                            "unit-price": {
+                                                "type": "number",
+                                                "description": "Unit price.",
+                                                "x-ms-summary": "Unit Price"
+                                            },
+                                            "need-by-date": {
+                                                "type": "string",
+                                                "description": "Line need by date.",
+                                                "x-ms-summary": "Need By Date"
+                                            },
+                                            "supplier": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "description": "Supplier ID.",
+                                                        "x-ms-summary": "Supplier ID"
+                                                    }
+                                                }
+                                            },
+                                            "currency": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "code": {
+                                                        "type": "string",
+                                                        "description": "Currency code.",
+                                                        "x-ms-summary": "Currency Code"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created requisition",
+                        "schema": {
+                            "$ref": "#/definitions/Requisition"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/requisitions/{id}": {
+            "get": {
+                "operationId": "GetRequisition",
+                "summary": "Get Requisition",
+                "description": "Get a specific requisition by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Requisition ID.",
+                        "x-ms-summary": "Requisition ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Requisition details",
+                        "schema": {
+                            "$ref": "#/definitions/Requisition"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "UpdateRequisition",
+                "summary": "Update Requisition",
+                "description": "Update an existing requisition.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Requisition ID.",
+                        "x-ms-summary": "Requisition ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "justification": {
+                                    "type": "string",
+                                    "description": "Justification.",
+                                    "x-ms-summary": "Justification"
+                                },
+                                "need-by-date": {
+                                    "type": "string",
+                                    "description": "Need by date.",
+                                    "x-ms-summary": "Need By Date"
+                                },
+                                "exported": {
+                                    "type": "boolean",
+                                    "description": "Mark as exported.",
+                                    "x-ms-summary": "Exported"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated requisition",
+                        "schema": {
+                            "$ref": "#/definitions/Requisition"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/approvals": {
+            "get": {
+                "operationId": "ListApprovals",
+                "summary": "List Approvals",
+                "description": "Query approvals.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by approval status.",
+                        "x-ms-summary": "Status",
+                        "enum": [
+                            "pending_approval",
+                            "approved",
+                            "rejected"
+                        ]
+                    },
+                    {
+                        "name": "approvable-type",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by approvable type.",
+                        "x-ms-summary": "Approvable Type"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of approvals",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Approval"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/approvals/{id}": {
+            "get": {
+                "operationId": "GetApproval",
+                "summary": "Get Approval",
+                "description": "Get a specific approval by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Approval ID.",
+                        "x-ms-summary": "Approval ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Approval details",
+                        "schema": {
+                            "$ref": "#/definitions/Approval"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/expense_reports": {
+            "get": {
+                "operationId": "ListExpenseReports",
+                "summary": "List Expense Reports",
+                "description": "Query expense reports.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by status.",
+                        "x-ms-summary": "Status"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of expense reports",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ExpenseReport"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/expense_reports/{id}": {
+            "get": {
+                "operationId": "GetExpenseReport",
+                "summary": "Get Expense Report",
+                "description": "Get a specific expense report by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Expense report ID.",
+                        "x-ms-summary": "Expense Report ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense report details",
+                        "schema": {
+                            "$ref": "#/definitions/ExpenseReport"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contracts": {
+            "get": {
+                "operationId": "ListContracts",
+                "summary": "List Contracts",
+                "description": "Query contracts.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by contract status.",
+                        "x-ms-summary": "Status"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of contracts",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Contract"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contracts/{id}": {
+            "get": {
+                "operationId": "GetContract",
+                "summary": "Get Contract",
+                "description": "Get a specific contract by ID.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "integer",
+                        "required": true,
+                        "description": "Contract ID.",
+                        "x-ms-summary": "Contract ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contract details",
+                        "schema": {
+                            "$ref": "#/definitions/Contract"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/receipts": {
+            "get": {
+                "operationId": "ListReceipts",
+                "summary": "List Receipts",
+                "description": "Query receipts.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Starting record offset.",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Maximum records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "updated-at[gt_or_eq]",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter by last updated date.",
+                        "x-ms-summary": "Updated After"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of receipts",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Receipt"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Supplier": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Supplier name."
+                },
+                "display-name": {
+                    "type": "string",
+                    "description": "Display name."
+                },
+                "number": {
+                    "type": "string",
+                    "description": "Supplier number."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Supplier status."
+                },
+                "po-method": {
+                    "type": "string",
+                    "description": "PO transmission method."
+                },
+                "po-email": {
+                    "type": "string",
+                    "description": "Email for PO transmission."
+                },
+                "payment-method": {
+                    "type": "string",
+                    "description": "Default payment method."
+                },
+                "invoice-matching-level": {
+                    "type": "string",
+                    "description": "Invoice matching level."
+                },
+                "tax-id": {
+                    "type": "string",
+                    "description": "Tax ID."
+                },
+                "duns": {
+                    "type": "string",
+                    "description": "DUNS number."
+                },
+                "website": {
+                    "type": "string",
+                    "description": "Website URL."
+                },
+                "on-hold": {
+                    "type": "boolean",
+                    "description": "Supplier on hold."
+                },
+                "buyer-hold": {
+                    "type": "boolean",
+                    "description": "Hold POs for buyer review."
+                },
+                "account-number": {
+                    "type": "string",
+                    "description": "Account number."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "login": {
+                    "type": "string",
+                    "description": "Login name."
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Email address."
+                },
+                "firstname": {
+                    "type": "string",
+                    "description": "First name."
+                },
+                "lastname": {
+                    "type": "string",
+                    "description": "Last name."
+                },
+                "fullname": {
+                    "type": "string",
+                    "description": "Full name."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "employee-number": {
+                    "type": "string",
+                    "description": "Employee number."
+                },
+                "purchasing-user": {
+                    "type": "boolean",
+                    "description": "Has purchasing permissions."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Account": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Account name."
+                },
+                "code": {
+                    "type": "string",
+                    "description": "Account code."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "segment-1": {
+                    "type": "string",
+                    "description": "Segment 1 value."
+                },
+                "segment-2": {
+                    "type": "string",
+                    "description": "Segment 2 value."
+                },
+                "segment-3": {
+                    "type": "string",
+                    "description": "Segment 3 value."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Department": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Department name."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Address": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Address name."
+                },
+                "street1": {
+                    "type": "string",
+                    "description": "Street line 1."
+                },
+                "street2": {
+                    "type": "string",
+                    "description": "Street line 2."
+                },
+                "city": {
+                    "type": "string",
+                    "description": "City."
+                },
+                "state": {
+                    "type": "string",
+                    "description": "State or province."
+                },
+                "postal-code": {
+                    "type": "string",
+                    "description": "Postal code."
+                },
+                "country": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer",
+                            "description": "Country ID."
+                        },
+                        "code": {
+                            "type": "string",
+                            "description": "Country code."
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Country name."
+                        }
+                    }
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Item": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Item name."
+                },
+                "item-number": {
+                    "type": "string",
+                    "description": "Item number."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Item description."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Currency": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "code": {
+                    "type": "string",
+                    "description": "Currency code (e.g., USD)."
+                },
+                "decimals": {
+                    "type": "integer",
+                    "description": "Number of decimal places."
+                }
+            }
+        },
+        "PaymentTerm": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "code": {
+                    "type": "string",
+                    "description": "Payment term code."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Payment term description."
+                },
+                "days-for-net-payment": {
+                    "type": "integer",
+                    "description": "Days for net payment."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                }
+            }
+        },
+        "ExchangeRate": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "from-currency": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "From currency code."
+                        }
+                    }
+                },
+                "to-currency": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "To currency code."
+                        }
+                    }
+                },
+                "rate": {
+                    "type": "number",
+                    "description": "Exchange rate."
+                },
+                "rate-date": {
+                    "type": "string",
+                    "description": "Rate effective date."
+                }
+            }
+        },
+        "LookupValue": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Lookup value name."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "external-ref-num": {
+                    "type": "string",
+                    "description": "External reference number."
+                },
+                "external-ref-code": {
+                    "type": "string",
+                    "description": "External reference code."
+                }
+            }
+        },
+        "Project": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Project name."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Project description."
+                },
+                "active": {
+                    "type": "boolean",
+                    "description": "Active status."
+                },
+                "start-date": {
+                    "type": "string",
+                    "description": "Start date."
+                },
+                "end-date": {
+                    "type": "string",
+                    "description": "End date."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "PurchaseOrder": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "po-number": {
+                    "type": "string",
+                    "description": "PO number."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "PO status."
+                },
+                "version": {
+                    "type": "integer",
+                    "description": "PO supplier version number."
+                },
+                "total": {
+                    "type": "number",
+                    "description": "PO total."
+                },
+                "exported": {
+                    "type": "boolean",
+                    "description": "Export indicator."
+                },
+                "supplier": {
+                    "$ref": "#/definitions/SupplierRef"
+                },
+                "currency": {
+                    "$ref": "#/definitions/CurrencyRef"
+                },
+                "ship-to-address": {
+                    "$ref": "#/definitions/Address"
+                },
+                "payment-term": {
+                    "$ref": "#/definitions/PaymentTermRef"
+                },
+                "requester": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "ship-to-user": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "transmission-status": {
+                    "type": "string",
+                    "description": "Transmission status."
+                },
+                "acknowledged-flag": {
+                    "type": "boolean",
+                    "description": "Acknowledged by supplier."
+                },
+                "acknowledged-at": {
+                    "type": "string",
+                    "description": "Acknowledged date."
+                },
+                "order-lines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PurchaseOrderLine"
+                    }
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                },
+                "created-by": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "updated-by": {
+                    "$ref": "#/definitions/UserRef"
+                }
+            }
+        },
+        "PurchaseOrderLine": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "line-num": {
+                    "type": "integer",
+                    "description": "Line number."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Line description."
+                },
+                "quantity": {
+                    "type": "number",
+                    "description": "Quantity."
+                },
+                "price": {
+                    "type": "number",
+                    "description": "Unit price."
+                },
+                "total": {
+                    "type": "number",
+                    "description": "Line total."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Line status."
+                },
+                "need-by-date": {
+                    "type": "string",
+                    "description": "Need by date."
+                },
+                "received": {
+                    "type": "number",
+                    "description": "Quantity received."
+                },
+                "invoiced": {
+                    "type": "number",
+                    "description": "Quantity invoiced."
+                },
+                "currency": {
+                    "$ref": "#/definitions/CurrencyRef"
+                },
+                "uom": {
+                    "type": "string",
+                    "description": "Unit of measure."
+                },
+                "item": {
+                    "$ref": "#/definitions/ItemRef"
+                },
+                "account": {
+                    "$ref": "#/definitions/AccountRef"
+                }
+            }
+        },
+        "Invoice": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "invoice-number": {
+                    "type": "string",
+                    "description": "Invoice number."
+                },
+                "invoice-date": {
+                    "type": "string",
+                    "description": "Invoice date."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Invoice status."
+                },
+                "document-type": {
+                    "type": "string",
+                    "description": "Document type (Invoice or Credit Note)."
+                },
+                "supplier": {
+                    "$ref": "#/definitions/SupplierRef"
+                },
+                "currency": {
+                    "$ref": "#/definitions/CurrencyRef"
+                },
+                "payment-term": {
+                    "$ref": "#/definitions/PaymentTermRef"
+                },
+                "gross-total": {
+                    "type": "number",
+                    "description": "Gross total."
+                },
+                "total-with-taxes": {
+                    "type": "number",
+                    "description": "Total with taxes."
+                },
+                "tax-amount": {
+                    "type": "number",
+                    "description": "Tax amount."
+                },
+                "shipping-amount": {
+                    "type": "number",
+                    "description": "Shipping amount."
+                },
+                "discount-amount": {
+                    "type": "number",
+                    "description": "Discount amount."
+                },
+                "line-level-taxation": {
+                    "type": "boolean",
+                    "description": "Line level taxation flag."
+                },
+                "exported": {
+                    "type": "boolean",
+                    "description": "Export indicator."
+                },
+                "paid": {
+                    "type": "boolean",
+                    "description": "Paid indicator."
+                },
+                "comments": {
+                    "type": "string",
+                    "description": "Comments."
+                },
+                "internal-note": {
+                    "type": "string",
+                    "description": "Internal note."
+                },
+                "net-due-date": {
+                    "type": "string",
+                    "description": "Net due date."
+                },
+                "bill-to-address": {
+                    "$ref": "#/definitions/Address"
+                },
+                "ship-to-address": {
+                    "$ref": "#/definitions/Address"
+                },
+                "requested-by": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "invoice-lines": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "description": "Line ID."
+                            },
+                            "line-num": {
+                                "type": "integer",
+                                "description": "Line number."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Line description."
+                            },
+                            "quantity": {
+                                "type": "number",
+                                "description": "Quantity."
+                            },
+                            "price": {
+                                "type": "number",
+                                "description": "Unit price."
+                            },
+                            "total": {
+                                "type": "number",
+                                "description": "Line total."
+                            },
+                            "uom": {
+                                "type": "string",
+                                "description": "Unit of measure."
+                            },
+                            "account": {
+                                "$ref": "#/definitions/AccountRef"
+                            }
+                        }
+                    }
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                },
+                "created-by": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "updated-by": {
+                    "$ref": "#/definitions/UserRef"
+                }
+            }
+        },
+        "Requisition": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Requisition status."
+                },
+                "justification": {
+                    "type": "string",
+                    "description": "Justification comments."
+                },
+                "need-by-date": {
+                    "type": "string",
+                    "description": "Need by date."
+                },
+                "total": {
+                    "type": "number",
+                    "description": "Total amount."
+                },
+                "line-count": {
+                    "type": "integer",
+                    "description": "Number of lines."
+                },
+                "exported": {
+                    "type": "boolean",
+                    "description": "Export indicator."
+                },
+                "department": {
+                    "$ref": "#/definitions/DepartmentRef"
+                },
+                "requested-by": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "ship-to-address": {
+                    "$ref": "#/definitions/Address"
+                },
+                "currency": {
+                    "$ref": "#/definitions/CurrencyRef"
+                },
+                "requisition-lines": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "description": "Line ID."
+                            },
+                            "line-num": {
+                                "type": "integer",
+                                "description": "Line number."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description."
+                            },
+                            "quantity": {
+                                "type": "number",
+                                "description": "Quantity."
+                            },
+                            "unit-price": {
+                                "type": "number",
+                                "description": "Unit price."
+                            },
+                            "total": {
+                                "type": "number",
+                                "description": "Line total."
+                            },
+                            "need-by-date": {
+                                "type": "string",
+                                "description": "Line need by date."
+                            },
+                            "supplier": {
+                                "$ref": "#/definitions/SupplierRef"
+                            },
+                            "currency": {
+                                "$ref": "#/definitions/CurrencyRef"
+                            }
+                        }
+                    }
+                },
+                "submitted-at": {
+                    "type": "string",
+                    "description": "Date submitted."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                },
+                "created-by": {
+                    "$ref": "#/definitions/UserRef"
+                }
+            }
+        },
+        "Approval": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Approval status."
+                },
+                "approvable-type": {
+                    "type": "string",
+                    "description": "Type of object being approved."
+                },
+                "approvable-id": {
+                    "type": "integer",
+                    "description": "ID of object being approved."
+                },
+                "approver": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "approval-date": {
+                    "type": "string",
+                    "description": "Date approved."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "ExpenseReport": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Report title."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Report status."
+                },
+                "total": {
+                    "type": "number",
+                    "description": "Total amount."
+                },
+                "currency": {
+                    "$ref": "#/definitions/CurrencyRef"
+                },
+                "submitted-by": {
+                    "$ref": "#/definitions/UserRef"
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Contract": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Contract name."
+                },
+                "number": {
+                    "type": "string",
+                    "description": "Contract number."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Contract status."
+                },
+                "start-date": {
+                    "type": "string",
+                    "description": "Start date."
+                },
+                "end-date": {
+                    "type": "string",
+                    "description": "End date."
+                },
+                "maximum-value": {
+                    "type": "number",
+                    "description": "Maximum contract value."
+                },
+                "currency": {
+                    "$ref": "#/definitions/CurrencyRef"
+                },
+                "supplier": {
+                    "$ref": "#/definitions/SupplierRef"
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                }
+            }
+        },
+        "Receipt": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Coupa internal ID."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Receipt status."
+                },
+                "receipt-date": {
+                    "type": "string",
+                    "description": "Receipt date."
+                },
+                "order-header-id": {
+                    "type": "integer",
+                    "description": "Related purchase order ID."
+                },
+                "order-header-number": {
+                    "type": "string",
+                    "description": "Related PO number."
+                },
+                "created-at": {
+                    "type": "string",
+                    "description": "Date created."
+                },
+                "updated-at": {
+                    "type": "string",
+                    "description": "Date last updated."
+                },
+                "created-by": {
+                    "$ref": "#/definitions/UserRef"
+                }
+            }
+        },
+        "SupplierRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Supplier ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Supplier name."
+                },
+                "number": {
+                    "type": "string",
+                    "description": "Supplier number."
+                }
+            }
+        },
+        "UserRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "User ID."
+                },
+                "login": {
+                    "type": "string",
+                    "description": "User login."
+                },
+                "email": {
+                    "type": "string",
+                    "description": "User email."
+                },
+                "fullname": {
+                    "type": "string",
+                    "description": "User full name."
+                }
+            }
+        },
+        "CurrencyRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Currency ID."
+                },
+                "code": {
+                    "type": "string",
+                    "description": "Currency code."
+                }
+            }
+        },
+        "PaymentTermRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Payment term ID."
+                },
+                "code": {
+                    "type": "string",
+                    "description": "Payment term code."
+                }
+            }
+        },
+        "AccountRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Account ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Account name."
+                },
+                "code": {
+                    "type": "string",
+                    "description": "Account code."
+                }
+            }
+        },
+        "DepartmentRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Department ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Department name."
+                }
+            }
+        },
+        "ItemRef": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Item ID."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Item name."
+                },
+                "item-number": {
+                    "type": "string",
+                    "description": "Item number."
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://YOUR_INSTANCE.coupahost.com/oauth2/authorizations/new",
+            "tokenUrl": "https://YOUR_INSTANCE.coupahost.com/oauth2/token",
+            "scopes": {
+                "core.purchase_order.read": "Read purchase orders",
+                "core.purchase_order.write": "Write purchase orders",
+                "core.invoice.read": "Read invoices",
+                "core.invoice.write": "Write invoices",
+                "core.requisition.read": "Read requisitions",
+                "core.requisition.write": "Write requisitions",
+                "core.supplier.read": "Read suppliers",
+                "core.supplier.write": "Write suppliers",
+                "core.user.read": "Read users",
+                "core.user.write": "Write users",
+                "core.accounting.read": "Read accounting data",
+                "core.common.read": "Read common data",
+                "core.expense.read": "Read expense data",
+                "core.contract.read": "Read contracts",
+                "core.approval.read": "Read approvals",
+                "offline_access": "Refresh token support"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "core.purchase_order.read",
+                "core.purchase_order.write",
+                "core.invoice.read",
+                "core.invoice.write",
+                "core.requisition.read",
+                "core.requisition.write",
+                "core.supplier.read",
+                "core.supplier.write",
+                "core.user.read",
+                "core.user.write",
+                "core.accounting.read",
+                "core.common.read",
+                "core.expense.read",
+                "core.contract.read",
+                "core.approval.read",
+                "offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.coupa.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.coupa.com/privacy-policy"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Finance;Business Management"
+        }
+    ]
+}
