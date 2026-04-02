@@ -1,0 +1,489 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry Phi-4",
+    "description": "Connect to the Phi-4 family of small language models from Microsoft. Includes vision reasoning (Phi-4-Reasoning-Vision-15B), multimodal chat with image and audio input (Phi-4-multimodal-instruct), and lightweight text chat (Phi-4-mini-instruct). All models are self-sufficient and require no borrowed tools. Includes MCP protocol support for Copilot Studio.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.services.ai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/phi4/reason": {
+      "post": {
+        "operationId": "ReasonWithVision",
+        "summary": "Reason With Vision",
+        "description": "Send an image and text prompt to Phi-4-Reasoning-Vision-15B for visual reasoning. Returns step-by-step reasoning and a final answer. Excels at math, science, UI understanding, document analysis, and diagram interpretation.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "prompt",
+                "image_url"
+              ],
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "The question or instruction about the image.",
+                  "x-ms-summary": "Prompt"
+                },
+                "image_url": {
+                  "type": "string",
+                  "description": "URL or base64 data URI of the image to analyze (e.g., https://example.com/image.png or data:image/png;base64,...).",
+                  "x-ms-summary": "Image URL"
+                },
+                "system_prompt": {
+                  "type": "string",
+                  "description": "Optional system instructions for the model.",
+                  "x-ms-summary": "System Prompt",
+                  "x-ms-visibility": "advanced"
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.7,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of tokens to generate. Default: 4096.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vision reasoning response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reasoning": {
+                  "type": "string",
+                  "description": "The step-by-step reasoning from the model.",
+                  "x-ms-summary": "Reasoning"
+                },
+                "answer": {
+                  "type": "string",
+                  "description": "The final answer after reasoning.",
+                  "x-ms-summary": "Answer"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "The model used for generation.",
+                  "x-ms-summary": "Model"
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/phi4/multimodal": {
+      "post": {
+        "operationId": "ChatMultimodal",
+        "summary": "Chat Multimodal",
+        "description": "Send text, images, and audio to Phi-4-multimodal-instruct. Processes multiple input types simultaneously. Supports 23 languages with 131K token context.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "prompt"
+              ],
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "The text message or question.",
+                  "x-ms-summary": "Prompt"
+                },
+                "image_url": {
+                  "type": "string",
+                  "description": "Optional URL or base64 data URI of an image to include.",
+                  "x-ms-summary": "Image URL",
+                  "x-ms-visibility": "advanced"
+                },
+                "audio_url": {
+                  "type": "string",
+                  "description": "Optional URL or base64 data URI of an audio file to include.",
+                  "x-ms-summary": "Audio URL",
+                  "x-ms-visibility": "advanced"
+                },
+                "system_prompt": {
+                  "type": "string",
+                  "description": "Optional system instructions for the model.",
+                  "x-ms-summary": "System Prompt",
+                  "x-ms-visibility": "advanced"
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.7,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of tokens to generate. Default: 4096.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Multimodal chat response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the completion.",
+                  "x-ms-summary": "Completion ID"
+                },
+                "choices": {
+                  "type": "array",
+                  "description": "List of completion choices.",
+                  "x-ms-summary": "Choices",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Index of the choice.",
+                        "x-ms-summary": "Index"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "The generated message.",
+                        "x-ms-summary": "Message",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "description": "The role of the message author.",
+                            "x-ms-summary": "Role"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the message.",
+                            "x-ms-summary": "Content"
+                          }
+                        }
+                      },
+                      "finish_reason": {
+                        "type": "string",
+                        "description": "The reason the model stopped generating.",
+                        "x-ms-summary": "Finish Reason"
+                      }
+                    }
+                  }
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/phi4/chat": {
+      "post": {
+        "operationId": "ChatMini",
+        "summary": "Chat Mini",
+        "description": "Send a text chat completion request to Phi-4-mini-instruct. Lightweight 3.8B parameter model with 131K token context, 23 language support, and fast inference.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "messages"
+              ],
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "description": "The collection of context messages for the chat completions request.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "The role of the message author.",
+                        "x-ms-summary": "Role",
+                        "enum": [
+                          "system",
+                          "user",
+                          "assistant"
+                        ]
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "The content of the message.",
+                        "x-ms-summary": "Content"
+                      }
+                    },
+                    "required": [
+                      "role",
+                      "content"
+                    ]
+                  }
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.7,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "top_p": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Nucleus sampling probability mass (0-1). Default: 1.",
+                  "x-ms-summary": "Top P",
+                  "x-ms-visibility": "advanced",
+                  "default": 1.0,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of tokens to generate. Default: 4096.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat completion response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the completion.",
+                  "x-ms-summary": "Completion ID"
+                },
+                "choices": {
+                  "type": "array",
+                  "description": "List of completion choices.",
+                  "x-ms-summary": "Choices",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Index of the choice.",
+                        "x-ms-summary": "Index"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "The generated message.",
+                        "x-ms-summary": "Message",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "description": "The role of the message author.",
+                            "x-ms-summary": "Role"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the message.",
+                            "x-ms-summary": "Content"
+                          }
+                        }
+                      },
+                      "finish_reason": {
+                        "type": "string",
+                        "description": "The reason the model stopped generating.",
+                        "x-ms-summary": "Finish Reason"
+                      }
+                    }
+                  }
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the completion.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry Phi-4 MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for vision reasoning, multimodal chat, and text chat tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://ai.azure.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI"
+    }
+  ]
+}
