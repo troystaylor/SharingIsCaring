@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "resourceName": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Resource Name",
+          "description": "Your Azure AI Services resource name.",
+          "tooltip": "Enter just the resource name (e.g., 'my-safety-resource' from https://my-safety-resource.cognitiveservices.azure.com).",
+          "constraints": {
+            "tabIndex": 1,
+            "required": "true"
+          }
+        }
+      },
+      "api-key": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "API Key",
+          "description": "The subscription key for your Azure AI Content Safety resource.",
+          "tooltip": "Enter the key from your Azure AI Services resource (Keys and Endpoint).",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#0078D4",
+    "capabilities": [],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "scriptOperations": [
+      "AnalyzeText",
+      "AnalyzeImage",
+      "CheckTextSafety",
+      "CheckImageSafety",
+      "ShieldPrompt",
+      "DetectProtectedMaterial",
+      "DetectProtectedCode",
+      "DetectGroundedness",
+      "DetectTaskAdherence",
+      "AnalyzeCustomCategory",
+      "ListBlocklists",
+      "CreateBlocklist",
+      "AddBlocklistItems",
+      "ListBlocklistItems",
+      "RemoveBlocklistItems",
+      "DeleteBlocklist",
+      "InvokeMCP"
+    ],
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Cognitive Services Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName').cognitiveservices.azure.com"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set API Key Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "Ocp-Apim-Subscription-Key",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('api-key')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,1250 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Azure AI Content Safety",
+    "description": "Analyze text and images for harmful content using Azure AI Content Safety. Detects Hate, SelfHarm, Sexual, and Violence with severity scoring. Detect prompt injection attacks, protected material in LLM output, and ungrounded responses. Manage custom blocklists. Includes MCP protocol support for Copilot Studio.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.cognitiveservices.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/contentsafety/text:analyze": {
+      "post": {
+        "operationId": "AnalyzeText",
+        "summary": "Analyze Text",
+        "description": "Analyze text for harmful content. Returns severity scores (0-6) for Hate, SelfHarm, Sexual, and Violence categories, plus any blocklist matches.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The text to analyze (max 10,000 characters).",
+                  "x-ms-summary": "Text",
+                  "maxLength": 10000
+                },
+                "categories": {
+                  "type": "array",
+                  "description": "Categories to analyze. If omitted, all four are analyzed.",
+                  "x-ms-summary": "Categories",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "Hate",
+                      "SelfHarm",
+                      "Sexual",
+                      "Violence"
+                    ]
+                  }
+                },
+                "blocklistNames": {
+                  "type": "array",
+                  "description": "Names of custom blocklists to check against.",
+                  "x-ms-summary": "Blocklist Names",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "haltOnBlocklistHit": {
+                  "type": "boolean",
+                  "description": "If true, skip harm analysis when a blocklist match is found.",
+                  "x-ms-summary": "Halt on Blocklist Hit",
+                  "x-ms-visibility": "advanced"
+                },
+                "outputType": {
+                  "type": "string",
+                  "description": "Severity level granularity.",
+                  "x-ms-summary": "Output Type",
+                  "x-ms-visibility": "advanced",
+                  "default": "FourSeverityLevels",
+                  "enum": [
+                    "FourSeverityLevels",
+                    "EightSeverityLevels"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Text analyzed.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "categoriesAnalysis": {
+                  "type": "array",
+                  "description": "Severity scores per harm category.",
+                  "x-ms-summary": "Categories Analysis",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "description": "Harm category.",
+                        "x-ms-summary": "Category"
+                      },
+                      "severity": {
+                        "type": "integer",
+                        "description": "Severity level (0=safe, higher=more severe).",
+                        "x-ms-summary": "Severity"
+                      }
+                    }
+                  }
+                },
+                "blocklistsMatch": {
+                  "type": "array",
+                  "description": "Matched blocklist items.",
+                  "x-ms-summary": "Blocklist Matches",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "blocklistName": {
+                        "type": "string",
+                        "x-ms-summary": "Blocklist Name"
+                      },
+                      "blocklistItemId": {
+                        "type": "string",
+                        "x-ms-summary": "Item ID"
+                      },
+                      "blocklistItemText": {
+                        "type": "string",
+                        "x-ms-summary": "Matched Text"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/contentsafety/image:analyze": {
+      "post": {
+        "operationId": "AnalyzeImage",
+        "summary": "Analyze Image",
+        "description": "Analyze an image for harmful content. Returns severity scores (0-6) for Hate, SelfHarm, Sexual, and Violence categories. Accepts base64-encoded image or blob URL.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "image"
+              ],
+              "properties": {
+                "image": {
+                  "type": "object",
+                  "description": "The image to analyze.",
+                  "x-ms-summary": "Image",
+                  "properties": {
+                    "content": {
+                      "type": "string",
+                      "description": "Base64-encoded image content.",
+                      "x-ms-summary": "Content (Base64)"
+                    },
+                    "blobUrl": {
+                      "type": "string",
+                      "description": "URL to the image in Azure Blob Storage.",
+                      "x-ms-summary": "Blob URL"
+                    }
+                  }
+                },
+                "categories": {
+                  "type": "array",
+                  "description": "Categories to analyze. If omitted, all four are analyzed.",
+                  "x-ms-summary": "Categories",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "Hate",
+                      "SelfHarm",
+                      "Sexual",
+                      "Violence"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image analyzed.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "categoriesAnalysis": {
+                  "type": "array",
+                  "description": "Severity scores per harm category.",
+                  "x-ms-summary": "Categories Analysis",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "x-ms-summary": "Category"
+                      },
+                      "severity": {
+                        "type": "integer",
+                        "x-ms-summary": "Severity"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/contentsafety/check/text": {
+      "post": {
+        "operationId": "CheckTextSafety",
+        "summary": "Check Text Safety",
+        "description": "Simplified safety check — returns a clear safe/unsafe result with the highest-severity category. Set a threshold to control sensitivity. No API call overhead beyond AnalyzeText — this operation calls the same endpoint and simplifies the response.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The text to check.",
+                  "x-ms-summary": "Text",
+                  "maxLength": 10000
+                },
+                "threshold": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum allowed severity (0-6). Content at or above this level is flagged as unsafe. Default: 2.",
+                  "x-ms-summary": "Threshold",
+                  "default": 2,
+                  "minimum": 0,
+                  "maximum": 6
+                },
+                "blocklistNames": {
+                  "type": "array",
+                  "description": "Optional blocklists to check.",
+                  "x-ms-summary": "Blocklist Names",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Safety check result.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "is_safe": {
+                  "type": "boolean",
+                  "description": "True if no category exceeds the threshold and no blocklist matches.",
+                  "x-ms-summary": "Is Safe"
+                },
+                "highest_category": {
+                  "type": "string",
+                  "description": "The category with the highest severity.",
+                  "x-ms-summary": "Highest Category"
+                },
+                "highest_severity": {
+                  "type": "integer",
+                  "description": "The highest severity score found.",
+                  "x-ms-summary": "Highest Severity"
+                },
+                "threshold": {
+                  "type": "integer",
+                  "description": "The threshold used.",
+                  "x-ms-summary": "Threshold"
+                },
+                "blocklist_hit": {
+                  "type": "boolean",
+                  "description": "True if any blocklist items matched.",
+                  "x-ms-summary": "Blocklist Hit"
+                },
+                "categories": {
+                  "type": "object",
+                  "description": "All category severity scores.",
+                  "x-ms-summary": "Categories",
+                  "properties": {
+                    "Hate": { "type": "integer", "x-ms-summary": "Hate" },
+                    "SelfHarm": { "type": "integer", "x-ms-summary": "Self Harm" },
+                    "Sexual": { "type": "integer", "x-ms-summary": "Sexual" },
+                    "Violence": { "type": "integer", "x-ms-summary": "Violence" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/contentsafety/check/image": {
+      "post": {
+        "operationId": "CheckImageSafety",
+        "summary": "Check Image Safety",
+        "description": "Simplified image safety check — returns a clear safe/unsafe result with the highest-severity category.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "image_content": {
+                  "type": "string",
+                  "description": "Base64-encoded image content.",
+                  "x-ms-summary": "Image Content (Base64)"
+                },
+                "image_url": {
+                  "type": "string",
+                  "description": "URL to the image in Azure Blob Storage.",
+                  "x-ms-summary": "Image URL"
+                },
+                "threshold": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum allowed severity (0-6). Default: 2.",
+                  "x-ms-summary": "Threshold",
+                  "default": 2,
+                  "minimum": 0,
+                  "maximum": 6
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Safety check result.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "is_safe": { "type": "boolean", "x-ms-summary": "Is Safe" },
+                "highest_category": { "type": "string", "x-ms-summary": "Highest Category" },
+                "highest_severity": { "type": "integer", "x-ms-summary": "Highest Severity" },
+                "threshold": { "type": "integer", "x-ms-summary": "Threshold" },
+                "categories": {
+                  "type": "object",
+                  "x-ms-summary": "Categories",
+                  "properties": {
+                    "Hate": { "type": "integer", "x-ms-summary": "Hate" },
+                    "SelfHarm": { "type": "integer", "x-ms-summary": "Self Harm" },
+                    "Sexual": { "type": "integer", "x-ms-summary": "Sexual" },
+                    "Violence": { "type": "integer", "x-ms-summary": "Violence" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/contentsafety/text/blocklists": {
+      "get": {
+        "operationId": "ListBlocklists",
+        "summary": "List Blocklists",
+        "description": "List all custom text blocklists.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blocklists retrieved.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "description": "Array of blocklists.",
+                  "x-ms-summary": "Blocklists",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "blocklistName": { "type": "string", "x-ms-summary": "Name" },
+                      "description": { "type": "string", "x-ms-summary": "Description" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contentsafety/text/blocklists/{blocklistName}": {
+      "patch": {
+        "operationId": "CreateBlocklist",
+        "summary": "Create or Update Blocklist",
+        "description": "Create a new text blocklist or update an existing one.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "blocklistName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The blocklist name (alphanumeric, dashes, underscores).",
+            "x-ms-summary": "Blocklist Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "default": "application/merge-patch+json",
+            "x-ms-visibility": "internal"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "Description of the blocklist.",
+                  "x-ms-summary": "Description"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blocklist created or updated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "blocklistName": { "type": "string", "x-ms-summary": "Name" },
+                "description": { "type": "string", "x-ms-summary": "Description" }
+              }
+            }
+          },
+          "201": { "description": "Blocklist created." }
+        }
+      }
+    },
+    "/contentsafety/text/blocklists/{blocklistName}:addOrUpdateBlocklistItems": {
+      "post": {
+        "operationId": "AddBlocklistItems",
+        "summary": "Add Blocklist Items",
+        "description": "Add or update items in a text blocklist.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "blocklistName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The blocklist name.",
+            "x-ms-summary": "Blocklist Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "blocklistItems"
+              ],
+              "properties": {
+                "blocklistItems": {
+                  "type": "array",
+                  "description": "Items to add to the blocklist.",
+                  "x-ms-summary": "Items",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "type": "string",
+                        "description": "Description of why this term is blocked.",
+                        "x-ms-summary": "Description"
+                      },
+                      "text": {
+                        "type": "string",
+                        "description": "The text pattern to block (max 128 characters).",
+                        "x-ms-summary": "Text",
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "text"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Items added.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "blocklistItems": {
+                  "type": "array",
+                  "description": "Added items with assigned IDs.",
+                  "x-ms-summary": "Items",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "blocklistItemId": { "type": "string", "x-ms-summary": "Item ID" },
+                      "text": { "type": "string", "x-ms-summary": "Text" },
+                      "description": { "type": "string", "x-ms-summary": "Description" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contentsafety/text/blocklists/{blocklistName}/blocklistItems": {
+      "get": {
+        "operationId": "ListBlocklistItems",
+        "summary": "List Blocklist Items",
+        "description": "List all items in a text blocklist.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "blocklistName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The blocklist name.",
+            "x-ms-summary": "Blocklist Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blocklist items retrieved.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "description": "Array of blocklist items.",
+                  "x-ms-summary": "Items",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "blocklistItemId": { "type": "string", "x-ms-summary": "Item ID" },
+                      "text": { "type": "string", "x-ms-summary": "Text" },
+                      "description": { "type": "string", "x-ms-summary": "Description" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contentsafety/text/blocklists/{blocklistName}:removeBlocklistItems": {
+      "post": {
+        "operationId": "RemoveBlocklistItems",
+        "summary": "Remove Blocklist Items",
+        "description": "Remove items from a text blocklist by their IDs.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "blocklistName",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The blocklist name.",
+            "x-ms-summary": "Blocklist Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["blocklistItemIds"],
+              "properties": {
+                "blocklistItemIds": {
+                  "type": "array",
+                  "description": "Array of blocklist item IDs to remove.",
+                  "x-ms-summary": "Item IDs",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Items removed." }
+        }
+      }
+    },
+    "/contentsafety/text/blocklists/{blocklistName2}": {
+      "delete": {
+        "operationId": "DeleteBlocklist",
+        "summary": "Delete Blocklist",
+        "description": "Delete a text blocklist by name.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "blocklistName2",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The blocklist name to delete.",
+            "x-ms-summary": "Blocklist Name",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "204": { "description": "Blocklist deleted." }
+        }
+      }
+    },
+    "/contentsafety/text:shieldPrompt": {
+      "post": {
+        "operationId": "ShieldPrompt",
+        "summary": "Shield Prompt",
+        "description": "Detect prompt injection attacks in user prompts and documents. Identifies both direct jailbreak attempts and indirect attacks embedded in documents. Use before passing user input to an LLM.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "userPrompt": {
+                  "type": "string",
+                  "description": "The user prompt to check for direct injection attacks.",
+                  "x-ms-summary": "User Prompt"
+                },
+                "documents": {
+                  "type": "array",
+                  "description": "Documents to check for indirect injection attacks (e.g., email content, retrieved documents).",
+                  "x-ms-summary": "Documents",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt shield analysis complete.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "userPromptAnalysis": {
+                  "type": "object",
+                  "description": "Analysis of the user prompt.",
+                  "x-ms-summary": "User Prompt Analysis",
+                  "properties": {
+                    "attackDetected": {
+                      "type": "boolean",
+                      "description": "Whether a prompt injection attack was detected.",
+                      "x-ms-summary": "Attack Detected"
+                    }
+                  }
+                },
+                "documentsAnalysis": {
+                  "type": "array",
+                  "description": "Analysis of each document.",
+                  "x-ms-summary": "Documents Analysis",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "attackDetected": {
+                        "type": "boolean",
+                        "description": "Whether an injection attack was detected in this document.",
+                        "x-ms-summary": "Attack Detected"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." }
+        }
+      }
+    },
+    "/contentsafety/text:detectProtectedMaterial": {
+      "post": {
+        "operationId": "DetectProtectedMaterial",
+        "summary": "Detect Protected Material (Text)",
+        "description": "Check if LLM-generated text contains known protected material such as song lyrics, articles, recipes, or web content. Use on AI outputs before returning to users to avoid copyright issues.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-01",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The AI-generated text to check (min 110 characters, max 10,000).",
+                  "x-ms-summary": "Text"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected material detection complete.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "protectedMaterialAnalysis": {
+                  "type": "object",
+                  "description": "Detection result.",
+                  "x-ms-summary": "Analysis",
+                  "properties": {
+                    "detected": {
+                      "type": "boolean",
+                      "description": "Whether protected material was detected.",
+                      "x-ms-summary": "Detected"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." }
+        }
+      }
+    },
+    "/contentsafety/text:detectProtectedMaterialForCode": {
+      "post": {
+        "operationId": "DetectProtectedCode",
+        "summary": "Detect Protected Material (Code)",
+        "description": "Check if AI-generated code matches known code from public GitHub repositories. Helps prevent uncredited reproduction of source code. Preview feature — code index current through April 2023.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-15-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["code"],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "The AI-generated code to check.",
+                  "x-ms-summary": "Code"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected code detection complete.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "protectedMaterialAnalysis": {
+                  "type": "object",
+                  "x-ms-summary": "Analysis",
+                  "properties": {
+                    "detected": {
+                      "type": "boolean",
+                      "x-ms-summary": "Detected"
+                    },
+                    "codeCitations": {
+                      "type": "array",
+                      "description": "Citations for matched code.",
+                      "x-ms-summary": "Code Citations",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "license": { "type": "string", "x-ms-summary": "License" },
+                          "sourceUrl": { "type": "string", "x-ms-summary": "Source URL" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." }
+        }
+      }
+    },
+    "/contentsafety/text:detectGroundedness": {
+      "post": {
+        "operationId": "DetectGroundedness",
+        "summary": "Detect Groundedness",
+        "description": "Check if an LLM response is grounded (factually consistent) with the provided source materials. Detects hallucinations and fabricated information. Preview feature.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-15-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["domain", "task", "text", "groundingSources"],
+              "properties": {
+                "domain": {
+                  "type": "string",
+                  "description": "The domain of the content.",
+                  "x-ms-summary": "Domain",
+                  "default": "Generic",
+                  "enum": ["Generic", "Medical"],
+                  "x-ms-visibility": "advanced"
+                },
+                "task": {
+                  "type": "string",
+                  "description": "The task type.",
+                  "x-ms-summary": "Task",
+                  "default": "QnA",
+                  "enum": ["QnA", "Summarization"],
+                  "x-ms-visibility": "advanced"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "The LLM-generated text to check for groundedness (max 7,500 characters).",
+                  "x-ms-summary": "Text"
+                },
+                "groundingSources": {
+                  "type": "array",
+                  "description": "The source documents the text should be grounded in (max 55,000 chars total).",
+                  "x-ms-summary": "Grounding Sources",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "qna": {
+                  "type": "object",
+                  "description": "Query information for QnA task type.",
+                  "x-ms-summary": "QnA Query",
+                  "x-ms-visibility": "advanced",
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "description": "The user's question.",
+                      "x-ms-summary": "Query"
+                    }
+                  }
+                },
+                "reasoning": {
+                  "type": "boolean",
+                  "description": "Enable reasoning for detailed ungroundedness explanations. Requires Azure OpenAI resource.",
+                  "x-ms-summary": "Enable Reasoning",
+                  "x-ms-visibility": "advanced",
+                  "default": false
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Groundedness detection complete.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "ungroundedDetected": {
+                  "type": "boolean",
+                  "description": "Whether ungrounded content was detected.",
+                  "x-ms-summary": "Ungrounded Detected"
+                },
+                "ungroundedPercentage": {
+                  "type": "number",
+                  "description": "Percentage of text that is ungrounded.",
+                  "x-ms-summary": "Ungrounded Percentage"
+                },
+                "ungroundedDetails": {
+                  "type": "array",
+                  "description": "Details of ungrounded segments.",
+                  "x-ms-summary": "Ungrounded Details",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": { "type": "string", "x-ms-summary": "Ungrounded Text" },
+                      "reason": { "type": "string", "x-ms-summary": "Reason" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." }
+        }
+      }
+    },
+    "/contentsafety/agent:analyzeTaskAdherence": {
+      "post": {
+        "operationId": "DetectTaskAdherence",
+        "summary": "Detect Task Adherence",
+        "description": "Check if an AI agent's tool calls are aligned with the user's intent. Detects misaligned, unintended, or premature tool invocations. Preview feature.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2025-09-15-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["tools", "messages"],
+              "properties": {
+                "tools": {
+                  "type": "array",
+                  "description": "The tools available to the agent.",
+                  "x-ms-summary": "Tools",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": { "type": "string", "x-ms-summary": "Type" },
+                      "function": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string", "x-ms-summary": "Name" },
+                          "description": { "type": "string", "x-ms-summary": "Description" }
+                        }
+                      }
+                    }
+                  }
+                },
+                "messages": {
+                  "type": "array",
+                  "description": "The conversation messages including user, assistant, and tool interactions.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "source": { "type": "string", "x-ms-summary": "Source" },
+                      "role": { "type": "string", "x-ms-summary": "Role" },
+                      "contents": { "type": "string", "x-ms-summary": "Contents" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task adherence analysis complete.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "taskRiskDetected": {
+                  "type": "boolean",
+                  "description": "Whether a task adherence risk was detected.",
+                  "x-ms-summary": "Task Risk Detected"
+                },
+                "details": {
+                  "type": "string",
+                  "description": "Explanation of the detected risk.",
+                  "x-ms-summary": "Details"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." }
+        }
+      }
+    },
+    "/contentsafety/text:analyzeCustomCategory": {
+      "post": {
+        "operationId": "AnalyzeCustomCategory",
+        "summary": "Analyze Custom Category (Rapid)",
+        "description": "Check text against a custom-defined category using few-shot examples. Define harmful content categories on the fly without training a model. Preview feature.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-09-15-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["text", "categoryName", "definition"],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The text to analyze (max 1,000 characters).",
+                  "x-ms-summary": "Text"
+                },
+                "categoryName": {
+                  "type": "string",
+                  "description": "Name of the custom category (e.g., 'PoliticalContent', 'FinancialAdvice').",
+                  "x-ms-summary": "Category Name"
+                },
+                "definition": {
+                  "type": "string",
+                  "description": "Description of what this category represents.",
+                  "x-ms-summary": "Definition"
+                },
+                "sampleTexts": {
+                  "type": "array",
+                  "description": "Example texts that match this category (few-shot examples).",
+                  "x-ms-summary": "Sample Texts",
+                  "x-ms-visibility": "advanced",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": { "type": "string", "x-ms-summary": "Text" },
+                      "label": { "type": "boolean", "description": "True if this is a positive example.", "x-ms-summary": "Is Match" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Custom category analysis complete.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "customCategoryAnalysis": {
+                  "type": "object",
+                  "x-ms-summary": "Analysis",
+                  "properties": {
+                    "detected": { "type": "boolean", "x-ms-summary": "Detected" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Azure AI Content Safety MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for content safety analysis tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": { "description": "MCP response." }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "x-ms-connector-metadata": [
+    { "propertyName": "Website", "propertyValue": "https://azure.microsoft.com/products/ai-services/ai-content-safety" },
+    { "propertyName": "Privacy policy", "propertyValue": "https://privacy.microsoft.com" },
+    { "propertyName": "Categories", "propertyValue": "AI" }
+  ]
+}
