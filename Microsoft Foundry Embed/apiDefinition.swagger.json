@@ -1,0 +1,471 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry Embed",
+    "description": "Generate text and image embeddings using Cohere Embed v4 on Microsoft Foundry. Compute semantic similarity between any two inputs, index documents to Azure AI Search with auto-generated vectors, and perform vector search — all from Power Platform. Includes MCP protocol support for Copilot Studio.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.services.ai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/embed/text": {
+      "post": {
+        "operationId": "EmbedText",
+        "summary": "Embed Text",
+        "description": "Generate embedding vectors for one or more text strings. Use input_type 'document' when storing, 'query' when searching.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "texts"
+              ],
+              "properties": {
+                "texts": {
+                  "type": "array",
+                  "description": "One or more text strings to embed (max 512 tokens each).",
+                  "x-ms-summary": "Texts",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "input_type": {
+                  "type": "string",
+                  "description": "Embedding purpose. Use 'document' for indexing, 'query' for searching.",
+                  "x-ms-summary": "Input Type",
+                  "default": "document",
+                  "enum": [
+                    "document",
+                    "query"
+                  ],
+                  "x-ms-visibility": "advanced"
+                },
+                "dimensions": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Vector dimensions: 256, 512, 1024, or 1536. Default: 1024.",
+                  "x-ms-summary": "Dimensions",
+                  "x-ms-visibility": "advanced",
+                  "default": 1024,
+                  "enum": [
+                    256,
+                    512,
+                    1024,
+                    1536
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Embeddings generated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "embeddings": {
+                  "type": "array",
+                  "description": "Array of embedding results.",
+                  "x-ms-summary": "Embeddings",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Position of this text in the input array.",
+                        "x-ms-summary": "Index"
+                      },
+                      "embedding": {
+                        "type": "array",
+                        "description": "The embedding vector.",
+                        "x-ms-summary": "Embedding",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Model used.",
+                  "x-ms-summary": "Model"
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/embed/image": {
+      "post": {
+        "operationId": "EmbedImage",
+        "summary": "Embed Image",
+        "description": "Generate an embedding vector for an image. Produces vectors in the same space as text embeddings, enabling cross-modal search.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "image_url"
+              ],
+              "properties": {
+                "image_url": {
+                  "type": "string",
+                  "description": "Image URL or base64 data URI (data:image/png;base64,...). PNG format recommended.",
+                  "x-ms-summary": "Image URL"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Optional text to pair with the image for a combined embedding.",
+                  "x-ms-summary": "Text",
+                  "x-ms-visibility": "advanced"
+                },
+                "dimensions": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Vector dimensions: 256, 512, 1024, or 1536. Default: 1024.",
+                  "x-ms-summary": "Dimensions",
+                  "x-ms-visibility": "advanced",
+                  "default": 1024,
+                  "enum": [ 256, 512, 1024, 1536 ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image embedding generated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "embedding": {
+                  "type": "array",
+                  "description": "The embedding vector.",
+                  "x-ms-summary": "Embedding",
+                  "items": { "type": "number" }
+                },
+                "model": { "type": "string", "x-ms-summary": "Model" },
+                "usage": {
+                  "type": "object",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": { "type": "integer", "x-ms-summary": "Prompt Tokens" },
+                    "total_tokens": { "type": "integer", "x-ms-summary": "Total Tokens" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/embed/similarity": {
+      "post": {
+        "operationId": "ComputeSimilarity",
+        "summary": "Compute Similarity",
+        "description": "Compute semantic similarity between two inputs (text and/or image). Returns a 0-1 cosine similarity score. Both inputs are embedded and compared in the connector — no external vector store needed.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "input_a",
+                "input_b"
+              ],
+              "properties": {
+                "input_a": {
+                  "type": "string",
+                  "description": "First input — text string or image URL/base64.",
+                  "x-ms-summary": "Input A"
+                },
+                "input_a_type": {
+                  "type": "string",
+                  "description": "Type of Input A.",
+                  "x-ms-summary": "Input A Type",
+                  "default": "text",
+                  "enum": [ "text", "image" ]
+                },
+                "input_b": {
+                  "type": "string",
+                  "description": "Second input — text string or image URL/base64.",
+                  "x-ms-summary": "Input B"
+                },
+                "input_b_type": {
+                  "type": "string",
+                  "description": "Type of Input B.",
+                  "x-ms-summary": "Input B Type",
+                  "default": "text",
+                  "enum": [ "text", "image" ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Similarity computed.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "similarity": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Cosine similarity score (0-1). 1 = identical, 0 = unrelated.",
+                  "x-ms-summary": "Similarity Score"
+                },
+                "interpretation": {
+                  "type": "string",
+                  "description": "Human-readable interpretation (e.g., 'Very similar', 'Somewhat related').",
+                  "x-ms-summary": "Interpretation"
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "429": { "description": "Too many requests." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/embed/index": {
+      "post": {
+        "operationId": "IndexDocument",
+        "summary": "Index Document to AI Search",
+        "description": "Embed a text document and push it (with its vector) to an Azure AI Search index. Requires AI Search connection parameters.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "document_id",
+                "content",
+                "search_endpoint",
+                "search_index",
+                "search_api_key"
+              ],
+              "properties": {
+                "document_id": {
+                  "type": "string",
+                  "description": "Unique document identifier (used as the key in the search index).",
+                  "x-ms-summary": "Document ID"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "The document text to embed and index.",
+                  "x-ms-summary": "Content"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Optional document title (stored as metadata).",
+                  "x-ms-summary": "Title",
+                  "x-ms-visibility": "advanced"
+                },
+                "search_endpoint": {
+                  "type": "string",
+                  "description": "Azure AI Search endpoint URL (e.g., https://mysearch.search.windows.net).",
+                  "x-ms-summary": "Search Endpoint"
+                },
+                "search_index": {
+                  "type": "string",
+                  "description": "Name of the Azure AI Search index.",
+                  "x-ms-summary": "Search Index"
+                },
+                "search_api_key": {
+                  "type": "string",
+                  "description": "Azure AI Search admin API key.",
+                  "x-ms-summary": "Search API Key"
+                },
+                "vector_field": {
+                  "type": "string",
+                  "description": "Name of the vector field in the index. Default: 'contentVector'.",
+                  "x-ms-summary": "Vector Field",
+                  "x-ms-visibility": "advanced",
+                  "default": "contentVector"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document indexed.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "document_id": { "type": "string", "x-ms-summary": "Document ID" },
+                "status": { "type": "string", "x-ms-summary": "Status" },
+                "vector_dimensions": { "type": "integer", "x-ms-summary": "Vector Dimensions" }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/embed/search": {
+      "post": {
+        "operationId": "SearchSimilar",
+        "summary": "Search Similar Documents",
+        "description": "Embed a query and perform vector search against an Azure AI Search index. Returns the most semantically similar documents. Requires AI Search connection parameters.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "query",
+                "search_endpoint",
+                "search_index",
+                "search_api_key"
+              ],
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "The search query text.",
+                  "x-ms-summary": "Query"
+                },
+                "top_k": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Number of results to return. Default: 5.",
+                  "x-ms-summary": "Top K",
+                  "default": 5,
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "search_endpoint": {
+                  "type": "string",
+                  "description": "Azure AI Search endpoint URL.",
+                  "x-ms-summary": "Search Endpoint"
+                },
+                "search_index": {
+                  "type": "string",
+                  "description": "Name of the Azure AI Search index.",
+                  "x-ms-summary": "Search Index"
+                },
+                "search_api_key": {
+                  "type": "string",
+                  "description": "Azure AI Search query API key.",
+                  "x-ms-summary": "Search API Key"
+                },
+                "vector_field": {
+                  "type": "string",
+                  "description": "Name of the vector field in the index. Default: 'contentVector'.",
+                  "x-ms-summary": "Vector Field",
+                  "x-ms-visibility": "advanced",
+                  "default": "contentVector"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "description": "Matching documents ordered by similarity.",
+                  "x-ms-summary": "Results",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "document_id": { "type": "string", "x-ms-summary": "Document ID" },
+                      "content": { "type": "string", "x-ms-summary": "Content" },
+                      "title": { "type": "string", "x-ms-summary": "Title" },
+                      "score": { "type": "number", "x-ms-summary": "Search Score" }
+                    }
+                  }
+                },
+                "count": { "type": "integer", "x-ms-summary": "Result Count" }
+              }
+            }
+          },
+          "400": { "description": "Bad request." },
+          "401": { "description": "Unauthorized." },
+          "500": { "description": "Internal server error." }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry Embed MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for embedding, similarity, indexing, and search tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": { "description": "MCP response." }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "x-ms-connector-metadata": [
+    { "propertyName": "Website", "propertyValue": "https://ai.azure.com" },
+    { "propertyName": "Privacy policy", "propertyValue": "https://privacy.microsoft.com" },
+    { "propertyName": "Categories", "propertyValue": "AI" }
+  ]
+}
