@@ -1,0 +1,2061 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Seismic Library Content Management",
+        "description": "Manage files, folders, and items in Seismic Library teamsites. Supports file upload, download, metadata management, folder operations, item queries, and content deletion.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.seismic.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Seismic Library Content Management MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Seismic Library Content Management operations via JSON-RPC 2.0 for file, folder, URL, and teamsite management.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/files": {
+            "post": {
+                "operationId": "AddFile",
+                "summary": "Add a file",
+                "description": "Upload a new file to a teamsite library folder. Provide the file content as a base64-encoded string. Max file size is 2 GB.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "resolveNameCollision",
+                        "in": "query",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Automatically append an index if a name conflict exists.",
+                        "x-ms-summary": "Resolve Name Collision",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "parentFolderId",
+                                "format",
+                                "content"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the file (without extension).",
+                                    "x-ms-summary": "File Name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The parent folder GUID. Use 'root' for the root folder.",
+                                    "x-ms-summary": "Parent Folder ID"
+                                },
+                                "format": {
+                                    "type": "string",
+                                    "description": "The file format (e.g., pptx, pdf, docx).",
+                                    "x-ms-summary": "Format"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The base64-encoded file content.",
+                                    "x-ms-summary": "File Content (Base64)"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "An optional description for the file.",
+                                    "x-ms-summary": "Description",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "externalId": {
+                                    "type": "string",
+                                    "description": "An optional external system identifier.",
+                                    "x-ms-summary": "External ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File created.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/files/{libraryContentId}": {
+            "get": {
+                "operationId": "GetFileInfo",
+                "summary": "Get file information",
+                "description": "Get the metadata and properties for a specific file in a teamsite library.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file.",
+                        "x-ms-summary": "File ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File information returned.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateFileInfo",
+                "summary": "Update file information",
+                "description": "Update a file's name, parent folder, owner, description, expiration, or custom properties.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file.",
+                        "x-ms-summary": "File ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The new name for the file.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The GUID of the target parent folder. Use 'root' for the root folder.",
+                                    "x-ms-summary": "Parent Folder ID"
+                                },
+                                "ownerId": {
+                                    "type": "string",
+                                    "description": "The userId of the new owner.",
+                                    "x-ms-summary": "Owner ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "The description for the file.",
+                                    "x-ms-summary": "Description"
+                                },
+                                "expiresAt": {
+                                    "type": "string",
+                                    "description": "The expiration date in UTC YYYY-MM-DD format.",
+                                    "x-ms-summary": "Expires At"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File updated.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/files/{libraryContentId}/content": {
+            "get": {
+                "operationId": "DownloadFile",
+                "summary": "Download a file",
+                "description": "Get the download URL for a file's binary contents.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file.",
+                        "x-ms-summary": "File ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "redirect",
+                        "in": "query",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "If false, returns a JSON body with the download URL. If true, returns a 302 redirect.",
+                        "x-ms-summary": "Redirect",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File download URL and content returned.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "downloadUrl": {
+                                    "type": "string",
+                                    "description": "The URL to download the file.",
+                                    "x-ms-summary": "Download URL"
+                                },
+                                "contentType": {
+                                    "type": "string",
+                                    "description": "The MIME type of the file.",
+                                    "x-ms-summary": "Content Type"
+                                },
+                                "contentLength": {
+                                    "type": "integer",
+                                    "description": "The file size in bytes.",
+                                    "x-ms-summary": "Content Length"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The base64-encoded file content.",
+                                    "x-ms-summary": "File Content (Base64)"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "AddFileVersion",
+                "summary": "Add a new file version",
+                "description": "Upload a new version of an existing file. Provide the file content as a base64-encoded string. Max file size is 2 GB.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file.",
+                        "x-ms-summary": "File ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "content"
+                            ],
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The base64-encoded file content for the new version.",
+                                    "x-ms-summary": "File Content (Base64)"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File version created.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/folders": {
+            "post": {
+                "operationId": "AddFolder",
+                "summary": "Add a folder",
+                "description": "Create a new folder inside a teamsite. Use 'root' as the parentFolderId to create in the root.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "parentFolderId"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the new folder.",
+                                    "x-ms-summary": "Folder Name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The parent folder GUID. Use 'root' for the root folder.",
+                                    "x-ms-summary": "Parent Folder ID"
+                                },
+                                "externalId": {
+                                    "type": "string",
+                                    "description": "An optional external identifier.",
+                                    "x-ms-summary": "External ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder created.",
+                        "schema": {
+                            "$ref": "#/definitions/FolderInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/folders/{libraryContentId}": {
+            "get": {
+                "operationId": "GetFolderInfo",
+                "summary": "Get folder information",
+                "description": "Get the metadata for a specific folder in a teamsite library.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the folder.",
+                        "x-ms-summary": "Folder ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "QueryItems",
+                            "parameters": {
+                                "teamsiteId": {
+                                    "parameter": "teamsiteId"
+                                },
+                                "type": "folder"
+                            },
+                            "value-collection": "entries",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder information returned.",
+                        "schema": {
+                            "$ref": "#/definitions/FolderInfo"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateFolderInfo",
+                "summary": "Update folder information",
+                "description": "Rename or move a folder by updating its name or parent folder.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the folder.",
+                        "x-ms-summary": "Folder ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "QueryItems",
+                            "parameters": {
+                                "teamsiteId": {
+                                    "parameter": "teamsiteId"
+                                },
+                                "type": "folder"
+                            },
+                            "value-collection": "entries",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The new name for the folder.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The target parent folder GUID to move the folder.",
+                                    "x-ms-summary": "Parent Folder ID"
+                                },
+                                "externalId": {
+                                    "type": "string",
+                                    "description": "An optional external identifier.",
+                                    "x-ms-summary": "External ID",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder updated.",
+                        "schema": {
+                            "$ref": "#/definitions/FolderInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/folders/{libraryContentId}/items": {
+            "get": {
+                "operationId": "ListFolderItems",
+                "summary": "List items in a folder",
+                "description": "Get the list of files, folders, and URLs in a given folder.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the folder.",
+                        "x-ms-summary": "Folder ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "QueryItems",
+                            "parameters": {
+                                "teamsiteId": {
+                                    "parameter": "teamsiteId"
+                                },
+                                "type": "folder"
+                            },
+                            "value-collection": "entries",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 1000,
+                        "description": "Maximum number of items to return (max 1000).",
+                        "x-ms-summary": "Limit",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of items to skip for pagination.",
+                        "x-ms-summary": "Offset",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "includeProperties",
+                        "in": "query",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Include custom properties in the response.",
+                        "x-ms-summary": "Include Properties",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "includeExpiration",
+                        "in": "query",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Include expiration dates in the response.",
+                        "x-ms-summary": "Include Expiration",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of items returned.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalCount": {
+                                    "type": "integer",
+                                    "description": "Total number of items in the folder.",
+                                    "x-ms-summary": "Total Count"
+                                },
+                                "limit": {
+                                    "type": "string",
+                                    "description": "The limit applied.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "offset": {
+                                    "type": "string",
+                                    "description": "The offset applied.",
+                                    "x-ms-summary": "Offset"
+                                },
+                                "entries": {
+                                    "type": "array",
+                                    "description": "The list of items.",
+                                    "x-ms-summary": "Entries",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "repository": {
+                                                "type": "string",
+                                                "description": "The repository type (e.g., library).",
+                                                "x-ms-summary": "Repository"
+                                            },
+                                            "id": {
+                                                "type": "string",
+                                                "description": "The item identifier.",
+                                                "x-ms-summary": "ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "The item name.",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "The item type (file, folder, url).",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "parentFolderId": {
+                                                "type": "string",
+                                                "description": "The parent folder identifier.",
+                                                "x-ms-summary": "Parent Folder ID"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "description": "The creation timestamp.",
+                                                "x-ms-summary": "Created At"
+                                            },
+                                            "modifiedAt": {
+                                                "type": "string",
+                                                "description": "The last modified timestamp.",
+                                                "x-ms-summary": "Modified At"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/items/{libraryContentId}": {
+            "get": {
+                "operationId": "GetItemInfo",
+                "summary": "Get item information",
+                "description": "Get information and properties for any item type (file, folder, or URL) in the library.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the item.",
+                        "x-ms-summary": "Item ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item information returned.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteItem",
+                "summary": "Delete an item",
+                "description": "Delete any item type (file, folder, or URL) from the library.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the item to delete.",
+                        "x-ms-summary": "Item ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item deleted."
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/items": {
+            "get": {
+                "operationId": "QueryItems",
+                "summary": "Query items",
+                "description": "Search for items in the library using query parameters such as name, type, or modification date.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Filter by item name.",
+                        "x-ms-summary": "Name"
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Filter by item type (file, folder, url).",
+                        "x-ms-summary": "Type",
+                        "enum": [
+                            "file",
+                            "folder",
+                            "url"
+                        ]
+                    },
+                    {
+                        "name": "modifiedSince",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Filter by items modified after this date (ISO 8601).",
+                        "x-ms-summary": "Modified Since",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 1000,
+                        "description": "Maximum number of items to return.",
+                        "x-ms-summary": "Limit",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of items to skip.",
+                        "x-ms-summary": "Offset",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Query results returned.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalCount": {
+                                    "type": "integer",
+                                    "description": "Total matching items.",
+                                    "x-ms-summary": "Total Count"
+                                },
+                                "entries": {
+                                    "type": "array",
+                                    "description": "The matching items.",
+                                    "x-ms-summary": "Entries",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Item ID.",
+                                                "x-ms-summary": "ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Item name.",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Item type.",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "parentFolderId": {
+                                                "type": "string",
+                                                "description": "Parent folder ID.",
+                                                "x-ms-summary": "Parent Folder ID"
+                                            },
+                                            "modifiedAt": {
+                                                "type": "string",
+                                                "description": "Last modified.",
+                                                "x-ms-summary": "Modified At"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/items/{libraryContentId}/versions": {
+            "get": {
+                "operationId": "GetItemVersions",
+                "summary": "Get item versions",
+                "description": "Get all versions for an item in the library.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the item.",
+                        "x-ms-summary": "Item ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Version list returned.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "version": {
+                                        "type": "string",
+                                        "description": "Version number.",
+                                        "x-ms-summary": "Version"
+                                    },
+                                    "versionId": {
+                                        "type": "string",
+                                        "description": "Version identifier.",
+                                        "x-ms-summary": "Version ID"
+                                    },
+                                    "createdAt": {
+                                        "type": "string",
+                                        "description": "Version creation date.",
+                                        "x-ms-summary": "Created At"
+                                    },
+                                    "createdBy": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "User ID.",
+                                                "x-ms-summary": "User ID"
+                                            }
+                                        }
+                                    },
+                                    "size": {
+                                        "type": "integer",
+                                        "description": "File size in bytes.",
+                                        "x-ms-summary": "Size"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/items/{libraryContentId}/copy": {
+            "post": {
+                "operationId": "CopyItem",
+                "summary": "Copy an item",
+                "description": "Copy a file, folder, or URL to a target folder within the same teamsite.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the item to copy.",
+                        "x-ms-summary": "Item ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentFolderId"
+                            ],
+                            "properties": {
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The target folder GUID to copy into.",
+                                    "x-ms-summary": "Target Folder ID"
+                                },
+                                "newName": {
+                                    "type": "string",
+                                    "description": "Optional new name for the copied item.",
+                                    "x-ms-summary": "New Name",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item copied.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/files/{libraryContentId}/copy": {
+            "post": {
+                "operationId": "CopyFile",
+                "summary": "Copy a file",
+                "description": "Copy a file to a target folder within the same teamsite.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file to copy.",
+                        "x-ms-summary": "File ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentFolderId"
+                            ],
+                            "properties": {
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The target folder GUID to copy into.",
+                                    "x-ms-summary": "Target Folder ID"
+                                },
+                                "newName": {
+                                    "type": "string",
+                                    "description": "Optional new name for the copied file.",
+                                    "x-ms-summary": "New Name",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File copied.",
+                        "schema": {
+                            "$ref": "#/definitions/FileInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/urls/{libraryContentId}/copy": {
+            "post": {
+                "operationId": "CopyUrl",
+                "summary": "Copy a URL",
+                "description": "Copy a URL item to a target folder within the same teamsite.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the URL item to copy.",
+                        "x-ms-summary": "URL Item ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentFolderId"
+                            ],
+                            "properties": {
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The target folder GUID to copy into.",
+                                    "x-ms-summary": "Target Folder ID"
+                                },
+                                "newName": {
+                                    "type": "string",
+                                    "description": "Optional new name for the copied URL item.",
+                                    "x-ms-summary": "New Name",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL copied.",
+                        "schema": {
+                            "$ref": "#/definitions/UrlInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/urls": {
+            "post": {
+                "operationId": "AddUrl",
+                "summary": "Add a URL",
+                "description": "Add a URL item to the library in a specified folder.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "name",
+                                "parentFolderId",
+                                "url"
+                            ],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The display name for the URL.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The parent folder GUID. Use 'root' for the root folder.",
+                                    "x-ms-summary": "Parent Folder ID"
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "The URL to add.",
+                                    "x-ms-summary": "URL"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL added.",
+                        "schema": {
+                            "$ref": "#/definitions/FolderInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/folders/path": {
+            "put": {
+                "operationId": "GetOrCreateFolderByPath",
+                "summary": "Get or create folder by path",
+                "description": "Get an existing folder or create it if it does not exist, using a path string.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "path"
+                            ],
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "description": "The folder path (e.g., 'Marketing/Q4 Assets').",
+                                    "x-ms-summary": "Path"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder retrieved or created.",
+                        "schema": {
+                            "$ref": "#/definitions/FolderInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites": {
+            "get": {
+                "operationId": "ListTeamsites",
+                "summary": "List teamsites",
+                "description": "Get the full list of teamsites in the tenant.",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of teamsites returned.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "The teamsite identifier.",
+                                        "x-ms-summary": "ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "The teamsite name.",
+                                        "x-ms-summary": "Name"
+                                    },
+                                    "isDefault": {
+                                        "type": "boolean",
+                                        "description": "Whether this is the default teamsite.",
+                                        "x-ms-summary": "Is Default"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}": {
+            "get": {
+                "operationId": "GetTeamsite",
+                "summary": "Get teamsite",
+                "description": "Get the name and details of a specific teamsite.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Teamsite information returned.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The teamsite identifier.",
+                                    "x-ms-summary": "ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The teamsite name.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "isDefault": {
+                                    "type": "boolean",
+                                    "description": "Whether this is the default teamsite.",
+                                    "x-ms-summary": "Is Default"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/files/{libraryContentId}/versions/{libraryVersionId}/content": {
+            "get": {
+                "operationId": "DownloadFileVersion",
+                "summary": "Download a file version",
+                "description": "Get the download URL for a specific version of a file.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file.",
+                        "x-ms-summary": "File ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "libraryVersionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the file version.",
+                        "x-ms-summary": "Version ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "redirect",
+                        "in": "query",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "If false, returns a JSON body with the download URL. If true, returns a 302 redirect.",
+                        "x-ms-summary": "Redirect",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File version download URL and content returned.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "downloadUrl": {
+                                    "type": "string",
+                                    "description": "The URL to download the file version.",
+                                    "x-ms-summary": "Download URL"
+                                },
+                                "contentType": {
+                                    "type": "string",
+                                    "description": "The MIME type of the file.",
+                                    "x-ms-summary": "Content Type"
+                                },
+                                "contentLength": {
+                                    "type": "integer",
+                                    "description": "The file size in bytes.",
+                                    "x-ms-summary": "Content Length"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The base64-encoded file content.",
+                                    "x-ms-summary": "File Content (Base64)"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/folders/{libraryContentId}/copy": {
+            "post": {
+                "operationId": "CopyFolder",
+                "summary": "Copy a folder",
+                "description": "Copy a folder and its contents to a target folder within the same teamsite.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the folder to copy.",
+                        "x-ms-summary": "Folder ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "QueryItems",
+                            "parameters": {
+                                "teamsiteId": {
+                                    "parameter": "teamsiteId"
+                                },
+                                "type": "folder"
+                            },
+                            "value-collection": "entries",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentFolderId"
+                            ],
+                            "properties": {
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The target folder GUID to copy into.",
+                                    "x-ms-summary": "Target Folder ID"
+                                },
+                                "newName": {
+                                    "type": "string",
+                                    "description": "Optional new name for the copied folder.",
+                                    "x-ms-summary": "New Name",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder copied.",
+                        "schema": {
+                            "$ref": "#/definitions/FolderInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/v2/teamsites/{teamsiteId}/urls/{libraryContentId}": {
+            "get": {
+                "operationId": "GetUrlInfo",
+                "summary": "Get URL information",
+                "description": "Get the metadata and properties for a URL item in the library.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the URL item.",
+                        "x-ms-summary": "URL Item ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL information returned.",
+                        "schema": {
+                            "$ref": "#/definitions/UrlInfo"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateUrlInfo",
+                "summary": "Update URL information",
+                "description": "Update a URL item's name, parent folder, URL value, or properties.",
+                "parameters": [
+                    {
+                        "name": "teamsiteId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the teamsite.",
+                        "x-ms-summary": "Teamsite ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTeamsites",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "libraryContentId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The identifier of the URL item.",
+                        "x-ms-summary": "URL Item ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The new display name.",
+                                    "x-ms-summary": "Name"
+                                },
+                                "parentFolderId": {
+                                    "type": "string",
+                                    "description": "The target parent folder GUID to move the URL item.",
+                                    "x-ms-summary": "Parent Folder ID"
+                                },
+                                "url": {
+                                    "type": "object",
+                                    "description": "The URL details.",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "description": "The URL value.",
+                                            "x-ms-summary": "URL"
+                                        },
+                                        "openInNewWindow": {
+                                            "type": "boolean",
+                                            "description": "Whether the URL opens in a new window.",
+                                            "x-ms-summary": "Open in New Window"
+                                        }
+                                    }
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "The description for the URL item.",
+                                    "x-ms-summary": "Description"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL item updated.",
+                        "schema": {
+                            "$ref": "#/definitions/UrlInfo"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "FileInfo": {
+            "type": "object",
+            "properties": {
+                "repository": {
+                    "type": "string",
+                    "description": "The repository type.",
+                    "x-ms-summary": "Repository"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "The file identifier.",
+                    "x-ms-summary": "ID"
+                },
+                "versionId": {
+                    "type": "string",
+                    "description": "The current version identifier.",
+                    "x-ms-summary": "Version ID"
+                },
+                "externalId": {
+                    "type": "string",
+                    "description": "The external identifier.",
+                    "x-ms-summary": "External ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The file name.",
+                    "x-ms-summary": "Name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The item type.",
+                    "x-ms-summary": "Type"
+                },
+                "size": {
+                    "type": "integer",
+                    "description": "The file size in bytes.",
+                    "x-ms-summary": "Size"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "The file format (e.g., PPTX, PDF).",
+                    "x-ms-summary": "Format"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "The publishing status.",
+                    "x-ms-summary": "Status"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "The version number.",
+                    "x-ms-summary": "Version"
+                },
+                "ownerId": {
+                    "type": "string",
+                    "description": "The owner user identifier.",
+                    "x-ms-summary": "Owner ID"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The file description.",
+                    "x-ms-summary": "Description"
+                },
+                "parentFolderId": {
+                    "type": "string",
+                    "description": "The parent folder identifier.",
+                    "x-ms-summary": "Parent Folder ID"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "The creation timestamp.",
+                    "x-ms-summary": "Created At"
+                },
+                "createdBy": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Creator user ID.",
+                            "x-ms-summary": "User ID"
+                        },
+                        "isDeleted": {
+                            "type": "boolean",
+                            "description": "Whether the user has been deleted.",
+                            "x-ms-summary": "Is Deleted"
+                        }
+                    }
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "description": "The last modified timestamp.",
+                    "x-ms-summary": "Modified At"
+                },
+                "modifiedBy": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Modifier user ID.",
+                            "x-ms-summary": "User ID"
+                        },
+                        "isDeleted": {
+                            "type": "boolean",
+                            "description": "Whether the user has been deleted.",
+                            "x-ms-summary": "Is Deleted"
+                        }
+                    }
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "description": "The expiration date.",
+                    "x-ms-summary": "Expires At"
+                },
+                "thumbnailId": {
+                    "type": "string",
+                    "description": "The thumbnail identifier.",
+                    "x-ms-summary": "Thumbnail ID"
+                },
+                "experts": {
+                    "type": "array",
+                    "description": "The list of experts.",
+                    "x-ms-summary": "Experts",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Expert identifier.",
+                                "x-ms-summary": "ID"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Expert type (user or group).",
+                                "x-ms-summary": "Type"
+                            }
+                        }
+                    }
+                },
+                "properties": {
+                    "type": "array",
+                    "description": "Custom content properties.",
+                    "x-ms-summary": "Properties",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Property identifier.",
+                                "x-ms-summary": "ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Property name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "values": {
+                                "type": "array",
+                                "description": "Property values.",
+                                "x-ms-summary": "Values",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "assignedToProfiles": {
+                    "type": "array",
+                    "description": "Profiles this item is assigned to.",
+                    "x-ms-summary": "Assigned To Profiles",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "FolderInfo": {
+            "type": "object",
+            "properties": {
+                "repository": {
+                    "type": "string",
+                    "description": "The repository type.",
+                    "x-ms-summary": "Repository"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "The folder identifier.",
+                    "x-ms-summary": "ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The folder name.",
+                    "x-ms-summary": "Name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The item type.",
+                    "x-ms-summary": "Type"
+                },
+                "parentFolderId": {
+                    "type": "string",
+                    "description": "The parent folder identifier.",
+                    "x-ms-summary": "Parent Folder ID"
+                },
+                "externalId": {
+                    "type": "string",
+                    "description": "The external identifier.",
+                    "x-ms-summary": "External ID"
+                },
+                "externalConnectionId": {
+                    "type": "string",
+                    "description": "The external connection identifier.",
+                    "x-ms-summary": "External Connection ID"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "The creation timestamp.",
+                    "x-ms-summary": "Created At"
+                },
+                "createdBy": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Creator user ID.",
+                            "x-ms-summary": "User ID"
+                        },
+                        "isDeleted": {
+                            "type": "boolean",
+                            "description": "Whether the user has been deleted.",
+                            "x-ms-summary": "Is Deleted"
+                        }
+                    }
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "description": "The last modified timestamp.",
+                    "x-ms-summary": "Modified At"
+                },
+                "modifiedBy": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Modifier user ID.",
+                            "x-ms-summary": "User ID"
+                        },
+                        "isDeleted": {
+                            "type": "boolean",
+                            "description": "Whether the user has been deleted.",
+                            "x-ms-summary": "Is Deleted"
+                        }
+                    }
+                }
+            }
+        },
+        "UrlInfo": {
+            "type": "object",
+            "properties": {
+                "repository": {
+                    "type": "string",
+                    "description": "The repository type.",
+                    "x-ms-summary": "Repository"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "The URL item identifier.",
+                    "x-ms-summary": "ID"
+                },
+                "thumbnailId": {
+                    "type": "string",
+                    "description": "The thumbnail identifier.",
+                    "x-ms-summary": "Thumbnail ID"
+                },
+                "versionId": {
+                    "type": "string",
+                    "description": "The current version identifier.",
+                    "x-ms-summary": "Version ID"
+                },
+                "externalId": {
+                    "type": "string",
+                    "description": "The external identifier.",
+                    "x-ms-summary": "External ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The URL item name.",
+                    "x-ms-summary": "Name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The item type.",
+                    "x-ms-summary": "Type"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "The format (URL).",
+                    "x-ms-summary": "Format"
+                },
+                "parentFolderId": {
+                    "type": "string",
+                    "description": "The parent folder identifier.",
+                    "x-ms-summary": "Parent Folder ID"
+                },
+                "ownerId": {
+                    "type": "string",
+                    "description": "The owner user identifier.",
+                    "x-ms-summary": "Owner ID"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The URL item description.",
+                    "x-ms-summary": "Description"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "The version number.",
+                    "x-ms-summary": "Version"
+                },
+                "url": {
+                    "type": "object",
+                    "properties": {
+                        "url": {
+                            "type": "string",
+                            "description": "The URL value.",
+                            "x-ms-summary": "URL"
+                        },
+                        "openInNewWindow": {
+                            "type": "boolean",
+                            "description": "Whether the URL opens in a new window.",
+                            "x-ms-summary": "Open in New Window"
+                        }
+                    }
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "The creation timestamp.",
+                    "x-ms-summary": "Created At"
+                },
+                "createdBy": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Creator user ID.",
+                            "x-ms-summary": "User ID"
+                        }
+                    }
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "description": "The last modified timestamp.",
+                    "x-ms-summary": "Modified At"
+                },
+                "modifiedBy": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Modifier user ID.",
+                            "x-ms-summary": "User ID"
+                        }
+                    }
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "description": "The expiration date.",
+                    "x-ms-summary": "Expires At"
+                },
+                "assignedToProfiles": {
+                    "type": "array",
+                    "description": "Profiles this item is assigned to.",
+                    "x-ms-summary": "Assigned To Profiles",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Profile ID.",
+                                "x-ms-summary": "ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Profile name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Profile type.",
+                                "x-ms-summary": "Type"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://seismic.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://seismic.com/privacy-policy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Content and Files;Sales and CRM"
+        }
+    ]
+}
