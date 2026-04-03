@@ -1,0 +1,337 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry Rerank",
+    "description": "Rerank search results by semantic relevance using Cohere Rerank v4 models on Microsoft Foundry. Pass a query and a list of documents — returns them reordered by relevance score. Use in RAG pipelines between retrieval and LLM to improve response quality. Supports 14 languages. Includes MCP protocol support for Copilot Studio.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.services.ai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v2/rerank": {
+      "post": {
+        "operationId": "RerankDocuments",
+        "summary": "Rerank Documents",
+        "description": "Rerank a list of documents by semantic relevance to a query. Returns documents ordered by relevance score (highest first). Use after initial retrieval (search, Dataverse query, SharePoint) and before sending context to an LLM.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "query",
+                "documents"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "description": "The rerank model to use.",
+                  "x-ms-summary": "Model",
+                  "default": "Cohere-rerank-v4.0-pro",
+                  "enum": [
+                    "Cohere-rerank-v4.0-pro",
+                    "Cohere-rerank-v4.0-fast"
+                  ],
+                  "x-ms-visibility": "advanced"
+                },
+                "query": {
+                  "type": "string",
+                  "description": "The search query to rank documents against.",
+                  "x-ms-summary": "Query"
+                },
+                "documents": {
+                  "type": "array",
+                  "description": "The list of document texts to rerank. Maximum 1,000 documents recommended.",
+                  "x-ms-summary": "Documents",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "top_n": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Number of top results to return. If omitted, all documents are returned ranked.",
+                  "x-ms-summary": "Top N",
+                  "x-ms-visibility": "advanced",
+                  "minimum": 1
+                },
+                "max_tokens_per_doc": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum tokens per document before truncation. Default: 4096.",
+                  "x-ms-summary": "Max Tokens Per Document",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents reranked successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "description": "Documents ordered by relevance score (highest first).",
+                  "x-ms-summary": "Results",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "The original index of this document in the input array.",
+                        "x-ms-summary": "Original Index"
+                      },
+                      "relevance_score": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Relevance score (0-1). Higher is more relevant.",
+                        "x-ms-summary": "Relevance Score"
+                      },
+                      "document": {
+                        "type": "string",
+                        "description": "The original document text.",
+                        "x-ms-summary": "Document Text"
+                      }
+                    }
+                  }
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for this rerank request.",
+                  "x-ms-summary": "Request ID"
+                },
+                "meta": {
+                  "type": "object",
+                  "description": "API metadata and billing information.",
+                  "x-ms-summary": "Metadata",
+                  "properties": {
+                    "api_version": {
+                      "type": "object",
+                      "description": "API version information.",
+                      "properties": {
+                        "version": {
+                          "type": "string",
+                          "description": "API version number.",
+                          "x-ms-summary": "API Version"
+                        }
+                      }
+                    },
+                    "billed_units": {
+                      "type": "object",
+                      "description": "Billing units consumed.",
+                      "properties": {
+                        "search_units": {
+                          "type": "integer",
+                          "description": "Number of search units billed (1 unit = query + up to 100 documents).",
+                          "x-ms-summary": "Search Units"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. The request body is malformed or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized. The API key is missing or invalid."
+          },
+          "429": {
+            "description": "Too many requests. Rate limit exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/rerank/filter": {
+      "post": {
+        "operationId": "RerankAndFilter",
+        "summary": "Rerank and Filter",
+        "description": "Rerank documents and filter out those below a minimum relevance score. Returns only documents above the threshold, ordered by relevance. Useful for quality-gating before sending context to an LLM.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "query",
+                "documents",
+                "min_score"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "description": "The rerank model to use.",
+                  "x-ms-summary": "Model",
+                  "default": "Cohere-rerank-v4.0-pro",
+                  "enum": [
+                    "Cohere-rerank-v4.0-pro",
+                    "Cohere-rerank-v4.0-fast"
+                  ],
+                  "x-ms-visibility": "advanced"
+                },
+                "query": {
+                  "type": "string",
+                  "description": "The search query to rank documents against.",
+                  "x-ms-summary": "Query"
+                },
+                "documents": {
+                  "type": "array",
+                  "description": "The list of document texts to rerank.",
+                  "x-ms-summary": "Documents",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "min_score": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Minimum relevance score threshold (0-1). Documents below this score are excluded.",
+                  "x-ms-summary": "Minimum Score",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "top_n": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum number of results to return (applied after filtering). If omitted, all passing documents are returned.",
+                  "x-ms-summary": "Top N",
+                  "x-ms-visibility": "advanced",
+                  "minimum": 1
+                },
+                "max_tokens_per_doc": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Maximum tokens per document before truncation. Default: 4096.",
+                  "x-ms-summary": "Max Tokens Per Document",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documents reranked and filtered successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "description": "Documents above the minimum score, ordered by relevance.",
+                  "x-ms-summary": "Results",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "The original index of this document in the input array.",
+                        "x-ms-summary": "Original Index"
+                      },
+                      "relevance_score": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Relevance score (0-1).",
+                        "x-ms-summary": "Relevance Score"
+                      },
+                      "document": {
+                        "type": "string",
+                        "description": "The original document text.",
+                        "x-ms-summary": "Document Text"
+                      }
+                    }
+                  }
+                },
+                "total_input": {
+                  "type": "integer",
+                  "description": "Total number of documents submitted.",
+                  "x-ms-summary": "Total Input"
+                },
+                "total_passed": {
+                  "type": "integer",
+                  "description": "Number of documents above the minimum score.",
+                  "x-ms-summary": "Total Passed"
+                },
+                "total_filtered": {
+                  "type": "integer",
+                  "description": "Number of documents filtered out.",
+                  "x-ms-summary": "Total Filtered"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request."
+          },
+          "401": {
+            "description": "Unauthorized."
+          },
+          "429": {
+            "description": "Too many requests."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry Rerank MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for document reranking tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://ai.azure.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI"
+    }
+  ]
+}
