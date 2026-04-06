@@ -1,0 +1,394 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry MAI Image",
+    "description": "Connect to Microsoft Foundry to generate photorealistic images using MAI-Image-2 and other Foundry image generation models. Top 3 on Arena.ai, 2x faster generation, accurate skin tones, natural lighting, and clear in-image text. Includes MCP protocol support and borrowed chat completion for describing generated images.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.services.ai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/images/generations": {
+      "post": {
+        "operationId": "GeneratePhotorealisticImage",
+        "summary": "Generate Photorealistic Image",
+        "description": "Generate photorealistic images from text prompts using MAI-Image-2 or other Foundry image generation models. Returns image URLs or base64-encoded data.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "description": "The API version to use.",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "prompt"
+              ],
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "A text description of the desired image(s). Maximum 32,000 characters.",
+                  "x-ms-summary": "Prompt"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "The model to use for image generation (e.g., MAI-Image-2, gpt-image-1.5).",
+                  "x-ms-summary": "Model"
+                },
+                "n": {
+                  "type": "integer",
+                  "description": "Number of images to generate (1-10).",
+                  "default": 1,
+                  "x-ms-summary": "Number of Images",
+                  "x-ms-visibility": "advanced"
+                },
+                "size": {
+                  "type": "string",
+                  "description": "Image dimensions.",
+                  "enum": [
+                    "1024x1024",
+                    "1536x1024",
+                    "1024x1536",
+                    "auto"
+                  ],
+                  "default": "1024x1024",
+                  "x-ms-summary": "Size",
+                  "x-ms-visibility": "advanced"
+                },
+                "quality": {
+                  "type": "string",
+                  "description": "Image quality level. Higher quality uses more tokens and takes longer.",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "auto"
+                  ],
+                  "default": "auto",
+                  "x-ms-summary": "Quality",
+                  "x-ms-visibility": "advanced"
+                },
+                "style": {
+                  "type": "string",
+                  "description": "Image style. Vivid for bold colors; natural for photorealistic results.",
+                  "enum": [
+                    "vivid",
+                    "natural"
+                  ],
+                  "x-ms-summary": "Style",
+                  "x-ms-visibility": "advanced"
+                },
+                "response_format": {
+                  "type": "string",
+                  "description": "How to return the generated image. URL returns a temporary download link; b64_json returns base64-encoded image data.",
+                  "enum": [
+                    "url",
+                    "b64_json"
+                  ],
+                  "default": "url",
+                  "x-ms-summary": "Response Format",
+                  "x-ms-visibility": "advanced"
+                },
+                "output_format": {
+                  "type": "string",
+                  "description": "Image file format.",
+                  "enum": [
+                    "png",
+                    "jpeg",
+                    "webp"
+                  ],
+                  "x-ms-summary": "Output Format",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generated image(s).",
+            "schema": {
+              "$ref": "#/definitions/ImageGenerationResponse"
+            }
+          }
+        }
+      }
+    },
+    "/chat/completions": {
+      "post": {
+        "operationId": "ChatCompletion",
+        "summary": "Chat Completion",
+        "description": "Send a chat completion request to describe, interpret, or discuss generated images. Borrowed from the parent Microsoft Foundry connector for MCP agent use.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "messages"
+              ],
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "description": "The collection of context messages for the chat completions request.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "The role of the message author.",
+                        "x-ms-summary": "Role",
+                        "enum": [
+                          "system",
+                          "user",
+                          "assistant"
+                        ]
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "The content of the message.",
+                        "x-ms-summary": "Content"
+                      }
+                    },
+                    "required": [
+                      "role",
+                      "content"
+                    ]
+                  }
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.7,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The maximum number of tokens to generate.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat completion response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the completion.",
+                  "x-ms-summary": "Completion ID"
+                },
+                "choices": {
+                  "type": "array",
+                  "description": "List of completion choices.",
+                  "x-ms-summary": "Choices",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Index of the choice.",
+                        "x-ms-summary": "Index"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "The generated message.",
+                        "x-ms-summary": "Message",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "description": "Role of the message author.",
+                            "x-ms-summary": "Role"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the message.",
+                            "x-ms-summary": "Content"
+                          }
+                        }
+                      },
+                      "finish_reason": {
+                        "type": "string",
+                        "description": "Reason the model stopped generating.",
+                        "x-ms-summary": "Finish Reason"
+                      }
+                    }
+                  }
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of generated tokens.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry MAI Image MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for image generation and chat completion tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ImageGenerationResponse": {
+      "type": "object",
+      "properties": {
+        "created": {
+          "type": "integer",
+          "description": "Unix timestamp of when the request was created.",
+          "x-ms-summary": "Created"
+        },
+        "data": {
+          "type": "array",
+          "description": "The generated image(s).",
+          "x-ms-summary": "Images",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Temporary URL to download the generated image. Expires after 60 minutes.",
+                "x-ms-summary": "Image URL"
+              },
+              "b64_json": {
+                "type": "string",
+                "description": "Base64-encoded image data (if response_format is b64_json).",
+                "x-ms-summary": "Image Base64"
+              },
+              "revised_prompt": {
+                "type": "string",
+                "description": "The revised prompt used to generate the image, if the model modified it.",
+                "x-ms-summary": "Revised Prompt"
+              }
+            }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "description": "Token usage for the request.",
+          "x-ms-summary": "Usage",
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "description": "Number of input tokens used.",
+              "x-ms-summary": "Input Tokens"
+            },
+            "output_tokens": {
+              "type": "integer",
+              "description": "Number of output tokens used.",
+              "x-ms-summary": "Output Tokens"
+            },
+            "total_tokens": {
+              "type": "integer",
+              "description": "Total tokens used.",
+              "x-ms-summary": "Total Tokens"
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "api-key"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://ai.azure.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI"
+    }
+  ]
+}
