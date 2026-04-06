@@ -1,0 +1,447 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry MAI Speech",
+    "description": "Connect to Microsoft Foundry to transcribe audio using MAI-Transcribe-1 and other speech-to-text models. State-of-the-art accuracy (3.9% WER), 2.5x faster batch transcription, top 25 languages. Includes MCP protocol support and borrowed chat completion for interpreting transcriptions.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.openai.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/openai/deployments/{deployment_id}/audio/transcriptions": {
+      "post": {
+        "operationId": "TranscribeAudio",
+        "summary": "Transcribe Audio",
+        "description": "Transcribe audio into text using MAI-Transcribe-1 or other speech-to-text models. Supports 25+ languages with state-of-the-art accuracy.",
+        "x-ms-visibility": "important",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "deployment_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The deployment name of the speech-to-text model (e.g., MAI-Transcribe-1).",
+            "x-ms-summary": "Deployment ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-21",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "required": true,
+            "type": "file",
+            "description": "The audio file to transcribe. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm. Max 25 MB.",
+            "x-ms-summary": "Audio File"
+          },
+          {
+            "name": "language",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Language of the input audio in ISO-639-1 format (e.g., 'en', 'es', 'fr'). Auto-detected if not specified.",
+            "x-ms-summary": "Language",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "prompt",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Optional text to guide the model's style or continue a previous audio segment.",
+            "x-ms-summary": "Prompt",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "response_format",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "json",
+              "text",
+              "srt",
+              "verbose_json",
+              "vtt"
+            ],
+            "description": "Output format. json: simple JSON, text: plain text, srt/vtt: subtitles, verbose_json: includes timestamps and segments.",
+            "x-ms-summary": "Response Format",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "temperature",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "Sampling temperature (0-1). Lower values are more deterministic. Default: 0.",
+            "x-ms-summary": "Temperature",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transcription result.",
+            "schema": {
+              "$ref": "#/definitions/AudioTranscriptionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/openai/deployments/{deployment_id}/audio/translations": {
+      "post": {
+        "operationId": "TranslateAudio",
+        "summary": "Translate Audio to English",
+        "description": "Translate audio from any supported language into English text.",
+        "x-ms-visibility": "important",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "deployment_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The deployment name of the speech-to-text model.",
+            "x-ms-summary": "Deployment ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-21",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "required": true,
+            "type": "file",
+            "description": "The audio file to translate. Supported formats: mp3, mp4, mpeg, mpga, m4a, wav, webm. Max 25 MB.",
+            "x-ms-summary": "Audio File"
+          },
+          {
+            "name": "prompt",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "description": "Optional text to guide the model's style or continue a previous audio segment.",
+            "x-ms-summary": "Prompt",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "response_format",
+            "in": "formData",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "json",
+              "text",
+              "srt",
+              "verbose_json",
+              "vtt"
+            ],
+            "description": "Output format for the translation.",
+            "x-ms-summary": "Response Format",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "temperature",
+            "in": "formData",
+            "required": false,
+            "type": "number",
+            "description": "Sampling temperature (0-1). Default: 0.",
+            "x-ms-summary": "Temperature",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Translation result.",
+            "schema": {
+              "$ref": "#/definitions/AudioTranscriptionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/models/chat/completions": {
+      "post": {
+        "operationId": "ChatCompletion",
+        "summary": "Chat Completion",
+        "description": "Send a chat completion request to summarize, analyze, or discuss transcription results. Borrowed from the parent Microsoft Foundry connector for MCP agent use.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "messages"
+              ],
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "description": "The collection of context messages for the chat completions request.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "The role of the message author.",
+                        "x-ms-summary": "Role",
+                        "enum": [
+                          "system",
+                          "user",
+                          "assistant"
+                        ]
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "The content of the message.",
+                        "x-ms-summary": "Content"
+                      }
+                    },
+                    "required": [
+                      "role",
+                      "content"
+                    ]
+                  }
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.7,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The maximum number of tokens to generate.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat completion response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the completion.",
+                  "x-ms-summary": "Completion ID"
+                },
+                "choices": {
+                  "type": "array",
+                  "description": "List of completion choices.",
+                  "x-ms-summary": "Choices",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Index of the choice.",
+                        "x-ms-summary": "Index"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "The generated message.",
+                        "x-ms-summary": "Message",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "description": "Role of the message author.",
+                            "x-ms-summary": "Role"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the message.",
+                            "x-ms-summary": "Content"
+                          }
+                        }
+                      },
+                      "finish_reason": {
+                        "type": "string",
+                        "description": "Reason the model stopped generating.",
+                        "x-ms-summary": "Finish Reason"
+                      }
+                    }
+                  }
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of generated tokens.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry MAI Speech MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for audio transcription, translation, and chat completion tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "AudioTranscriptionResponse": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The transcribed or translated text.",
+          "x-ms-summary": "Text"
+        },
+        "task": {
+          "type": "string",
+          "description": "The task performed (transcribe or translate).",
+          "x-ms-summary": "Task"
+        },
+        "language": {
+          "type": "string",
+          "description": "Detected or specified language.",
+          "x-ms-summary": "Language"
+        },
+        "duration": {
+          "type": "number",
+          "description": "Duration of the audio in seconds.",
+          "x-ms-summary": "Duration"
+        },
+        "segments": {
+          "type": "array",
+          "description": "Transcription segments with timestamps (verbose_json only).",
+          "x-ms-summary": "Segments",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Segment index.",
+                "x-ms-summary": "ID"
+              },
+              "start": {
+                "type": "number",
+                "description": "Start time in seconds.",
+                "x-ms-summary": "Start Time"
+              },
+              "end": {
+                "type": "number",
+                "description": "End time in seconds.",
+                "x-ms-summary": "End Time"
+              },
+              "text": {
+                "type": "string",
+                "description": "Transcribed text for this segment.",
+                "x-ms-summary": "Text"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "api-key"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://ai.azure.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI"
+    }
+  ]
+}
