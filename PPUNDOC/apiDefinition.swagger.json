@@ -1,0 +1,4425 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "PPUNDOC",
+    "version": "1.0.0",
+    "description": "Undocumented Power Platform APIs — BAP, Flow, Dataverse, Power Apps, Licensing, Admin Analytics, Environment Management, and Tenant Administration. 117 endpoints mapped, tested, and catalogued by ppundoc.com. WARNING: These are undocumented APIs that may change without notice.",
+    "contact": {
+      "email": "troy@troystaylor.com",
+      "name": "Troy Taylor"
+    }
+  },
+  "host": "placeholder.api.powerplatform.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "paths": {
+    "/providers/Microsoft.BusinessAppPlatform/tenant": {
+      "get": {
+        "operationId": "BAP_TenantInfo",
+        "summary": "Get Tenant Info",
+        "description": "Returns current tenant information including ID, geo, and language.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2020-08-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.BusinessAppPlatform/listTenantSettings": {
+      "get": {
+        "operationId": "BAP_TenantSettings",
+        "summary": "Get Tenant Settings",
+        "description": "Returns all Power Platform tenant-level settings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2021-04-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "operationId": "BAP_UpdateTenantSettings",
+        "summary": "Update Tenant Settings",
+        "description": "Update Power Platform tenant-level settings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2021-04-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Tenant settings to update",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.BusinessAppPlatform/scopes/admin/environments": {
+      "get": {
+        "operationId": "BAP_EnvironmentList",
+        "summary": "List Environments (BAP)",
+        "description": "List all environments with full properties, capacity, and metadata.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2021-04-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "description": "Fields to return",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$select"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "description": "Related properties to expand",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$expand"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.BusinessAppPlatform/scopes/admin/environments_features": {
+      "get": {
+        "operationId": "BAP_EnvironmentFeatures",
+        "summary": "Get Environment Features (BAP)",
+        "description": "Get environment copilot policies and features.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2021-04-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "$expand",
+            "name": "$expand",
+            "default": "properties/copilotPolicies",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Expand copilot policies"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter by organizationID",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.BusinessAppPlatform/locations/{location}/templates": {
+      "get": {
+        "operationId": "BAP_D365Templates",
+        "summary": "Get D365 Templates",
+        "description": "Get available D365 environment templates.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "location",
+            "in": "path",
+            "description": "Azure location (e.g., unitedstates)",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "location"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2020-05-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/PowerPlatform.Governance/v1/connectors": {
+      "get": {
+        "operationId": "BAP_DesktopConnectors",
+        "summary": "List Desktop Connectors",
+        "description": "List Power Automate Desktop connectors.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "$filter",
+            "name": "$filter",
+            "default": "connectorType+eq+'DesktopFlow'",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Filter by connector type"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/PowerPlatform.Governance/v1/connectors/metadata/unblockable": {
+      "get": {
+        "operationId": "BAP_UnblockableConnectors",
+        "summary": "List Unblockable Connectors",
+        "description": "Get connectors that cannot be blocked by DLP policies.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/PowerPlatform.Governance/v1/policies": {
+      "get": {
+        "operationId": "BAP_DLPPolicies",
+        "summary": "List DLP Policies",
+        "description": "Get all Data Loss Prevention policies in the tenant.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "$top",
+            "name": "$top",
+            "default": "100",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Max results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/Providers/Microsoft.ProcessSimple/scopes/admin/environments/{environmentId}/flows/{resourceId}/owners": {
+      "get": {
+        "operationId": "Flow_AdminFlowOwners",
+        "summary": "Admin: Get Flow Owners",
+        "description": "Get owners of any flow as admin.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01-beta",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/Providers/Microsoft.ProcessSimple/scopes/admin/environments/{environmentId}/flows": {
+      "get": {
+        "operationId": "Flow_AdminGetFlows",
+        "summary": "Admin: List Flows",
+        "description": "List all flows in an environment as admin.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01-beta",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "$top",
+            "name": "$top",
+            "default": "25",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Max results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/Providers/Microsoft.ProcessSimple/scopes/admin/environments/{environmentId}/flows/{resourceId}": {
+      "get": {
+        "operationId": "Flow_AdminGetFlowDefinition",
+        "summary": "Admin: Get Flow Definition",
+        "description": "Get the full definition of any flow as admin.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01-beta",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/Providers/Microsoft.ProcessSimple/scopes/admin/environments/{environmentId}/flows/{resourceId}/modifyPermissions": {
+      "post": {
+        "operationId": "Flow_AdminShareFlow",
+        "summary": "Admin: Share Flow",
+        "description": "Share a flow with users as admin.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01-beta",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Share permissions body",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments": {
+      "get": {
+        "operationId": "Flow_Environments",
+        "summary": "List Environments (Flow)",
+        "description": "List all environments accessible to the user.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "$expand",
+            "name": "$expand",
+            "default": "properties%2Fpermissions",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Expand permissions"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows": {
+      "get": {
+        "operationId": "Flow_MyFlows",
+        "summary": "List My Flows",
+        "description": "List flows owned by the current user.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{resourceId}/runs": {
+      "get": {
+        "operationId": "Flow_FlowRunLogs",
+        "summary": "Get Flow Run History",
+        "description": "Get run history for a specific flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{resourceId}/runs/{flowRunId}": {
+      "get": {
+        "operationId": "Flow_FlowRunLog",
+        "summary": "Get Flow Run Detail",
+        "description": "Get details of a specific flow run.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "name": "flowRunId",
+            "in": "path",
+            "description": "Flow run ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flowRun  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/triggers/{trigger}/histories/{flowRunId}/resubmit": {
+      "post": {
+        "operationId": "Flow_ResubmitFlow",
+        "summary": "Resubmit Flow Run",
+        "description": "Re-run a failed or completed flow run.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "name": "trigger",
+            "in": "path",
+            "description": "Trigger name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "trigger"
+          },
+          {
+            "name": "flowRunId",
+            "in": "path",
+            "description": "Flow run ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flowRun  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{resourceId}_def": {
+      "get": {
+        "operationId": "Flow_FlowDefinition",
+        "summary": "Get Flow Definition",
+        "description": "Get the full flow definition with connections.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "$expand",
+            "name": "$expand",
+            "default": "properties.connectionreferences.apidefinition,operationDefinition,plan",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Expand details"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{resourceId}/connections": {
+      "get": {
+        "operationId": "Flow_FlowConnections",
+        "summary": "Get Flow Connections",
+        "description": "Get connections used by a flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{resourceId}/exportRuns": {
+      "post": {
+        "operationId": "Flow_CreateRunLogExport",
+        "summary": "Export Run Logs",
+        "description": "Create a CSV export of flow run history.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "Flow resource ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "resource  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/operationTypes/ExportFlowRunsHistoryCsv/operationResults/{operationId}": {
+      "get": {
+        "operationId": "Flow_DownloadRunLogs",
+        "summary": "Download Run Logs",
+        "description": "Download a previously exported CSV of flow run history.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "Environment ID"
+          },
+          {
+            "name": "operationId",
+            "in": "path",
+            "description": "Export operation ID from CreateRunLogExport",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "Operation ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/start": {
+      "post": {
+        "operationId": "Flow_TurnOnFlow",
+        "summary": "Turn On Flow",
+        "description": "Enable a disabled flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/stop": {
+      "post": {
+        "operationId": "Flow_TurnOffFlow",
+        "summary": "Turn Off Flow",
+        "description": "Disable an active flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/owners": {
+      "get": {
+        "operationId": "Flow_FlowOwners",
+        "summary": "Get Flow Owners",
+        "description": "List owners of a flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/modifyowners": {
+      "post": {
+        "operationId": "Flow_ShareFlow",
+        "summary": "Share Flow",
+        "description": "Share a flow with users.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "cascadeoperation",
+            "name": "cascadeoperation",
+            "default": "true",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Cascade"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Share permissions body",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/modifyowners_unshare": {
+      "post": {
+        "operationId": "Flow_UnshareFlow",
+        "summary": "Unshare Flow",
+        "description": "Remove a user from a flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Unshare permissions body",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/runs/abort": {
+      "post": {
+        "operationId": "Flow_CancelAllRuns",
+        "summary": "Cancel All Flow Runs",
+        "description": "Abort all running instances of a flow.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/checkFlowWarnings": {
+      "post": {
+        "operationId": "Flow_FlowWarnings",
+        "summary": "Check Flow Warnings",
+        "description": "Check a flow for warnings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Flow definition",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/flows/{flowId}/checkFlowErrors": {
+      "post": {
+        "operationId": "Flow_FlowErrors",
+        "summary": "Check Flow Errors",
+        "description": "Check a flow for errors.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Flow definition",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.Flow/environments/{environmentId}/solutions/{solutionId}/migrateFlows": {
+      "post": {
+        "operationId": "Flow_AddFlowToDataverse",
+        "summary": "Add Flow to Dataverse",
+        "description": "Migrate a legacy flow to a Dataverse solution.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "name": "solutionId",
+            "in": "path",
+            "description": "Solution ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "solution  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2018-10-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Flow IDs to migrate",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/batch": {
+      "post": {
+        "operationId": "Flow_Batch",
+        "summary": "Batch Flow Requests",
+        "description": "Execute multiple flow API requests in a single call.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Array of batch requests",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.ProcessSimple/environments/{environmentId}/perFlowPlanAllocations": {
+      "get": {
+        "operationId": "Flow_GetRunOnlyFlows",
+        "summary": "Get Per-Flow Plan Allocations",
+        "description": "Get run-only flow plan allocations.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/entities_list": {
+      "get": {
+        "operationId": "DV_Entities",
+        "summary": "List Entities (Dataverse)",
+        "description": "List all Dataverse entities/tables.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/organizations/{organizationId}_turnoff": {
+      "patch": {
+        "operationId": "DV_TurnOffAppControl",
+        "summary": "Turn Off App Control",
+        "description": "Disable app control on the organization.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "Organization ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "organization  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Settings to update",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/organizations": {
+      "get": {
+        "operationId": "DV_OrganizationsInfo",
+        "summary": "Get Organization Info",
+        "description": "Get organization details.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/RetrieveSettingList()": {
+      "get": {
+        "operationId": "DV_ListEnvironmentFeatures",
+        "summary": "List Environment Features",
+        "description": "List all available environment feature settings.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/GetFeatureEnabledState": {
+      "post": {
+        "operationId": "DV_GetEnvironmentFeatures",
+        "summary": "Get Feature State",
+        "description": "Check if a specific feature is enabled.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Feature name to check",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/organizations/{organizationId}_update": {
+      "patch": {
+        "operationId": "DV_EnvironmentFeaturesUpdate",
+        "summary": "Update Environment Features",
+        "description": "Update environment feature settings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "Organization ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "organization  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Feature settings",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/organizations/{organizationId}_saveinsoln": {
+      "patch": {
+        "operationId": "DV_TurnOnSaveInSolution",
+        "summary": "Turn On Save in Solution Default",
+        "description": "Enable save-in-solution-default setting.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "Organization ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "organization  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Settings",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/organizations/{organizationId}_getsettings": {
+      "get": {
+        "operationId": "DV_GetEnvironmentSettings",
+        "summary": "Get Environment Settings",
+        "description": "Get all organization-level settings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "Organization ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "organization  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/organizations/{organizationId}_updatesettings": {
+      "patch": {
+        "operationId": "DV_UpdateEnvironmentSettings",
+        "summary": "Update Environment Settings",
+        "description": "Update organization-level settings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "Organization ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "organization  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Settings to update",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/organizations/{organizationId}_blockcust": {
+      "patch": {
+        "operationId": "DV_UpdateBlockCustomizations",
+        "summary": "Update Block Customizations",
+        "description": "Block or unblock customizations.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "Organization ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "organization  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Block settings",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/WhoAmI": {
+      "get": {
+        "operationId": "DV_WhoAmI",
+        "summary": "Who Am I",
+        "description": "Get current user identity and organization.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/systemusers/{systemUserId}/Microsoft.Dynamics.CRM.RetrieveUserPrivileges": {
+      "get": {
+        "operationId": "DV_MyPrivileges",
+        "summary": "Get My Privileges",
+        "description": "Retrieve current user privileges.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "systemUserId",
+            "in": "path",
+            "description": "System user ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "systemUser  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/workflows": {
+      "get": {
+        "operationId": "DV_GetAllFlows",
+        "summary": "List All Flows (Dataverse)",
+        "description": "List all flows including Cloud, Desktop, and Business.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "$filter",
+            "name": "$filter",
+            "default": "category eq 5",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Filter by flow category"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/workflows/{flowId}": {
+      "get": {
+        "operationId": "DV_GetFlow",
+        "summary": "Get Flow (Dataverse)",
+        "description": "Get a specific flow by ID.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/workflows/{flowId}_on": {
+      "patch": {
+        "operationId": "DV_TurnFlowOn",
+        "summary": "Turn Flow On (Dataverse)",
+        "description": "Activate a flow via Dataverse.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Status codes (statecode:1, statuscode:2)",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/workflows/{flowId}_off": {
+      "patch": {
+        "operationId": "DV_TurnFlowOff",
+        "summary": "Turn Flow Off (Dataverse)",
+        "description": "Deactivate a flow via Dataverse.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Status codes (statecode:0, statuscode:1)",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/workflows/{flowId}_del": {
+      "delete": {
+        "operationId": "DV_DeleteFlow",
+        "summary": "Delete Flow (Dataverse)",
+        "description": "Delete a flow via Dataverse.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "flowId",
+            "in": "path",
+            "description": "Flow ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "flow  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/canvasapps": {
+      "get": {
+        "operationId": "DV_GetAllCanvasApps",
+        "summary": "List All Canvas Apps",
+        "description": "List all canvas apps in the environment.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/canvasapps/{appId}": {
+      "get": {
+        "operationId": "DV_GetCanvasApp",
+        "summary": "Get Canvas App",
+        "description": "Get a specific canvas app.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "description": "Canvas app ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "app  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/canvasapps/{appId}_update": {
+      "patch": {
+        "operationId": "DV_UpdateApp",
+        "summary": "Update Canvas App",
+        "description": "Update canvas app properties.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "description": "Canvas app ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "app  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "App properties to update",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/bots": {
+      "get": {
+        "operationId": "DV_GetAllAgents",
+        "summary": "List All Agents",
+        "description": "List all Copilot Studio agents.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/bots/{botId}": {
+      "get": {
+        "operationId": "DV_GetAgent",
+        "summary": "Get Agent",
+        "description": "Get a specific agent.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "Bot/Agent ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "bot  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/bots/{botId}_update": {
+      "patch": {
+        "operationId": "DV_UpdateAgent",
+        "summary": "Update Agent",
+        "description": "Update agent properties.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "Bot/Agent ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "bot  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Agent properties",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/bots/{botId}/Microsoft.Dynamics.CRM.PvaDeleteBot": {
+      "post": {
+        "operationId": "DV_DeleteAgent",
+        "summary": "Delete Agent",
+        "description": "Delete a Copilot Studio agent.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "Bot/Agent ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "bot  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/solutions": {
+      "get": {
+        "operationId": "DV_GetAllSolutions",
+        "summary": "List All Solutions",
+        "description": "List all solutions in the environment.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/solutions_filter": {
+      "get": {
+        "operationId": "DV_GetASolution",
+        "summary": "Get Solution by Name",
+        "description": "Find a solution by friendly name.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter (e.g., friendlyname eq 'MySolution')",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/solutioncomponents": {
+      "get": {
+        "operationId": "DV_GetAllSolutionComponents",
+        "summary": "List All Solution Components",
+        "description": "List all solution components.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/solutioncomponents_filter": {
+      "get": {
+        "operationId": "DV_GetASolutionComponents",
+        "summary": "Get Solution Components",
+        "description": "Get components for a specific solution.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter by solution ID and component type",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "x-ms-summary": "$select",
+            "name": "$select",
+            "default": "objectid",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Select fields"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/AddSolutionComponent": {
+      "patch": {
+        "operationId": "DV_AddSolutionComponent",
+        "summary": "Add Solution Component",
+        "description": "Add a component to a solution.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Component details",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/connectors": {
+      "get": {
+        "operationId": "DV_GetAllCustomConnectors",
+        "summary": "List Custom Connectors (DV)",
+        "description": "List all custom connectors.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/connectors/{connectorId}": {
+      "get": {
+        "operationId": "DV_GetCustomConnector",
+        "summary": "Get Custom Connector (DV)",
+        "description": "Get a specific custom connector.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectorId",
+            "in": "path",
+            "description": "Connector ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connector  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/connectors/{connectorId}_update": {
+      "patch": {
+        "operationId": "DV_UpdateCustomConnector",
+        "summary": "Update Custom Connector (DV)",
+        "description": "Update a custom connector.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectorId",
+            "in": "path",
+            "description": "Connector ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connector  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Connector properties",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/solutioncomponents_listfilter": {
+      "get": {
+        "operationId": "DV_ListComponentsWithFilters",
+        "summary": "List Components with Filters",
+        "description": "List solution components with type and ID filters.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$select",
+            "in": "query",
+            "description": "Select fields",
+            "type": "string",
+            "required": false,
+            "default": "componenttype,objectid",
+            "x-ms-summary": "$select"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter by component type and object ID",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/{table}_records": {
+      "get": {
+        "operationId": "DV_GetAllRecords",
+        "summary": "Get All Records",
+        "description": "Get records from any table with expand and filter.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "description": "Table plural name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "table"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "description": "Expand related data",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$expand"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "OData filter",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/$batch": {
+      "post": {
+        "operationId": "DV_Batch",
+        "summary": "Batch Operations",
+        "description": "Execute multiple Dataverse operations in a single request.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Batch request body",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/entities": {
+      "get": {
+        "operationId": "DV_GetAllEntities",
+        "summary": "List All Entities",
+        "description": "Get all entity metadata.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/{table}": {
+      "get": {
+        "operationId": "DV_GetAllFromTable",
+        "summary": "Get All From Table",
+        "description": "Get all records from a table.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "description": "Table plural name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "table"
+          },
+          {
+            "x-ms-summary": "$top",
+            "name": "$top",
+            "default": "10",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Max results"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "OData filter",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/{table}({recordId})": {
+      "get": {
+        "operationId": "DV_GetRecordFromTable",
+        "summary": "Get Record From Table",
+        "description": "Get a specific record by ID.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "description": "Table plural name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "table"
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record GUID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "record  ID"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "description": "Fields to return",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$select"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/{table}({recordId})_update": {
+      "patch": {
+        "operationId": "DV_UpdateRecordFromTable",
+        "summary": "Update Record",
+        "description": "Update a record in any table.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "description": "Table plural name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "table"
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record GUID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "record  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Field values to update",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/{table}({recordId})_delete": {
+      "delete": {
+        "operationId": "DV_DeleteRecordFromTable",
+        "summary": "Delete Record",
+        "description": "Delete a record from any table.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "description": "Table plural name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "table"
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record GUID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "record  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/GrantAccess": {
+      "post": {
+        "operationId": "DV_ShareRecordUser",
+        "summary": "Share Record (User)",
+        "description": "Share a record with a user.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Target record and user with access mask",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/RevokeAccess": {
+      "post": {
+        "operationId": "DV_RevokeShareRecordUser",
+        "summary": "Revoke Share (User)",
+        "description": "Revoke a user's access to a record.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Target record and user",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/GrantAccess_team": {
+      "post": {
+        "operationId": "DV_ShareRecordTeam",
+        "summary": "Share Record (Team)",
+        "description": "Share a record with a team.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Target record and team with access mask",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/RevokeAccess_team": {
+      "post": {
+        "operationId": "DV_RevokeShareRecordTeam",
+        "summary": "Revoke Share (Team)",
+        "description": "Revoke a team's access to a record.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Target record and team",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/RetrieveRolePrivilegesRole(RoleId={roleId})": {
+      "get": {
+        "operationId": "DV_CheckRolePermissions",
+        "summary": "Check Role Permissions",
+        "description": "Get privileges for a security role.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "Security role GUID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "role  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/privileges": {
+      "get": {
+        "operationId": "DV_FindRolePermissions",
+        "summary": "Find Privileges",
+        "description": "Search for privileges by name.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "$select",
+            "name": "$select",
+            "default": "privilegeid,name",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Fields"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter (e.g., contains(name,'SearchWord'))",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/roles/{roleId}/Microsoft.Dynamics.CRM.AddPrivilegesRole": {
+      "post": {
+        "operationId": "DV_AddPermissionToRole",
+        "summary": "Add Permission to Role",
+        "description": "Add a privilege to a security role.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "Security role GUID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "role  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Privilege details",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.1/{plugin}": {
+      "post": {
+        "operationId": "DV_Unbound",
+        "summary": "Call Unbound Action",
+        "description": "Execute an unbound Dataverse action or custom API.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "plugin",
+            "in": "path",
+            "description": "Action/plugin name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "plugin"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Action parameters",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.0/systemusers": {
+      "get": {
+        "operationId": "DV_FindUser",
+        "summary": "Find User",
+        "description": "Find a system user by UPN.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter (e.g., domain eq 'user@contoso.com')",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "x-ms-summary": "$select",
+            "name": "$select",
+            "default": "systemuserid",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "description": "Fields"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/RetrieveTotalRecordCount(EntityNames=['{entityName}'])": {
+      "get": {
+        "operationId": "DV_CountRows",
+        "summary": "Count Table Rows",
+        "description": "Get total record count for an entity.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "entityName",
+            "in": "path",
+            "description": "Entity logical name",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "entityName"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.PowerApps/apis/{connectionType}/connections/{connectionId}": {
+      "put": {
+        "operationId": "PA_CreateModifySPNConnection",
+        "summary": "Create/Modify SPN Connection",
+        "description": "Create or update a connection with Service Principal credentials.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectionType",
+            "in": "path",
+            "description": "Connection type (e.g., shared_commondataserviceforapps)",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connectionType"
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "description": "Connection ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connection  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Connection properties",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.PowerApps/apis/{connectionType}/connections/{connectionId}_rename": {
+      "put": {
+        "operationId": "PA_RenameConnection",
+        "summary": "Rename Connection",
+        "description": "Update display name of a connection.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectionType",
+            "in": "path",
+            "description": "Connection type",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connectionType"
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "description": "Connection ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connection  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Display name",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.PowerApps/apis/{connectionType}/connections/{connectionId}/modifyPermissions": {
+      "post": {
+        "operationId": "PA_ShareConnection",
+        "summary": "Share Connection",
+        "description": "Share a connection with a user or service principal.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectionType",
+            "in": "path",
+            "description": "Connection type",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connectionType"
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "description": "Connection ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connection  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2020-06-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Share permissions",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.PowerApps/apis/{connectionType}/connections/{connectionId}/modifyPermissions_revoke": {
+      "post": {
+        "operationId": "PA_RevokeConnectionShare",
+        "summary": "Revoke Connection Share",
+        "description": "Remove a previously granted connection share.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectionType",
+            "in": "path",
+            "description": "Connection type",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connectionType"
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "description": "Connection ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connection  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2020-06-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Revoke permissions",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/providers/Microsoft.PowerApps/connections": {
+      "get": {
+        "operationId": "PA_ListConnections",
+        "summary": "List Connections",
+        "description": "List all connections in an environment.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "2016-11-01",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter by environment and exclude system",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/connectivity/objectIds/{objectId}/validateConnectorSwagger": {
+      "post": {
+        "operationId": "PPE_ValidateConnector",
+        "summary": "Validate Connector Swagger",
+        "description": "Validate a custom connector definition before publishing.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "objectId",
+            "in": "path",
+            "description": "Object ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "object  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "enableopenapivalidation",
+            "name": "enableopenapivalidation",
+            "default": "true",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Enable OpenAPI validation"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Swagger definition",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/connectivity/connectors/{connectorId}": {
+      "get": {
+        "operationId": "PPE_GetCustomConnector",
+        "summary": "Get Custom Connector (PP)",
+        "description": "Get a custom connector definition.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectorId",
+            "in": "path",
+            "description": "Connector ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connector  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/connectivity/connectors": {
+      "get": {
+        "operationId": "PPE_ListCustomConnectors",
+        "summary": "List Custom Connectors (PP)",
+        "description": "List all custom connectors in an environment.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter by environment and IsCustomApi",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/connectivity/connectors/{connectorName}": {
+      "get": {
+        "operationId": "PPE_ConnectorSwaggers",
+        "summary": "Get Connector Swagger",
+        "description": "Get the Swagger/OpenAPI definition for any connector.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectorName",
+            "in": "path",
+            "description": "Connector name (e.g., shared_office365users)",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connectorName"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/powerapps/apps": {
+      "get": {
+        "operationId": "PPE_GetAppsICanUse",
+        "summary": "Get Apps I Can Use",
+        "description": "List all apps the user can run.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/powerapps/apps_shared": {
+      "get": {
+        "operationId": "PPE_GetAppsSharedWithMe",
+        "summary": "Get Apps Shared With Me",
+        "description": "List apps shared with the user for editing.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Classification filter",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "description": "Expand permissions",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$expand"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/powerapps/apps_mine": {
+      "get": {
+        "operationId": "PPE_MyApps",
+        "summary": "My Apps",
+        "description": "List apps owned by the user in a specific environment.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Filter by environment",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "description": "Expand permissions",
+            "type": "string",
+            "x-ms-visibility": "advanced",
+            "required": false,
+            "x-ms-summary": "$expand"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/powerapps/apps/{appId}/modifyPermissions": {
+      "post": {
+        "operationId": "PPE_ShareCanvasApp",
+        "summary": "Share Canvas App",
+        "description": "Share a canvas app with users, groups, or the entire org.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "path",
+            "description": "App ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "app  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Share permissions",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/connectivity/connections": {
+      "get": {
+        "operationId": "PPE_MyConnections",
+        "summary": "My Connections (PP)",
+        "description": "List connections created by or shared with the user.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/environmentmanagement/environments/{environmentId}/settings": {
+      "patch": {
+        "operationId": "PPE_EnableCodeApps",
+        "summary": "Enable Code Apps",
+        "description": "Enable developers to create and deploy code apps.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Code apps settings",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/environmentmanagement/environments/{environmentId}/settings_list": {
+      "get": {
+        "operationId": "PPE_ListEnvSecuritySettings",
+        "summary": "List Environment Security Settings",
+        "description": "Get environment security and deployment settings.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "$select",
+            "name": "$select",
+            "default": "*",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Select all"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/environmentmanagement/environments/{environmentId}/settings_cps": {
+      "patch": {
+        "operationId": "PPE_UpdateCodeAppCPS",
+        "summary": "Update Code App CPS",
+        "description": "Update Code App Common Problem Statement setting.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "Environment ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "environment  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "CPS settings",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/analytics/advisorRecommendations": {
+      "get": {
+        "operationId": "PPT_TenantAdvisor",
+        "summary": "Get Tenant Advisor",
+        "description": "Get Power Platform Advisor recommendations for governance, security, and performance.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "x-ms-summary": "source",
+            "name": "source",
+            "default": "AdvisorPage",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Source"
+          },
+          {
+            "x-ms-summary": "includeMetadata",
+            "name": "includeMetadata",
+            "default": "true",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Include metadata"
+          },
+          {
+            "x-ms-summary": "includeHints",
+            "name": "includeHints",
+            "default": "true",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Include hints"
+          },
+          {
+            "x-ms-summary": "includeTrends",
+            "name": "includeTrends",
+            "default": "true",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "Include trends"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/gateway/cluster": {
+      "get": {
+        "operationId": "PPT_Gateways",
+        "summary": "List Gateways",
+        "description": "List all on-premises data gateways registered in the tenant.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/connectivity/connectors/{connectorType}/connections/{connectionId}/permissions": {
+      "get": {
+        "operationId": "PPT_GetConnectionSharedWith",
+        "summary": "Get Connection Shared With",
+        "description": "Get list of users a connection has been shared with.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "connectorType",
+            "in": "path",
+            "description": "Connector type",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connectorType"
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "description": "Connection ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "connection  ID"
+          },
+          {
+            "x-ms-summary": "api-version",
+            "name": "api-version",
+            "default": "1",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "x-ms-visibility": "internal",
+            "description": "API version"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "description": "Environment filter",
+            "type": "string",
+            "required": false,
+            "x-ms-summary": "$filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/TenantConsumptionReport/GetAllReports": {
+      "get": {
+        "operationId": "PPL_ListReports",
+        "summary": "List License Reports",
+        "description": "List available license and capacity reports.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/AllocationsByEnvironment": {
+      "get": {
+        "operationId": "PPL_AddOnLicenses",
+        "summary": "Get Add-On Licenses",
+        "description": "Get add-on license allocations (capacity packs, AI Builder credits).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/AllocationsByEnvironment_update": {
+      "patch": {
+        "operationId": "PPL_UpdateAddOnLicenses",
+        "summary": "Update Add-On Licenses",
+        "description": "Update add-on license allocation across environments.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Allocation updates",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/TenantConsumptionReport/GenerateReportURL": {
+      "post": {
+        "operationId": "PPL_RequestReport",
+        "summary": "Request License Report",
+        "description": "Initiate generation of a license/capacity report.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Report parameters",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/TenantConsumptionReport/DownloadReport": {
+      "post": {
+        "operationId": "PPL_DownloadReport",
+        "summary": "Download License Report",
+        "description": "Download a previously generated report.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Report ID",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/CurrencyReports": {
+      "get": {
+        "operationId": "PPL_GetLicenses",
+        "summary": "Get Licenses",
+        "description": "Get full list of Power Platform license assignments.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1-alpha/tenants/{tenantId}/TenantCapacity": {
+      "get": {
+        "operationId": "PPL_TenantCapacity",
+        "summary": "Get Tenant Capacity",
+        "description": "Get tenant capacity information.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v0.1/tenants/{tenantId}/allocationsV2/getmany": {
+      "get": {
+        "operationId": "PPL_LicensesByEnvironment",
+        "summary": "Licenses by Environment",
+        "description": "Get license breakdown per environment.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/v1.0/tenants/{tenantId}/AnalyticsInsights/SecuritySummary": {
+      "get": {
+        "operationId": "PPL_SecurityInsights",
+        "summary": "Security Insights",
+        "description": "Get security analytics insights for tenant.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "description": "Tenant ID",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "x-ms-summary": "tenant  ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/diagnosticlogs": {
+      "post": {
+        "operationId": "PPA_AppDiagnostics",
+        "summary": "App Diagnostics",
+        "description": "Get diagnostic and usage analytics for apps.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Metric name, type, date range, resource ID",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/resourceType/powerapps/resourceSubType/canvasapp/latest": {
+      "post": {
+        "operationId": "PPA_PowerAppResources",
+        "summary": "Power App Resources",
+        "description": "Get inventory of canvas apps with usage metrics.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Query parameters",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/resourceType/powerautomate/resourceSubType/desktopflow/latest": {
+      "post": {
+        "operationId": "PPA_ListDesktopFlows",
+        "summary": "List Desktop Flows",
+        "description": "Get inventory of desktop flows (RPA).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Query parameters",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/resourceType/powerautomate/resourceSubType/cloudflow/latest": {
+      "post": {
+        "operationId": "PPA_ListCloudFlows",
+        "summary": "List Cloud Flows (Analytics)",
+        "description": "Get inventory of cloud flows with analytics.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Query parameters",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/resourceType/copilotstudio/resourceSubType/agent/latest": {
+      "post": {
+        "operationId": "PPA_ListCopilotStudioAgents",
+        "summary": "List Copilot Studio Agents",
+        "description": "Get inventory of Copilot Studio agents.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object"
+            },
+            "description": "Query parameters",
+            "required": true,
+            "x-ms-summary": "Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/AppManagement/TenantProducts": {
+      "get": {
+        "operationId": "Admin_D365AppList",
+        "summary": "D365 App List",
+        "description": "List all D365 apps available in the tenant.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "geoType",
+            "in": "query",
+            "description": "Geographic type",
+            "type": "string",
+            "required": false,
+            "default": "NA",
+            "x-ms-summary": "geoType"
+          }
+        ],
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke PPUNDOC MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio.",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "schema": {
+              "type": "object"
+            },
+            "description": "Success"
+          }
+        },
+        "x-ms-agentic-protocol": "mcp-streamable-1.0"
+      }
+    }
+  },
+  "definitions": {},
+  "securityDefinitions": {
+    "api_key": {
+      "name": "Authorization",
+      "in": "header",
+      "type": "apiKey"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyValue": "https://ppundoc.com",
+      "propertyName": "Website"
+    },
+    {
+      "propertyValue": "https://ppundoc.com",
+      "propertyName": "Privacy policy"
+    },
+    {
+      "propertyValue": "IT Operations",
+      "propertyName": "Categories"
+    }
+  ]
+}
