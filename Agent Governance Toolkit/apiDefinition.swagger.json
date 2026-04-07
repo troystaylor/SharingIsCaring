@@ -1,0 +1,642 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Agent Governance Toolkit",
+    "description": "Runtime security governance for AI agents. Evaluate actions against policies, check compliance (EU AI Act, HIPAA, SOC2, OWASP), detect prompt injection, manage trust scores, enforce circuit breakers, and scan MCP tools for security risks. Covers all 10 OWASP Agentic AI Top 10 risks. Requires a self-hosted Container App deployment of the Agent Governance Toolkit.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.azurecontainerapps.io",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/evaluate": {
+      "post": {
+        "operationId": "EvaluateAction",
+        "summary": "Evaluate Action",
+        "description": "Evaluate a proposed tool call against governance policies before execution. Returns allow/deny with the reason and applicable policy rule.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "toolName"
+              ],
+              "properties": {
+                "toolName": {
+                  "type": "string",
+                  "description": "The name of the tool or action to evaluate (e.g., file_write, shell_exec, send_email).",
+                  "x-ms-summary": "Tool Name"
+                },
+                "agentId": {
+                  "type": "string",
+                  "description": "Identifier for the agent requesting the action.",
+                  "x-ms-summary": "Agent ID",
+                  "x-ms-visibility": "advanced"
+                },
+                "args": {
+                  "type": "object",
+                  "description": "Arguments for the tool call as key-value pairs.",
+                  "x-ms-summary": "Arguments",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluation result.",
+            "schema": {
+              "$ref": "#/definitions/EvaluateResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/compliance": {
+      "post": {
+        "operationId": "CheckCompliance",
+        "summary": "Check Compliance",
+        "description": "Grade a proposed action against regulatory frameworks including EU AI Act, HIPAA, SOC2, and OWASP Agentic AI Top 10.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "toolName"
+              ],
+              "properties": {
+                "toolName": {
+                  "type": "string",
+                  "description": "The tool or action to check for compliance.",
+                  "x-ms-summary": "Tool Name"
+                },
+                "agentId": {
+                  "type": "string",
+                  "description": "Identifier for the agent.",
+                  "x-ms-summary": "Agent ID",
+                  "x-ms-visibility": "advanced"
+                },
+                "args": {
+                  "type": "object",
+                  "description": "Arguments for the tool call.",
+                  "x-ms-summary": "Arguments",
+                  "x-ms-visibility": "advanced"
+                },
+                "framework": {
+                  "type": "string",
+                  "description": "Regulatory framework to check against.",
+                  "x-ms-summary": "Framework",
+                  "x-ms-visibility": "advanced",
+                  "enum": [
+                    "OWASP-Agentic-2026",
+                    "EU-AI-Act",
+                    "HIPAA",
+                    "SOC2"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compliance check result.",
+            "schema": {
+              "$ref": "#/definitions/ComplianceResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/trust/score": {
+      "post": {
+        "operationId": "ScoreTrust",
+        "summary": "Score Trust",
+        "description": "Get or update the dynamic trust score for an agent. Trust scores range from 0-1000 across five tiers (Untrusted, Restricted, Standard, Trusted, Critical) and map to execution rings (Ring0-Ring3).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "agentId"
+              ],
+              "properties": {
+                "agentId": {
+                  "type": "string",
+                  "description": "Identifier for the agent to score.",
+                  "x-ms-summary": "Agent ID"
+                },
+                "action": {
+                  "type": "string",
+                  "description": "Trust action to perform. Omit to just read the current score.",
+                  "x-ms-summary": "Action",
+                  "x-ms-visibility": "advanced",
+                  "enum": [
+                    "positive",
+                    "negative",
+                    "set"
+                  ]
+                },
+                "amount": {
+                  "type": "number",
+                  "description": "Amount for the trust action (boost, penalty, or absolute score).",
+                  "x-ms-summary": "Amount",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trust score result.",
+            "schema": {
+              "$ref": "#/definitions/TrustResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/injection/detect": {
+      "post": {
+        "operationId": "DetectInjection",
+        "summary": "Detect Prompt Injection",
+        "description": "Scan text for prompt injection attacks. Detects 7 attack types: DirectOverride, DelimiterAttack, RolePlay, ContextManipulation, SqlInjection, CanaryLeak, and Custom patterns.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The text to scan for prompt injection attacks.",
+                  "x-ms-summary": "Text"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Injection detection result.",
+            "schema": {
+              "$ref": "#/definitions/InjectionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/audit": {
+      "post": {
+        "operationId": "LogAuditEvent",
+        "summary": "Log Audit Event",
+        "description": "Record a completed action to the governance audit trail for compliance logging and forensic analysis.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "agentId": {
+                  "type": "string",
+                  "description": "Identifier for the agent that performed the action.",
+                  "x-ms-summary": "Agent ID"
+                },
+                "action": {
+                  "type": "string",
+                  "description": "The action that was performed.",
+                  "x-ms-summary": "Action"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "The tool that was used.",
+                  "x-ms-summary": "Tool Name"
+                },
+                "result": {
+                  "type": "string",
+                  "description": "The result or outcome of the action.",
+                  "x-ms-summary": "Result"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit log confirmation.",
+            "schema": {
+              "$ref": "#/definitions/AuditResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/circuit-breaker": {
+      "post": {
+        "operationId": "CheckCircuitBreaker",
+        "summary": "Check Circuit Breaker",
+        "description": "Check if a downstream service's circuit breaker is open (rejecting calls), closed (normal), or half-open (testing recovery).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "serviceId": {
+                  "type": "string",
+                  "description": "Identifier for the downstream service to check.",
+                  "x-ms-summary": "Service ID"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Circuit breaker status.",
+            "schema": {
+              "$ref": "#/definitions/CircuitBreakerResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/mcp/scan": {
+      "post": {
+        "operationId": "ScanMcpTool",
+        "summary": "Scan MCP Tool",
+        "description": "Scan an MCP tool definition for security risks including tool poisoning, typosquatting, hidden instructions, insecure transport, and data exfiltration patterns.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "toolDefinition"
+              ],
+              "properties": {
+                "toolDefinition": {
+                  "type": "string",
+                  "description": "The MCP tool definition (JSON string) to scan for security risks.",
+                  "x-ms-summary": "Tool Definition"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MCP tool scan result.",
+            "schema": {
+              "$ref": "#/definitions/McpScanResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/version": {
+      "get": {
+        "operationId": "CheckVersion",
+        "summary": "Check Version",
+        "description": "Check the running SDK version and compare against the latest available version on NuGet.",
+        "x-ms-visibility": "advanced",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Version information.",
+            "schema": {
+              "$ref": "#/definitions/VersionResponse"
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Agent Governance Toolkit MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for governance evaluation, compliance, trust scoring, injection detection, audit logging, circuit breaker, and MCP tool scanning.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "EvaluateResponse": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "boolean",
+          "description": "Whether the action is allowed by governance policies.",
+          "x-ms-summary": "Allowed"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Explanation for the decision.",
+          "x-ms-summary": "Reason"
+        },
+        "policyRule": {
+          "type": "string",
+          "description": "Name of the policy rule that matched.",
+          "x-ms-summary": "Policy Rule"
+        },
+        "ring": {
+          "type": "string",
+          "description": "Execution ring level assigned.",
+          "x-ms-summary": "Ring"
+        }
+      }
+    },
+    "ComplianceResponse": {
+      "type": "object",
+      "properties": {
+        "grade": {
+          "type": "string",
+          "description": "Compliance grade (A, C, or F).",
+          "x-ms-summary": "Grade"
+        },
+        "framework": {
+          "type": "string",
+          "description": "Regulatory framework used for grading.",
+          "x-ms-summary": "Framework"
+        },
+        "findings": {
+          "type": "array",
+          "description": "List of compliance findings.",
+          "x-ms-summary": "Findings",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string",
+                "description": "OWASP ASI category (e.g., ASI-01, ASI-02).",
+                "x-ms-summary": "Category"
+              },
+              "name": {
+                "type": "string",
+                "description": "Finding name.",
+                "x-ms-summary": "Name"
+              },
+              "status": {
+                "type": "string",
+                "description": "Finding status (violation, warning, pass).",
+                "x-ms-summary": "Status"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Detailed description of the finding.",
+                "x-ms-summary": "Detail"
+              }
+            }
+          }
+        },
+        "findingCount": {
+          "type": "integer",
+          "description": "Number of findings.",
+          "x-ms-summary": "Finding Count"
+        },
+        "actionAllowed": {
+          "type": "boolean",
+          "description": "Whether the action is allowed after compliance check.",
+          "x-ms-summary": "Action Allowed"
+        }
+      }
+    },
+    "TrustResponse": {
+      "type": "object",
+      "properties": {
+        "agentId": {
+          "type": "string",
+          "description": "The agent identifier.",
+          "x-ms-summary": "Agent ID"
+        },
+        "score": {
+          "type": "number",
+          "description": "Current trust score (0-1000).",
+          "x-ms-summary": "Score"
+        },
+        "tier": {
+          "type": "string",
+          "description": "Trust tier (Untrusted, Restricted, Standard, Trusted, Critical).",
+          "x-ms-summary": "Tier"
+        },
+        "ring": {
+          "type": "string",
+          "description": "Execution ring (Ring0, Ring1, Ring2, Ring3).",
+          "x-ms-summary": "Ring"
+        }
+      }
+    },
+    "InjectionResponse": {
+      "type": "object",
+      "properties": {
+        "isInjection": {
+          "type": "boolean",
+          "description": "Whether the text contains a prompt injection attack.",
+          "x-ms-summary": "Is Injection"
+        },
+        "injectionType": {
+          "type": "string",
+          "description": "Type of injection detected (DirectOverride, DelimiterAttack, RolePlay, etc.).",
+          "x-ms-summary": "Injection Type"
+        },
+        "threatLevel": {
+          "type": "string",
+          "description": "Threat severity level (Low, Medium, High, Critical).",
+          "x-ms-summary": "Threat Level"
+        }
+      }
+    },
+    "AuditResponse": {
+      "type": "object",
+      "properties": {
+        "logged": {
+          "type": "boolean",
+          "description": "Whether the event was successfully logged.",
+          "x-ms-summary": "Logged"
+        },
+        "eventId": {
+          "type": "string",
+          "description": "Unique identifier for the audit event.",
+          "x-ms-summary": "Event ID"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO 8601 timestamp of the logged event.",
+          "x-ms-summary": "Timestamp"
+        },
+        "agentId": {
+          "type": "string",
+          "description": "The agent that performed the action.",
+          "x-ms-summary": "Agent ID"
+        }
+      }
+    },
+    "CircuitBreakerResponse": {
+      "type": "object",
+      "properties": {
+        "serviceId": {
+          "type": "string",
+          "description": "The downstream service identifier.",
+          "x-ms-summary": "Service ID"
+        },
+        "state": {
+          "type": "string",
+          "description": "Circuit breaker state (Closed, Open, HalfOpen).",
+          "x-ms-summary": "State"
+        },
+        "failureCount": {
+          "type": "integer",
+          "description": "Number of consecutive failures.",
+          "x-ms-summary": "Failure Count"
+        }
+      }
+    },
+    "McpScanResponse": {
+      "type": "object",
+      "properties": {
+        "safe": {
+          "type": "boolean",
+          "description": "Whether the tool definition is safe.",
+          "x-ms-summary": "Safe"
+        },
+        "riskLevel": {
+          "type": "string",
+          "description": "Overall risk level (safe, warning, critical).",
+          "x-ms-summary": "Risk Level"
+        },
+        "risks": {
+          "type": "array",
+          "description": "List of detected security risks.",
+          "x-ms-summary": "Risks",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Risk type (tool_poisoning, hidden_instructions, insecure_transport, data_exfiltration).",
+                "x-ms-summary": "Type"
+              },
+              "severity": {
+                "type": "string",
+                "description": "Risk severity (warning, critical).",
+                "x-ms-summary": "Severity"
+              },
+              "detail": {
+                "type": "string",
+                "description": "Description of the risk.",
+                "x-ms-summary": "Detail"
+              }
+            }
+          }
+        },
+        "riskCount": {
+          "type": "integer",
+          "description": "Number of detected risks.",
+          "x-ms-summary": "Risk Count"
+        }
+      }
+    },
+    "VersionResponse": {
+      "type": "object",
+      "properties": {
+        "running": {
+          "type": "string",
+          "description": "Currently running SDK version.",
+          "x-ms-summary": "Running Version"
+        },
+        "latest": {
+          "type": "string",
+          "description": "Latest available version on NuGet.",
+          "x-ms-summary": "Latest Version"
+        },
+        "updateAvailable": {
+          "type": "boolean",
+          "description": "Whether a newer version is available.",
+          "x-ms-summary": "Update Available"
+        },
+        "package": {
+          "type": "string",
+          "description": "NuGet package name.",
+          "x-ms-summary": "Package"
+        },
+        "nugetUrl": {
+          "type": "string",
+          "description": "URL to the NuGet package page.",
+          "x-ms-summary": "NuGet URL"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-API-Key"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://github.com/microsoft/agent-governance-toolkit"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Security"
+    }
+  ]
+}

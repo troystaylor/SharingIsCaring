@@ -1,0 +1,65 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "hostName": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Host Name",
+          "description": "The hostname of your deployed Agent Governance Container App.",
+          "tooltip": "Enter just the hostname, not the full URL. Example: agentgov-api.azurecontainerapps.io",
+          "constraints": {
+            "tabIndex": 1,
+            "required": "true"
+          }
+        }
+      },
+      "apiKey": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "API Key",
+          "description": "The API key configured for your Agent Governance Container App.",
+          "tooltip": "The value of the API_KEY environment variable on your Container App.",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#1B1B1B",
+    "capabilities": [],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "scriptOperations": [
+      "EvaluateAction",
+      "CheckCompliance",
+      "ScoreTrust",
+      "DetectInjection",
+      "LogAuditEvent",
+      "CheckCircuitBreaker",
+      "ScanMcpTool",
+      "CheckVersion",
+      "InvokeMCP"
+    ],
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Governance API Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('hostName')"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set API Key Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "X-API-Key",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('apiKey')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ]
+  }
+}
