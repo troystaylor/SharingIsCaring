@@ -1,8 +1,8 @@
-# PPUNDOC
+# PP:UNDOC
 
 ## Overview
 
-Undocumented Power Platform APIs — 119 endpoints across 9 collections, mapped, tested, and catalogued by [ppundoc.com](https://ppundoc.com). Provides programmatic access to BAP administration, Flow management, Dataverse operations, Power Apps connections, licensing, DLP policies, admin analytics, environment management, and tenant configuration.
+Power Platform: Undocumented APIs — 119 endpoints across 9 collections, mapped, tested, and catalogued by [ppundoc.com](https://ppundoc.com). Provides programmatic access to BAP administration, Flow management, Dataverse operations, Power Apps connections, licensing, DLP policies, admin analytics, environment management, and tenant configuration.
 
 Includes MCP protocol support with 34 tools for Copilot Studio admin agents.
 
