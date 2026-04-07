@@ -1,0 +1,356 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Foundry MAI Voice",
+    "description": "Connect to Microsoft Foundry to generate natural, realistic speech using MAI-Voice-1 and other text-to-speech models. Custom voice cloning from seconds of audio, 60 seconds generated in 1 second, emotional range and speaker identity preservation. Includes MCP protocol support and borrowed chat completion.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.tts.speech.microsoft.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/cognitiveservices/v1": {
+      "post": {
+        "operationId": "SynthesizeSpeech",
+        "summary": "Synthesize Speech",
+        "description": "Convert text to natural-sounding speech audio using MAI-Voice-1 or other TTS voices. Uses SSML for voice selection, language, and prosody control.",
+        "x-ms-visibility": "important",
+        "consumes": [
+          "application/ssml+xml"
+        ],
+        "produces": [
+          "audio/mpeg",
+          "audio/wav",
+          "audio/ogg"
+        ],
+        "parameters": [
+          {
+            "name": "X-Microsoft-OutputFormat",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Audio output format.",
+            "x-ms-summary": "Output Format",
+            "enum": [
+              "audio-16khz-128kbitrate-mono-mp3",
+              "audio-16khz-64kbitrate-mono-mp3",
+              "audio-24khz-160kbitrate-mono-mp3",
+              "audio-24khz-96kbitrate-mono-mp3",
+              "audio-48khz-192kbitrate-mono-mp3",
+              "riff-16khz-16bit-mono-pcm",
+              "riff-24khz-16bit-mono-pcm",
+              "riff-48khz-16bit-mono-pcm",
+              "ogg-16khz-16bit-mono-opus",
+              "ogg-24khz-16bit-mono-opus",
+              "ogg-48khz-16bit-mono-opus"
+            ],
+            "default": "audio-24khz-96kbitrate-mono-mp3"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "SSML document specifying the text, voice, language, and prosody.",
+            "x-ms-summary": "SSML",
+            "schema": {
+              "type": "string",
+              "x-ms-summary": "SSML Content"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audio stream.",
+            "schema": {
+              "type": "file"
+            }
+          }
+        }
+      }
+    },
+    "/cognitiveservices/voices/list": {
+      "get": {
+        "operationId": "ListVoices",
+        "summary": "List Available Voices",
+        "description": "Get a list of all available TTS voices for the configured region, including voice name, locale, gender, and supported styles.",
+        "x-ms-visibility": "important",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of available voices.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/VoiceInfo"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/chat/completions": {
+      "post": {
+        "operationId": "ChatCompletion",
+        "summary": "Chat Completion",
+        "description": "Send a chat completion request to generate SSML, suggest voice selections, or discuss speech synthesis parameters. Borrowed from the parent Microsoft Foundry connector for MCP agent use.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "default": "2024-05-01-preview",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "API Version",
+            "description": "The API version to use for this operation."
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "messages"
+              ],
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "description": "The collection of context messages for the chat completions request.",
+                  "x-ms-summary": "Messages",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "role": {
+                        "type": "string",
+                        "description": "The role of the message author.",
+                        "x-ms-summary": "Role",
+                        "enum": [
+                          "system",
+                          "user",
+                          "assistant"
+                        ]
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "The content of the message.",
+                        "x-ms-summary": "Content"
+                      }
+                    },
+                    "required": [
+                      "role",
+                      "content"
+                    ]
+                  }
+                },
+                "temperature": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Sampling temperature (0-1). Default: 0.7.",
+                  "x-ms-summary": "Temperature",
+                  "x-ms-visibility": "advanced",
+                  "default": 0.7,
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max_tokens": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The maximum number of tokens to generate.",
+                  "x-ms-summary": "Max Tokens",
+                  "x-ms-visibility": "advanced",
+                  "default": 4096,
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat completion response.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier for the completion.",
+                  "x-ms-summary": "Completion ID"
+                },
+                "choices": {
+                  "type": "array",
+                  "description": "List of completion choices.",
+                  "x-ms-summary": "Choices",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "description": "Index of the choice.",
+                        "x-ms-summary": "Index"
+                      },
+                      "message": {
+                        "type": "object",
+                        "description": "The generated message.",
+                        "x-ms-summary": "Message",
+                        "properties": {
+                          "role": {
+                            "type": "string",
+                            "description": "Role of the message author.",
+                            "x-ms-summary": "Role"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The content of the message.",
+                            "x-ms-summary": "Content"
+                          }
+                        }
+                      },
+                      "finish_reason": {
+                        "type": "string",
+                        "description": "Reason the model stopped generating.",
+                        "x-ms-summary": "Finish Reason"
+                      }
+                    }
+                  }
+                },
+                "usage": {
+                  "type": "object",
+                  "description": "Token usage statistics.",
+                  "x-ms-summary": "Usage",
+                  "properties": {
+                    "prompt_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in the prompt.",
+                      "x-ms-summary": "Prompt Tokens"
+                    },
+                    "completion_tokens": {
+                      "type": "integer",
+                      "description": "Number of generated tokens.",
+                      "x-ms-summary": "Completion Tokens"
+                    },
+                    "total_tokens": {
+                      "type": "integer",
+                      "description": "Total tokens used.",
+                      "x-ms-summary": "Total Tokens"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Microsoft Foundry MAI Voice MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for speech synthesis, voice listing, and chat completion tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "VoiceInfo": {
+      "type": "object",
+      "properties": {
+        "Name": {
+          "type": "string",
+          "description": "Full voice name.",
+          "x-ms-summary": "Name"
+        },
+        "DisplayName": {
+          "type": "string",
+          "description": "Display name of the voice.",
+          "x-ms-summary": "Display Name"
+        },
+        "ShortName": {
+          "type": "string",
+          "description": "Short name for use in SSML (e.g., en-US-JennyNeural).",
+          "x-ms-summary": "Short Name"
+        },
+        "Gender": {
+          "type": "string",
+          "description": "Voice gender (Male or Female).",
+          "x-ms-summary": "Gender"
+        },
+        "Locale": {
+          "type": "string",
+          "description": "Voice locale (e.g., en-US).",
+          "x-ms-summary": "Locale"
+        },
+        "LocaleName": {
+          "type": "string",
+          "description": "Human-readable locale name.",
+          "x-ms-summary": "Locale Name"
+        },
+        "VoiceType": {
+          "type": "string",
+          "description": "Voice type (Neural).",
+          "x-ms-summary": "Voice Type"
+        },
+        "Status": {
+          "type": "string",
+          "description": "Voice status (GA or Preview).",
+          "x-ms-summary": "Status"
+        },
+        "StyleList": {
+          "type": "array",
+          "description": "Supported speaking styles.",
+          "x-ms-summary": "Styles",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "api-key"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://ai.azure.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "resourceName": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Resource Name",
+          "description": "Your Microsoft Foundry resource name.",
+          "tooltip": "Enter just the resource name, not the full URL.",
+          "constraints": {
+            "tabIndex": 1,
+            "required": "true"
+          }
+        }
+      },
+      "api-key": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "API Key",
+          "description": "The API key for your Microsoft Foundry endpoint.",
+          "tooltip": "Enter the API key from your Microsoft Foundry resource.",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      },
+      "region": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Region",
+          "description": "Azure region for your resource (e.g., eastus2, westus2).",
+          "tooltip": "Enter the Azure region where your Foundry resource is deployed.",
+          "constraints": {
+            "tabIndex": 3,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#0078D4",
+    "capabilities": [],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "scriptOperations": [
+      "SynthesizeSpeech",
+      "ListVoices",
+      "ChatCompletion",
+      "InvokeMCP"
+    ],
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Speech TTS Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('region').tts.speech.microsoft.com",
+          "x-ms-apimTemplate-operationName": [
+            "SynthesizeSpeech"
+          ]
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Speech Voices Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('region').tts.speech.microsoft.com",
+          "x-ms-apimTemplate-operationName": [
+            "ListVoices"
+          ]
+        }
+      },
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set AI Services Host for Chat and MCP",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName').services.ai.azure.com",
+          "x-ms-apimTemplate-operationName": [
+            "ChatCompletion",
+            "InvokeMCP"
+          ]
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set API Key Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "api-key",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('api-key')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ]
+  }
+}
