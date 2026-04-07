@@ -1,0 +1,818 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Jira",
+    "description": "Jira Cloud connector with MCP tools for issues and projects, plus core REST API operations.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troytaylor.com"
+    }
+  },
+  "host": "your-domain.atlassian.net",
+  "basePath": "/mcp",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "summary": "Invoke Jira MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration with Jira.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/rest/api/3/project": {
+      "get": {
+        "summary": "List Projects",
+        "description": "Returns all projects visible to the user.",
+        "operationId": "ListProjects",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "description": "Project list",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Project"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/search": {
+      "post": {
+        "summary": "Search Issues",
+        "description": "Search issues using JQL.",
+        "operationId": "SearchIssues",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IssueSearchRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "schema": {
+              "$ref": "#/definitions/IssueSearchResponse"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/issue": {
+      "post": {
+        "summary": "Create Issue",
+        "description": "Create a new issue.",
+        "operationId": "CreateIssue",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IssueCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created issue",
+            "schema": {
+              "$ref": "#/definitions/IssueCreateResponse"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}": {
+      "get": {
+        "summary": "Get Issue",
+        "description": "Get an issue by ID or key.",
+        "operationId": "GetIssue",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issue",
+            "schema": {
+              "$ref": "#/definitions/Issue"
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update Issue",
+        "description": "Update an issue by ID or key.",
+        "operationId": "UpdateIssue",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IssueUpdateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/comment": {
+      "get": {
+        "summary": "List Comments",
+        "description": "List comments for an issue.",
+        "operationId": "ListComments",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key"
+          },
+          {
+            "name": "startAt",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Index of the first comment to return"
+          },
+          {
+            "name": "maxResults",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Maximum number of comments to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment list",
+            "schema": {
+              "$ref": "#/definitions/CommentListResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add Comment",
+        "description": "Add a comment to an issue.",
+        "operationId": "AddComment",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CommentCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created comment",
+            "schema": {
+              "$ref": "#/definitions/Comment"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/transitions": {
+      "get": {
+        "summary": "List Transitions",
+        "description": "List available transitions for an issue.",
+        "operationId": "GetTransitions",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transition list",
+            "schema": {
+              "$ref": "#/definitions/TransitionListResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Transition Issue",
+        "description": "Transition an issue to a new status.",
+        "operationId": "TransitionIssue",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TransitionRequest"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/rest/api/3/issuetype": {
+      "get": {
+        "summary": "List Issue Types",
+        "description": "Returns all issue types visible to the user.",
+        "operationId": "ListIssueTypes",
+        "responses": {
+          "200": {
+            "description": "Issue type list",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/IssueType"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/project/{projectIdOrKey}/role": {
+      "get": {
+        "summary": "Get Project Roles",
+        "description": "Get project roles for a project.",
+        "operationId": "GetProjectRoles",
+        "parameters": [
+          {
+            "name": "projectIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Project ID or key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project roles",
+            "schema": {
+              "$ref": "#/definitions/ProjectRoles"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/project/{projectIdOrKey}/statuses": {
+      "get": {
+        "summary": "Get Project Statuses",
+        "description": "Get statuses for a project.",
+        "operationId": "GetProjectStatuses",
+        "parameters": [
+          {
+            "name": "projectIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Project ID or key"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project statuses",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProjectStatus"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/field": {
+      "get": {
+        "summary": "List Fields",
+        "description": "Returns a list of all issue fields.",
+        "operationId": "ListFields",
+        "responses": {
+          "200": {
+            "description": "Field list",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Field"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/user": {
+      "get": {
+        "summary": "Get User",
+        "description": "Get a user by accountId.",
+        "operationId": "GetUser",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Atlassian account ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User",
+            "schema": {
+              "$ref": "#/definitions/User"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/user/search": {
+      "get": {
+        "summary": "Search Users",
+        "description": "Search users visible to the caller.",
+        "operationId": "SearchUsers",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Search text"
+          },
+          {
+            "name": "startAt",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Index of the first item to return"
+          },
+          {
+            "name": "maxResults",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Maximum number of items to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User list",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Project": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Project ID"
+        },
+        "key": {
+          "type": "string",
+          "description": "Project key"
+        },
+        "name": {
+          "type": "string",
+          "description": "Project name"
+        },
+        "projectTypeKey": {
+          "type": "string",
+          "description": "Project type"
+        },
+        "self": {
+          "type": "string",
+          "description": "Project URL"
+        }
+      }
+    },
+    "Issue": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Issue ID"
+        },
+        "key": {
+          "type": "string",
+          "description": "Issue key"
+        },
+        "self": {
+          "type": "string",
+          "description": "Issue URL"
+        },
+        "fields": {
+          "type": "object",
+          "description": "Issue fields"
+        }
+      }
+    },
+    "IssueSearchRequest": {
+      "type": "object",
+      "required": [
+        "jql"
+      ],
+      "properties": {
+        "jql": {
+          "type": "string",
+          "description": "JQL query string"
+        },
+        "startAt": {
+          "type": "integer",
+          "description": "Index of the first item to return"
+        },
+        "maxResults": {
+          "type": "integer",
+          "description": "Maximum number of items to return"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Field names to return"
+        }
+      }
+    },
+    "IssueSearchResponse": {
+      "type": "object",
+      "properties": {
+        "startAt": {
+          "type": "integer"
+        },
+        "maxResults": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Issue"
+          }
+        }
+      }
+    },
+    "IssueCreateRequest": {
+      "type": "object",
+      "required": [
+        "fields"
+      ],
+      "properties": {
+        "fields": {
+          "type": "object",
+          "description": "Issue fields payload"
+        }
+      }
+    },
+    "IssueUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "object",
+          "description": "Issue fields payload"
+        },
+        "update": {
+          "type": "object",
+          "description": "Issue update operations"
+        }
+      }
+    },
+    "IssueCreateResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Issue ID"
+        },
+        "key": {
+          "type": "string",
+          "description": "Issue key"
+        },
+        "self": {
+          "type": "string",
+          "description": "Issue URL"
+        }
+      }
+    },
+    "Comment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Comment ID"
+        },
+        "body": {
+          "type": "object",
+          "description": "Comment body in Jira document format"
+        },
+        "author": {
+          "$ref": "#/definitions/User"
+        },
+        "created": {
+          "type": "string",
+          "description": "Created timestamp"
+        },
+        "updated": {
+          "type": "string",
+          "description": "Updated timestamp"
+        }
+      }
+    },
+    "CommentCreateRequest": {
+      "type": "object",
+      "required": [
+        "body"
+      ],
+      "properties": {
+        "body": {
+          "type": "object",
+          "description": "Comment body in Jira document format"
+        }
+      }
+    },
+    "CommentListResponse": {
+      "type": "object",
+      "properties": {
+        "startAt": {
+          "type": "integer"
+        },
+        "maxResults": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "comments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Comment"
+          }
+        }
+      }
+    },
+    "Transition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Transition ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Transition name"
+        },
+        "to": {
+          "type": "object",
+          "description": "Destination status"
+        }
+      }
+    },
+    "TransitionListResponse": {
+      "type": "object",
+      "properties": {
+        "transitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Transition"
+          }
+        }
+      }
+    },
+    "TransitionRequest": {
+      "type": "object",
+      "required": [
+        "transition"
+      ],
+      "properties": {
+        "transition": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Transition ID"
+            }
+          }
+        },
+        "update": {
+          "type": "object",
+          "description": "Optional updates such as comments"
+        }
+      }
+    },
+    "IssueType": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Issue type ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Issue type name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Issue type description"
+        },
+        "subtask": {
+          "type": "boolean",
+          "description": "Whether this issue type is a subtask"
+        }
+      }
+    },
+    "ProjectRoles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Map of role names to role URLs"
+    },
+    "ProjectStatus": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Status ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Status name"
+        },
+        "statusCategory": {
+          "type": "object",
+          "description": "Status category"
+        }
+      }
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "Atlassian account ID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the user is active"
+        },
+        "emailAddress": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "self": {
+          "type": "string",
+          "description": "User URL"
+        }
+      }
+    },
+    "Field": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Field ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Field name"
+        },
+        "custom": {
+          "type": "boolean",
+          "description": "Custom field"
+        },
+        "orderable": {
+          "type": "boolean",
+          "description": "Orderable field"
+        },
+        "searchable": {
+          "type": "boolean",
+          "description": "Searchable field"
+        },
+        "clauseNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "schema": {
+          "type": "object",
+          "description": "Field schema"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://auth.atlassian.com/authorize",
+      "tokenUrl": "https://auth.atlassian.com/oauth/token",
+      "scopes": {
+        "read:jira-work write:jira-work read:jira-user": "Read and write Jira work, and read Jira user data"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "read:jira-work write:jira-work read:jira-user"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Project Management"
+    },
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://www.atlassian.com/legal/privacy-policy"
+    },
+    {
+      "propertyName": "Terms of service",
+      "propertyValue": "https://www.atlassian.com/legal/cloud-terms-of-service"
+    }
+  ]
+}
