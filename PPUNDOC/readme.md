@@ -8,6 +8,10 @@ Includes MCP protocol support with 34 tools for Copilot Studio admin agents.
 
 > **WARNING:** These are undocumented APIs discovered from browser network traffic. They may change or break without notice. Do not use in production-critical scenarios without fallback handling.
 
+## Credits
+
+Endpoint catalogue sourced from [ppundoc.com](https://ppundoc.com) by [David Wyatt](https://dev.to/wyattdave) ([@WyattDave](https://x.com/WyattDave)). Postman collections available at [GitHub](https://github.com/wyattdave/Power-Platform/tree/main/Power%20Platform%20APIs).
+
 ## Prerequisites
 
 - Power Platform admin or Global admin role
@@ -278,7 +282,3 @@ This connector routes to 10 different API hosts depending on the operation:
 - **BAP API** — limited SPN support. May require user-context token from browser.
 - **PP-Environment API** — requires special environment ID format (no hyphens, period before last 2 chars).
 - **Per-user UPN usage data** — not available through any of these APIs. Use Power Platform Admin Center UI or Center of Excellence Starter Kit.
-
-## Credits
-
-Endpoint catalogue sourced from [ppundoc.com](https://ppundoc.com) by [David Wyatt](https://dev.to/wyattdave) ([@WyattDave](https://x.com/WyattDave)). Postman collections available at [GitHub](https://github.com/wyattdave/Power-Platform/tree/main/Power%20Platform%20APIs).
