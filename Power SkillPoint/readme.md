@@ -2,7 +2,7 @@
 
 **Graph Power Orchestration V2** — the same Graph execution engine with a skill layer for behavioral guidance, guardrails, org standards, and user preferences. Skills don't replace API discovery; they augment it.
 
-Evolved from [Graph Power Orchestration](../../Graph%20Power%20Orchestration/readme.md). `discover_graph` still handles API discovery via MS Learn MCP. Skills (stored in SharePoint Embedded) tell the agent **how** to use what it discovers.
+Evolved from [Graph Power Orchestration](https://github.com/troystaylor/SharingIsCaring/tree/main/Graph%20Power%20Orchestration). `discover_graph` still handles API discovery via MS Learn MCP. Skills (stored in SharePoint Embedded) tell the agent **how** to use what it discovers.
 
 ## Five Tools
 
