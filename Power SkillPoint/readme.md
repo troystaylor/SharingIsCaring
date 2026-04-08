@@ -101,7 +101,7 @@ tags: email, mail, guardrails
 name: Troy's Email Style
 description: Troy Taylor's email preferences.
 scope: user
-user: troy.taylor@zava.com
+user: troy@troystaylor.com
 tags: email, troy, style
 ---
 
@@ -151,7 +151,7 @@ Week 1:
 
   Agent: scans for skill author → reads _skill-author/SKILL.md
   Agent: saves user-skills/troy-taylor/weekly-summary/SKILL.md
-         with shareWith: "troy.taylor@zava.com"
+         with shareWith: "troy@troystaylor.com"
   Agent: "I've saved your preferences. Here's the link."
 
 Week 2:
@@ -630,7 +630,7 @@ Week 1:
 
   Agent: scans for skill author → reads _skill-author/SKILL.md
   Agent: saves user-skills/troy-taylor/weekly-summary/SKILL.md
-         with shareWith: "troy.taylor@zava.com"
+         with shareWith: "troy@troystaylor.com"
   Agent: "I've saved your weekly summary preferences.
           Here's the link so you can review what I'll follow."
 
