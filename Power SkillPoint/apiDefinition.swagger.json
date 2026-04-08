@@ -1,0 +1,91 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Power SkillPoint",
+    "description": "Graph Power Orchestration V2 with skill-driven guidance. Five tools: discover_graph (find Graph endpoints via MS Learn MCP), invoke_graph (call Graph APIs), batch_invoke_graph (batch calls), scan (read behavioral skills from SharePoint Embedded), and save (write skills). Skills provide guardrails, org standards, and user preferences — not endpoint definitions.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/mcp",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Power SkillPoint MCP",
+        "description": "Graph Power Orchestration V2. Five MCP tools: discover_graph, invoke_graph, batch_invoke_graph (Graph API discovery and execution), plus scan and save (behavioral skills from SharePoint Embedded). Skills are optional — the connector works as Graph Power Orchestration without a containerId.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "jsonrpc": {
+                  "type": "string",
+                  "description": "JSON-RPC version",
+                  "default": "2.0",
+                  "x-ms-visibility": "internal"
+                },
+                "method": {
+                  "type": "string",
+                  "description": "MCP method name"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Request ID"
+                },
+                "params": {
+                  "type": "object",
+                  "description": "Method parameters"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MCP response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "jsonrpc": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "result": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2-auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {}
+    }
+  },
+  "security": [
+    {
+      "oauth2-auth": []
+    }
+  ]
+}
