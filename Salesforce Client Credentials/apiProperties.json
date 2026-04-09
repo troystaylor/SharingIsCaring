@@ -1,0 +1,67 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "username": {
+                "type": "string",
+                "uiDefinition": {
+                    "displayName": "Client ID",
+                    "schema": {
+                        "description": "Salesforce Connected App Consumer Key",
+                        "type": "string"
+                    },
+                    "tooltip": "Enter the Consumer Key from your Salesforce Connected App",
+                    "constraints": {
+                        "required": "true"
+                    }
+                }
+            },
+            "password": {
+                "type": "securestring",
+                "uiDefinition": {
+                    "displayName": "Client Secret",
+                    "schema": {
+                        "description": "Salesforce Connected App Consumer Secret",
+                        "type": "securestring"
+                    },
+                    "tooltip": "Enter the Consumer Secret from your Salesforce Connected App",
+                    "constraints": {
+                        "required": "true",
+                        "clearText": false
+                    }
+                }
+            },
+            "instanceUrl": {
+                "type": "string",
+                "uiDefinition": {
+                    "displayName": "Instance URL",
+                    "schema": {
+                        "description": "Your Salesforce My Domain (e.g. myorg.my.salesforce.com)",
+                        "type": "string"
+                    },
+                    "tooltip": "Enter your Salesforce instance domain without https:// (e.g. myorg.my.salesforce.com)",
+                    "constraints": {
+                        "required": "true"
+                    }
+                }
+            }
+        },
+        "policyTemplateInstances": [
+            {
+                "templateId": "setheader",
+                "title": "Set Instance URL Header",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "X-SF-Instance-URL",
+                    "x-ms-apimTemplateParameter.value": "@connectionParameters('instanceUrl')",
+                    "x-ms-apimTemplateParameter.existsAction": "override",
+                    "x-ms-apimTemplate-policySection": "Request"
+                }
+            }
+        ],
+        "iconBrandColor": "#00a1e0",
+        "capabilities": [
+            "actions"
+        ],
+        "publisher": "Troy Taylor",
+        "scriptOperations": []
+    }
+}
