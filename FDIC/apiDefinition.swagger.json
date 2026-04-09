@@ -1,0 +1,1004 @@
+{
+    "$schema": "https://raw.githubusercontent.com/troystaylor/PowerPlatformConnectors/refs/heads/dev/schemas/apiDefinition.swagger.schema.json",
+    "swagger": "2.0",
+    "info": {
+        "title": "FDIC Bank Data",
+        "description": "Access FDIC's publicly available bank data including financial institutions, locations, history, financials, failures, and summary of deposits from the BankFind Suite API.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.fdic.gov",
+    "basePath": "/banks",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/institutions": {
+            "get": {
+                "tags": [
+                    "Structure"
+                ],
+                "operationId": "SearchInstitutions",
+                "summary": "Search Institutions",
+                "description": "Returns a list of financial institutions.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression using Elastic Search query string syntax. Values must be UPPERCASE. Examples: STNAME:\"Virginia\", STALP:IA AND ACTIVE:1, DEP:[50000 TO *]"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Search",
+                        "x-ms-visibility": "important",
+                        "description": "Flexible text search with fuzzy matching. Values must be UPPERCASE. Examples: NAME: Island, NAME: Iland"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE. If omitted, default fields are returned."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "institutions"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/locations": {
+            "get": {
+                "tags": [
+                    "Structure"
+                ],
+                "operationId": "SearchLocations",
+                "summary": "Search Locations",
+                "description": "Returns locations and branches of financial institutions.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: STNAME:\"Virginia\", SERVTYPE:11"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "locations"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/history": {
+            "get": {
+                "tags": [
+                    "History"
+                ],
+                "operationId": "GetHistory",
+                "summary": "Get History",
+                "description": "Returns details on structure change events.",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: STATE:\"VIRGINIA\", PROCDATE:[2020-01-01 TO 2020-02-01]"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Search",
+                        "x-ms-visibility": "important",
+                        "description": "Flexible text search with fuzzy matching. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    },
+                    {
+                        "name": "agg_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate By",
+                        "x-ms-visibility": "advanced",
+                        "description": "Field to aggregate data by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_term_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Term Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be counted per unique term. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Limit",
+                        "x-ms-visibility": "advanced",
+                        "description": "Limit on how many aggregated results will be displayed.",
+                        "default": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "history"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/financials": {
+            "get": {
+                "tags": [
+                    "Financials"
+                ],
+                "operationId": "GetFinancials",
+                "summary": "Get Financials",
+                "description": "Returns financial information for FDIC insured institutions.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: CERT:14, ASSET:[1000 TO 9999]"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    },
+                    {
+                        "name": "agg_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate By",
+                        "x-ms-visibility": "advanced",
+                        "description": "Field to aggregate data by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_term_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Term Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be counted per unique term. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_sum_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Sum Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be summed. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Limit",
+                        "x-ms-visibility": "advanced",
+                        "description": "Limit on how many aggregated results will be displayed.",
+                        "default": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "financials"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/summary": {
+            "get": {
+                "tags": [
+                    "Historical"
+                ],
+                "operationId": "GetSummary",
+                "summary": "Get Summary",
+                "description": "Returns aggregate financial and structure data subtotaled by year.",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: STNAME:\"Alabama\" AND YEAR:2005, CB_SI:CB"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    },
+                    {
+                        "name": "agg_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate By",
+                        "x-ms-visibility": "advanced",
+                        "description": "Field to aggregate data by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_term_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Term Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be counted per unique term. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_sum_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Sum Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be summed. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Limit",
+                        "x-ms-visibility": "advanced",
+                        "description": "Limit on how many aggregated results will be displayed.",
+                        "default": 10
+                    },
+                    {
+                        "name": "max_value",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Max Value Field",
+                        "x-ms-visibility": "advanced",
+                        "description": "The field for which the max value is desired. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "max_value_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Max Value By",
+                        "x-ms-visibility": "advanced",
+                        "description": "The field used to determine unique records (e.g. CERT). Values must be UPPERCASE."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "summary"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/failures": {
+            "get": {
+                "tags": [
+                    "Failures"
+                ],
+                "operationId": "GetFailures",
+                "summary": "Get Failures",
+                "description": "Returns details on failed financial institutions from 1934 to present.",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: CITYST:\"MEMPHIS, TN\", FAILYR:[\"2015\" TO \"2016\"]"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    },
+                    {
+                        "name": "agg_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate By",
+                        "x-ms-visibility": "advanced",
+                        "description": "Field to aggregate data by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_term_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Term Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be counted per unique term. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_sum_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Sum Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be summed. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Limit",
+                        "x-ms-visibility": "advanced",
+                        "description": "Limit on how many aggregated results will be displayed.",
+                        "default": 10
+                    },
+                    {
+                        "name": "total_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Total Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Numeric fields to sum in the totals response object. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "subtotal_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Subtotal By",
+                        "x-ms-visibility": "advanced",
+                        "description": "Categorical field to subtotal by in the totals response object. Values must be UPPERCASE."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "failures"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/sod": {
+            "get": {
+                "tags": [
+                    "Summary of Deposits"
+                ],
+                "operationId": "GetSod",
+                "summary": "Get Summary of Deposits",
+                "description": "Returns summary of deposits information for FDIC insured institutions.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: CERT:14, ASSET:[1000 TO 9999]"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Fields",
+                        "x-ms-visibility": "important",
+                        "description": "Comma-delimited list of fields to return. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort By",
+                        "description": "Field name to sort results by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Sort Order",
+                        "description": "Sort ascending or descending.",
+                        "default": "ASC",
+                        "enum": [
+                            "ASC",
+                            "DESC"
+                        ]
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Limit",
+                        "description": "Number of records to return. Default is 10, maximum is 10,000.",
+                        "default": 10
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Offset",
+                        "description": "The offset of page to return.",
+                        "default": 0
+                    },
+                    {
+                        "name": "agg_by",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate By",
+                        "x-ms-visibility": "advanced",
+                        "description": "Field to aggregate data by. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_term_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Term Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be counted per unique term. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_sum_fields",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Sum Fields",
+                        "x-ms-visibility": "advanced",
+                        "description": "Fields for which aggregations will be summed. Values must be UPPERCASE."
+                    },
+                    {
+                        "name": "agg_limit",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "x-ms-summary": "Aggregate Limit",
+                        "x-ms-visibility": "advanced",
+                        "description": "Limit on how many aggregated results will be displayed.",
+                        "default": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "sod"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/demographics": {
+            "get": {
+                "tags": [
+                    "Demographics"
+                ],
+                "operationId": "GetDemographics",
+                "summary": "Get Demographics",
+                "description": "Returns summary of demographic information.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "important",
+                        "description": "Filter expression. Values must be UPPERCASE. Examples: CERT:14 AND REPDTE:20230630"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResponseSchema",
+                                "parameters": {
+                                    "dataset": "demographics"
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad input parameter"
+                    }
+                }
+            }
+        },
+        "/schema": {
+            "get": {
+                "operationId": "GetResponseSchema",
+                "summary": "Get Response Schema",
+                "description": "Returns the dynamic response schema for a dataset.",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "dataset",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-summary": "Dataset",
+                        "description": "The dataset to return the schema for.",
+                        "enum": [
+                            "institutions",
+                            "locations",
+                            "summary",
+                            "failures",
+                            "history",
+                            "financials",
+                            "sod",
+                            "demographics"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Schema definition",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "query",
+            "name": "api_key"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Structure",
+            "description": "Financial institution demographic and location information"
+        },
+        {
+            "name": "History",
+            "description": "Structure change events"
+        },
+        {
+            "name": "Financials",
+            "description": "Financial information for FDIC insured institutions"
+        },
+        {
+            "name": "Historical",
+            "description": "Historical aggregate data from 1934 onward"
+        },
+        {
+            "name": "Failures",
+            "description": "Bank failure records from 1934 to present"
+        },
+        {
+            "name": "Summary of Deposits",
+            "description": "Summary of Deposits information"
+        },
+        {
+            "name": "Demographics",
+            "description": "Demographic information"
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://banks.data.fdic.gov/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.fdic.gov/about/privacy-program"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Finance"
+        }
+    ]
+}
