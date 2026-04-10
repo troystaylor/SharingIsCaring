@@ -510,6 +510,22 @@ public class Script : ScriptBase
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
+        // Route REST operations before MCP
+        switch (this.Context.OperationId)
+        {
+            case "ListSkills":
+                return await HandleListSkillsAsync().ConfigureAwait(false);
+            case "GetSkill":
+                return await HandleGetSkillAsync().ConfigureAwait(false);
+            case "CreateOrUpdateSkill":
+                return await HandleCreateOrUpdateSkillAsync().ConfigureAwait(false);
+            case "DeleteSkill":
+                return await HandleDeleteSkillAsync().ConfigureAwait(false);
+            case "ValidateSkill":
+                return await HandleValidateSkillAsync().ConfigureAwait(false);
+        }
+
+        // Default: MCP handler
         var handler = new McpRequestHandler(Options);
         RegisterTools(handler);
 
@@ -524,6 +540,200 @@ public class Script : ScriptBase
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(result, Encoding.UTF8, "application/json")
+        };
+    }
+
+    // ── REST Operation Handlers ──────────────────────────────────────────
+
+    private async Task<HttpResponseMessage> HandleListSkillsAsync()
+    {
+        var url = $"{GRAPH_BASE}/me/drive/root:{SKILLS_PATH}:/children?$filter=folder ne null&$select=name,id,lastModifiedDateTime,size";
+        JObject responseObj;
+        try
+        {
+            var graphResult = await SendGraphRequestAsync(HttpMethod.Get, url).ConfigureAwait(false);
+            var items = graphResult["value"] as JArray ?? new JArray();
+            var skills = new JArray();
+            foreach (var item in items)
+            {
+                skills.Add(new JObject
+                {
+                    ["name"] = item["name"],
+                    ["id"] = item["id"],
+                    ["lastModified"] = item["lastModifiedDateTime"]
+                });
+            }
+            responseObj = new JObject
+            {
+                ["skillCount"] = skills.Count,
+                ["maxSkills"] = MAX_SKILLS,
+                ["remainingSlots"] = MAX_SKILLS - skills.Count,
+                ["skills"] = skills
+            };
+        }
+        catch (Exception ex) when (ex.Message.Contains("404"))
+        {
+            responseObj = new JObject
+            {
+                ["skillCount"] = 0,
+                ["maxSkills"] = MAX_SKILLS,
+                ["remainingSlots"] = MAX_SKILLS,
+                ["skills"] = new JArray(),
+                ["note"] = "The /Documents/Cowork/Skills/ folder does not exist yet. Create a skill to initialize it."
+            };
+        }
+        return CreateJsonResponse(responseObj);
+    }
+
+    private async Task<HttpResponseMessage> HandleGetSkillAsync()
+    {
+        var skillName = GetPathParameter("skillName");
+        ValidateSkillName(skillName);
+
+        var url = $"{GRAPH_BASE}/me/drive/root:{SKILLS_PATH}/{Uri.EscapeDataString(skillName)}/SKILL.md:/content";
+        var content = await DownloadFileContentAsync(url).ConfigureAwait(false);
+
+        var parsed = ParseSkillMd(content);
+        return CreateJsonResponse(new JObject
+        {
+            ["skillName"] = skillName,
+            ["name"] = parsed["name"],
+            ["description"] = parsed["description"],
+            ["instructions"] = parsed["instructions"],
+            ["rawContent"] = content
+        });
+    }
+
+    private async Task<HttpResponseMessage> HandleCreateOrUpdateSkillAsync()
+    {
+        var skillName = GetPathParameter("skillName");
+        ValidateSkillName(skillName);
+
+        var reqBody = JObject.Parse(await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false));
+        var name = reqBody.Value<string>("name");
+        var description = reqBody.Value<string>("description");
+        var instructions = reqBody.Value<string>("instructions");
+
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("'name' is required");
+        if (string.IsNullOrWhiteSpace(description)) throw new ArgumentException("'description' is required");
+        if (string.IsNullOrWhiteSpace(instructions)) throw new ArgumentException("'instructions' is required");
+
+        var skillMd = BuildSkillMd(name, description, instructions);
+        if (Encoding.UTF8.GetByteCount(skillMd) > MAX_SKILL_SIZE_BYTES)
+            throw new ArgumentException("SKILL.md exceeds the 1 MB size limit");
+
+        var url = $"{GRAPH_BASE}/me/drive/root:{SKILLS_PATH}/{Uri.EscapeDataString(skillName)}/SKILL.md:/content";
+        var uploaded = await UploadFileContentAsync(url, skillMd).ConfigureAwait(false);
+
+        return CreateJsonResponse(new JObject
+        {
+            ["success"] = true,
+            ["skillName"] = skillName,
+            ["name"] = name,
+            ["description"] = description,
+            ["fileId"] = uploaded["id"],
+            ["webUrl"] = uploaded["webUrl"],
+            ["message"] = "Skill saved. Cowork will discover it automatically at the start of your next conversation."
+        });
+    }
+
+    private async Task<HttpResponseMessage> HandleDeleteSkillAsync()
+    {
+        var skillName = GetPathParameter("skillName");
+        ValidateSkillName(skillName);
+
+        var url = $"{GRAPH_BASE}/me/drive/root:{SKILLS_PATH}/{Uri.EscapeDataString(skillName)}";
+        await DeleteGraphItemAsync(url).ConfigureAwait(false);
+
+        return CreateJsonResponse(new JObject
+        {
+            ["success"] = true,
+            ["skillName"] = skillName,
+            ["message"] = "Skill deleted. It will no longer appear in new Cowork conversations."
+        });
+    }
+
+    private async Task<HttpResponseMessage> HandleValidateSkillAsync()
+    {
+        var reqBody = JObject.Parse(await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false));
+        var content = reqBody.Value<string>("content");
+        if (string.IsNullOrWhiteSpace(content)) throw new ArgumentException("'content' is required");
+
+        var issues = new JArray();
+        var parsed = new JObject();
+
+        var sizeBytes = Encoding.UTF8.GetByteCount(content);
+        if (sizeBytes > MAX_SKILL_SIZE_BYTES)
+            issues.Add($"File size ({sizeBytes} bytes) exceeds the 1 MB limit ({MAX_SKILL_SIZE_BYTES} bytes).");
+
+        if (!content.TrimStart().StartsWith("---"))
+        {
+            issues.Add("Missing YAML frontmatter. File must start with '---'.");
+        }
+        else
+        {
+            var endIndex = content.IndexOf("---", content.IndexOf("---") + 3);
+            if (endIndex < 0)
+            {
+                issues.Add("YAML frontmatter is not closed. Missing closing '---' delimiter.");
+            }
+            else
+            {
+                var frontmatter = content.Substring(content.IndexOf("---") + 3, endIndex - content.IndexOf("---") - 3).Trim();
+                parsed = ParseYamlFrontmatter(frontmatter);
+
+                if (string.IsNullOrWhiteSpace(parsed.Value<string>("name")))
+                    issues.Add("Missing required 'name' field in YAML frontmatter.");
+                if (string.IsNullOrWhiteSpace(parsed.Value<string>("description")))
+                    issues.Add("Missing required 'description' field in YAML frontmatter.");
+
+                var instrText = content.Substring(endIndex + 3).Trim();
+                if (string.IsNullOrWhiteSpace(instrText))
+                    issues.Add("No instructions found after the YAML frontmatter.");
+
+                parsed["instructions"] = instrText;
+            }
+        }
+
+        return CreateJsonResponse(new JObject
+        {
+            ["valid"] = issues.Count == 0,
+            ["issueCount"] = issues.Count,
+            ["issues"] = issues,
+            ["parsed"] = parsed,
+            ["sizeBytes"] = sizeBytes,
+            ["maxSizeBytes"] = MAX_SKILL_SIZE_BYTES
+        });
+    }
+
+    // ── REST Helpers ─────────────────────────────────────────────────────
+
+    private string GetPathParameter(string name)
+    {
+        // Extract path parameter from the request URI
+        var uri = this.Context.Request.RequestUri;
+        var path = uri.AbsolutePath;
+
+        // For skillName, extract from the known path patterns
+        // Pattern: /Documents/Cowork/Skills/{skillName}/SKILL.md or /Documents/Cowork/Skills/{skillName}
+        var skillsPrefix = "/Documents/Cowork/Skills/";
+        var idx = path.IndexOf(skillsPrefix, StringComparison.OrdinalIgnoreCase);
+        if (idx >= 0)
+        {
+            var remainder = path.Substring(idx + skillsPrefix.Length);
+            var slashIdx = remainder.IndexOf('/');
+            var value = slashIdx >= 0 ? remainder.Substring(0, slashIdx) : remainder;
+            return Uri.UnescapeDataString(value);
+        }
+
+        throw new ArgumentException($"Could not extract '{name}' from request path");
+    }
+
+    private HttpResponseMessage CreateJsonResponse(JObject body, HttpStatusCode status = HttpStatusCode.OK)
+    {
+        return new HttpResponseMessage(status)
+        {
+            Content = new StringContent(body.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 

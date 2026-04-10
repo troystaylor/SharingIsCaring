@@ -11,7 +11,7 @@
         }
     },
     "host": "graph.microsoft.com",
-    "basePath": "/mcp",
+    "basePath": "/",
     "schemes": [
         "https"
     ],
@@ -22,7 +22,7 @@
         "application/json"
     ],
     "paths": {
-        "/": {
+        "/mcp": {
             "post": {
                 "summary": "Invoke Copilot Cowork Skills MCP",
                 "description": "Sends JSON-RPC requests to manage Copilot Cowork custom skills via MCP.",
@@ -31,6 +31,308 @@
                 "responses": {
                     "200": {
                         "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/root:/Documents/Cowork/Skills:/children": {
+            "get": {
+                "summary": "List Skills",
+                "description": "List all Copilot Cowork custom skills in the user's OneDrive /Documents/Cowork/Skills/ folder.",
+                "operationId": "ListSkills",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of custom skills",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "skillCount": {
+                                    "type": "integer",
+                                    "description": "Number of custom skills found",
+                                    "x-ms-summary": "Skill Count"
+                                },
+                                "maxSkills": {
+                                    "type": "integer",
+                                    "description": "Maximum number of custom skills allowed",
+                                    "x-ms-summary": "Max Skills"
+                                },
+                                "remainingSlots": {
+                                    "type": "integer",
+                                    "description": "Number of remaining skill slots",
+                                    "x-ms-summary": "Remaining Slots"
+                                },
+                                "skills": {
+                                    "type": "array",
+                                    "description": "List of custom skills",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Skill folder name",
+                                                "x-ms-summary": "Skill Name"
+                                            },
+                                            "id": {
+                                                "type": "string",
+                                                "description": "OneDrive item ID",
+                                                "x-ms-summary": "Item ID"
+                                            },
+                                            "lastModified": {
+                                                "type": "string",
+                                                "description": "Last modified date/time",
+                                                "x-ms-summary": "Last Modified"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/root:/Documents/Cowork/Skills/{skillName}/SKILL.md:/content": {
+            "get": {
+                "summary": "Get Skill",
+                "description": "Read the SKILL.md content of a specific Copilot Cowork custom skill.",
+                "operationId": "GetSkill",
+                "parameters": [
+                    {
+                        "name": "skillName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The skill folder name (e.g., 'weekly-report')",
+                        "x-ms-summary": "Skill Name",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill content",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "skillName": {
+                                    "type": "string",
+                                    "description": "The skill folder name",
+                                    "x-ms-summary": "Skill Name"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Display name from YAML frontmatter",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Description from YAML frontmatter",
+                                    "x-ms-summary": "Description"
+                                },
+                                "instructions": {
+                                    "type": "string",
+                                    "description": "Markdown instructions after frontmatter",
+                                    "x-ms-summary": "Instructions"
+                                },
+                                "rawContent": {
+                                    "type": "string",
+                                    "description": "Full SKILL.md file content",
+                                    "x-ms-summary": "Raw Content"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "summary": "Create or Update Skill",
+                "description": "Create a new or update an existing Copilot Cowork custom skill. Uploads the SKILL.md file to OneDrive.",
+                "operationId": "CreateOrUpdateSkill",
+                "parameters": [
+                    {
+                        "name": "skillName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The skill folder name using lowercase-with-dashes (e.g., 'weekly-report')",
+                        "x-ms-summary": "Skill Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["name", "description", "instructions"],
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Display name for the skill shown in Cowork (e.g., 'Weekly Report')",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "One-line description of what the skill does",
+                                    "x-ms-summary": "Description"
+                                },
+                                "instructions": {
+                                    "type": "string",
+                                    "description": "Markdown instructions that tell Cowork how to execute the skill",
+                                    "x-ms-summary": "Instructions"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill created or updated",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "description": "Whether the operation succeeded",
+                                    "x-ms-summary": "Success"
+                                },
+                                "skillName": {
+                                    "type": "string",
+                                    "description": "The skill folder name",
+                                    "x-ms-summary": "Skill Name"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Display name",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Skill description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "fileId": {
+                                    "type": "string",
+                                    "description": "OneDrive file ID of the SKILL.md",
+                                    "x-ms-summary": "File ID"
+                                },
+                                "webUrl": {
+                                    "type": "string",
+                                    "description": "Web URL to the file in OneDrive",
+                                    "x-ms-summary": "Web URL"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Status message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/me/drive/root:/Documents/Cowork/Skills/{skillName}": {
+            "delete": {
+                "summary": "Delete Skill",
+                "description": "Delete a Copilot Cowork custom skill by removing its folder from OneDrive.",
+                "operationId": "DeleteSkill",
+                "parameters": [
+                    {
+                        "name": "skillName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The skill folder name to delete (e.g., 'weekly-report')",
+                        "x-ms-summary": "Skill Name",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill deleted",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "description": "Whether the delete succeeded",
+                                    "x-ms-summary": "Success"
+                                },
+                                "skillName": {
+                                    "type": "string",
+                                    "description": "The deleted skill name",
+                                    "x-ms-summary": "Skill Name"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Status message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/validate-skill": {
+            "post": {
+                "summary": "Validate Skill",
+                "description": "Validate SKILL.md content without saving. Checks YAML frontmatter format, required fields, and size limits.",
+                "operationId": "ValidateSkill",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": ["content"],
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "description": "The full SKILL.md file content to validate, including YAML frontmatter and instructions",
+                                    "x-ms-summary": "SKILL.md Content"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Validation result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "valid": {
+                                    "type": "boolean",
+                                    "description": "Whether the content is valid",
+                                    "x-ms-summary": "Valid"
+                                },
+                                "issueCount": {
+                                    "type": "integer",
+                                    "description": "Number of issues found",
+                                    "x-ms-summary": "Issue Count"
+                                },
+                                "issues": {
+                                    "type": "array",
+                                    "description": "List of validation issues",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "sizeBytes": {
+                                    "type": "integer",
+                                    "description": "Size of the content in bytes",
+                                    "x-ms-summary": "Size (Bytes)"
+                                },
+                                "maxSizeBytes": {
+                                    "type": "integer",
+                                    "description": "Maximum allowed size in bytes",
+                                    "x-ms-summary": "Max Size (Bytes)"
+                                }
+                            }
+                        }
                     }
                 }
             }
