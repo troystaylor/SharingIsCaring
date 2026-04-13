@@ -1,0 +1,156 @@
+{
+    "properties": {
+        "connectionParameterSets": {
+            "uiDefinition": {
+                "displayName": "Authentication Type",
+                "description": "Select how to authenticate with Azure Document Intelligence."
+            },
+            "values": [
+                {
+                    "name": "api-key-auth",
+                    "uiDefinition": {
+                        "displayName": "API Key",
+                        "description": "Authenticate using an Azure Document Intelligence API key."
+                    },
+                    "parameters": {
+                        "resourceName": {
+                            "type": "string",
+                            "uiDefinition": {
+                                "displayName": "Resource Name",
+                                "schema": {
+                                    "description": "Your Azure Document Intelligence resource name (e.g., 'my-doc-intel' from https://my-doc-intel.cognitiveservices.azure.com)",
+                                    "type": "string"
+                                },
+                                "tooltip": "Enter just the resource name, not the full URL",
+                                "constraints": {
+                                    "required": "true"
+                                }
+                            }
+                        },
+                        "apiKey": {
+                            "type": "securestring",
+                            "uiDefinition": {
+                                "displayName": "API Key",
+                                "schema": {
+                                    "description": "API key from your Azure Document Intelligence resource",
+                                    "type": "securestring"
+                                },
+                                "tooltip": "Find this in Azure portal under Keys and Endpoint",
+                                "constraints": {
+                                    "required": "true",
+                                    "clearText": false
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "oauth-entra",
+                    "uiDefinition": {
+                        "displayName": "Microsoft Entra ID (OAuth)",
+                        "description": "Authenticate using Microsoft Entra ID with role-based access control."
+                    },
+                    "parameters": {
+                        "resourceName": {
+                            "type": "string",
+                            "uiDefinition": {
+                                "displayName": "Resource Name",
+                                "schema": {
+                                    "description": "Your Azure Document Intelligence resource name (e.g., 'my-doc-intel' from https://my-doc-intel.cognitiveservices.azure.com)",
+                                    "type": "string"
+                                },
+                                "tooltip": "Enter just the resource name, not the full URL",
+                                "constraints": {
+                                    "required": "true"
+                                }
+                            }
+                        },
+                        "token": {
+                            "type": "oauthSetting",
+                            "oAuthSettings": {
+                                "identityProvider": "aad",
+                                "clientId": "[[REPLACE_WITH_APP_REGISTRATION_CLIENT_ID]]",
+                                "scopes": [
+                                    "https://cognitiveservices.azure.com/.default offline_access"
+                                ],
+                                "redirectMode": "Global",
+                                "redirectUrl": "https://global.consent.azure-apim.net/redirect",
+                                "properties": {
+                                    "IsFirstParty": "False",
+                                    "AzureActiveDirectoryResourceId": "https://cognitiveservices.azure.com"
+                                },
+                                "customParameters": {
+                                    "loginUri": {
+                                        "value": "https://login.microsoftonline.com"
+                                    },
+                                    "tenantId": {
+                                        "value": "common"
+                                    },
+                                    "resourceUri": {
+                                        "value": "https://cognitiveservices.azure.com"
+                                    }
+                                }
+                            }
+                        },
+                        "token:clientId": {
+                            "type": "string",
+                            "uiDefinition": {
+                                "displayName": "Client ID",
+                                "schema": {
+                                    "description": "Application (client) ID from your Entra app registration",
+                                    "type": "string"
+                                },
+                                "tooltip": "Provide the Client ID of your Entra app registration",
+                                "constraints": {
+                                    "required": "true"
+                                }
+                            }
+                        },
+                        "token:clientSecret": {
+                            "type": "securestring",
+                            "uiDefinition": {
+                                "displayName": "Client Secret",
+                                "schema": {
+                                    "description": "Client secret from your Entra app registration",
+                                    "type": "securestring"
+                                },
+                                "tooltip": "Provide the Client Secret of your Entra app registration",
+                                "constraints": {
+                                    "required": "true"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "policyTemplateInstances": [
+            {
+                "templateId": "dynamichosturl",
+                "title": "Set Document Intelligence Host",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('resourceName',,{'api-key-auth':'resourceName','oauth-entra':'resourceName'}).cognitiveservices.azure.com"
+                }
+            },
+            {
+                "templateId": "setheader",
+                "title": "Set API Key Header",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "Ocp-Apim-Subscription-Key",
+                    "x-ms-apimTemplateParameter.value": "@connectionParameters('apiKey',,'api-key-auth')",
+                    "x-ms-apimTemplateParameter.existsAction": "override",
+                    "x-ms-apimTemplate-policySection": "Request"
+                }
+            }
+        ],
+        "iconBrandColor": "#0078d4",
+        "capabilities": [
+            "actions"
+        ],
+        "publisher": "Troy Taylor",
+        "stackOwner": "Microsoft",
+        "scriptOperations": [
+            "InvokeMCP"
+        ]
+    }
+}

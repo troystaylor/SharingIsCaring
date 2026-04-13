@@ -1,0 +1,1592 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Azure Document Intelligence",
+        "description": "Azure Document Intelligence extracts text, key-value pairs, tables, and structures from documents using prebuilt and custom AI models. Analyze invoices, receipts, IDs, tax forms, and more.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "your-resource.cognitiveservices.azure.com",
+    "basePath": "/documentintelligence",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Azure Document Intelligence MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels/{modelId}:analyze": {
+            "post": {
+                "operationId": "AnalyzeDocument",
+                "summary": "Analyze Document",
+                "description": "Analyze a document using a prebuilt or custom model. Pass a URL or base64-encoded content. This starts an async operation — use Get Analyze Result to retrieve results.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "modelId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Model ID to use for analysis (e.g., prebuilt-read, prebuilt-layout, prebuilt-invoice, prebuilt-receipt, prebuilt-idDocument, prebuilt-tax.us.w2)",
+                        "x-ms-summary": "Model ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListModels",
+                            "value-collection": "value",
+                            "value-path": "modelId",
+                            "value-title": "modelId"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "pages",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Page ranges to analyze (e.g., '1-3,5')",
+                        "x-ms-summary": "Pages",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Locale hint for text recognition (e.g., 'en-US')",
+                        "x-ms-summary": "Locale",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "features",
+                        "in": "query",
+                        "required": false,
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "ocr.highResolution",
+                                "ocr.formula",
+                                "ocr.font",
+                                "ocr.barcode",
+                                "queryFields",
+                                "keyValuePairs",
+                                "languages",
+                                "styleFont"
+                            ]
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Add-on analysis features to enable",
+                        "x-ms-summary": "Features",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "queryFields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated field names to extract when using queryFields feature",
+                        "x-ms-summary": "Query Fields",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "outputContentFormat",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Output content format",
+                        "x-ms-summary": "Output Format",
+                        "enum": [
+                            "text",
+                            "markdown"
+                        ],
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "urlSource": {
+                                    "type": "string",
+                                    "description": "URL of the document to analyze",
+                                    "x-ms-summary": "Document URL"
+                                },
+                                "base64Source": {
+                                    "type": "string",
+                                    "description": "Base64-encoded document content",
+                                    "x-ms-summary": "Base64 Content",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Analysis started. Use the Operation-Location header to poll for results.",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for the analyze result"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationLocation": {
+                                    "type": "string",
+                                    "description": "URL to poll for results",
+                                    "x-ms-summary": "Operation Location"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels/{modelId}/analyzeResults/{resultId}": {
+            "get": {
+                "operationId": "GetAnalyzeResult",
+                "summary": "Get Analyze Result",
+                "description": "Get the result of a document analysis operation. Poll until status is 'succeeded' or 'failed'.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "modelId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Model ID used for the analysis",
+                        "x-ms-summary": "Model ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resultId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Result ID from the analyze operation",
+                        "x-ms-summary": "Result ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analyze result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Operation status (notStarted, running, succeeded, failed)",
+                                    "x-ms-summary": "Status"
+                                },
+                                "createdDateTime": {
+                                    "type": "string",
+                                    "description": "Creation timestamp"
+                                },
+                                "lastUpdatedDateTime": {
+                                    "type": "string",
+                                    "description": "Last updated timestamp"
+                                },
+                                "analyzeResult": {
+                                    "type": "object",
+                                    "description": "Analysis results including pages, tables, documents, and extracted fields",
+                                    "properties": {
+                                        "apiVersion": {
+                                            "type": "string"
+                                        },
+                                        "modelId": {
+                                            "type": "string",
+                                            "x-ms-summary": "Model ID"
+                                        },
+                                        "stringIndexType": {
+                                            "type": "string"
+                                        },
+                                        "content": {
+                                            "type": "string",
+                                            "description": "Full text content extracted from the document",
+                                            "x-ms-summary": "Content"
+                                        },
+                                        "pages": {
+                                            "type": "array",
+                                            "description": "Page-level information",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "pageNumber": {
+                                                        "type": "integer",
+                                                        "x-ms-summary": "Page Number"
+                                                    },
+                                                    "width": {
+                                                        "type": "number"
+                                                    },
+                                                    "height": {
+                                                        "type": "number"
+                                                    },
+                                                    "unit": {
+                                                        "type": "string"
+                                                    },
+                                                    "words": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "content": {
+                                                                    "type": "string"
+                                                                },
+                                                                "confidence": {
+                                                                    "type": "number"
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "lines": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "content": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "tables": {
+                                            "type": "array",
+                                            "description": "Extracted tables",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "rowCount": {
+                                                        "type": "integer"
+                                                    },
+                                                    "columnCount": {
+                                                        "type": "integer"
+                                                    },
+                                                    "cells": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "rowIndex": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "columnIndex": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "content": {
+                                                                    "type": "string"
+                                                                },
+                                                                "kind": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "documents": {
+                                            "type": "array",
+                                            "description": "Extracted structured documents with fields",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "docType": {
+                                                        "type": "string",
+                                                        "x-ms-summary": "Document Type"
+                                                    },
+                                                    "confidence": {
+                                                        "type": "number",
+                                                        "x-ms-summary": "Confidence"
+                                                    },
+                                                    "fields": {
+                                                        "type": "object",
+                                                        "description": "Extracted field values"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels": {
+            "get": {
+                "operationId": "ListModels",
+                "summary": "List Models",
+                "description": "List all document models in the resource, including prebuilt and custom models.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of models",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "description": "List of models",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "modelId": {
+                                                "type": "string",
+                                                "description": "Model identifier",
+                                                "x-ms-summary": "Model ID"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Model description"
+                                            },
+                                            "createdDateTime": {
+                                                "type": "string",
+                                                "description": "Creation timestamp"
+                                            },
+                                            "apiVersion": {
+                                                "type": "string"
+                                            },
+                                            "tags": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                },
+                                "nextLink": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels/{modelId}": {
+            "get": {
+                "operationId": "GetModel",
+                "summary": "Get Model",
+                "description": "Get details of a specific document model including its schema and field definitions.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "modelId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Model ID",
+                        "x-ms-summary": "Model ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListModels",
+                            "value-collection": "value",
+                            "value-path": "modelId",
+                            "value-title": "modelId"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Model details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "modelId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Model ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Model description"
+                                },
+                                "createdDateTime": {
+                                    "type": "string"
+                                },
+                                "expirationDateTime": {
+                                    "type": "string"
+                                },
+                                "apiVersion": {
+                                    "type": "string"
+                                },
+                                "tags": {
+                                    "type": "object"
+                                },
+                                "docTypes": {
+                                    "type": "object",
+                                    "description": "Document types and their field schemas"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteModel",
+                "summary": "Delete Model",
+                "description": "Delete a custom document model.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "modelId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Model ID to delete",
+                        "x-ms-summary": "Model ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Model deleted successfully"
+                    }
+                }
+            }
+        },
+        "/documentModels:build": {
+            "post": {
+                "operationId": "BuildModel",
+                "summary": "Build Custom Model",
+                "description": "Build a custom document model from labeled training data. This starts a long-running operation.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "modelId",
+                                "buildMode",
+                                "azureBlobSource"
+                            ],
+                            "properties": {
+                                "modelId": {
+                                    "type": "string",
+                                    "description": "Unique model identifier",
+                                    "x-ms-summary": "Model ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Model description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "buildMode": {
+                                    "type": "string",
+                                    "description": "Build mode",
+                                    "x-ms-summary": "Build Mode",
+                                    "enum": [
+                                        "template",
+                                        "neural"
+                                    ]
+                                },
+                                "azureBlobSource": {
+                                    "type": "object",
+                                    "description": "Azure Blob storage source for training data",
+                                    "properties": {
+                                        "containerUrl": {
+                                            "type": "string",
+                                            "description": "Azure Blob container SAS URL",
+                                            "x-ms-summary": "Container URL"
+                                        },
+                                        "prefix": {
+                                            "type": "string",
+                                            "description": "Blob name prefix filter",
+                                            "x-ms-summary": "Prefix"
+                                        }
+                                    }
+                                },
+                                "tags": {
+                                    "type": "object",
+                                    "description": "Custom tags",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Build operation started",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for build status"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels:compose": {
+            "post": {
+                "operationId": "ComposeModel",
+                "summary": "Compose Model",
+                "description": "Create a composed model from a collection of existing custom models.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "modelId",
+                                "componentModels"
+                            ],
+                            "properties": {
+                                "modelId": {
+                                    "type": "string",
+                                    "description": "Unique model identifier for the composed model",
+                                    "x-ms-summary": "Model ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Model description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "componentModels": {
+                                    "type": "array",
+                                    "description": "List of component model IDs",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "modelId": {
+                                                "type": "string",
+                                                "description": "Component model ID"
+                                            }
+                                        }
+                                    }
+                                },
+                                "tags": {
+                                    "type": "object",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Compose operation started",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for compose status"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels:authorize-copy": {
+            "post": {
+                "operationId": "AuthorizeCopyModel",
+                "summary": "Authorize Model Copy",
+                "description": "Generate authorization to copy a model to this resource from another resource.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "modelId"
+                            ],
+                            "properties": {
+                                "modelId": {
+                                    "type": "string",
+                                    "description": "Model ID for the copy destination",
+                                    "x-ms-summary": "Model ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Model description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "tags": {
+                                    "type": "object",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Copy authorization",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "targetModelId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Target Model ID"
+                                },
+                                "targetModelLocation": {
+                                    "type": "string",
+                                    "x-ms-summary": "Target Model Location"
+                                },
+                                "targetResourceId": {
+                                    "type": "string"
+                                },
+                                "targetResourceRegion": {
+                                    "type": "string"
+                                },
+                                "accessToken": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels/{modelId}:copyTo": {
+            "post": {
+                "operationId": "CopyModel",
+                "summary": "Copy Model",
+                "description": "Copy a custom model to another Document Intelligence resource using a copy authorization.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "modelId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Source model ID to copy",
+                        "x-ms-summary": "Model ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "description": "Copy authorization from the target resource",
+                            "properties": {
+                                "targetModelId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Target Model ID"
+                                },
+                                "targetModelLocation": {
+                                    "type": "string",
+                                    "x-ms-summary": "Target Location"
+                                },
+                                "targetResourceId": {
+                                    "type": "string"
+                                },
+                                "targetResourceRegion": {
+                                    "type": "string"
+                                },
+                                "accessToken": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Copy operation started",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for copy status"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentModels/{modelId}:analyzeOutput": {
+            "post": {
+                "operationId": "AnalyzeDocumentOutput",
+                "summary": "Analyze Document Output",
+                "description": "Analyze a document and produce output in a specific format (e.g., searchable PDF). This starts an async operation.",
+                "tags": [
+                    "Document Models"
+                ],
+                "parameters": [
+                    {
+                        "name": "modelId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Model ID (e.g., prebuilt-read)",
+                        "x-ms-summary": "Model ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "outputFormat",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Output format",
+                        "x-ms-summary": "Output Format",
+                        "enum": [
+                            "pdf"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "urlSource": {
+                                    "type": "string",
+                                    "description": "Document URL",
+                                    "x-ms-summary": "Document URL"
+                                },
+                                "base64Source": {
+                                    "type": "string",
+                                    "description": "Base64-encoded document",
+                                    "x-ms-summary": "Base64 Content",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Analysis started",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for results"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentClassifiers:build": {
+            "post": {
+                "operationId": "BuildClassifier",
+                "summary": "Build Classifier",
+                "description": "Build a custom document classifier from labeled training data.",
+                "tags": [
+                    "Document Classifiers"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "classifierId",
+                                "docTypes"
+                            ],
+                            "properties": {
+                                "classifierId": {
+                                    "type": "string",
+                                    "description": "Unique classifier identifier",
+                                    "x-ms-summary": "Classifier ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Classifier description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "docTypes": {
+                                    "type": "object",
+                                    "description": "Document types with training data sources"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Build operation started",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for build status"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentClassifiers": {
+            "get": {
+                "operationId": "ListClassifiers",
+                "summary": "List Classifiers",
+                "description": "List all custom document classifiers in the resource.",
+                "tags": [
+                    "Document Classifiers"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of classifiers",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "description": "List of classifiers",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "classifierId": {
+                                                "type": "string",
+                                                "x-ms-summary": "Classifier ID"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "createdDateTime": {
+                                                "type": "string"
+                                            },
+                                            "apiVersion": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "nextLink": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentClassifiers/{classifierId}": {
+            "get": {
+                "operationId": "GetClassifier",
+                "summary": "Get Classifier",
+                "description": "Get details of a specific document classifier.",
+                "tags": [
+                    "Document Classifiers"
+                ],
+                "parameters": [
+                    {
+                        "name": "classifierId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Classifier ID",
+                        "x-ms-summary": "Classifier ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListClassifiers",
+                            "value-collection": "value",
+                            "value-path": "classifierId",
+                            "value-title": "classifierId"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Classifier details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "classifierId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Classifier ID"
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "createdDateTime": {
+                                    "type": "string"
+                                },
+                                "expirationDateTime": {
+                                    "type": "string"
+                                },
+                                "apiVersion": {
+                                    "type": "string"
+                                },
+                                "docTypes": {
+                                    "type": "object",
+                                    "description": "Document type definitions"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteClassifier",
+                "summary": "Delete Classifier",
+                "description": "Delete a custom document classifier.",
+                "tags": [
+                    "Document Classifiers"
+                ],
+                "parameters": [
+                    {
+                        "name": "classifierId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Classifier ID to delete",
+                        "x-ms-summary": "Classifier ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListClassifiers",
+                            "value-collection": "value",
+                            "value-path": "classifierId",
+                            "value-title": "classifierId"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Classifier deleted successfully"
+                    }
+                }
+            }
+        },
+        "/documentClassifiers/{classifierId}:classify": {
+            "post": {
+                "operationId": "ClassifyDocument",
+                "summary": "Classify Document",
+                "description": "Classify a document using a custom classifier. This starts an async operation.",
+                "tags": [
+                    "Document Classifiers"
+                ],
+                "parameters": [
+                    {
+                        "name": "classifierId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Classifier ID",
+                        "x-ms-summary": "Classifier ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListClassifiers",
+                            "value-collection": "value",
+                            "value-path": "classifierId",
+                            "value-title": "classifierId"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "urlSource": {
+                                    "type": "string",
+                                    "description": "Document URL",
+                                    "x-ms-summary": "Document URL"
+                                },
+                                "base64Source": {
+                                    "type": "string",
+                                    "description": "Base64-encoded document",
+                                    "x-ms-summary": "Base64 Content",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Classification started",
+                        "headers": {
+                            "Operation-Location": {
+                                "type": "string",
+                                "description": "URL to poll for results"
+                            }
+                        },
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documentClassifiers/{classifierId}/classifyResults/{resultId}": {
+            "get": {
+                "operationId": "GetClassifyResult",
+                "summary": "Get Classify Result",
+                "description": "Get the result of a document classification operation.",
+                "tags": [
+                    "Document Classifiers"
+                ],
+                "parameters": [
+                    {
+                        "name": "classifierId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Classifier ID",
+                        "x-ms-summary": "Classifier ID",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListClassifiers",
+                            "value-collection": "value",
+                            "value-path": "classifierId",
+                            "value-title": "classifierId"
+                        }
+                    },
+                    {
+                        "name": "resultId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Result ID from the classify operation",
+                        "x-ms-summary": "Result ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Classification result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "x-ms-summary": "Status"
+                                },
+                                "createdDateTime": {
+                                    "type": "string"
+                                },
+                                "lastUpdatedDateTime": {
+                                    "type": "string"
+                                },
+                                "analyzeResult": {
+                                    "type": "object",
+                                    "properties": {
+                                        "documents": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "docType": {
+                                                        "type": "string",
+                                                        "x-ms-summary": "Document Type"
+                                                    },
+                                                    "confidence": {
+                                                        "type": "number",
+                                                        "x-ms-summary": "Confidence"
+                                                    },
+                                                    "boundingRegions": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/operations": {
+            "get": {
+                "operationId": "ListOperations",
+                "summary": "List Operations",
+                "description": "List all long-running operations (model builds, copies, etc.).",
+                "tags": [
+                    "Operations"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of operations",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "operationId": {
+                                                "type": "string",
+                                                "x-ms-summary": "Operation ID"
+                                            },
+                                            "status": {
+                                                "type": "string",
+                                                "x-ms-summary": "Status"
+                                            },
+                                            "percentCompleted": {
+                                                "type": "integer"
+                                            },
+                                            "createdDateTime": {
+                                                "type": "string"
+                                            },
+                                            "lastUpdatedDateTime": {
+                                                "type": "string"
+                                            },
+                                            "kind": {
+                                                "type": "string",
+                                                "description": "Operation kind (documentModelBuild, documentModelCompose, etc.)"
+                                            },
+                                            "resourceLocation": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "nextLink": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/operations/{operationId}": {
+            "get": {
+                "operationId": "GetOperation",
+                "summary": "Get Operation",
+                "description": "Get the status and details of a specific long-running operation.",
+                "tags": [
+                    "Operations"
+                ],
+                "parameters": [
+                    {
+                        "name": "operationId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Operation ID",
+                        "x-ms-summary": "Operation ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "x-ms-summary": "Operation ID"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "x-ms-summary": "Status"
+                                },
+                                "percentCompleted": {
+                                    "type": "integer",
+                                    "x-ms-summary": "Percent Complete"
+                                },
+                                "createdDateTime": {
+                                    "type": "string"
+                                },
+                                "lastUpdatedDateTime": {
+                                    "type": "string"
+                                },
+                                "kind": {
+                                    "type": "string"
+                                },
+                                "resourceLocation": {
+                                    "type": "string"
+                                },
+                                "error": {
+                                    "type": "object",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/info": {
+            "get": {
+                "operationId": "GetServiceInfo",
+                "summary": "Get Service Info",
+                "description": "Get information about the Document Intelligence resource including limits and quotas.",
+                "tags": [
+                    "Service"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-11-30",
+                        "x-ms-visibility": "internal",
+                        "description": "API version"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Service information",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "customDocumentModels": {
+                                    "type": "object",
+                                    "properties": {
+                                        "count": {
+                                            "type": "integer",
+                                            "description": "Number of custom models",
+                                            "x-ms-summary": "Custom Model Count"
+                                        },
+                                        "limit": {
+                                            "type": "integer",
+                                            "description": "Maximum custom models allowed",
+                                            "x-ms-summary": "Custom Model Limit"
+                                        }
+                                    }
+                                },
+                                "customNeuralDocumentModelBuilds": {
+                                    "type": "object",
+                                    "properties": {
+                                        "used": {
+                                            "type": "integer"
+                                        },
+                                        "quota": {
+                                            "type": "integer"
+                                        },
+                                        "quotaResetDateTime": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Document Models",
+            "description": "Analyze documents and manage models"
+        },
+        {
+            "name": "Document Classifiers",
+            "description": "Classify and manage document classifiers"
+        },
+        {
+            "name": "Operations",
+            "description": "Track long-running operations"
+        },
+        {
+            "name": "Service",
+            "description": "Service information"
+        }
+    ],
+    "securityDefinitions": {
+        "apiKeyHeader": {
+            "type": "apiKey",
+            "name": "Ocp-Apim-Subscription-Key",
+            "in": "header"
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://azure.microsoft.com/products/ai-services/ai-document-intelligence"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Data"
+        }
+    ]
+}
