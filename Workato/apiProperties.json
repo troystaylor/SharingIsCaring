@@ -1,0 +1,66 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "apiToken": {
+                "type": "securestring",
+                "uiDefinition": {
+                    "displayName": "API Token",
+                    "description": "Bearer token from your Workato API client. Go to Workspace admin > API clients to generate one.",
+                    "tooltip": "Enter your Workato API client token",
+                    "constraints": {
+                        "required": "true",
+                        "tabIndex": 1
+                    }
+                }
+            },
+            "dataCenter": {
+                "type": "string",
+                "uiDefinition": {
+                    "displayName": "Data Center",
+                    "description": "Select the Workato data center your workspace is hosted on.",
+                    "tooltip": "Choose your Workato data center region",
+                    "constraints": {
+                        "required": "true",
+                        "tabIndex": 2,
+                        "allowedValues": [
+                            { "text": "US", "value": "www.workato.com" },
+                            { "text": "EU", "value": "app.eu.workato.com" },
+                            { "text": "JP", "value": "app.jp.workato.com" },
+                            { "text": "SG", "value": "app.sg.workato.com" },
+                            { "text": "AU", "value": "app.au.workato.com" },
+                            { "text": "IL", "value": "app.il.workato.com" },
+                            { "text": "Developer Sandbox", "value": "app.trial.workato.com" }
+                        ]
+                    }
+                }
+            }
+        },
+        "policyTemplateInstances": [
+            {
+                "templateId": "dynamichosturl",
+                "title": "Set Workato Data Center Host",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('dataCenter')"
+                }
+            },
+            {
+                "templateId": "setheader",
+                "title": "Set Authorization Header",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "Authorization",
+                    "x-ms-apimTemplateParameter.value": "Bearer @connectionParameters('apiToken')",
+                    "x-ms-apimTemplateParameter.existsAction": "override",
+                    "x-ms-apimTemplate-policySection": "Request"
+                }
+            }
+        ],
+        "iconBrandColor": "#108043",
+        "capabilities": [
+            "actions"
+        ],
+        "publisher": "Troy Taylor",
+        "scriptOperations": [
+            "InvokeMCP"
+        ]
+    }
+}
