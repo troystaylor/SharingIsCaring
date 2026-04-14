@@ -1,0 +1,964 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power Compendium",
+        "description": "An organizational knowledge base powered by LLMs. Ingest sources, query compiled knowledge, and maintain a persistent compendium of interlinked markdown pages. Supports org-level shared books and personal books with promotion workflows. Uses Azure Container Apps for hosting and Azure OpenAI for LLM processing.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "your-compendium-api.azurecontainerapps.io",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Power Compendium MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes compendium operations (ingest, query, lint, CRUD) via JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/api/book/ingest": {
+            "post": {
+                "operationId": "IngestSource",
+                "summary": "Ingest Source",
+                "description": "Process a source document and integrate its knowledge into the book. The LLM reads the source, extracts key information, creates or updates relevant book pages, and maintains cross-references.",
+                "tags": [
+                    "Book Operations"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope: org (shared organizational book) or personal (your private book)",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/IngestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ingestion result with list of pages created or updated",
+                        "schema": {
+                            "$ref": "#/definitions/IngestResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/query": {
+            "post": {
+                "operationId": "QueryBook",
+                "summary": "Query book",
+                "description": "Ask a question against the book. Searches for relevant pages, reads them, and synthesizes an answer with citations.",
+                "tags": [
+                    "Book Operations"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope to search: org, personal, or all (searches both)",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal",
+                            "all"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/QueryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Synthesized answer with citations",
+                        "schema": {
+                            "$ref": "#/definitions/QueryResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/lint": {
+            "post": {
+                "operationId": "LintBook",
+                "summary": "Lint book",
+                "description": "Health-check the book for contradictions, stale claims, orphan pages, missing cross-references, and knowledge gaps.",
+                "tags": [
+                    "Book Operations"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope to lint: org or personal",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/LintRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lint results with issues found and suggested fixes",
+                        "schema": {
+                            "$ref": "#/definitions/LintResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/pages": {
+            "get": {
+                "operationId": "ListPages",
+                "summary": "List Pages",
+                "description": "List all book pages with metadata including title, category, last updated date, and source count.",
+                "tags": [
+                    "Page Management"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope: org, personal, or all",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal",
+                            "all"
+                        ]
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Filter pages by category (e.g., entity, concept, source, comparison)",
+                        "x-ms-summary": "Category"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of book pages",
+                        "schema": {
+                            "$ref": "#/definitions/PageListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/pages/{pageId}": {
+            "get": {
+                "operationId": "ReadPage",
+                "summary": "Read Page",
+                "description": "Read the full content of a specific book page by its ID.",
+                "tags": [
+                    "Page Management"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The unique identifier of the book page",
+                        "x-ms-summary": "Page ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope: org or personal",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "book page content and metadata",
+                        "schema": {
+                            "$ref": "#/definitions/BookPage"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "WritePage",
+                "summary": "Write Page",
+                "description": "Create or update a book page. Provide markdown content and metadata.",
+                "tags": [
+                    "Page Management"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The unique identifier of the book page",
+                        "x-ms-summary": "Page ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope: org or personal",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/WritePageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated book page",
+                        "schema": {
+                            "$ref": "#/definitions/BookPage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeletePage",
+                "summary": "Delete Page",
+                "description": "Delete a book page. The page is soft-deleted and can be recovered.",
+                "tags": [
+                    "Page Management"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The unique identifier of the book page to delete",
+                        "x-ms-summary": "Page ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "book scope: org or personal",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/pages/{pageId}/promote": {
+            "post": {
+                "operationId": "PromotePage",
+                "summary": "Promote Page",
+                "description": "Copy a page from your personal book to the shared organizational book. The original personal page is retained.",
+                "tags": [
+                    "Page Management"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "pageId",
+                        "in": "path",
+                        "type": "string",
+                        "required": true,
+                        "description": "The page ID in your personal book to promote to org",
+                        "x-ms-summary": "Page ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Promotion result with the new org page ID",
+                        "schema": {
+                            "$ref": "#/definitions/PromoteResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/ingest-skill": {
+            "post": {
+                "operationId": "IngestSkill",
+                "summary": "Ingest Skill",
+                "description": "Process a multi-file agent skill and integrate its knowledge into the book. All files are processed together as a single skill.",
+                "tags": [
+                    "Book Operations"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "Book scope: org or personal",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/IngestSkillRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill ingestion result",
+                        "schema": {
+                            "$ref": "#/definitions/IngestSkillResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/book/ingest-from-url": {
+            "post": {
+                "operationId": "IngestFromUrl",
+                "summary": "Ingest from URL",
+                "description": "Fetch a skill or document from a URL and ingest it into the book. Supports GitHub repo tree URLs (fetches all text files) and direct file URLs.",
+                "tags": [
+                    "Book Operations"
+                ],
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "default": "org",
+                        "description": "Book scope: org or personal",
+                        "x-ms-summary": "Scope",
+                        "enum": [
+                            "org",
+                            "personal"
+                        ]
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/IngestFromUrlRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL ingestion result",
+                        "schema": {
+                            "$ref": "#/definitions/IngestSkillResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "IngestRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Title of the source document",
+                    "x-ms-summary": "Source Title"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The full text content of the source to ingest",
+                    "x-ms-summary": "Source Content"
+                },
+                "sourceUrl": {
+                    "type": "string",
+                    "description": "URL of the original source for citation tracking",
+                    "x-ms-summary": "Source URL"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Category to file the source under (e.g., article, paper, meeting-notes, api-docs)",
+                    "x-ms-summary": "Category"
+                }
+            }
+        },
+        "IngestResponse": {
+            "type": "object",
+            "properties": {
+                "sourceId": {
+                    "type": "string",
+                    "description": "ID assigned to the ingested source"
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "LLM-generated summary of the source"
+                },
+                "pagesCreated": {
+                    "type": "array",
+                    "description": "New book pages created during ingestion",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pageId": {
+                                "type": "string",
+                                "description": "Page identifier"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Page title"
+                            }
+                        }
+                    }
+                },
+                "pagesUpdated": {
+                    "type": "array",
+                    "description": "Existing book pages updated with new information",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pageId": {
+                                "type": "string",
+                                "description": "Page identifier"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Page title"
+                            },
+                            "changeDescription": {
+                                "type": "string",
+                                "description": "What was added or changed"
+                            }
+                        }
+                    }
+                },
+                "logEntry": {
+                    "type": "string",
+                    "description": "Chronological log entry for this ingestion"
+                }
+            }
+        },
+        "QueryRequest": {
+            "type": "object",
+            "required": [
+                "question"
+            ],
+            "properties": {
+                "question": {
+                    "type": "string",
+                    "description": "The question to ask against the book",
+                    "x-ms-summary": "Question"
+                },
+                "saveAsPage": {
+                    "type": "boolean",
+                    "description": "If true, save the answer as a new book page for future reference",
+                    "x-ms-summary": "Save as Page",
+                    "default": false
+                }
+            }
+        },
+        "QueryResponse": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string",
+                    "description": "Synthesized answer based on book content"
+                },
+                "citations": {
+                    "type": "array",
+                    "description": "book pages referenced in the answer",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pageId": {
+                                "type": "string",
+                                "description": "Referenced page ID"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Referenced page title"
+                            },
+                            "relevance": {
+                                "type": "string",
+                                "description": "How this page contributed to the answer"
+                            }
+                        }
+                    }
+                },
+                "confidence": {
+                    "type": "string",
+                    "description": "Confidence level: high, medium, or low",
+                    "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                    ]
+                },
+                "savedPageId": {
+                    "type": "string",
+                    "description": "If saveAsPage was true, the ID of the new page"
+                }
+            }
+        },
+        "LintRequest": {
+            "type": "object",
+            "properties": {
+                "scope": {
+                    "type": "string",
+                    "description": "Scope of lint check: all, recent (last 7 days), or a specific category",
+                    "x-ms-summary": "Scope",
+                    "default": "all"
+                }
+            }
+        },
+        "LintResponse": {
+            "type": "object",
+            "properties": {
+                "totalPages": {
+                    "type": "integer",
+                    "description": "Total book pages scanned"
+                },
+                "issues": {
+                    "type": "array",
+                    "description": "Issues found during lint",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "Issue type: contradiction, stale, orphan, missing-crossref, gap",
+                                "enum": [
+                                    "contradiction",
+                                    "stale",
+                                    "orphan",
+                                    "missing-crossref",
+                                    "gap"
+                                ]
+                            },
+                            "severity": {
+                                "type": "string",
+                                "description": "Issue severity: high, medium, low",
+                                "enum": [
+                                    "high",
+                                    "medium",
+                                    "low"
+                                ]
+                            },
+                            "pageId": {
+                                "type": "string",
+                                "description": "Affected page ID"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description of the issue"
+                            },
+                            "suggestedFix": {
+                                "type": "string",
+                                "description": "Suggested resolution"
+                            }
+                        }
+                    }
+                },
+                "suggestedQuestions": {
+                    "type": "array",
+                    "description": "Questions the book cannot currently answer well — potential sources to find",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "PageListResponse": {
+            "type": "object",
+            "properties": {
+                "pages": {
+                    "type": "array",
+                    "description": "List of book pages",
+                    "items": {
+                        "$ref": "#/definitions/PageSummary"
+                    }
+                },
+                "totalCount": {
+                    "type": "integer",
+                    "description": "Total number of pages in the book"
+                }
+            }
+        },
+        "PageSummary": {
+            "type": "object",
+            "properties": {
+                "pageId": {
+                    "type": "string",
+                    "description": "Unique page identifier"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Page title"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Page category (entity, concept, source, comparison, overview)"
+                },
+                "lastUpdated": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the page was last modified"
+                },
+                "sourceCount": {
+                    "type": "integer",
+                    "description": "Number of sources referenced by this page"
+                },
+                "linkCount": {
+                    "type": "integer",
+                    "description": "Number of cross-references to other book pages"
+                },
+                "scope": {
+                    "type": "string",
+                    "description": "book scope this page belongs to: org or personal"
+                },
+                "updatedBy": {
+                    "type": "string",
+                    "description": "Display name of the user who last updated this page"
+                }
+            }
+        },
+        "BookPage": {
+            "type": "object",
+            "properties": {
+                "pageId": {
+                    "type": "string",
+                    "description": "Unique page identifier"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Page title"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full markdown content of the page"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Page category"
+                },
+                "sources": {
+                    "type": "array",
+                    "description": "Sources that contributed to this page",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "sourceId": {
+                                "type": "string",
+                                "description": "Source identifier"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Source title"
+                            }
+                        }
+                    }
+                },
+                "crossReferences": {
+                    "type": "array",
+                    "description": "Links to other book pages",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "lastUpdated": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the page was last modified"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the page was created"
+                },
+                "scope": {
+                    "type": "string",
+                    "description": "book scope this page belongs to: org or personal"
+                },
+                "updatedBy": {
+                    "type": "string",
+                    "description": "Display name of the user who last updated this page"
+                }
+            }
+        },
+        "WritePageRequest": {
+            "type": "object",
+            "required": [
+                "title",
+                "content"
+            ],
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Page title",
+                    "x-ms-summary": "Title"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full markdown content for the page",
+                    "x-ms-summary": "Content"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Page category (entity, concept, source, comparison, overview)",
+                    "x-ms-summary": "Category"
+                }
+            }
+        },
+        "DeleteResponse": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "type": "boolean",
+                    "description": "Whether the page was successfully deleted"
+                },
+                "pageId": {
+                    "type": "string",
+                    "description": "ID of the deleted page"
+                }
+            }
+        },
+        "PromoteResponse": {
+            "type": "object",
+            "properties": {
+                "promoted": {
+                    "type": "boolean",
+                    "description": "Whether the page was successfully promoted to org book"
+                },
+                "sourcePageId": {
+                    "type": "string",
+                    "description": "The original personal book page ID"
+                },
+                "orgPageId": {
+                    "type": "string",
+                    "description": "The new or updated page ID in the org book"
+                },
+                "merged": {
+                    "type": "boolean",
+                    "description": "True if the page was merged with an existing org page rather than created new"
+                }
+            }
+        },
+        "IngestSkillRequest": {
+            "type": "object",
+            "required": [
+                "skillName",
+                "files"
+            ],
+            "properties": {
+                "skillName": {
+                    "type": "string",
+                    "description": "Name of the skill being ingested",
+                    "x-ms-summary": "Skill Name"
+                },
+                "files": {
+                    "type": "array",
+                    "description": "Files that make up the skill",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "File path within the skill (e.g., SKILL.md, template/script.csx)"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Full text content of the file"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "IngestFromUrlRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "URL to fetch the skill from. Supports GitHub tree URLs and direct file URLs.",
+                    "x-ms-summary": "URL"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Content type: agent-skill (default) or document",
+                    "x-ms-summary": "Type",
+                    "default": "agent-skill"
+                }
+            }
+        },
+        "IngestSkillResponse": {
+            "type": "object",
+            "properties": {
+                "skillName": {
+                    "type": "string",
+                    "description": "Name of the ingested skill"
+                },
+                "filesProcessed": {
+                    "type": "integer",
+                    "description": "Number of files processed"
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "LLM-generated summary of the skill"
+                },
+                "pagesCreated": {
+                    "type": "array",
+                    "description": "New book pages created",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pageId": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "pagesUpdated": {
+                    "type": "array",
+                    "description": "Existing pages updated",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pageId": {
+                                "type": "string"
+                            },
+                            "title": {
+                                "type": "string"
+                            },
+                            "changeDescription": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "logEntry": {
+                    "type": "string",
+                    "description": "Chronological log entry"
+                }
+            }
+        }
+    },
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://github.com/troystaylor/SharingIsCaring"
+        },
+        {
+            "propertyName": "Privacy Policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
