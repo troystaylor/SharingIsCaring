@@ -1,0 +1,724 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Copilot Studio Evaluations",
+    "description": "Automate agent evaluation workflows in Microsoft Copilot Studio. Manage test sets, trigger evaluations, and retrieve quality metrics including abstention, relevance, and completeness scores. Built on the Power Platform REST API with MCP support for Copilot Studio agents.",
+    "version": "1.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "api.powerplatform.com",
+  "basePath": "/copilotstudio",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets": {
+      "get": {
+        "summary": "Get Agent Test Sets",
+        "description": "Retrieve all test sets defined for a specific agent in the environment.",
+        "operationId": "GetAgentTestSets",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID"
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test sets.",
+            "schema": {
+              "$ref": "#/definitions/TestSetListResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}": {
+      "get": {
+        "summary": "Get Agent Test Set Details",
+        "description": "Retrieve detailed information about a specific test set, including test cases and descriptions.",
+        "operationId": "GetAgentTestSetDetails",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID"
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testSetId",
+            "in": "path",
+            "description": "The unique identifier for the test set.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Set ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test set details.",
+            "schema": {
+              "$ref": "#/definitions/TestSetDetails"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Test set not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}/run": {
+      "get": {
+        "summary": "Start Agent Evaluation",
+        "description": "Trigger an asynchronous evaluation run for a test set against the agent. Returns a run ID to track progress and retrieve results.",
+        "operationId": "StartAgentEvaluation",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID"
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testSetId",
+            "in": "path",
+            "description": "The unique identifier for the test set to evaluate.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Set ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "mcsConnectionId",
+            "in": "query",
+            "description": "Optional. The Copilot Studio connection ID to use as user profile for the evaluation. If not provided, the evaluation runs without authentication.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Connection ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully started evaluation run.",
+            "schema": {
+              "$ref": "#/definitions/EvaluationRunResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Agent or test set not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testruns/{testRunId}": {
+      "get": {
+        "summary": "Get Agent Test Run Details",
+        "description": "Retrieve detailed results for a specific evaluation run, including test case results and quality metrics (abstention, relevance, completeness).",
+        "operationId": "GetAgentTestRunDetails",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID"
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testRunId",
+            "in": "path",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Run ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test run details.",
+            "schema": {
+              "$ref": "#/definitions/EvaluationRunDetails"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Test run not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testruns": {
+      "get": {
+        "summary": "Get Agent Test Runs",
+        "description": "Retrieve a list of all evaluation runs for an agent, including current status and progress.",
+        "operationId": "GetAgentTestRuns",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID"
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test runs.",
+            "schema": {
+              "$ref": "#/definitions/TestRunListResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/": {
+      "post": {
+        "summary": "Invoke Copilot Studio Agent Evaluation MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for agent evaluation tools.",
+        "operationId": "InvokeMCP",
+        "parameters": [],
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "MCP request processed successfully.",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Invalid MCP request format."
+          },
+          "500": {
+            "description": "MCP processing error."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "x-ms-docs-operation-type": "operation"
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://api.powerplatform.com/.default": "Access Power Platform APIs"
+      }
+    }
+  },
+  "definitions": {
+    "TestSetListResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "Array of test sets.",
+          "items": {
+            "$ref": "#/definitions/TestSetSummary"
+          }
+        }
+      }
+    },
+    "TestSetSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test set."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name of the test set."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the test set's purpose."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the test set (e.g., Active, Inactive).",
+          "enum": [
+            "Active",
+            "Inactive"
+          ]
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total number of test cases in this set."
+        },
+        "auditInfo": {
+          "$ref": "#/definitions/AuditInfo"
+        }
+      }
+    },
+    "TestSetDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test set."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name of the test set."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the test set."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the test set.",
+          "enum": [
+            "Active",
+            "Inactive"
+          ]
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total number of test cases in this set."
+        },
+        "testCases": {
+          "type": "array",
+          "description": "List of test cases in this set.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Test case identifier."
+              },
+              "input": {
+                "type": "string",
+                "description": "Input query or test case prompt."
+              },
+              "expectedOutput": {
+                "type": "string",
+                "description": "Expected output or desired behavior."
+              }
+            }
+          }
+        },
+        "auditInfo": {
+          "$ref": "#/definitions/AuditInfo"
+        }
+      }
+    },
+    "AuditInfo": {
+      "type": "object",
+      "properties": {
+        "createdBy": {
+          "type": "string",
+          "description": "User ID who created the test set."
+        },
+        "createdOn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the test set was created."
+        },
+        "modifiedBy": {
+          "type": "string",
+          "description": "User ID who last modified the test set."
+        },
+        "modifiedOn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the test set was last modified."
+        }
+      }
+    },
+    "EvaluationRunResponse": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string",
+          "description": "Unique identifier for this evaluation run. Use this ID to retrieve run details and results."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the evaluation run.",
+          "enum": [
+            "Pending",
+            "Running",
+            "Completed",
+            "Failed"
+          ]
+        },
+        "executionState": {
+          "type": "string",
+          "description": "Detailed execution status."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation started."
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the run status was last updated."
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total number of test cases in the evaluation."
+        },
+        "testCasesProcessed": {
+          "type": "integer",
+          "description": "Number of test cases processed so far."
+        }
+      }
+    },
+    "EvaluationRunDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the evaluation run."
+        },
+        "environmentId": {
+          "type": "string",
+          "description": "Environment identifier."
+        },
+        "cdsBotId": {
+          "type": "string",
+          "description": "Agent (bot) identifier."
+        },
+        "testSetId": {
+          "type": "string",
+          "description": "Test set identifier used for this run."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the run.",
+          "enum": [
+            "Pending",
+            "Running",
+            "Completed",
+            "Failed"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the evaluation."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation started."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation completed."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User ID of the person who started the evaluation."
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total test cases in the test set."
+        },
+        "mcsConnectionId": {
+          "type": "string",
+          "description": "Connection ID used for user profile in evaluation. Null if no authentication."
+        },
+        "testCaseResults": {
+          "type": "array",
+          "description": "Results for each test case in the evaluation.",
+          "items": {
+            "$ref": "#/definitions/TestCaseResult"
+          }
+        }
+      }
+    },
+    "TestCaseResult": {
+      "type": "object",
+      "properties": {
+        "testCaseId": {
+          "type": "string",
+          "description": "Identifier of the test case."
+        },
+        "state": {
+          "type": "string",
+          "description": "Completion status of the test case.",
+          "enum": [
+            "Passed",
+            "Failed",
+            "Error"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "Detailed status message."
+        },
+        "errorReason": {
+          "type": "string",
+          "description": "Error description if test case failed."
+        },
+        "aiResultReason": {
+          "type": "string",
+          "description": "AI-generated explanation of the test case result."
+        },
+        "metricsResults": {
+          "type": "array",
+          "description": "Quality metrics and test results.",
+          "items": {
+            "$ref": "#/definitions/MetricResult"
+          }
+        }
+      }
+    },
+    "MetricResult": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of test method (e.g., GeneralQuality, Hallucination)."
+        },
+        "result": {
+          "type": "object",
+          "description": "Test result details.",
+          "properties": {
+            "abstention": {
+              "type": "boolean",
+              "description": "Whether the agent abstained from answering."
+            },
+            "relevance": {
+              "type": "boolean",
+              "description": "Whether the answer was relevant to the query."
+            },
+            "completeness": {
+              "type": "boolean",
+              "description": "Whether the answer was complete."
+            },
+            "data": {
+              "type": "object",
+              "description": "Additional metric-specific data."
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the metric evaluation."
+        }
+      }
+    },
+    "TestRunListResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "Array of evaluation runs.",
+          "items": {
+            "$ref": "#/definitions/EvaluationRunDetails"
+          }
+        }
+      }
+    }
+  },
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/analytics-agent-evaluation-rest-api"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Analytics"
+    }
+  ]
+}
