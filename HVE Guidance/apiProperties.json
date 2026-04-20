@@ -1,0 +1,114 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "githubToken": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "GitHub Token",
+          "description": "GitHub personal access token used to call GitHub REST APIs for hve-core.",
+          "tooltip": "Use a token with read-only repository scopes.",
+          "constraints": {
+            "required": "true",
+            "clearText": false
+          }
+        }
+      },
+      "repoOwner": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Repository Owner",
+          "description": "Repository owner or organization.",
+          "tooltip": "Default: microsoft",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      },
+      "repoName": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Repository Name",
+          "description": "Repository name to read standards from.",
+          "tooltip": "Default: hve-core",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      },
+      "repoBranch": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Branch",
+          "description": "Git branch or ref used for content reads.",
+          "tooltip": "Default: main",
+          "constraints": {
+            "required": "false"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#0078d4",
+    "capabilities": [
+      "actions"
+    ],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "policyTemplateInstances": [
+      {
+        "templateId": "setheader",
+        "title": "Set GitHub Token Header",
+        "parameters": {
+          "x-ms-apimTemplate-operationName": [
+            "InvokeMCP"
+          ],
+          "x-ms-apimTemplateParameter.name": "x-github-token",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('githubToken')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Repo Owner Header",
+        "parameters": {
+          "x-ms-apimTemplate-operationName": [
+            "InvokeMCP"
+          ],
+          "x-ms-apimTemplateParameter.name": "x-hve-owner",
+          "x-ms-apimTemplateParameter.value": "@coalesce(connectionParameters('repoOwner'),'microsoft')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Repo Name Header",
+        "parameters": {
+          "x-ms-apimTemplate-operationName": [
+            "InvokeMCP"
+          ],
+          "x-ms-apimTemplateParameter.name": "x-hve-repo",
+          "x-ms-apimTemplateParameter.value": "@coalesce(connectionParameters('repoName'),'hve-core')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Repo Branch Header",
+        "parameters": {
+          "x-ms-apimTemplate-operationName": [
+            "InvokeMCP"
+          ],
+          "x-ms-apimTemplateParameter.name": "x-hve-branch",
+          "x-ms-apimTemplateParameter.value": "@coalesce(connectionParameters('repoBranch'),'main')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ],
+    "scriptOperations": [
+      "InvokeMCP"
+    ]
+  }
+}
