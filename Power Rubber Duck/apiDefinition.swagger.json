@@ -1,0 +1,420 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power Rubber Duck",
+        "description": "Model Context Protocol connector providing multi-perspective analysis, risk assessment, cognitive bias detection, and comparative reasoning for Copilot Studio. Exposes analytical tools and a comprehensive knowledge base as MCP resources.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "api.example.com",
+    "basePath": "/v1",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "summary": "Invoke Power Rubber Duck",
+                "description": "Model Context Protocol endpoint implementing tools/list, tools/call, resources/list, and resources/read for multi-perspective analysis and decision support.",
+                "operationId": "InvokePowerRubberDuckMcp",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response"
+                    }
+                }
+            }
+        },
+        "/tools/getSecondOpinion": {
+            "post": {
+                "summary": "Get Second Opinion",
+                "description": "Returns an alternative perspective from the secondary model.",
+                "operationId": "GetSecondOpinion",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Inputs for second-opinion analysis.",
+                        "x-ms-summary": "Second Opinion Request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GetSecondOpinionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Second opinion response",
+                        "schema": {
+                            "$ref": "#/definitions/ToolTextResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/analyzeRisk": {
+            "post": {
+                "summary": "Analyze Risk",
+                "description": "Performs structured risk analysis for a scenario.",
+                "operationId": "AnalyzeRisk",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Inputs for structured risk analysis.",
+                        "x-ms-summary": "Risk Analysis Request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AnalyzeRiskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Risk analysis response",
+                        "schema": {
+                            "$ref": "#/definitions/ToolTextResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/identifyCognitiveBiases": {
+            "post": {
+                "summary": "Identify Cognitive Biases",
+                "description": "Identifies likely cognitive biases in provided reasoning.",
+                "operationId": "IdentifyCognitiveBiases",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Inputs for cognitive-bias identification.",
+                        "x-ms-summary": "Bias Analysis Request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/IdentifyCognitiveBiasesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cognitive bias analysis response",
+                        "schema": {
+                            "$ref": "#/definitions/ToolTextResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/comparativeAnalysis": {
+            "post": {
+                "summary": "Comparative Analysis",
+                "description": "Compares options and returns tradeoff analysis.",
+                "operationId": "ComparativeAnalysis",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Inputs for comparative option analysis.",
+                        "x-ms-summary": "Comparative Analysis Request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComparativeAnalysisRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Comparative analysis response",
+                        "schema": {
+                            "$ref": "#/definitions/ToolTextResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/list": {
+            "post": {
+                "summary": "List Resources",
+                "description": "Returns all available Power Rubber Duck resources.",
+                "operationId": "ListResources",
+                "responses": {
+                    "200": {
+                        "description": "Resource list response",
+                        "schema": {
+                            "$ref": "#/definitions/ResourceListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/read": {
+            "post": {
+                "summary": "Read Resource",
+                "description": "Returns content for a specific resource URI.",
+                "operationId": "ReadResource",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Input for reading a specific resource.",
+                        "x-ms-summary": "Read Resource Request",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReadResourceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resource read response",
+                        "schema": {
+                            "$ref": "#/definitions/ResourceReadResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ResourceListResponse": {
+            "type": "object",
+            "properties": {
+                "resources": {
+                    "type": "array",
+                    "description": "Available resources.",
+                    "items": {
+                        "$ref": "#/definitions/Resource"
+                    }
+                }
+            }
+        },
+        "ResourceReadResponse": {
+            "type": "object",
+            "properties": {
+                "contents": {
+                    "type": "array",
+                    "description": "Resource content payloads.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "uri": {
+                                "type": "string"
+                            },
+                            "mimeType": {
+                                "type": "string"
+                            },
+                            "text": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ReadResourceRequest": {
+            "type": "object",
+            "required": [
+                "uri"
+            ],
+            "properties": {
+                "uri": {
+                    "type": "string",
+                    "title": "Resource URI",
+                    "description": "Resource URI to read, for example resource://decision-frameworks/investment.",
+                    "x-ms-summary": "Resource URI"
+                }
+            }
+        },
+        "ToolTextResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string",
+                    "description": "Tool output text"
+                }
+            }
+        },
+        "GetSecondOpinionRequest": {
+            "type": "object",
+            "required": [
+                "prompt"
+            ],
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "title": "Prompt",
+                    "description": "Question, scenario, or reasoning text to analyze.",
+                    "x-ms-summary": "Prompt"
+                },
+                "analysis_depth": {
+                    "type": "string",
+                    "title": "Analysis Depth",
+                    "description": "Depth of analysis to produce.",
+                    "x-ms-summary": "Analysis Depth",
+                    "enum": [
+                        "quick",
+                        "balanced",
+                        "deep"
+                    ]
+                },
+                "focus_area": {
+                    "type": "string",
+                    "title": "Focus Area",
+                    "description": "Optional specific area to emphasize in the response.",
+                    "x-ms-summary": "Focus Area"
+                }
+            }
+        },
+        "AnalyzeRiskRequest": {
+            "type": "object",
+            "required": [
+                "scenario"
+            ],
+            "properties": {
+                "scenario": {
+                    "type": "string",
+                    "title": "Scenario",
+                    "description": "Decision scenario or plan to evaluate for risk.",
+                    "x-ms-summary": "Scenario"
+                },
+                "risk_categories": {
+                    "type": "array",
+                    "title": "Risk Categories",
+                    "description": "Optional list of risk categories to prioritize.",
+                    "x-ms-summary": "Risk Categories",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "context": {
+                    "type": "string",
+                    "title": "Context",
+                    "description": "Optional additional context that affects risk assessment.",
+                    "x-ms-summary": "Context"
+                }
+            }
+        },
+        "IdentifyCognitiveBiasesRequest": {
+            "type": "object",
+            "required": [
+                "analysis"
+            ],
+            "properties": {
+                "analysis": {
+                    "type": "string",
+                    "title": "Analysis",
+                    "description": "Reasoning text to inspect for potential cognitive biases.",
+                    "x-ms-summary": "Analysis"
+                },
+                "focus_biases": {
+                    "type": "array",
+                    "title": "Focus Biases",
+                    "description": "Optional list of specific biases to check.",
+                    "x-ms-summary": "Focus Biases",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "ComparativeAnalysisRequest": {
+            "type": "object",
+            "required": [
+                "context",
+                "options"
+            ],
+            "properties": {
+                "context": {
+                    "type": "string",
+                    "title": "Context",
+                    "description": "Problem statement or decision context for comparison.",
+                    "x-ms-summary": "Context"
+                },
+                "options": {
+                    "type": "array",
+                    "title": "Options",
+                    "description": "List of options to compare.",
+                    "x-ms-summary": "Options",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "criteria": {
+                    "type": "array",
+                    "title": "Criteria",
+                    "description": "Optional list of evaluation criteria.",
+                    "x-ms-summary": "Criteria",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Tool": {
+            "type": "object",
+            "required": [
+                "name",
+                "description",
+                "inputSchema"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "inputSchema": {
+                    "type": "object"
+                }
+            }
+        },
+        "Resource": {
+            "type": "object",
+            "required": [
+                "uri",
+                "name",
+                "mimeType"
+            ],
+            "properties": {
+                "uri": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "mimeType": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://github.com/troystaylor/SharingIsCaring"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://github.com/troystaylor/SharingIsCaring"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Business Intelligence"
+        }
+    ]
+}
