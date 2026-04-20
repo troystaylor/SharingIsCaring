@@ -18,6 +18,11 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
 
 ### Connected App Setup
 
+This connector is validated with a provider-based OAuth configuration in `apiProperties.json`:
+- `identityProvider`: `SalesforceV2`
+- `customParameters.LoginUri`: `https://login.salesforce.com`
+- `redirectMode`: `GlobalPerConnector`
+
 > **Note:** As of Spring '26, Salesforce recommends External Client Apps over Connected Apps for new integrations.
 
 #### Option 1: External Client App (Recommended)
@@ -28,7 +33,8 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
    - **Name**: Power Platform Connector
    - **Contact Email**: Your email
    - **Enable OAuth Settings**: Checked
-   - **Callback URL**: `{{Retrieve after connector is saved}}`
+   - **Callback URL**: Add the Power Platform redirect URL shown by your connector connection experience. For this connector family, a working example is:
+     - `https://global.consent.azure-apim.net/redirect/new-5fsalesforce-abc`
    - **Selected OAuth Scopes**:
      - `Manage user data via APIs (api)`
      - `Perform requests at any time (refresh_token, offline_access)`
@@ -36,8 +42,6 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
 5. Navigate to **Manage > OAuth Policies**:
    - **Refresh Token Policy**: Set to **"Refresh token is valid until revoked"**
    - **Permitted Users**: "All users may self-authorize" (or admin pre-authorized)
-6. Navigate to **Setup > Security > OAuth and OpenID Connect Settings**
-   - **Allow Authorization Code and Credentials Flows**: Toggle On
 
 #### Option 2: Connected App (Legacy)
 
@@ -48,15 +52,11 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
    - **API Name**: Power_Platform_Connector
    - **Contact Email**: Your email
    - **Enable OAuth Settings**: Checked
-   - **Callback URL**: `https://global.consent.azure-apim.net/redirect`
+   - **Callback URL**: Add the Power Platform redirect URL shown by your connector connection experience. For this connector family, a working example is:
+     - `https://global.consent.azure-apim.net/redirect/new-5fsalesforce-5f74dd22e1a08b664f`
    - **Selected OAuth Scopes**:
      - `Manage user data via APIs (api)`
      - `Perform requests at any time (refresh_token, offline_access)`
-   - **Flow Enablement**:
-      - Check `Enable Authorization Code and Credentials Flow`
-   - **Security**:
-      - Check `Require secret for Web Server Flow`
-      - Check `Require secret for Refresh Token Flow`
 4. Save and wait 2-10 minutes for propagation
 5. Copy the **Consumer Key** and **Consumer Secret**
 6. Navigate to **Manage > OAuth Policies**:
@@ -71,12 +71,17 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
 # Authenticate to your Power Platform environment
 pac auth create --environment "https://yourorg.crm.dynamics.com"
 
+# List existing connectors
+pac connector list
+
 # Create the connector
-pac connector create --api-definition apiDefinition.swagger.json --api-properties apiProperties.json
+pac connector create --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json
 
 # Or update an existing connector
-pac connector update --connector-id <CONNECTOR_ID> --api-definition apiDefinition.swagger.json --api-properties apiProperties.json
+pac connector update --connector-id <CONNECTOR_ID> --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json
 ```
+
+> Note: For this connector, use file arguments directly. Do not pass `--settings-file` unless the settings file is in PAC's expected GUID-based format.
 
 ### Manual Upload
 
@@ -88,12 +93,23 @@ pac connector update --connector-id <CONNECTOR_ID> --api-definition apiDefinitio
 
 ## Configuration
 
-After creating the connector, update the `apiProperties.json`:
+Use the following OAuth properties pattern (validated in Power Platform Demo):
 
-1. Replace `[REPLACE_WITH_CLIENT_ID]` with your Consumer Key
-2. When creating a connection, you'll be prompted for:
-   - **Salesforce Instance**: Your My Domain name (e.g., `mycompany` for `mycompany.my.salesforce.com`)
-   - **OAuth Sign-in**: Will redirect to Salesforce for authentication
+1. In `apiProperties.json` set:
+  - `connectionParameters.token.type` = `oauthSetting`
+  - `connectionParameters.token.oAuthSettings.identityProvider` = `SalesforceV2`
+  - `connectionParameters.token.oAuthSettings.customParameters.LoginUri.value` = `https://login.salesforce.com`
+  - `connectionParameters.token.oAuthSettings.redirectMode` = `GlobalPerConnector`
+2. In `apiDefinition.swagger.json` set OAuth security endpoints to:
+  - `authorizationUrl`: `https://login.salesforce.com/services/oauth2/authorize`
+  - `tokenUrl`: `https://login.salesforce.com/services/oauth2/token`
+3. Ensure scopes are aligned across both files (`api`, `refresh_token`).
+
+In validation testing, OAuth sign-in launched Salesforce successfully even with a placeholder `clientId` and no explicit `clientSecret` in `apiProperties.json`. This suggests `SalesforceV2` may use provider-managed auth behavior. For production, still prefer a real Salesforce app registration and verify behavior in your target tenant.
+
+### Security Tab Behavior
+
+When using `SalesforceV2`, the custom connector **Security** tab can display **No Authentication** even though OAuth works at runtime in the **Test** tab. Treat PAC-deployed `apiProperties.json` as source of truth for this provider pattern.
 
 ## API Coverage
 
@@ -428,33 +444,30 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
    - Ensure the connector `host` matches your Salesforce My Domain (e.g., `mycompany.my.salesforce.com`, **not** `lightning.force.com`)
    - If you recently changed OAuth settings, **delete the existing connection and create a new one** — stale tokens are not automatically refreshed
 
-2. **403 Forbidden**
+2. **Security tab shows "No Authentication"**
+  - Expected with the `SalesforceV2` provider pattern in some custom connector editor experiences
+  - Verify actual auth configuration by downloading the connector with `pac connector download`
+  - If Test tab connection works, runtime auth is configured even if the editor view is blank
+
+3. **403 Forbidden**
    - User lacks object/field permissions
    - Check profile or permission set assignments
 
-3. **invalid_grant Error**
+4. **invalid_grant Error**
    - Token may have expired
    - Re-authenticate the connection
    - Check IP restrictions on Connected App (set to **Relax IP restrictions** or add Power Platform IPs)
    - Verify **Refresh Token Policy** is set to "Refresh token is valid until revoked"
 
-4. **REQUEST_LIMIT_EXCEEDED**
+5. **REQUEST_LIMIT_EXCEEDED**
    - Org has hit daily API limits
    - Use `GetLimits` to check current usage
    - Consider using Composite API for batching
 
-5. **INVALID_FIELD**
+6. **INVALID_FIELD**
    - Field API name is incorrect
    - Field may not be accessible to the user
    - Use `DescribeObject` to verify field names
-
-### Testing with Postman
-
-1. Import the swagger file into Postman
-2. Configure OAuth 2.0 authorization with your Connected App credentials
-3. Set the authorization URL to `https://login.salesforce.com/services/oauth2/authorize`
-4. Set the token URL to `https://login.salesforce.com/services/oauth2/token`
-5. Test individual endpoints before using in Power Platform
 
 ## Resources
 
@@ -465,9 +478,3 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
 - [Knowledge REST API](https://developer.salesforce.com/docs/atlas.en-us.knowledge_dev.meta/knowledge_dev/)
 - [Tooling API (Synonyms)](https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/)
 - [Power Platform Custom Connectors](https://docs.microsoft.com/en-us/connectors/custom-connectors/)
-
-## License
-
-This connector is provided as-is for educational and development purposes.
-
-
