@@ -1,0 +1,525 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Copilot Change Notifications",
+    "description": "Monitor Microsoft 365 Copilot AI interactions and meeting insights via Microsoft Graph change notifications. Subscribe to real-time updates on Copilot queries, responses, and meeting AI summaries. Includes Model Context Protocol (MCP) support for Copilot Studio integration.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    }
+  ],
+  "host": "graph.microsoft.com",
+  "basePath": "/v1.0",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Copilot Change Notifications MCP",
+        "description": "MCP protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for tools/initialize/resources.",
+        "x-ms-visibility": "internal",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "MCP response",
+            "schema": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/test-webhook": {
+      "post": {
+        "operationId": "TestWebhookConnectivity",
+        "summary": "Test Webhook Connectivity",
+        "description": "Validate that a webhook endpoint is reachable and responds correctly before creating a subscription.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["webhookUrl"],
+              "properties": {
+                "webhookUrl": {
+                  "type": "string",
+                  "description": "HTTPS webhook endpoint URL to test",
+                  "x-ms-summary": "Webhook URL"
+                },
+                "clientState": {
+                  "type": "string",
+                  "description": "Optional client state to include in test payload",
+                  "x-ms-summary": "Client State",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook test successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "statusCode": { "type": "integer" },
+                "responseTime": { "type": "integer", "description": "Response time in milliseconds" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/get": {
+      "get": {
+        "operationId": "GetSubscription",
+        "summary": "Get Subscription Details",
+        "description": "Retrieve details of a specific subscription by ID.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription details",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "description": "Subscription ID" },
+                "resource": { "type": "string", "description": "Monitored resource path" },
+                "changeType": { "type": "string", "description": "Change types being monitored" },
+                "notificationUrl": { "type": "string", "description": "Webhook endpoint" },
+                "expirationDateTime": { "type": "string", "format": "date-time", "description": "When subscription expires" },
+                "includeResourceData": { "type": "boolean" },
+                "clientState": { "type": "string", "description": "Client state (masked for security)" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions": {
+      "post": {
+        "operationId": "CreateSubscription",
+        "summary": "Create Change Notification Subscription",
+        "description": "Create a subscription to receive change notifications for Copilot AI interactions or meeting insights.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["changeType", "notificationUrl", "resource", "expirationDateTime"],
+              "properties": {
+                "changeType": {
+                  "type": "string",
+                  "description": "Change types to monitor: created, updated, deleted",
+                  "x-ms-summary": "Change Type",
+                  "enum": ["created", "updated", "deleted", "created,updated", "created,deleted", "updated,deleted", "created,updated,deleted"]
+                },
+                "notificationUrl": {
+                  "type": "string",
+                  "description": "HTTPS endpoint URL that receives notifications",
+                  "x-ms-summary": "Notification URL"
+                },
+                "resource": {
+                  "type": "string",
+                  "description": "The resource to monitor. Use /copilot/interactionHistory/getAllEnterpriseInteractions for tenant-wide AI interactions or /copilot/users/{user-id}/onlineMeetings/{meeting-id}/aiInsights for meeting insights.",
+                  "x-ms-summary": "Resource Path"
+                },
+                "includeResourceData": {
+                  "type": "boolean",
+                  "description": "Include resource data in notifications (requires encryption certificate)",
+                  "x-ms-summary": "Include Resource Data",
+                  "default": false
+                },
+                "encryptionCertificate": {
+                  "type": "string",
+                  "description": "Base64-encoded public encryption certificate (required if includeResourceData is true)",
+                  "x-ms-summary": "Encryption Certificate",
+                  "x-ms-visibility": "advanced"
+                },
+                "encryptionCertificateId": {
+                  "type": "string",
+                  "description": "Custom identifier for the encryption certificate",
+                  "x-ms-summary": "Certificate ID",
+                  "x-ms-visibility": "advanced"
+                },
+                "expirationDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Subscription expiration date/time (max 1 hour from now, unless lifecycleNotificationUrl is provided)",
+                  "x-ms-summary": "Expiration DateTime"
+                },
+                "clientState": {
+                  "type": "string",
+                  "description": "Secret value used to validate notifications",
+                  "x-ms-summary": "Client State",
+                  "x-ms-visibility": "advanced"
+                },
+                "lifecycleNotificationUrl": {
+                  "type": "string",
+                  "description": "HTTPS endpoint for lifecycle events. Required if expirationDateTime > 1 hour.",
+                  "x-ms-summary": "Lifecycle Notification URL",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Subscription created",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Subscription ID"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "ListSubscriptions",
+        "summary": "List Active Subscriptions",
+        "description": "List all active change notification subscriptions.",
+        "x-ms-visibility": "advanced",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of subscriptions",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "resource": { "type": "string" },
+                      "changeType": { "type": "string" },
+                      "notificationUrl": { "type": "string" },
+                      "expirationDateTime": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}": {
+      "delete": {
+        "operationId": "DeleteSubscription",
+        "summary": "Delete Subscription",
+        "description": "Delete a change notification subscription by ID.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The subscription ID to delete",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscription deleted"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "RenewSubscription",
+        "summary": "Renew Subscription",
+        "description": "Extend the expiration time of a subscription.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The subscription ID to renew",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["expirationDateTime"],
+              "properties": {
+                "expirationDateTime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "New expiration date/time",
+                  "x-ms-summary": "Expiration DateTime"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription renewed"
+          }
+        }
+      }
+    },
+    "/copilot/interactionHistory/interactions/{interactionId}": {
+      "get": {
+        "operationId": "GetAIInteraction",
+        "summary": "Get AI Interaction",
+        "description": "Retrieve details of a specific Copilot AI interaction.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "interactionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The interaction ID",
+            "x-ms-summary": "Interaction ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI interaction details",
+            "schema": {
+              "$ref": "#/definitions/aiInteraction"
+            }
+          }
+        }
+      }
+    },
+    "/copilot/users/{userId}/onlineMeetings/{meetingId}/aiInsights/{insightId}": {
+      "get": {
+        "operationId": "GetAIInsight",
+        "summary": "Get Meeting AI Insight",
+        "description": "Retrieve details of a specific AI insight for a meeting.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The user ID",
+            "x-ms-summary": "User ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "meetingId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The meeting ID",
+            "x-ms-summary": "Meeting ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "insightId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The insight ID",
+            "x-ms-summary": "Insight ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI insight details",
+            "schema": {
+              "$ref": "#/definitions/callAiInsight"
+            }
+          }
+        }
+      }
+    },
+    "/copilot/interactionHistory/interactions": {
+      "get": {
+        "operationId": "ListAIInteractions",
+        "summary": "List AI Interactions",
+        "description": "List recent Copilot AI interactions with optional filtering.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Filter by appClass, conversationType, etc. Example: appClass eq 'IPM.SkypeTeams.Message.Copilot.Teams'",
+            "x-ms-summary": "Filter",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Number of interactions to return (max 100)",
+            "x-ms-summary": "Top",
+            "x-ms-visibility": "advanced",
+            "default": 10
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Number of interactions to skip for pagination",
+            "x-ms-summary": "Skip",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of AI interactions",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/aiInteraction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "aiInteraction": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique interaction ID"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Session identifier"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "Request identifier"
+        },
+        "appClass": {
+          "type": "string",
+          "description": "Application class (e.g., IPM.SkypeTeams.Message.Copilot.Teams)"
+        },
+        "interactionType": {
+          "type": "string",
+          "description": "Type of interaction (e.g., aiResponse, aiPrompt)"
+        },
+        "conversationType": {
+          "type": "string",
+          "description": "Conversation type (e.g., appchat, bizchat)"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the interaction was created"
+        },
+        "locale": {
+          "type": "string",
+          "description": "Locale of the interaction"
+        },
+        "from": {
+          "type": "object",
+          "description": "Who initiated the interaction"
+        },
+        "body": {
+          "type": "object",
+          "description": "Message body with contentType and content"
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Context references"
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Attachments"
+        }
+      }
+    },
+    "callAiInsight": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique insight ID"
+        },
+        "createdDateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the insight was created"
+        },
+        "summary": {
+          "type": "object",
+          "description": "Meeting summary object"
+        },
+        "meetingId": {
+          "type": "string",
+          "description": "Associated meeting ID"
+        }
+      }
+    }
+  }
+}
