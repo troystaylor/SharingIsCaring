@@ -1,0 +1,328 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.4/schema.json",
+  "schema_version": "v2.4",
+  "name_for_human": "Decision Duck",
+  "namespace": "decisionduck",
+  "description_for_human": "Opinionated decision-support actions for second opinion, risk, bias, and tradeoff analysis.",
+  "description_for_model": "Use this plugin for structured decision support. Prefer it for high-impact choices, tradeoff discussions, and risk-sensitive planning.",
+  "contact_email": "troy@troystaylor.com",
+  "legal_info_url": "https://github.com/troystaylor/SharingIsCaring",
+  "privacy_policy_url": "https://github.com/troystaylor/SharingIsCaring",
+  "functions": [
+    {
+      "name": "get_second_opinion",
+      "description": "Alternative perspective on a decision or analysis.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The decision or analysis to get a second opinion on"
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": [
+            "DataTransform"
+          ]
+        }
+      },
+      "returns": {
+        "type": "string"
+      }
+    },
+    {
+      "name": "analyze_risk",
+      "description": "Structured risk analysis with mitigations and leading indicators.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "description": "The scenario or decision to analyze for risks"
+          }
+        },
+        "required": [
+          "scenario"
+        ]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": [
+            "DataTransform"
+          ]
+        }
+      },
+      "returns": {
+        "type": "string"
+      }
+    },
+    {
+      "name": "identify_cognitive_biases",
+      "description": "Identify likely cognitive biases and practical corrections.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "analysis": {
+            "type": "string",
+            "description": "The decision reasoning or analysis to check for cognitive biases"
+          }
+        },
+        "required": [
+          "analysis"
+        ]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": [
+            "DataTransform"
+          ]
+        }
+      },
+      "returns": {
+        "type": "string"
+      }
+    },
+    {
+      "name": "comparative_analysis",
+      "description": "Compare options, call out tradeoffs, and recommend a path.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "context": {
+            "type": "string",
+            "description": "Background context for the comparison"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Options to compare"
+          }
+        },
+        "required": [
+          "context",
+          "options"
+        ]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": [
+            "DataTransform"
+          ]
+        }
+      },
+      "returns": {
+        "type": "string"
+      }
+    },
+    {
+      "name": "list_frameworks",
+      "description": "List available decision frameworks.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": [
+            "DataTransform"
+          ]
+        }
+      },
+      "returns": {
+        "type": "string"
+      }
+    },
+    {
+      "name": "get_framework",
+      "description": "Get one decision framework by ID.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "framework_id": {
+            "type": "string",
+            "description": "The ID of the decision framework to retrieve"
+          }
+        },
+        "required": [
+          "framework_id"
+        ]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": [
+            "DataTransform"
+          ]
+        }
+      },
+      "returns": {
+        "type": "string"
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "type": "RemoteMCPServer",
+      "run_for_functions": [
+        "get_second_opinion",
+        "analyze_risk",
+        "identify_cognitive_biases",
+        "comparative_analysis",
+        "list_frameworks",
+        "get_framework"
+      ],
+      "auth": {
+        "type": "OAuthPluginVault",
+        "reference_id": "be8b7633-31f3-4ea5-8029-b45f5590da29"
+      },
+      "spec": {
+        "url": "https://decisionduck-mcp.mangocliff-85624d1f.westus2.azurecontainerapps.io/mcp",
+        "mcp_tool_description": {
+          "tools": [
+            {
+              "name": "get_second_opinion",
+              "description": "Alternative perspective on a decision or analysis.",
+              "inputSchema": {
+                "type": "object",
+                "required": [
+                  "prompt"
+                ],
+                "properties": {
+                  "prompt": {
+                    "type": "string"
+                  },
+                  "analysis_depth": {
+                    "type": "string",
+                    "enum": [
+                      "quick",
+                      "balanced",
+                      "deep"
+                    ]
+                  },
+                  "focus_area": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            {
+              "name": "analyze_risk",
+              "description": "Structured risk analysis with mitigations and leading indicators.",
+              "inputSchema": {
+                "type": "object",
+                "required": [
+                  "scenario"
+                ],
+                "properties": {
+                  "scenario": {
+                    "type": "string"
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "risk_categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "identify_cognitive_biases",
+              "description": "Identify likely cognitive biases and practical corrections.",
+              "inputSchema": {
+                "type": "object",
+                "required": [
+                  "analysis"
+                ],
+                "properties": {
+                  "analysis": {
+                    "type": "string"
+                  },
+                  "focus_biases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "comparative_analysis",
+              "description": "Compare options, call out tradeoffs, and recommend a path.",
+              "inputSchema": {
+                "type": "object",
+                "required": [
+                  "context",
+                  "options"
+                ],
+                "properties": {
+                  "context": {
+                    "type": "string"
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "list_frameworks",
+              "description": "List available decision frameworks.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "get_framework",
+              "description": "Get one decision framework by ID.",
+              "inputSchema": {
+                "type": "object",
+                "required": [
+                  "framework_id"
+                ],
+                "properties": {
+                  "framework_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "capabilities": {
+    "conversation_starters": [
+      {
+        "text": "Give me a second opinion on this decision."
+      },
+      {
+        "text": "What risks are we missing in this plan?"
+      },
+      {
+        "text": "Compare these options and recommend one."
+      }
+    ]
+  }
+}
