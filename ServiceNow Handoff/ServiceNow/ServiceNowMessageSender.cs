@@ -102,6 +102,7 @@ public class ServiceNowMessageSender
 
             var payload = new
             {
+                type = "chat",
                 channel = "chat",
                 opened_for = mcsConversationId,
                 short_description = summary,

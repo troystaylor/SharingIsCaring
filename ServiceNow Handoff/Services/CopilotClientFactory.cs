@@ -32,7 +32,6 @@ public class CopilotClientFactory
         return new CopilotClient(
             settings,
             _httpClientFactory,
-            logger,
-            "CopilotStudio");
+            logger);
     }
 }
