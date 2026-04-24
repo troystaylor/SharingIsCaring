@@ -1,0 +1,238 @@
+<!--
+  Comparison Grid Widget
+
+  JSON Contract:
+  {
+    "title": "Vendor Comparison",
+    "criteria": ["Price", "Support", "Features", "Integration"],
+    "options": [
+      {
+        "name": "Vendor A",
+        "scores": { "Price": 8, "Support": 7, "Features": 9, "Integration": 6 },
+        "recommendation": true
+      },
+      {
+        "name": "Vendor B",
+        "scores": { "Price": 6, "Support": 9, "Features": 7, "Integration": 8 }
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Grid heading
+  - criteria (string array): Row labels (evaluation dimensions)
+  - options (array): Column entries (things being compared)
+    - name (string): Option label
+    - scores (object): Maps each criterion name to a score (1-10)
+    - recommendation (boolean, optional): Marks this option as recommended
+
+  Tool Prompt Example:
+  "For each of the input options, evaluate against these criteria:
+   Price, Support, Features, Integration, Reliability.
+   Score each criterion 1-10 based on available data.
+   Return JSON with 'title', 'criteria' array, and 'options' array.
+   Each option has 'name', 'scores' object, and 'recommendation' boolean
+   (true for the best overall option)."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Comparison Grid</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .grid-table { width: 100%; border-collapse: collapse; }
+    .grid-row {
+      display: grid;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+      align-items: center;
+    }
+    .grid-row.header {
+      font-weight: 600;
+      font-size: 13px;
+      padding-bottom: 10px;
+    }
+    .grid-row:last-child { border-bottom: none; }
+    .criterion {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .option-header {
+      text-align: center;
+      font-size: 13px;
+    }
+    .rec-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--colorBrandBackground);
+      color: var(--colorNeutralForegroundOnBrand);
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+    .score {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+    }
+    .score-bar {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--colorNeutralStroke1);
+      max-width: 80px;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--colorNeutralForeground2);
+      transition: width 0.3s ease;
+    }
+    .score-fill.best {
+      background: var(--colorBrandBackground);
+    }
+    .score-num {
+      font-size: 13px;
+      min-width: 18px;
+      text-align: right;
+      color: var(--colorNeutralForeground2);
+    }
+    .score-num.best-text {
+      font-weight: 600;
+      color: var(--colorNeutralForeground1);
+    }
+    .totals {
+      font-weight: 600;
+      padding-top: 10px;
+      border-top: 2px solid var(--colorNeutralStroke1);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Comparing options…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const criteria = data.criteria || [];
+      const options = data.options || [];
+      const cols = options.length + 1;
+      const gridCols = `minmax(100px, 1fr) repeat(${options.length}, minmax(80px, 1fr))`;
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+
+      /* Header row */
+      html += `<div class="grid-row header" style="grid-template-columns:${gridCols}">`;
+      html += '<div class="criterion"></div>';
+      for (const opt of options) {
+        const badge = opt.recommendation ? '<span class="rec-badge">★ Pick</span>' : '';
+        html += `<div class="option-header">${esc(opt.name)}${badge}</div>`;
+      }
+      html += '</div>';
+
+      /* Data rows */
+      for (const c of criteria) {
+        const maxScore = Math.max(...options.map(o => o.scores?.[c] ?? 0));
+        html += `<div class="grid-row" style="grid-template-columns:${gridCols}">`;
+        html += `<div class="criterion">${esc(c)}</div>`;
+        for (const opt of options) {
+          const score = opt.scores?.[c] ?? 0;
+          const isBest = score === maxScore && maxScore > 0;
+          html += `<div class="score">
+            <div class="score-bar"><div class="score-fill${isBest ? ' best' : ''}" style="width:${score * 10}%"></div></div>
+            <span class="score-num${isBest ? ' best-text' : ''}">${score}</span>
+          </div>`;
+        }
+        html += '</div>';
+      }
+
+      /* Totals row */
+      html += `<div class="grid-row totals" style="grid-template-columns:${gridCols}">`;
+      html += '<div class="criterion">Total</div>';
+      for (const opt of options) {
+        const total = criteria.reduce((s, c) => s + (opt.scores?.[c] ?? 0), 0);
+        html += `<div class="score"><span class="score-num best-text">${total}</span></div>`;
+      }
+      html += '</div>';
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* Local preview — uncomment to test:
+    render({
+      title: "CRM Platform Comparison",
+      criteria: ["Price", "Ease of Use", "Integrations", "Support", "Scalability"],
+      options: [
+        { name: "Platform A", scores: { "Price": 8, "Ease of Use": 7, "Integrations": 9, "Support": 6, "Scalability": 8 }, recommendation: true },
+        { name: "Platform B", scores: { "Price": 6, "Ease of Use": 9, "Integrations": 7, "Support": 8, "Scalability": 7 } },
+        { name: "Platform C", scores: { "Price": 9, "Ease of Use": 5, "Integrations": 6, "Support": 7, "Scalability": 9 } }
+      ]
+    });
+    show('content');
+    */
+  </script>
+</body>
+</html>

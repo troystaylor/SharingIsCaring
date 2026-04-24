@@ -1,0 +1,199 @@
+<!--
+  Kanban Board Widget
+
+  JSON Contract:
+  {
+    "title": "My Open Cases",
+    "columns": [
+      {
+        "name": "New",
+        "cards": [
+          { "id": "CAS-1042", "title": "Login failure", "subtitle": "Zava Corp", "badge": "High" },
+          { "id": "CAS-1045", "title": "Data sync error", "subtitle": "Northwind" }
+        ]
+      },
+      {
+        "name": "In Progress",
+        "cards": [
+          { "id": "CAS-1038", "title": "Report timeout", "subtitle": "Alpine Ski", "badge": "Medium" }
+        ]
+      },
+      {
+        "name": "Resolved",
+        "cards": []
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Board heading
+  - columns (array): Swim lanes
+    - name (string): Column heading
+    - cards (array): Records in this column
+      - id (string, optional): Record identifier
+      - title (string): Card heading
+      - subtitle (string, optional): Secondary text
+      - badge (string, optional): Label badge (e.g., priority)
+
+  Dataverse Use Cases:
+  - Cases by status (New / In Progress / Resolved)
+  - Opportunities by sales stage
+  - Tasks by completion status
+  - Work items by sprint state
+
+  Tool Prompt Example:
+  "Query cases assigned to me. Group by statuscode.
+   For each case return id (ticketnumber), title, customer name (subtitle),
+   and priority as badge. Return JSON with 'title' and 'columns' array.
+   Columns: 'New', 'In Progress', 'Waiting', 'Resolved'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kanban Board</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .board {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+    }
+    .column {
+      flex: 1;
+      min-width: 140px;
+      background: var(--colorNeutralBackground2);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .col-name {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--colorNeutralForeground2);
+    }
+    .col-count {
+      font-size: 11px;
+      background: var(--colorNeutralStroke1);
+      border-radius: 10px;
+      padding: 1px 7px;
+      color: var(--colorNeutralForeground2);
+    }
+    .card {
+      background: var(--colorNeutralBackground1);
+      border: 1px solid var(--colorNeutralStroke1);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 6px;
+    }
+    .card:last-child { margin-bottom: 0; }
+    .card-id { font-size: 11px; color: var(--colorNeutralForeground2); }
+    .card-title { font-size: 13px; font-weight: 600; margin-top: 2px; }
+    .card-subtitle { font-size: 12px; color: var(--colorNeutralForeground2); margin-top: 2px; }
+    .card-footer { display: flex; justify-content: flex-end; margin-top: 6px; }
+    .empty-col {
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+      text-align: center;
+      padding: 16px 0;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading board…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const columns = data.columns || [];
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="board">';
+
+      for (const col of columns) {
+        const cards = col.cards || [];
+        html += '<div class="column">';
+        html += `<div class="col-header">
+          <span class="col-name">${esc(col.name)}</span>
+          <span class="col-count">${cards.length}</span>
+        </div>`;
+
+        if (cards.length === 0) {
+          html += '<div class="empty-col">No items</div>';
+        }
+        for (const c of cards) {
+          html += '<div class="card">';
+          if (c.id) html += `<div class="card-id">${esc(c.id)}</div>`;
+          html += `<div class="card-title">${esc(c.title)}</div>`;
+          if (c.subtitle) html += `<div class="card-subtitle">${esc(c.subtitle)}</div>`;
+          if (c.badge) html += `<div class="card-footer"><fluent-badge appearance="outline">${esc(c.badge)}</fluent-badge></div>`;
+          html += '</div>';
+        }
+
+        html += '</div>';
+      }
+
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

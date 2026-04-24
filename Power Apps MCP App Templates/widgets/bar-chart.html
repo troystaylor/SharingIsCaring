@@ -1,0 +1,160 @@
+<!--
+  Bar Chart Widget
+
+  JSON Contract:
+  {
+    "title": "Revenue by Region",
+    "bars": [
+      { "label": "West", "value": 520000 },
+      { "label": "East", "value": 410000 },
+      { "label": "Central", "value": 340000 },
+      { "label": "South", "value": 280000 }
+    ],
+    "format": "currency"
+  }
+
+  Fields:
+  - title (string, optional): Chart heading
+  - bars (array): Data points
+    - label (string): Category name
+    - value (number): Bar size
+    - color (string, optional): Override bar color
+  - format (string, optional): "currency", "percent", or "number" for value labels
+
+  Dataverse Use Cases:
+  - Revenue by territory / business unit
+  - Case count by team / agent
+  - Activity count by type
+  - Product sales volume
+
+  Tool Prompt Example:
+  "Query accounts grouped by address1_stateorprovince.
+   Sum revenue per group. Return top 10 by revenue.
+   Return JSON with 'title', 'bars' array (each has 'label' and 'value'),
+   and 'format' set to 'currency'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bar Chart</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .bar-label {
+      font-size: 13px;
+      min-width: 80px;
+      text-align: right;
+      color: var(--colorNeutralForeground2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-track {
+      flex: 1;
+      height: 22px;
+      border-radius: 4px;
+      background: var(--colorNeutralBackground2);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--colorBrandBackground);
+      transition: width 0.4s ease;
+      min-width: 2px;
+    }
+    .bar-value {
+      font-size: 13px;
+      min-width: 70px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading chart…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function fmt(v, f) {
+      if (v == null) return '—';
+      if (f === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+      if (f === 'percent') return v + '%';
+      return new Intl.NumberFormat('en-US').format(v);
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const bars = data.bars || [];
+      const maxVal = Math.max(...bars.map(b => b.value || 0), 1);
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+
+      for (const b of bars) {
+        const pct = ((b.value || 0) / maxVal) * 100;
+        const color = b.color || 'var(--colorBrandBackground)';
+        html += `<div class="bar-row">
+          <div class="bar-label">${esc(b.label)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="bar-value">${fmt(b.value, data.format)}</div>
+        </div>`;
+      }
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

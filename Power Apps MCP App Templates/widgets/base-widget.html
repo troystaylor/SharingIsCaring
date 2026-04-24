@@ -1,0 +1,129 @@
+<!--
+  App MCP Base Widget Template
+
+  JSON Contract: Any JSON object.
+  This is the minimal starting point — copy this file and replace
+  the render() function with your visualization.
+
+  Steps:
+  1. Copy this file and rename it
+  2. Replace the render() function for your data shape
+  3. Update the loading message to match your tool's purpose
+  4. Test locally by uncommenting the fallback section at the bottom
+  5. Paste the final HTML into the tool's UX field in Power Apps
+
+  Protocol reference:
+  https://learn.microsoft.com/en-us/power-apps/maker/model-driven-apps/generate-mcp-app-widgets
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Base Widget</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+      line-height: 1.4;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading {
+      text-align: center;
+      padding: 32px 0;
+    }
+    .loading span {
+      display: block;
+      margin-top: 8px;
+      color: var(--colorNeutralForeground2);
+      font-size: 13px;
+    }
+    .error {
+      text-align: center;
+      padding: 24px 0;
+    }
+    .error-msg {
+      color: var(--colorStatusDangerForeground1);
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Preparing your data…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg">Something went wrong.</div>
+    <fluent-button id="retry-btn" appearance="accent">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    /* --- Utilities --- */
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    /* --- Render (replace this with your visualization) --- */
+    function render(data) {
+      const el = document.getElementById('content');
+      el.innerHTML = `<pre style="white-space:pre-wrap;font-size:13px;">${esc(JSON.stringify(data, null, 2))}</pre>`;
+    }
+
+    /* --- Protocol handlers (register before connect) --- */
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received from tool.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => {
+      if (ctx.theme) applyTheme(ctx.theme);
+    };
+    app.onteardown = () => {};
+
+    /* --- Connect --- */
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* --- Retry (uncomment and set TOOL_NAME for callServerTool) --- */
+    // const TOOL_NAME = 'your_tool_name';
+    // document.getElementById('retry-btn').addEventListener('click', async () => {
+    //   show('loading');
+    //   const result = await app.callServerTool({ name: TOOL_NAME, arguments: {} });
+    //   if (result.isError) { showError('Retry failed.'); return; }
+    //   render(result.structuredContent); show('content');
+    // });
+
+    /* --- Local preview (uncomment to test in a browser) --- */
+    // const SAMPLE = { message: "Hello from local preview" };
+    // render(SAMPLE); show('content');
+  </script>
+</body>
+</html>

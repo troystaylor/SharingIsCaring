@@ -1,0 +1,225 @@
+<!--
+  Data Table Widget (Sortable)
+
+  JSON Contract:
+  {
+    "title": "Active Accounts",
+    "columns": [
+      { "key": "name", "label": "Account Name" },
+      { "key": "revenue", "label": "Revenue", "format": "currency" },
+      { "key": "city", "label": "City" },
+      { "key": "createdon", "label": "Created", "format": "date" }
+    ],
+    "rows": [
+      { "name": "Zava Corp", "revenue": 500000, "city": "Seattle", "createdon": "2026-01-15T00:00:00Z" },
+      { "name": "Northwind", "revenue": 320000, "city": "Portland", "createdon": "2025-11-03T00:00:00Z" }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Table heading
+  - columns (array): Column definitions
+    - key (string): Field name matching row keys
+    - label (string): Display header
+    - format (string, optional): "currency", "percent", "date", or "text" (default)
+  - rows (array): Data rows as objects with keys matching column keys
+
+  Click any column header to sort. Click again to reverse.
+
+  Tool Prompt Example:
+  "Query the accounts table. Select name, revenue, address1_city, createdon.
+   Filter statecode eq 0. Order by revenue descending. Top 25.
+   Return JSON with 'title', 'columns' array, and 'rows' array.
+   Columns: key=name label='Account Name', key=revenue label='Revenue'
+   format='currency', key=address1_city label='City',
+   key=createdon label='Created' format='date'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Table</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--colorNeutralForeground2);
+      border-bottom: 2px solid var(--colorNeutralStroke1);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th:hover {
+      color: var(--colorNeutralForeground1);
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td {
+      background: var(--colorNeutralBackground2);
+    }
+    .row-count {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+      text-align: right;
+    }
+    .sort-arrow {
+      font-size: 10px;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Fetching records…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+    let sortKey = null, sortAsc = true, tableData = null;
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function fmt(v, f) {
+      if (v == null) return '—';
+      if (f === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+      if (f === 'percent') return v + '%';
+      if (f === 'date' && typeof v === 'string') return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (typeof v === 'number') return new Intl.NumberFormat('en-US').format(v);
+      return String(v);
+    }
+
+    function render(data) {
+      tableData = data;
+      const el = document.getElementById('content');
+      const columns = data.columns || [];
+      const rows = [...(data.rows || [])];
+
+      /* Sort */
+      if (sortKey) {
+        rows.sort((a, b) => {
+          const va = a[sortKey], vb = b[sortKey];
+          if (va == null && vb == null) return 0;
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          const cmp = typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb));
+          return sortAsc ? cmp : -cmp;
+        });
+      }
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<table><thead><tr>';
+      for (const col of columns) {
+        const arrow = sortKey === col.key ? `<span class="sort-arrow">${sortAsc ? '▲' : '▼'}</span>` : '';
+        html += `<th data-key="${esc(col.key)}">${esc(col.label)}${arrow}</th>`;
+      }
+      html += '</tr></thead><tbody>';
+      for (const row of rows) {
+        html += '<tr>';
+        for (const col of columns) {
+          html += `<td>${esc(fmt(row[col.key], col.format))}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      html += `<div class="row-count">${rows.length} record${rows.length !== 1 ? 's' : ''}</div>`;
+      el.innerHTML = html;
+
+      /* Bind sort handlers */
+      el.querySelectorAll('th').forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.dataset.key;
+          if (sortKey === key) { sortAsc = !sortAsc; }
+          else { sortKey = key; sortAsc = true; }
+          render(tableData);
+        });
+      });
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* Local preview — uncomment to test:
+    render({
+      title: "Zava Active Accounts",
+      columns: [
+        { key: "name", label: "Account Name" },
+        { key: "revenue", label: "Revenue", format: "currency" },
+        { key: "city", label: "City" },
+        { key: "createdon", label: "Created", format: "date" }
+      ],
+      rows: [
+        { name: "Zava Corp", revenue: 500000, city: "Seattle", createdon: "2026-01-15T00:00:00Z" },
+        { name: "Northwind Traders", revenue: 320000, city: "Portland", createdon: "2025-11-03T00:00:00Z" },
+        { name: "Alpine Ski House", revenue: 185000, city: "Denver", createdon: "2026-03-20T00:00:00Z" },
+        { name: "Contoso Ltd", revenue: 720000, city: "Chicago", createdon: "2025-06-12T00:00:00Z" },
+        { name: "Fabrikam Inc", revenue: 410000, city: "San Francisco", createdon: "2025-09-28T00:00:00Z" }
+      ]
+    });
+    show('content');
+    */
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!--
+  Calendar Heat Map Widget
+
+  JSON Contract:
+  {
+    "title": "Case Volume — Last 12 Weeks",
+    "days": [
+      { "date": "2026-01-26", "count": 3 },
+      { "date": "2026-01-27", "count": 7 },
+      { "date": "2026-01-28", "count": 12 },
+      { "date": "2026-01-29", "count": 5 }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Heading
+  - days (array): Activity data points
+    - date (string): ISO date (YYYY-MM-DD)
+    - count (number): Activity count for that day
+
+  Dataverse Use Cases:
+  - Case creation volume over time
+  - Activity log density (emails, calls, meetings)
+  - Record creation patterns (find peak days)
+  - User login or usage patterns
+
+  Tool Prompt Example:
+  "Query cases created in the last 12 weeks. Group by createdon date.
+   Count records per day. Return JSON with 'title' and 'days' array.
+   Each day has 'date' (YYYY-MM-DD) and 'count'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar Heat Map</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .heatmap {
+      display: flex;
+      gap: 3px;
+      overflow-x: auto;
+    }
+    .week { display: flex; flex-direction: column; gap: 3px; }
+    .day {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--colorNeutralBackground2);
+    }
+    .day[title] { cursor: default; }
+    .day-labels {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-right: 4px;
+      justify-content: flex-start;
+    }
+    .day-label {
+      height: 14px;
+      font-size: 10px;
+      color: var(--colorNeutralForeground2);
+      line-height: 14px;
+    }
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--colorNeutralForeground2);
+    }
+    .legend-cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    .summary {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Building heat map…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function intensityColor(count, max) {
+      if (count === 0) return 'var(--colorNeutralBackground2)';
+      const pct = count / (max || 1);
+      if (pct <= 0.25) return 'color-mix(in srgb, var(--colorBrandBackground) 25%, var(--colorNeutralBackground2))';
+      if (pct <= 0.5) return 'color-mix(in srgb, var(--colorBrandBackground) 50%, var(--colorNeutralBackground2))';
+      if (pct <= 0.75) return 'color-mix(in srgb, var(--colorBrandBackground) 75%, var(--colorNeutralBackground2))';
+      return 'var(--colorBrandBackground)';
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const days = data.days || [];
+
+      /* Build date map */
+      const countMap = {};
+      let total = 0;
+      for (const d of days) { countMap[d.date] = d.count || 0; total += d.count || 0; }
+
+      /* Determine date range */
+      const dates = days.map(d => new Date(d.date + 'T00:00:00')).sort((a, b) => a - b);
+      if (dates.length === 0) { showError('No data points.'); return; }
+      const startDate = new Date(dates[0]);
+      const endDate = new Date(dates[dates.length - 1]);
+
+      /* Rewind startDate to Sunday */
+      startDate.setDate(startDate.getDate() - startDate.getDay());
+
+      const maxCount = Math.max(...days.map(d => d.count || 0), 1);
+      const DAY_NAMES = ['', 'M', '', 'W', '', 'F', ''];
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+
+      html += '<div style="display:flex">';
+
+      /* Day labels column */
+      html += '<div class="day-labels">';
+      for (const n of DAY_NAMES) html += `<div class="day-label">${n}</div>`;
+      html += '</div>';
+
+      html += '<div class="heatmap">';
+
+      const cur = new Date(startDate);
+      while (cur <= endDate) {
+        html += '<div class="week">';
+        for (let dow = 0; dow < 7; dow++) {
+          const key = cur.toISOString().slice(0, 10);
+          const count = countMap[key] || 0;
+          const dateLabel = cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          html += `<div class="day" style="background:${intensityColor(count, maxCount)}" title="${dateLabel}: ${count}"></div>`;
+          cur.setDate(cur.getDate() + 1);
+        }
+        html += '</div>';
+      }
+
+      html += '</div></div>';
+
+      /* Legend */
+      html += '<div class="legend"><span>Less</span>';
+      html += `<div class="legend-cell" style="background:var(--colorNeutralBackground2)"></div>`;
+      html += `<div class="legend-cell" style="background:color-mix(in srgb, var(--colorBrandBackground) 25%, var(--colorNeutralBackground2))"></div>`;
+      html += `<div class="legend-cell" style="background:color-mix(in srgb, var(--colorBrandBackground) 50%, var(--colorNeutralBackground2))"></div>`;
+      html += `<div class="legend-cell" style="background:color-mix(in srgb, var(--colorBrandBackground) 75%, var(--colorNeutralBackground2))"></div>`;
+      html += `<div class="legend-cell" style="background:var(--colorBrandBackground)"></div>`;
+      html += '<span>More</span></div>';
+      html += `<div class="summary">${new Intl.NumberFormat('en-US').format(total)} total across ${days.length} days</div>`;
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

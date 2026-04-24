@@ -1,0 +1,197 @@
+<!--
+  KPI Dashboard Widget
+
+  JSON Contract:
+  {
+    "title": "Sales Dashboard",
+    "metrics": [
+      {
+        "label": "Revenue",
+        "value": 1250000,
+        "format": "currency",
+        "trend": 12.5,
+        "target": 1500000
+      },
+      {
+        "label": "Active Deals",
+        "value": 47,
+        "trend": -3.2
+      },
+      {
+        "label": "Win Rate",
+        "value": 68,
+        "format": "percent",
+        "trend": 5.1
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Dashboard heading
+  - metrics (array): One card per metric
+    - label (string): Metric name
+    - value (number): Current value
+    - format (string, optional): "currency", "percent", or "number" (default)
+    - trend (number, optional): Percent change — positive = up arrow, negative = down
+    - target (number, optional): Goal value — shows a progress bar
+
+  Tool Prompt Example:
+  "Query the accounts table. Count active accounts (statecode eq 0),
+   sum the revenue column, calculate average revenue, and count accounts
+   created in the last 30 days. Return JSON with a 'title' and 'metrics'
+   array where each metric has 'label', 'value', 'format', and 'trend'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KPI Dashboard</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    fluent-card.metric { padding: 16px; }
+    .metric-label {
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 600;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .trend {
+      font-size: 13px;
+      font-weight: 400;
+    }
+    .trend.up { color: var(--colorStatusSuccessForeground1); }
+    .trend.down { color: var(--colorStatusDangerForeground1); }
+    .progress-track {
+      margin-top: 8px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--colorNeutralStroke1);
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--colorBrandBackground);
+      transition: width 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Calculating metrics…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function fmt(v, f) {
+      if (v == null) return '—';
+      if (f === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+      if (f === 'percent') return v + '%';
+      if (typeof v === 'number') return new Intl.NumberFormat('en-US').format(v);
+      return String(v);
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const metrics = data.metrics || [];
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="grid">';
+      for (const m of metrics) {
+        const trend = m.trend != null
+          ? `<span class="trend ${m.trend >= 0 ? 'up' : 'down'}">${m.trend >= 0 ? '↑' : '↓'} ${Math.abs(m.trend)}%</span>`
+          : '';
+        const progress = m.target != null
+          ? `<div class="progress-track"><div class="progress-fill" style="width:${Math.min(100, (m.value / m.target) * 100)}%"></div></div>`
+          : '';
+        html += `<fluent-card class="metric">
+          <div class="metric-label">${esc(m.label)}</div>
+          <div class="metric-value">${fmt(m.value, m.format)}${trend}</div>
+          ${progress}
+        </fluent-card>`;
+      }
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* Local preview — uncomment to test:
+    render({
+      title: "Zava Sales Dashboard",
+      metrics: [
+        { label: "Revenue", value: 1250000, format: "currency", trend: 12.5, target: 1500000 },
+        { label: "Active Deals", value: 47, trend: -3.2 },
+        { label: "Win Rate", value: 68, format: "percent", trend: 5.1 },
+        { label: "New Accounts", value: 23, trend: 8.0 }
+      ]
+    });
+    show('content');
+    */
+  </script>
+</body>
+</html>

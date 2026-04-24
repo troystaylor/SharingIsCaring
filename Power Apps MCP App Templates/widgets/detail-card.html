@@ -1,0 +1,209 @@
+<!--
+  Detail Card Widget
+
+  JSON Contract:
+  {
+    "title": "Account Summary",
+    "icon": "🏢",
+    "heading": "Zava Corp",
+    "subtitle": "Enterprise · Seattle, WA",
+    "tags": ["Active", "Tier 1", "Strategic"],
+    "sections": [
+      {
+        "label": "Key Metrics",
+        "fields": [
+          { "label": "Annual Revenue", "value": 2500000, "format": "currency" },
+          { "label": "Open Opportunities", "value": 7 },
+          { "label": "Win Rate", "value": 72, "format": "percent" }
+        ]
+      },
+      {
+        "label": "Primary Contact",
+        "fields": [
+          { "label": "Name", "value": "Jane Smith" },
+          { "label": "Title", "value": "VP Sales" },
+          { "label": "Email", "value": "jane@zava.com" }
+        ]
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Widget heading
+  - icon (string, optional): Emoji or single character
+  - heading (string): Record name
+  - subtitle (string, optional): Secondary text
+  - tags (string array, optional): Badge labels
+  - sections (array): Grouped fields
+    - label (string): Section heading
+    - fields (array): Key-value pairs
+      - label (string): Field name
+      - value (any): Field value
+      - format (string, optional): "currency", "percent", "date", or "text"
+
+  Dataverse Use Cases:
+  - Account / contact profile summary
+  - Case detail overview
+  - Asset or product record view
+  - Custom entity detail card
+
+  Tool Prompt Example:
+  "Query the account record by ID. Include name, revenue, industry, city,
+   primary contact (name, title, email), and open opportunity count.
+   Return JSON with 'heading' (account name), 'subtitle' (industry · city),
+   'tags' (status badges), and 'sections' with 'Key Metrics' and
+   'Primary Contact' field groups."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detail Card</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .card-icon {
+      font-size: 28px;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: var(--colorBrandBackground);
+      color: var(--colorNeutralForegroundOnBrand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-heading { font-size: 18px; font-weight: 600; }
+    .card-subtitle { font-size: 13px; color: var(--colorNeutralForeground2); }
+    .tags { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .section {
+      margin-bottom: 12px;
+    }
+    .section:last-child { margin-bottom: 0; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--colorNeutralForeground2);
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+    }
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 13px;
+    }
+    .field-label { color: var(--colorNeutralForeground2); }
+    .field-value { font-weight: 500; text-align: right; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading record details…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function fmt(v, f) {
+      if (v == null) return '—';
+      if (f === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+      if (f === 'percent') return v + '%';
+      if (f === 'date' && typeof v === 'string') return new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (typeof v === 'number') return new Intl.NumberFormat('en-US').format(v);
+      return String(v);
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      let html = '';
+
+      /* Header */
+      html += '<fluent-card style="padding:16px">';
+      html += '<div class="card-header">';
+      if (data.icon) html += `<div class="card-icon">${esc(data.icon)}</div>`;
+      html += '<div>';
+      html += `<div class="card-heading">${esc(data.heading || data.title || '')}</div>`;
+      if (data.subtitle) html += `<div class="card-subtitle">${esc(data.subtitle)}</div>`;
+      html += '</div></div>';
+
+      /* Tags */
+      if (data.tags && data.tags.length) {
+        html += '<div class="tags">';
+        for (const t of data.tags) html += `<fluent-badge appearance="outline">${esc(t)}</fluent-badge>`;
+        html += '</div>';
+      }
+
+      /* Sections */
+      const sections = data.sections || [];
+      for (const sec of sections) {
+        html += '<div class="section">';
+        if (sec.label) html += `<div class="section-label">${esc(sec.label)}</div>`;
+        for (const f of (sec.fields || [])) {
+          html += `<div class="field-row">
+            <span class="field-label">${esc(f.label)}</span>
+            <span class="field-value">${esc(fmt(f.value, f.format))}</span>
+          </div>`;
+        }
+        html += '</div>';
+      }
+
+      html += '</fluent-card>';
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

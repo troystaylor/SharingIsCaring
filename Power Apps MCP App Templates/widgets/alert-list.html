@@ -1,0 +1,196 @@
+<!--
+  Alert List Widget
+
+  JSON Contract:
+  {
+    "title": "SLA Alerts",
+    "alerts": [
+      {
+        "severity": "critical",
+        "title": "SLA Breach — Case #10482",
+        "detail": "Response SLA exceeded by 2 hours. Customer: Zava Corp.",
+        "time": "2026-04-23T08:00:00Z"
+      },
+      {
+        "severity": "warning",
+        "title": "SLA At Risk — Case #10501",
+        "detail": "45 minutes remaining on resolution SLA.",
+        "time": "2026-04-23T09:15:00Z"
+      },
+      {
+        "severity": "info",
+        "title": "New Case Assigned",
+        "detail": "Case #10510 assigned from queue.",
+        "time": "2026-04-23T10:00:00Z"
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Heading
+  - alerts (array): Prioritized items (should be pre-sorted by severity)
+    - severity (string): "critical" | "warning" | "info"
+    - title (string): Alert heading
+    - detail (string, optional): Context
+    - time (string, optional): ISO 8601 timestamp
+
+  Dataverse Use Cases:
+  - SLA breach and at-risk notifications
+  - Overdue tasks / past-due activities
+  - Security role anomalies
+  - Data quality issues (missing fields, duplicates)
+
+  Tool Prompt Example:
+  "Query cases where the SLA KPI has status 'Nearing Noncompliance' or
+   'Noncompliant'. For each, include case number, customer name, and
+   time remaining. Return JSON with 'title' and 'alerts' array.
+   Each alert has 'severity' (critical for breached, warning for at-risk),
+   'title', 'detail', and 'time'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alert List</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .alert-item {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+      align-items: flex-start;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .severity-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .severity-dot.critical { background: var(--colorStatusDangerForeground1); }
+    .severity-dot.warning { background: var(--colorBrandBackground); }
+    .severity-dot.info { background: var(--colorNeutralForeground2); }
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-title { font-size: 13px; font-weight: 600; }
+    .alert-title.critical { color: var(--colorStatusDangerForeground1); }
+    .alert-detail { font-size: 12px; color: var(--colorNeutralForeground2); margin-top: 2px; }
+    .alert-time {
+      font-size: 11px;
+      color: var(--colorNeutralForeground2);
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .counts {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .count-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .count-badge.critical { background: var(--colorStatusDangerForeground1); color: var(--colorNeutralForegroundOnBrand); }
+    .count-badge.warning { background: var(--colorBrandBackground); color: var(--colorNeutralForegroundOnBrand); }
+    .count-badge.info { background: var(--colorNeutralStroke1); }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Checking alerts…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const alerts = data.alerts || [];
+      const crit = alerts.filter(a => a.severity === 'critical').length;
+      const warn = alerts.filter(a => a.severity === 'warning').length;
+      const info = alerts.filter(a => a.severity === 'info').length;
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+
+      html += '<div class="counts">';
+      if (crit) html += `<span class="count-badge critical">${crit} critical</span>`;
+      if (warn) html += `<span class="count-badge warning">${warn} warning</span>`;
+      if (info) html += `<span class="count-badge info">${info} info</span>`;
+      html += '</div>';
+
+      for (const a of alerts) {
+        const sev = a.severity || 'info';
+        let timeStr = '';
+        if (a.time) {
+          const d = new Date(a.time);
+          timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        html += `<div class="alert-item">
+          <div class="severity-dot ${esc(sev)}"></div>
+          <div class="alert-body">
+            <div class="alert-title ${sev === 'critical' ? 'critical' : ''}">${esc(a.title)}</div>
+            ${a.detail ? `<div class="alert-detail">${esc(a.detail)}</div>` : ''}
+          </div>
+          ${timeStr ? `<div class="alert-time">${timeStr}</div>` : ''}
+        </div>`;
+      }
+
+      if (alerts.length === 0) {
+        html += '<div style="text-align:center;padding:24px 0;color:var(--colorNeutralForeground2);font-size:13px;">No alerts</div>';
+      }
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

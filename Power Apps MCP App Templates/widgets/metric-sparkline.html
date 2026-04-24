@@ -1,0 +1,175 @@
+<!--
+  Metric Sparkline Widget
+
+  JSON Contract:
+  {
+    "title": "Monthly Revenue Trend",
+    "metrics": [
+      {
+        "label": "Revenue",
+        "current": 520000,
+        "format": "currency",
+        "trend": 8.3,
+        "points": [380000, 410000, 395000, 440000, 460000, 485000, 520000]
+      },
+      {
+        "label": "New Customers",
+        "current": 34,
+        "points": [22, 18, 25, 28, 31, 27, 34]
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Heading
+  - metrics (array): One sparkline row per metric
+    - label (string): Metric name
+    - current (number): Current value (displayed prominently)
+    - format (string, optional): "currency", "percent", or "number"
+    - trend (number, optional): Percent change (positive = up)
+    - points (number array): Historical values (oldest first → newest last)
+
+  Dataverse Use Cases:
+  - Revenue or pipeline value over recent months
+  - Case volume trends (weekly/monthly)
+  - Customer acquisition over time
+  - Activity completion rates
+
+  Tool Prompt Example:
+  "Query accounts created per month for the last 7 months.
+   Also calculate total revenue per month. Return JSON with 'title' and
+   'metrics' array. Each metric has 'label', 'current' (latest value),
+   'format', and 'points' (array of 7 monthly values, oldest first)."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metric Sparkline</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .spark-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+    }
+    .spark-row:last-child { border-bottom: none; }
+    .spark-info { min-width: 100px; }
+    .spark-label { font-size: 12px; color: var(--colorNeutralForeground2); }
+    .spark-current { font-size: 22px; font-weight: 600; }
+    .spark-trend { font-size: 12px; }
+    .spark-trend.up { color: var(--colorStatusSuccessForeground1); }
+    .spark-trend.down { color: var(--colorStatusDangerForeground1); }
+    .spark-chart { flex: 1; height: 36px; }
+    .spark-chart svg { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading trends…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function fmt(v, f) {
+      if (v == null) return '—';
+      if (f === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+      if (f === 'percent') return v + '%';
+      return new Intl.NumberFormat('en-US').format(v);
+    }
+
+    function sparklineSVG(points) {
+      if (!points || points.length < 2) return '';
+      const w = 200, h = 36, pad = 2;
+      const min = Math.min(...points);
+      const max = Math.max(...points);
+      const range = max - min || 1;
+
+      const coords = points.map((v, i) => {
+        const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+        const y = pad + (1 - (v - min) / range) * (h - pad * 2);
+        return `${x},${y}`;
+      });
+
+      const line = coords.join(' ');
+      const fill = `${coords[0].split(',')[0]},${h} ${line} ${coords[coords.length-1].split(',')[0]},${h}`;
+
+      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <polygon points="${fill}" fill="var(--colorBrandBackground)" opacity="0.15" />
+        <polyline points="${line}" fill="none" stroke="var(--colorBrandBackground)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+      </svg>`;
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const metrics = data.metrics || [];
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+
+      for (const m of metrics) {
+        const trend = m.trend != null
+          ? `<div class="spark-trend ${m.trend >= 0 ? 'up' : 'down'}">${m.trend >= 0 ? '↑' : '↓'} ${Math.abs(m.trend)}%</div>`
+          : '';
+        html += `<div class="spark-row">
+          <div class="spark-info">
+            <div class="spark-label">${esc(m.label)}</div>
+            <div class="spark-current">${fmt(m.current, m.format)}</div>
+            ${trend}
+          </div>
+          <div class="spark-chart">${sparklineSVG(m.points)}</div>
+        </div>`;
+      }
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

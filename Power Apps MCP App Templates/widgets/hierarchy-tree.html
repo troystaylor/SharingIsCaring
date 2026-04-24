@@ -1,0 +1,191 @@
+<!--
+  Hierarchy Tree Widget
+
+  JSON Contract:
+  {
+    "title": "Account Hierarchy",
+    "root": {
+      "name": "Zava Holdings",
+      "detail": "Parent · Seattle",
+      "children": [
+        {
+          "name": "Zava Corp",
+          "detail": "Subsidiary · $2.5M revenue",
+          "children": [
+            { "name": "Zava West", "detail": "Division · Portland" },
+            { "name": "Zava East", "detail": "Division · Boston" }
+          ]
+        },
+        {
+          "name": "Zava Labs",
+          "detail": "R&D Unit · San Francisco",
+          "children": []
+        }
+      ]
+    }
+  }
+
+  Fields:
+  - title (string, optional): Heading
+  - root (object): Top-level node
+    - name (string): Node label
+    - detail (string, optional): Secondary text
+    - children (array, optional): Child nodes (same shape, recursive)
+
+  Dataverse Use Cases:
+  - Account hierarchy (parent account → subsidiaries)
+  - Business unit structure
+  - Territory hierarchy
+  - Product catalog categories
+  - Team structure / org chart
+
+  Tool Prompt Example:
+  "Query the account hierarchy starting from account ID {input}.
+   Follow parentaccountid relationships. For each account return name
+   and key details. Return JSON with 'title' and 'root' object.
+   Each node has 'name', 'detail', and 'children' array."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hierarchy Tree</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .tree { padding-left: 0; }
+    .tree ul { padding-left: 20px; margin: 0; list-style: none; }
+    .tree li { position: relative; padding: 4px 0; }
+    .tree li::before {
+      content: '';
+      position: absolute;
+      left: -14px;
+      top: 0;
+      bottom: 50%;
+      border-left: 2px solid var(--colorNeutralStroke1);
+    }
+    .tree li::after {
+      content: '';
+      position: absolute;
+      left: -14px;
+      top: 50%;
+      width: 10px;
+      border-top: 2px solid var(--colorNeutralStroke1);
+    }
+    .tree li:last-child::before { bottom: 50%; }
+    .tree > ul > li::before,
+    .tree > ul > li::after { display: none; }
+    .node {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--colorNeutralBackground2);
+      border: 1px solid var(--colorNeutralStroke1);
+      border-radius: 6px;
+      cursor: default;
+    }
+    .tree > ul > li > .node {
+      background: var(--colorBrandBackground);
+      color: var(--colorNeutralForegroundOnBrand);
+      border-color: var(--colorBrandBackground);
+    }
+    .tree > ul > li > .node .node-detail { color: var(--colorNeutralForegroundOnBrand); opacity: 0.8; }
+    .node-name { font-size: 13px; font-weight: 600; }
+    .node-detail { font-size: 11px; color: var(--colorNeutralForeground2); }
+    .node-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--colorBrandBackground);
+      flex-shrink: 0;
+    }
+    .tree > ul > li > .node .node-dot { background: var(--colorNeutralForegroundOnBrand); }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading hierarchy…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function renderNode(node) {
+      let html = '<li>';
+      html += `<div class="node">
+        <div class="node-dot"></div>
+        <div>
+          <div class="node-name">${esc(node.name)}</div>
+          ${node.detail ? `<div class="node-detail">${esc(node.detail)}</div>` : ''}
+        </div>
+      </div>`;
+
+      const children = node.children || [];
+      if (children.length > 0) {
+        html += '<ul>';
+        for (const child of children) html += renderNode(child);
+        html += '</ul>';
+      }
+
+      html += '</li>';
+      return html;
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const root = data.root || data;
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="tree"><ul>';
+      html += renderNode(root);
+      html += '</ul></div>';
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

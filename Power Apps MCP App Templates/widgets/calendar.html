@@ -1,0 +1,297 @@
+<!--
+  Calendar Widget (Month View)
+
+  JSON Contract:
+  {
+    "title": "April 2026",
+    "year": 2026,
+    "month": 4,
+    "events": [
+      {
+        "date": "2026-04-10",
+        "title": "Kickoff Meeting",
+        "type": "meeting"
+      },
+      {
+        "date": "2026-04-10",
+        "title": "Proposal Due",
+        "type": "deadline"
+      },
+      {
+        "date": "2026-04-15",
+        "title": "QBR — Zava Corp",
+        "type": "meeting"
+      },
+      {
+        "date": "2026-04-22",
+        "title": "Case Review",
+        "type": "task"
+      },
+      {
+        "date": "2026-04-28",
+        "title": "Contract Renewal",
+        "type": "deadline"
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Heading (defaults to "Month Year")
+  - year (number): Calendar year
+  - month (number): Calendar month (1-12)
+  - events (array): Items placed on the calendar
+    - date (string): ISO date (YYYY-MM-DD)
+    - title (string): Event label
+    - type (string, optional): "meeting" | "deadline" | "task" | "event" (default)
+
+  Dataverse Use Cases:
+  - Appointments / activities for a contact or account
+  - Task due dates for the current user
+  - Opportunity close dates by month
+  - Case SLA deadlines
+  - Booking / resource scheduling
+
+  Tool Prompt Example:
+  "Query activities (appointments, tasks, emails) for the current month
+   where ownerid eq the current user. Include subject, scheduledstart or
+   scheduledend, and activitytypecode. Return JSON with 'year', 'month',
+   and 'events' array. Each event has 'date' (YYYY-MM-DD), 'title',
+   and 'type' (map: appointment→meeting, task→task, email→event)."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background: var(--colorNeutralStroke1);
+      border: 1px solid var(--colorNeutralStroke1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .day-header {
+      background: var(--colorNeutralBackground2);
+      padding: 6px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--colorNeutralForeground2);
+    }
+    .day-cell {
+      background: var(--colorNeutralBackground1);
+      min-height: 60px;
+      padding: 4px;
+      vertical-align: top;
+    }
+    .day-cell.outside {
+      background: var(--colorNeutralBackground2);
+      opacity: 0.5;
+    }
+    .day-cell.today {
+      background: color-mix(in srgb, var(--colorBrandBackground) 8%, var(--colorNeutralBackground1));
+    }
+    .day-num {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      color: var(--colorNeutralForeground2);
+    }
+    .day-cell.today .day-num {
+      color: var(--colorBrandBackground);
+      font-weight: 700;
+    }
+    .cal-event {
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+    .cal-event.meeting {
+      background: color-mix(in srgb, var(--colorBrandBackground) 15%, transparent);
+      color: var(--colorBrandBackground);
+      border-left: 2px solid var(--colorBrandBackground);
+    }
+    .cal-event.deadline {
+      background: color-mix(in srgb, var(--colorStatusDangerForeground1) 15%, transparent);
+      color: var(--colorStatusDangerForeground1);
+      border-left: 2px solid var(--colorStatusDangerForeground1);
+    }
+    .cal-event.task {
+      background: color-mix(in srgb, var(--colorStatusSuccessForeground1) 15%, transparent);
+      color: var(--colorStatusSuccessForeground1);
+      border-left: 2px solid var(--colorStatusSuccessForeground1);
+    }
+    .cal-event.event {
+      background: color-mix(in srgb, var(--colorNeutralForeground2) 12%, transparent);
+      color: var(--colorNeutralForeground1);
+      border-left: 2px solid var(--colorNeutralForeground2);
+    }
+    .more {
+      font-size: 10px;
+      color: var(--colorNeutralForeground2);
+      padding-left: 4px;
+    }
+    .summary {
+      margin-top: 10px;
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+      flex-wrap: wrap;
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading calendar…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+    const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MAX_EVENTS_PER_DAY = 3;
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const year = data.year;
+      const month = data.month; /* 1-indexed */
+      const events = data.events || [];
+
+      /* Build event lookup by date string */
+      const eventMap = {};
+      for (const ev of events) {
+        const key = ev.date;
+        if (!eventMap[key]) eventMap[key] = [];
+        eventMap[key].push(ev);
+      }
+
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      const startDow = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const monthName = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      let html = `<div class="title">${esc(data.title || monthName)}</div>`;
+      html += '<div class="cal-grid">';
+
+      /* Day-of-week headers */
+      for (const d of DOW) html += `<div class="day-header">${d}</div>`;
+
+      /* Leading empty cells (previous month) */
+      for (let i = 0; i < startDow; i++) {
+        html += '<div class="day-cell outside"></div>';
+      }
+
+      /* Day cells */
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isToday = dateStr === todayStr;
+        const dayEvents = eventMap[dateStr] || [];
+
+        html += `<div class="day-cell${isToday ? ' today' : ''}">`;
+        html += `<div class="day-num">${d}</div>`;
+
+        const visible = dayEvents.slice(0, MAX_EVENTS_PER_DAY);
+        for (const ev of visible) {
+          const type = ev.type || 'event';
+          html += `<div class="cal-event ${esc(type)}" title="${esc(ev.title)}">${esc(ev.title)}</div>`;
+        }
+        if (dayEvents.length > MAX_EVENTS_PER_DAY) {
+          html += `<div class="more">+${dayEvents.length - MAX_EVENTS_PER_DAY} more</div>`;
+        }
+
+        html += '</div>';
+      }
+
+      /* Trailing empty cells */
+      const totalCells = startDow + daysInMonth;
+      const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 0; i < remaining; i++) {
+        html += '<div class="day-cell outside"></div>';
+      }
+
+      html += '</div>';
+
+      /* Legend + counts */
+      const types = {};
+      for (const ev of events) { const t = ev.type || 'event'; types[t] = (types[t] || 0) + 1; }
+      const typeColors = { meeting: 'var(--colorBrandBackground)', deadline: 'var(--colorStatusDangerForeground1)', task: 'var(--colorStatusSuccessForeground1)', event: 'var(--colorNeutralForeground2)' };
+
+      html += '<div class="summary">';
+      for (const [t, count] of Object.entries(types)) {
+        const color = typeColors[t] || typeColors.event;
+        html += `<span><span class="legend-dot" style="background:${color}"></span>${count} ${t}${count !== 1 ? 's' : ''}</span>`;
+      }
+      html += '</div>';
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

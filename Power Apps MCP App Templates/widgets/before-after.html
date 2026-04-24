@@ -1,0 +1,209 @@
+<!--
+  Before/After Widget (Change Tracker)
+
+  JSON Contract:
+  {
+    "title": "Case #10482 — Recent Changes",
+    "recordName": "Login failure — Zava Corp",
+    "changedBy": "Jane Smith",
+    "changedOn": "2026-04-22T14:30:00Z",
+    "changes": [
+      {
+        "field": "Priority",
+        "before": "Medium",
+        "after": "High"
+      },
+      {
+        "field": "Status",
+        "before": "New",
+        "after": "In Progress"
+      },
+      {
+        "field": "Owner",
+        "before": "Unassigned",
+        "after": "Jane Smith"
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Heading
+  - recordName (string, optional): Record identifier
+  - changedBy (string, optional): Who made the change
+  - changedOn (string, optional): ISO 8601 timestamp
+  - changes (array): Field-level diffs
+    - field (string): Column/field name
+    - before (string|number|null): Previous value
+    - after (string|number|null): New value
+
+  Dataverse Use Cases:
+  - Audit history visualization (audittable)
+  - Record change tracking
+  - Approval before/after comparison
+  - Configuration change review
+
+  Tool Prompt Example:
+  "Query the audit table for the given record ID. Get the most recent
+   audit entry. For each changed attribute, include the field name,
+   old value, and new value. Return JSON with 'title', 'recordName',
+   'changedBy', 'changedOn', and 'changes' array."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Before/After</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .meta {
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+      margin-bottom: 12px;
+    }
+    .diff-table { width: 100%; }
+    .diff-header {
+      display: grid;
+      grid-template-columns: minmax(80px, 1fr) 1fr 24px 1fr;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--colorNeutralForeground2);
+      border-bottom: 2px solid var(--colorNeutralStroke1);
+    }
+    .diff-row {
+      display: grid;
+      grid-template-columns: minmax(80px, 1fr) 1fr 24px 1fr;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+      font-size: 13px;
+      align-items: center;
+    }
+    .diff-row:last-child { border-bottom: none; }
+    .field-name { font-weight: 500; }
+    .val-before {
+      background: color-mix(in srgb, var(--colorStatusDangerForeground1) 10%, transparent);
+      padding: 3px 6px;
+      border-radius: 4px;
+      text-decoration: line-through;
+      color: var(--colorStatusDangerForeground1);
+    }
+    .val-after {
+      background: color-mix(in srgb, var(--colorStatusSuccessForeground1) 10%, transparent);
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--colorStatusSuccessForeground1);
+      font-weight: 500;
+    }
+    .arrow {
+      text-align: center;
+      color: var(--colorNeutralForeground2);
+      font-size: 14px;
+    }
+    .val-empty {
+      padding: 3px 6px;
+      color: var(--colorNeutralForeground2);
+      font-style: italic;
+    }
+    .change-count {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading changes…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const changes = data.changes || [];
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+
+      /* Meta line */
+      const metaParts = [];
+      if (data.recordName) metaParts.push(data.recordName);
+      if (data.changedBy) metaParts.push(`by ${data.changedBy}`);
+      if (data.changedOn) {
+        const d = new Date(data.changedOn);
+        metaParts.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+          ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      }
+      if (metaParts.length) html += `<div class="meta">${esc(metaParts.join(' · '))}</div>`;
+
+      /* Header */
+      html += '<div class="diff-header"><div>Field</div><div>Before</div><div></div><div>After</div></div>';
+
+      /* Rows */
+      for (const c of changes) {
+        const before = c.before != null ? `<span class="val-before">${esc(String(c.before))}</span>` : '<span class="val-empty">—</span>';
+        const after = c.after != null ? `<span class="val-after">${esc(String(c.after))}</span>` : '<span class="val-empty">—</span>';
+        html += `<div class="diff-row">
+          <div class="field-name">${esc(c.field)}</div>
+          <div>${before}</div>
+          <div class="arrow">→</div>
+          <div>${after}</div>
+        </div>`;
+      }
+
+      html += `<div class="change-count">${changes.length} field${changes.length !== 1 ? 's' : ''} changed</div>`;
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

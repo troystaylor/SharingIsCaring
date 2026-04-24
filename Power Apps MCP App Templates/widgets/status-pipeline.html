@@ -1,0 +1,203 @@
+<!--
+  Status Pipeline Widget
+
+  JSON Contract:
+  {
+    "title": "Opportunity Pipeline",
+    "stages": [
+      { "name": "Qualify", "count": 12, "value": 340000 },
+      { "name": "Develop", "count": 8, "value": 520000 },
+      { "name": "Propose", "count": 5, "value": 410000 },
+      { "name": "Close", "count": 3, "value": 280000 }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Pipeline heading
+  - stages (array): Ordered by natural progression
+    - name (string): Stage label
+    - count (number): Number of records in this stage
+    - value (number, optional): Aggregate value (e.g., revenue sum)
+
+  Tool Prompt Example:
+  "Query the opportunities table. Group by salesstage.
+   For each stage, count records and sum estimatedvalue.
+   Return JSON with 'title' and 'stages' array.
+   Each stage has 'name', 'count', 'value'.
+   Order: Qualify, Develop, Propose, Close."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Status Pipeline</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .pipeline {
+      display: flex;
+      gap: 2px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .stage {
+      flex: 1;
+      padding: 12px 8px;
+      text-align: center;
+      min-width: 0;
+      position: relative;
+    }
+    .stage:first-child { border-radius: 6px 0 0 6px; }
+    .stage:last-child { border-radius: 0 6px 6px 0; }
+    .stage-count {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--colorNeutralForegroundOnBrand);
+    }
+    .stage-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--colorNeutralForegroundOnBrand);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-value {
+      font-size: 11px;
+      color: var(--colorNeutralForegroundOnBrand);
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+    .summary {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--colorNeutralForeground2);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Building pipeline view…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function fmt(v) {
+      if (v == null) return '—';
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+    }
+
+    /* Brand-derived stage colors — progressively darker to show funnel narrowing */
+    const STAGE_COLORS = [
+      'var(--colorBrandBackground)',
+      'color-mix(in srgb, var(--colorBrandBackground) 85%, var(--colorNeutralForeground1))',
+      'color-mix(in srgb, var(--colorBrandBackground) 70%, var(--colorNeutralForeground1))',
+      'color-mix(in srgb, var(--colorBrandBackground) 55%, var(--colorNeutralForeground1))',
+      'color-mix(in srgb, var(--colorBrandBackground) 45%, var(--colorNeutralForeground1))',
+      'color-mix(in srgb, var(--colorBrandBackground) 35%, var(--colorNeutralForeground1))'
+    ];
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const stages = data.stages || [];
+      const totalCount = stages.reduce((s, st) => s + (st.count || 0), 0);
+      const totalValue = stages.reduce((s, st) => s + (st.value || 0), 0);
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="pipeline">';
+
+      for (let i = 0; i < stages.length; i++) {
+        const st = stages[i];
+        const bg = STAGE_COLORS[i % STAGE_COLORS.length];
+        const flex = Math.max(1, st.count || 1);
+        html += `<div class="stage" style="flex:${flex}; background:${bg}">
+          <div class="stage-count">${st.count}</div>
+          <div class="stage-name">${esc(st.name)}</div>
+          ${st.value != null ? `<div class="stage-value">${fmt(st.value)}</div>` : ''}
+        </div>`;
+      }
+
+      html += '</div>';
+      html += `<div class="summary">
+        <span>${totalCount} total records</span>
+        ${totalValue > 0 ? `<span>${fmt(totalValue)} total value</span>` : ''}
+      </div>`;
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* Local preview — uncomment to test:
+    render({
+      title: "Zava Opportunity Pipeline",
+      stages: [
+        { name: "Qualify", count: 24, value: 680000 },
+        { name: "Develop", count: 15, value: 1040000 },
+        { name: "Propose", count: 8, value: 820000 },
+        { name: "Negotiate", count: 5, value: 610000 },
+        { name: "Close", count: 3, value: 280000 }
+      ]
+    });
+    show('content');
+    */
+  </script>
+</body>
+</html>

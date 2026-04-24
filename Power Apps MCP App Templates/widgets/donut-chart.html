@@ -1,0 +1,192 @@
+<!--
+  Donut Chart Widget
+
+  JSON Contract:
+  {
+    "title": "Cases by Priority",
+    "segments": [
+      { "label": "High", "value": 28, "color": "#d13438" },
+      { "label": "Medium", "value": 45 },
+      { "label": "Low", "value": 17 }
+    ],
+    "centerLabel": "90",
+    "centerSubtitle": "Total"
+  }
+
+  Fields:
+  - title (string, optional): Chart heading
+  - segments (array): Wedges of the donut
+    - label (string): Segment name
+    - value (number): Segment size
+    - color (string, optional): Override color (uses auto palette if omitted)
+  - centerLabel (string, optional): Large text in donut center
+  - centerSubtitle (string, optional): Small text under center label
+
+  Dataverse Use Cases:
+  - Cases by status / priority / type
+  - Leads by source / rating
+  - Opportunities by stage
+  - Tickets by category
+
+  Tool Prompt Example:
+  "Query cases where statecode eq 0. Group by prioritycode.
+   Count records per group. Return JSON with 'title', 'segments' array
+   (each has 'label' and 'value'), 'centerLabel' (total count as string),
+   and 'centerSubtitle' ('Total')."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Donut Chart</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .chart-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .donut-wrap {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      flex-shrink: 0;
+    }
+    .donut-wrap svg { width: 100%; height: 100%; }
+    .center-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .center-label { font-size: 24px; font-weight: 700; }
+    .center-sub { font-size: 11px; color: var(--colorNeutralForeground2); }
+    .legend { display: flex; flex-direction: column; gap: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .legend-swatch {
+      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+    }
+    .legend-value {
+      margin-left: auto;
+      font-weight: 600;
+      color: var(--colorNeutralForeground2);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading chart…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+    const PALETTE = ['#0078d4','#00b7c3','#8764b8','#e74856','#ff8c00','#107c10','#5c2d91','#008272','#d83b01','#004e8c'];
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function describeArc(cx, cy, r, startAngle, endAngle) {
+      const start = polarToCartesian(cx, cy, r, endAngle);
+      const end = polarToCartesian(cx, cy, r, startAngle);
+      const large = endAngle - startAngle > 180 ? 1 : 0;
+      return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y}`;
+    }
+    function polarToCartesian(cx, cy, r, deg) {
+      const rad = (deg - 90) * Math.PI / 180;
+      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const segments = data.segments || [];
+      const total = segments.reduce((s, seg) => s + (seg.value || 0), 0);
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="chart-container">';
+
+      /* SVG donut */
+      const cx = 70, cy = 70, r = 54, stroke = 24;
+      let paths = '';
+      let angle = 0;
+
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const pct = total > 0 ? seg.value / total : 0;
+        const sweep = pct * 359.99;
+        const color = seg.color || PALETTE[i % PALETTE.length];
+        if (sweep > 0.1) {
+          paths += `<path d="${describeArc(cx, cy, r, angle, angle + sweep)}" fill="none" stroke="${color}" stroke-width="${stroke}" />`;
+        }
+        angle += sweep;
+      }
+
+      html += `<div class="donut-wrap">
+        <svg viewBox="0 0 140 140">${paths}</svg>
+        <div class="center-text">
+          ${data.centerLabel ? `<div class="center-label">${esc(data.centerLabel)}</div>` : ''}
+          ${data.centerSubtitle ? `<div class="center-sub">${esc(data.centerSubtitle)}</div>` : ''}
+        </div>
+      </div>`;
+
+      /* Legend */
+      html += '<div class="legend">';
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const color = seg.color || PALETTE[i % PALETTE.length];
+        const pct = total > 0 ? Math.round(seg.value / total * 100) : 0;
+        html += `<div class="legend-item">
+          <div class="legend-swatch" style="background:${color}"></div>
+          <span>${esc(seg.label)}</span>
+          <span class="legend-value">${seg.value} (${pct}%)</span>
+        </div>`;
+      }
+      html += '</div></div>';
+
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

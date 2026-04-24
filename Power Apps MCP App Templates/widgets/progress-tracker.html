@@ -1,0 +1,193 @@
+<!--
+  Progress Tracker Widget
+
+  JSON Contract:
+  {
+    "title": "Customer Onboarding",
+    "steps": [
+      { "name": "Account Created", "status": "completed", "detail": "Created Apr 10" },
+      { "name": "Contact Assigned", "status": "completed", "detail": "Jane Smith" },
+      { "name": "Kickoff Meeting", "status": "active", "detail": "Scheduled Apr 24" },
+      { "name": "Configuration", "status": "pending" },
+      { "name": "Go Live", "status": "pending" }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Heading
+  - steps (array): Ordered stages of a single process
+    - name (string): Step label
+    - status (string): "completed" | "active" | "pending"
+    - detail (string, optional): Short context text
+
+  Dataverse Use Cases:
+  - Business Process Flow stage visualization
+  - Multi-step approval workflow
+  - Customer onboarding progress
+  - Project milestone tracking
+
+  Tool Prompt Example:
+  "For the given record, query the business process flow stages.
+   Determine which stages are completed, which is active, and which are pending.
+   Return JSON with 'title' and 'steps' array. Each step has 'name',
+   'status' (completed/active/pending), and optional 'detail'."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Progress Tracker</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .tracker {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      overflow-x: auto;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      min-width: 80px;
+      position: relative;
+    }
+    .step-indicator {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    .step.completed .step-indicator {
+      background: var(--colorBrandBackground);
+      color: var(--colorNeutralForegroundOnBrand);
+    }
+    .step.active .step-indicator {
+      background: var(--colorNeutralBackground1);
+      border: 3px solid var(--colorBrandBackground);
+      color: var(--colorBrandBackground);
+    }
+    .step.pending .step-indicator {
+      background: var(--colorNeutralBackground1);
+      border: 2px solid var(--colorNeutralStroke1);
+      color: var(--colorNeutralForeground2);
+    }
+    .step-connector {
+      position: absolute;
+      top: 13px;
+      left: calc(50% + 14px);
+      right: calc(-50% + 14px);
+      height: 3px;
+      background: var(--colorNeutralStroke1);
+    }
+    .step.completed .step-connector { background: var(--colorBrandBackground); }
+    .step:last-child .step-connector { display: none; }
+    .step-label {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .step.pending .step-label { color: var(--colorNeutralForeground2); }
+    .step-detail {
+      font-size: 11px;
+      color: var(--colorNeutralForeground2);
+      text-align: center;
+      margin-top: 2px;
+    }
+    .summary {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--colorNeutralForeground2);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading progress…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) { document.getElementById('error-msg').textContent = msg; show('error'); }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens)) document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const steps = data.steps || [];
+      const done = steps.filter(s => s.status === 'completed').length;
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="tracker">';
+
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        const cls = s.status || 'pending';
+        const icon = cls === 'completed' ? '✓' : (i + 1);
+        html += `<div class="step ${cls}">
+          <div class="step-indicator">${icon}</div>
+          ${i < steps.length - 1 ? '<div class="step-connector"></div>' : ''}
+          <div class="step-label">${esc(s.name)}</div>
+          ${s.detail ? `<div class="step-detail">${esc(s.detail)}</div>` : ''}
+        </div>`;
+      }
+
+      html += '</div>';
+      html += `<div class="summary">${done} of ${steps.length} completed</div>`;
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); } catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+  </script>
+</body>
+</html>

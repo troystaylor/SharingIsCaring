@@ -1,0 +1,201 @@
+<!--
+  Record Timeline Widget
+
+  JSON Contract:
+  {
+    "title": "Case History",
+    "events": [
+      {
+        "date": "2026-04-20T14:30:00Z",
+        "title": "Case Resolved",
+        "description": "Issue resolved by support team after patch deployment.",
+        "type": "success"
+      },
+      {
+        "date": "2026-04-18T09:15:00Z",
+        "title": "Escalated to Tier 2",
+        "description": "Requires engineering review.",
+        "type": "warning"
+      },
+      {
+        "date": "2026-04-17T08:00:00Z",
+        "title": "Case Created",
+        "description": "Customer reported login failure.",
+        "type": "info"
+      }
+    ]
+  }
+
+  Fields:
+  - title (string, optional): Timeline heading
+  - events (array): Chronological entries (should be pre-sorted by date descending)
+    - date (string): ISO 8601 timestamp
+    - title (string): Event heading
+    - description (string, optional): Detail text
+    - type (string, optional): "success" | "warning" | "error" | "info" (default)
+
+  Tool Prompt Example:
+  "Query the annotations table filtered by objectid eq the input record ID.
+   Order by createdon descending, top 20. Return JSON with 'title' and 'events'
+   array. Each event has 'date', 'title', 'description', and 'type'.
+   Map notetext status keywords: resolved→success, escalated→warning,
+   failed→error, everything else→info."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Record Timeline</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .timeline {
+      position: relative;
+      padding-left: 24px;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: var(--colorNeutralStroke1);
+    }
+    .event {
+      position: relative;
+      padding-bottom: 20px;
+    }
+    .event:last-child { padding-bottom: 0; }
+    .event-dot {
+      position: absolute;
+      left: -24px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--colorNeutralBackground1);
+    }
+    .event-dot.success { background: var(--colorStatusSuccessForeground1); }
+    .event-dot.error   { background: var(--colorStatusDangerForeground1); }
+    .event-dot.warning { background: var(--colorBrandBackground); }
+    .event-dot.info    { background: var(--colorNeutralForeground2); }
+    .event-date {
+      font-size: 11px;
+      color: var(--colorNeutralForeground2);
+      margin-bottom: 2px;
+    }
+    .event-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .event-desc {
+      font-size: 13px;
+      color: var(--colorNeutralForeground2);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading history…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function render(data) {
+      const el = document.getElementById('content');
+      const events = data.events || [];
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<div class="timeline">';
+
+      for (const ev of events) {
+        const type = ev.type || 'info';
+        const date = new Date(ev.date);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        html += `<div class="event">
+          <div class="event-dot ${esc(type)}"></div>
+          <div class="event-date">${dateStr} · ${timeStr}</div>
+          <div class="event-title">${esc(ev.title)}</div>
+          ${ev.description ? `<div class="event-desc">${esc(ev.description)}</div>` : ''}
+        </div>`;
+      }
+
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* Local preview — uncomment to test:
+    render({
+      title: "Case #10482 History",
+      events: [
+        { date: "2026-04-20T14:30:00Z", title: "Case Resolved", description: "Patch deployed and verified.", type: "success" },
+        { date: "2026-04-19T11:00:00Z", title: "Root Cause Identified", description: "Database connection timeout during peak load.", type: "info" },
+        { date: "2026-04-18T09:15:00Z", title: "Escalated to Tier 2", description: "Requires engineering review.", type: "warning" },
+        { date: "2026-04-17T16:45:00Z", title: "Initial Response", description: "Acknowledged and assigned to support team.", type: "info" },
+        { date: "2026-04-17T08:00:00Z", title: "Case Created", description: "Customer reported intermittent login failures.", type: "info" }
+      ]
+    });
+    show('content');
+    */
+  </script>
+</body>
+</html>

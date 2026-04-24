@@ -1,0 +1,248 @@
+<!--
+  Approval Card Widget (Interactive)
+
+  This widget uses callServerTool to send approve/reject actions back to the
+  MCP server. Set TOOL_NAME in the script to your approval processing tool.
+
+  JSON Contract:
+  {
+    "title": "Expense Approval",
+    "record": {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "submitter": "Jane Smith",
+      "amount": 4500,
+      "category": "Travel",
+      "description": "Q2 client visit — Seattle",
+      "submitted": "2026-04-20T10:00:00Z"
+    }
+  }
+
+  Fields:
+  - title (string, optional): Card heading
+  - record (object): The item pending approval
+    - id (string): Record identifier (sent back with the action)
+    - Any other fields are displayed as key-value pairs
+    - Fields containing "amount" or "cost" are formatted as currency
+    - Fields with ISO date strings are formatted as dates
+
+  Interactive callback:
+  When the user clicks Approve or Reject, the widget calls:
+    app.callServerTool({ name: TOOL_NAME, arguments: { action: "approve"|"reject", id: record.id } })
+
+  Tool Prompt Example:
+  "Query the {approval_table} table for records where statuscode eq 'Pending'
+   and ownerid eq the current user. Select id, submitter name, amount,
+   category, description, and submitted date. Return the first record as JSON
+   with 'title' and 'record' object."
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Approval Card</title>
+  <script src="https://unpkg.com/@fluentui/web-components@beta/dist/web-components.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--fontFamilyBase, 'Segoe UI', sans-serif);
+      background: var(--colorNeutralBackground1);
+      color: var(--colorNeutralForeground1);
+      padding: 16px;
+    }
+    .state { display: none; }
+    .state.active { display: block; }
+    .loading { text-align: center; padding: 32px 0; }
+    .loading span { display: block; margin-top: 8px; color: var(--colorNeutralForeground2); font-size: 13px; }
+    .error { text-align: center; padding: 24px 0; }
+    .error-msg { color: var(--colorStatusDangerForeground1); margin-bottom: 12px; }
+    .title { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    fluent-card.approval { padding: 16px; }
+    .details { margin-bottom: 16px; }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--colorNeutralStroke1);
+      font-size: 13px;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label {
+      color: var(--colorNeutralForeground2);
+      font-weight: 500;
+      min-width: 100px;
+    }
+    .detail-value {
+      text-align: right;
+      font-weight: 400;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .result {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .action-success { color: var(--colorStatusSuccessForeground1); }
+    .action-reject { color: var(--colorStatusDangerForeground1); }
+    .action-error { color: var(--colorStatusDangerForeground1); font-weight: 400; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="state active loading">
+    <fluent-spinner></fluent-spinner>
+    <span>Loading approval details…</span>
+  </div>
+  <div id="content" class="state"></div>
+  <div id="error" class="state error">
+    <div class="error-msg" id="error-msg"></div>
+    <fluent-button appearance="accent" id="retry-btn">Try again</fluent-button>
+  </div>
+
+  <script type="module">
+    import { App } from 'https://cdn.jsdelivr.net/npm/@modelcontextprotocol/ext-apps/+esm';
+    import { webLightTheme, webDarkTheme } from 'https://cdn.jsdelivr.net/npm/@fluentui/tokens/+esm';
+
+    const app = new App();
+
+    /*
+     * Set this to your approval processing tool name.
+     * When null, buttons show visual feedback only (no server call).
+     */
+    const TOOL_NAME = null;
+
+    let currentRecord = null;
+
+    function show(id) {
+      document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(msg) {
+      document.getElementById('error-msg').textContent = msg;
+      show('error');
+    }
+    function applyTheme(theme) {
+      const tokens = theme === 'dark' ? webDarkTheme : webLightTheme;
+      for (const [k, v] of Object.entries(tokens))
+        document.documentElement.style.setProperty(`--${k}`, v);
+    }
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function fmtValue(key, value) {
+      if (value == null) return '—';
+      if (typeof value === 'number' && /amount|cost|price|total|value/i.test(key))
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value))
+        return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (typeof value === 'number')
+        return new Intl.NumberFormat('en-US').format(value);
+      return String(value);
+    }
+    function labelFromKey(key) {
+      return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/[_-]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .trim();
+    }
+
+    function render(data) {
+      currentRecord = data;
+      const el = document.getElementById('content');
+      const rec = data.record || data;
+      const skip = new Set(['id']);
+
+      let html = data.title ? `<div class="title">${esc(data.title)}</div>` : '';
+      html += '<fluent-card class="approval">';
+
+      /* Detail rows */
+      html += '<div class="details">';
+      for (const [key, value] of Object.entries(rec)) {
+        if (skip.has(key)) continue;
+        html += `<div class="detail-row">
+          <span class="detail-label">${esc(labelFromKey(key))}</span>
+          <span class="detail-value">${esc(fmtValue(key, value))}</span>
+        </div>`;
+      }
+      html += '</div>';
+
+      /* Action buttons */
+      html += `<div class="actions">
+        <fluent-button id="approve-btn" appearance="accent">Approve</fluent-button>
+        <fluent-button id="reject-btn" appearance="outline">Reject</fluent-button>
+      </div>`;
+
+      html += '</fluent-card>';
+      html += '<div id="result" class="result"></div>';
+      el.innerHTML = html;
+
+      /* Bind actions */
+      document.getElementById('approve-btn').addEventListener('click', () => handleAction('approve'));
+      document.getElementById('reject-btn').addEventListener('click', () => handleAction('reject'));
+    }
+
+    async function handleAction(action) {
+      const resultEl = document.getElementById('result');
+      const btns = document.querySelectorAll('.actions fluent-button');
+      btns.forEach(b => b.setAttribute('disabled', ''));
+
+      if (TOOL_NAME) {
+        try {
+          const recordId = currentRecord?.record?.id || currentRecord?.id;
+          const result = await app.callServerTool({
+            name: TOOL_NAME,
+            arguments: { action, id: recordId }
+          });
+          if (result.isError) {
+            resultEl.innerHTML = '<span class="action-error">Action failed. Please try again.</span>';
+            btns.forEach(b => b.removeAttribute('disabled'));
+            return;
+          }
+        } catch (e) {
+          resultEl.innerHTML = `<span class="action-error">${esc(e.message)}</span>`;
+          btns.forEach(b => b.removeAttribute('disabled'));
+          return;
+        }
+      }
+
+      resultEl.innerHTML = action === 'approve'
+        ? '<span class="action-success">✓ Approved</span>'
+        : '<span class="action-reject">✗ Rejected</span>';
+    }
+
+    app.ontoolresult = (result) => {
+      const data = result.structuredContent;
+      if (!data) { showError('No data received.'); return; }
+      try { render(data); show('content'); }
+      catch (e) { showError(e.message); }
+    };
+    app.onhostcontextchanged = (ctx) => { if (ctx.theme) applyTheme(ctx.theme); };
+    app.onteardown = () => {};
+
+    await app.connect();
+    const hostCtx = app.getHostContext();
+    if (hostCtx?.theme) applyTheme(hostCtx.theme);
+
+    /* Local preview — uncomment to test:
+    render({
+      title: "Expense Approval",
+      record: {
+        id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        submitter: "Jane Smith",
+        amount: 4500,
+        category: "Travel",
+        description: "Q2 client visit — Seattle",
+        submitted: "2026-04-20T10:00:00Z"
+      }
+    });
+    show('content');
+    */
+  </script>
+</body>
+</html>
