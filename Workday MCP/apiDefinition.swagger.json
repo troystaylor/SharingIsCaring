@@ -1,0 +1,1958 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Workday MCP",
+        "description": "Power MCP tool server for Workday Web Services (v46.0). Enables Copilot Studio agents to interact with Workday HCM, Staffing, Benefits, Performance, Talent, Learning, Compensation, Recruiting, Absence Management, Time Tracking, Payroll, Financial Management, and Resource Management via SOAP-based web services.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "[WORKDAY_HOSTNAME].workday.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Workday MCP",
+                "description": "Model Context Protocol endpoint for Workday Web Services. Provides tools for querying and managing Workday HCM, Staffing, Benefits, Performance, Talent, Learning, Compensation, Recruiting, Absence, Time Tracking, Payroll, Financial Management, and Resource Management data.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/hr/workers": {
+            "post": {
+                "operationId": "GetWorkers",
+                "summary": "Get Workers",
+                "description": "Search and retrieve workers from Workday. Returns employee and contingent worker data.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/GetWorkersRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Worker data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/employee": {
+            "post": {
+                "operationId": "GetEmployee",
+                "summary": "Get Employee",
+                "description": "Retrieve full employee record including employment, personal, and compensation data.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EmployeeReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Employee data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/employee-personal-info": {
+            "post": {
+                "operationId": "GetEmployeePersonalInfo",
+                "summary": "Get Employee Personal Info",
+                "description": "Retrieve personal information for an employee including biographic and demographic data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EmployeeReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Personal info data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/employee-employment-info": {
+            "post": {
+                "operationId": "GetEmployeeEmploymentInfo",
+                "summary": "Get Employee Employment Info",
+                "description": "Retrieve employment information including position, job, and status data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EmployeeReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Employment info data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/organizations": {
+            "post": {
+                "operationId": "GetOrganizations",
+                "summary": "Get Organizations",
+                "description": "Retrieve organizations by type (Company, Cost Center, Supervisory, Region, etc.).",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/GetOrganizationsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/organization": {
+            "post": {
+                "operationId": "GetOrganization",
+                "summary": "Get Organization",
+                "description": "Retrieve detailed information for a single organization.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/OrganizationReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization detail",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/locations": {
+            "post": {
+                "operationId": "GetLocations",
+                "summary": "Get Locations",
+                "description": "Retrieve location data from Workday.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/GetLocationsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Location data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/job-profiles": {
+            "post": {
+                "operationId": "GetJobProfiles",
+                "summary": "Get Job Profiles",
+                "description": "Retrieve job profile data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job profile data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/job-families": {
+            "post": {
+                "operationId": "GetJobFamilies",
+                "summary": "Get Job Families",
+                "description": "Retrieve job family data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job family data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/server-timestamp": {
+            "post": {
+                "operationId": "GetServerTimestamp",
+                "summary": "Get Server Timestamp",
+                "description": "Retrieve Workday server timestamp. Use as a health check or connectivity test.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Server timestamp",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/change-work-contact-info": {
+            "post": {
+                "operationId": "ChangeWorkContactInfo",
+                "summary": "Change Work Contact Information",
+                "description": "Update work contact information for a person (email, phone, address).",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ChangeWorkContactRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/change-business-title": {
+            "post": {
+                "operationId": "ChangeBusinessTitle",
+                "summary": "Change Business Title",
+                "description": "Update a worker's business title.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ChangeBusinessTitleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/change-preferred-name": {
+            "post": {
+                "operationId": "ChangePreferredName",
+                "summary": "Change Preferred Name",
+                "description": "Update a person's preferred name.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ChangePreferredNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/hr/maintain-contact-info": {
+            "post": {
+                "operationId": "MaintainContactInfo",
+                "summary": "Maintain Contact Information",
+                "description": "Create or update contact information for a person.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MaintainContactInfoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/staffing/positions": {
+            "post": {
+                "operationId": "GetPositions",
+                "summary": "Get Positions",
+                "description": "Retrieve position management data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Position data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/staffing/applicants": {
+            "post": {
+                "operationId": "GetApplicants",
+                "summary": "Get Applicants",
+                "description": "Retrieve pre-hire (applicant) data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Applicant data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/staffing/worker-documents": {
+            "post": {
+                "operationId": "GetWorkerDocuments",
+                "summary": "Get Worker Documents",
+                "description": "Retrieve worker document data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/WorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Document data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/absence/inputs": {
+            "post": {
+                "operationId": "GetAbsenceInputs",
+                "summary": "Get Absence Inputs",
+                "description": "Retrieve absence inputs and accrual data for workers.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Absence data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/absence/leave-requests": {
+            "post": {
+                "operationId": "GetLeaveRequests",
+                "summary": "Get Leave Requests",
+                "description": "Retrieve leave of absence request data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Leave request data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/absence/time-off-plans": {
+            "post": {
+                "operationId": "GetTimeOffPlans",
+                "summary": "Get Time Off Plans",
+                "description": "Retrieve time off plan configurations.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Time off plan data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compensation/plans": {
+            "post": {
+                "operationId": "GetCompensationPlans",
+                "summary": "Get Compensation Plans",
+                "description": "Retrieve compensation plan data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compensation plan data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compensation/packages": {
+            "post": {
+                "operationId": "GetCompensationPackages",
+                "summary": "Get Compensation Packages",
+                "description": "Retrieve compensation package data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compensation package data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recruiting/job-postings": {
+            "post": {
+                "operationId": "GetJobPostings",
+                "summary": "Get Job Postings",
+                "description": "Retrieve active job posting data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job posting data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/recruiting/job-applications": {
+            "post": {
+                "operationId": "GetJobApplications",
+                "summary": "Get Job Applications",
+                "description": "Retrieve job application and candidate data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Job application data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/time-tracking/entries": {
+            "post": {
+                "operationId": "GetTimeEntries",
+                "summary": "Get Time Entries",
+                "description": "Retrieve worker time entry data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/TimeEntriesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Time entry data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/time-tracking/work-schedules": {
+            "post": {
+                "operationId": "GetWorkSchedules",
+                "summary": "Get Work Schedules",
+                "description": "Retrieve work schedule data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work schedule data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benefits/plans": {
+            "post": {
+                "operationId": "GetBenefitPlans",
+                "summary": "Get Benefit Plans",
+                "description": "Retrieve benefit plan data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Benefit plan data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benefits/enrollments": {
+            "post": {
+                "operationId": "GetBenefitEnrollments",
+                "summary": "Get Benefit Enrollments",
+                "description": "Retrieve current benefit election data for workers.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Benefit enrollment data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benefits/annual-rates": {
+            "post": {
+                "operationId": "GetBenefitAnnualRates",
+                "summary": "Get Benefit Annual Rates",
+                "description": "Retrieve benefit annual rates for employees.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Benefit annual rate data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/benefits/health-care-rates": {
+            "post": {
+                "operationId": "GetHealthCareRates",
+                "summary": "Get Health Care Rates",
+                "description": "Retrieve health care rate data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Health care rate data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/performance/employee-reviews": {
+            "post": {
+                "operationId": "GetEmployeeReviews",
+                "summary": "Get Employee Reviews",
+                "description": "Retrieve in-progress and completed employee reviews.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Employee review data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/performance/competencies": {
+            "post": {
+                "operationId": "GetCompetencies",
+                "summary": "Get Competencies",
+                "description": "Retrieve competency definitions.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Competency data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/performance/organization-goals": {
+            "post": {
+                "operationId": "GetOrganizationGoals",
+                "summary": "Get Organization Goals",
+                "description": "Retrieve goals for an organization.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/OrganizationReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization goal data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/performance/check-ins": {
+            "post": {
+                "operationId": "GetCheckIns",
+                "summary": "Get Check-Ins",
+                "description": "Retrieve check-in records.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check-in data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/performance/manage-goals": {
+            "post": {
+                "operationId": "ManageGoals",
+                "summary": "Manage Goals",
+                "description": "Add a new goal or edit an existing goal for a worker.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ManageGoalsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/performance/give-feedback": {
+            "post": {
+                "operationId": "GiveFeedback",
+                "summary": "Give Feedback",
+                "description": "Add anytime feedback for a worker.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GiveFeedbackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/skills": {
+            "post": {
+                "operationId": "GetSkills",
+                "summary": "Get Skills",
+                "description": "Retrieve skill item definitions.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/worker-skills": {
+            "post": {
+                "operationId": "GetWorkerSkills",
+                "summary": "Get Worker Skills",
+                "description": "Retrieve existing skills assigned to a worker.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/WorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Worker skill data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/succession-plans": {
+            "post": {
+                "operationId": "GetSuccessionPlans",
+                "summary": "Get Succession Plans",
+                "description": "Retrieve succession plans for positions.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Succession plan data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/talent-pools": {
+            "post": {
+                "operationId": "GetTalentPools",
+                "summary": "Get Talent Pools",
+                "description": "Retrieve talent pool and membership information.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Talent pool data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/development-items": {
+            "post": {
+                "operationId": "GetDevelopmentItems",
+                "summary": "Get Development Items",
+                "description": "Retrieve development items.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Development item data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/work-experiences": {
+            "post": {
+                "operationId": "GetWorkExperiences",
+                "summary": "Get Work Experiences",
+                "description": "Retrieve work experience records.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work experience data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/talent/manage-skills": {
+            "post": {
+                "operationId": "ManageSkills",
+                "summary": "Manage Skills",
+                "description": "Add or remove skills for a worker.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ManageSkillsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Result",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/learning/courses": {
+            "post": {
+                "operationId": "GetLearningCourses",
+                "summary": "Get Learning Courses",
+                "description": "Retrieve blended and digital learning courses.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/learning/enrollments": {
+            "post": {
+                "operationId": "GetLearningEnrollments",
+                "summary": "Get Learning Enrollments",
+                "description": "Retrieve learning enrollment records.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Enrollment data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/learning/course-offerings": {
+            "post": {
+                "operationId": "GetLearningCourseOfferings",
+                "summary": "Get Learning Course Offerings",
+                "description": "Retrieve course offering schedules.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Course offering data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/learning/programs": {
+            "post": {
+                "operationId": "GetLearningPrograms",
+                "summary": "Get Learning Programs",
+                "description": "Retrieve learning program data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Learning program data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payroll/payees": {
+            "post": {
+                "operationId": "GetPayees",
+                "summary": "Get Payees",
+                "description": "Retrieve payee data for employees in external pay groups.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payee data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payroll/costing-allocations": {
+            "post": {
+                "operationId": "GetWorkerCostingAllocations",
+                "summary": "Get Worker Costing Allocations",
+                "description": "Retrieve worker or position costing allocations.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Costing allocation data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payroll/external-inputs": {
+            "post": {
+                "operationId": "GetExternalPayrollInputs",
+                "summary": "Get External Payroll Inputs",
+                "description": "Retrieve external payroll input data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalWorkerReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payroll input data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/finance/journals": {
+            "post": {
+                "operationId": "GetJournals",
+                "summary": "Get Journals",
+                "description": "Retrieve accounting journal entries.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Journal data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/finance/companies": {
+            "post": {
+                "operationId": "GetWorkdayCompanies",
+                "summary": "Get Workday Companies",
+                "description": "Retrieve company data including accounting details.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/finance/cost-centers": {
+            "post": {
+                "operationId": "GetCostCenters",
+                "summary": "Get Cost Centers",
+                "description": "Retrieve cost center data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cost center data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/finance/currency-rates": {
+            "post": {
+                "operationId": "GetCurrencyConversionRates",
+                "summary": "Get Currency Conversion Rates",
+                "description": "Retrieve currency conversion/FX rates.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/CurrencyRatesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Currency rate data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/finance/projects": {
+            "post": {
+                "operationId": "GetProjects",
+                "summary": "Get Projects",
+                "description": "Retrieve project worktag data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Project data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/finance/business-units": {
+            "post": {
+                "operationId": "GetBusinessUnits",
+                "summary": "Get Business Units",
+                "description": "Retrieve business unit data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Business unit data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/suppliers": {
+            "post": {
+                "operationId": "GetSuppliers",
+                "summary": "Get Suppliers",
+                "description": "Retrieve supplier data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Supplier data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/expense-reports": {
+            "post": {
+                "operationId": "GetExpenseReports",
+                "summary": "Get Expense Reports",
+                "description": "Retrieve expense report data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense report data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/purchase-orders": {
+            "post": {
+                "operationId": "GetPurchaseOrders",
+                "summary": "Get Purchase Orders",
+                "description": "Retrieve purchase order data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Purchase order data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/supplier-invoices": {
+            "post": {
+                "operationId": "GetSupplierInvoices",
+                "summary": "Get Supplier Invoices",
+                "description": "Retrieve supplier invoice data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Supplier invoice data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/assets": {
+            "post": {
+                "operationId": "GetAssets",
+                "summary": "Get Business Assets",
+                "description": "Retrieve business asset data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Asset data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/requisitions": {
+            "post": {
+                "operationId": "GetRequisitions",
+                "summary": "Get Requisitions",
+                "description": "Retrieve requisition data.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/definitions/OptionalReferenceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Requisition data",
+                        "schema": {
+                            "$ref": "#/definitions/WorkdayResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "WorkdayResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the operation succeeded",
+                    "x-ms-summary": "Success"
+                },
+                "totalResults": {
+                    "type": "integer",
+                    "description": "Total number of results available",
+                    "x-ms-summary": "Total Results"
+                },
+                "totalPages": {
+                    "type": "integer",
+                    "description": "Total number of pages",
+                    "x-ms-summary": "Total Pages"
+                },
+                "currentPage": {
+                    "type": "integer",
+                    "description": "Current page number",
+                    "x-ms-summary": "Current Page"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "Response data from Workday",
+                    "x-ms-summary": "Data"
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error message if the operation failed",
+                    "x-ms-summary": "Error"
+                }
+            }
+        },
+        "GetWorkersRequest": {
+            "type": "object",
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID (Employee_ID or Workday_ID)",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "Maximum number of results to return (default 50)",
+                    "x-ms-summary": "Count"
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number for pagination (default 1)",
+                    "x-ms-summary": "Page"
+                }
+            }
+        },
+        "EmployeeReferenceRequest": {
+            "type": "object",
+            "required": ["employee_reference"],
+            "properties": {
+                "employee_reference": {
+                    "type": "string",
+                    "description": "Employee reference ID (Employee_ID or Workday_ID)",
+                    "x-ms-summary": "Employee Reference"
+                }
+            }
+        },
+        "WorkerReferenceRequest": {
+            "type": "object",
+            "required": ["worker_reference"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                }
+            }
+        },
+        "OptionalWorkerReferenceRequest": {
+            "type": "object",
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID (optional - returns all if omitted)",
+                    "x-ms-summary": "Worker Reference"
+                }
+            }
+        },
+        "OptionalReferenceRequest": {
+            "type": "object",
+            "properties": {
+                "reference_id": {
+                    "type": "string",
+                    "description": "Reference ID (optional - returns all if omitted)",
+                    "x-ms-summary": "Reference ID"
+                }
+            }
+        },
+        "OrganizationReferenceRequest": {
+            "type": "object",
+            "required": ["organization_reference"],
+            "properties": {
+                "organization_reference": {
+                    "type": "string",
+                    "description": "Organization reference ID",
+                    "x-ms-summary": "Organization Reference"
+                }
+            }
+        },
+        "GetOrganizationsRequest": {
+            "type": "object",
+            "properties": {
+                "organization_type": {
+                    "type": "string",
+                    "description": "Organization type (e.g., Supervisory, Company, Cost_Center, Region)",
+                    "x-ms-summary": "Organization Type"
+                },
+                "organization_reference": {
+                    "type": "string",
+                    "description": "Specific organization reference ID",
+                    "x-ms-summary": "Organization Reference"
+                },
+                "include_inactive": {
+                    "type": "boolean",
+                    "description": "Include inactive organizations (default false)",
+                    "x-ms-summary": "Include Inactive"
+                }
+            }
+        },
+        "GetLocationsRequest": {
+            "type": "object",
+            "properties": {
+                "location_reference": {
+                    "type": "string",
+                    "description": "Location reference ID",
+                    "x-ms-summary": "Location Reference"
+                },
+                "location_name": {
+                    "type": "string",
+                    "description": "Search by location name",
+                    "x-ms-summary": "Location Name"
+                }
+            }
+        },
+        "ChangeWorkContactRequest": {
+            "type": "object",
+            "required": ["worker_reference"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "email_address": {
+                    "type": "string",
+                    "description": "New work email address",
+                    "x-ms-summary": "Email Address"
+                },
+                "phone_number": {
+                    "type": "string",
+                    "description": "New work phone number",
+                    "x-ms-summary": "Phone Number"
+                },
+                "phone_device_type": {
+                    "type": "string",
+                    "description": "Phone device type (e.g., Landline, Mobile)",
+                    "x-ms-summary": "Phone Device Type"
+                }
+            }
+        },
+        "ChangeBusinessTitleRequest": {
+            "type": "object",
+            "required": ["worker_reference", "business_title"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "business_title": {
+                    "type": "string",
+                    "description": "New business title",
+                    "x-ms-summary": "Business Title"
+                }
+            }
+        },
+        "ChangePreferredNameRequest": {
+            "type": "object",
+            "required": ["worker_reference"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "first_name": {
+                    "type": "string",
+                    "description": "Preferred first name",
+                    "x-ms-summary": "First Name"
+                },
+                "last_name": {
+                    "type": "string",
+                    "description": "Preferred last name",
+                    "x-ms-summary": "Last Name"
+                }
+            }
+        },
+        "MaintainContactInfoRequest": {
+            "type": "object",
+            "required": ["worker_reference"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "email_address": {
+                    "type": "string",
+                    "description": "Email address",
+                    "x-ms-summary": "Email Address"
+                },
+                "phone_number": {
+                    "type": "string",
+                    "description": "Phone number",
+                    "x-ms-summary": "Phone Number"
+                },
+                "address_line_1": {
+                    "type": "string",
+                    "description": "Address line 1",
+                    "x-ms-summary": "Address Line 1"
+                },
+                "city": {
+                    "type": "string",
+                    "description": "City",
+                    "x-ms-summary": "City"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "State/region",
+                    "x-ms-summary": "State"
+                },
+                "postal_code": {
+                    "type": "string",
+                    "description": "Postal code",
+                    "x-ms-summary": "Postal Code"
+                },
+                "country": {
+                    "type": "string",
+                    "description": "Country ISO code",
+                    "x-ms-summary": "Country"
+                }
+            }
+        },
+        "TimeEntriesRequest": {
+            "type": "object",
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "Start date (YYYY-MM-DD)",
+                    "x-ms-summary": "Start Date"
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "End date (YYYY-MM-DD)",
+                    "x-ms-summary": "End Date"
+                }
+            }
+        },
+        "ManageGoalsRequest": {
+            "type": "object",
+            "required": ["worker_reference", "goal_name"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "goal_name": {
+                    "type": "string",
+                    "description": "Goal name/title",
+                    "x-ms-summary": "Goal Name"
+                },
+                "goal_description": {
+                    "type": "string",
+                    "description": "Goal description",
+                    "x-ms-summary": "Goal Description"
+                },
+                "due_date": {
+                    "type": "string",
+                    "description": "Due date (YYYY-MM-DD)",
+                    "x-ms-summary": "Due Date"
+                }
+            }
+        },
+        "GiveFeedbackRequest": {
+            "type": "object",
+            "required": ["worker_reference", "feedback_comment"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID to give feedback about",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "feedback_comment": {
+                    "type": "string",
+                    "description": "Feedback comment text",
+                    "x-ms-summary": "Feedback Comment"
+                },
+                "from_worker_reference": {
+                    "type": "string",
+                    "description": "Worker giving the feedback (optional)",
+                    "x-ms-summary": "From Worker Reference"
+                }
+            }
+        },
+        "ManageSkillsRequest": {
+            "type": "object",
+            "required": ["worker_reference", "skill_reference"],
+            "properties": {
+                "worker_reference": {
+                    "type": "string",
+                    "description": "Worker reference ID",
+                    "x-ms-summary": "Worker Reference"
+                },
+                "skill_reference": {
+                    "type": "string",
+                    "description": "Skill reference ID to add",
+                    "x-ms-summary": "Skill Reference"
+                },
+                "remove": {
+                    "type": "boolean",
+                    "description": "Set to true to remove the skill (default false)",
+                    "x-ms-summary": "Remove"
+                }
+            }
+        },
+        "CurrencyRatesRequest": {
+            "type": "object",
+            "properties": {
+                "currency_rate_type": {
+                    "type": "string",
+                    "description": "Rate type reference",
+                    "x-ms-summary": "Rate Type"
+                },
+                "from_currency": {
+                    "type": "string",
+                    "description": "Source currency ISO code",
+                    "x-ms-summary": "From Currency"
+                },
+                "to_currency": {
+                    "type": "string",
+                    "description": "Target currency ISO code",
+                    "x-ms-summary": "To Currency"
+                }
+            }
+        }
+    },
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.workday.com/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.workday.com/en-us/privacy.html"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Human Resources;Business Intelligence"
+        }
+    ]
+}
