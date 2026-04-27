@@ -1,0 +1,583 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "OpenDataLoader PDF MCP",
+        "description": "Power MCP tool server for OpenDataLoader PDF. Enables Copilot Studio agents to extract structured text, tables, and metadata from PDFs using the #1-ranked open-source PDF parser. Supports Markdown, JSON (with bounding boxes), HTML, and plain text output. Requires a self-hosted OpenDataLoader PDF REST API service.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "your-opendataloader-service.azurecontainerapps.io",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke OpenDataLoader PDF MCP",
+                "description": "Model Context Protocol endpoint for OpenDataLoader PDF. Provides tools for converting PDFs to Markdown, JSON, HTML, and text; extracting tables; retrieving page elements with bounding boxes; and checking PDF accessibility tags.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/api/convert": {
+            "post": {
+                "operationId": "ConvertPdf",
+                "summary": "Convert PDF",
+                "description": "Convert a PDF document to the specified output format (markdown, json, html, or text).",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "source"
+                            ],
+                            "properties": {
+                                "source": {
+                                    "type": "string",
+                                    "description": "URL of the PDF to convert, or base64-encoded PDF content.",
+                                    "x-ms-summary": "PDF Source"
+                                },
+                                "sourceType": {
+                                    "type": "string",
+                                    "description": "Whether the source is a URL or base64-encoded content.",
+                                    "x-ms-summary": "Source Type",
+                                    "enum": [
+                                        "url",
+                                        "base64"
+                                    ],
+                                    "default": "url"
+                                },
+                                "format": {
+                                    "type": "string",
+                                    "description": "Output format for the conversion.",
+                                    "x-ms-summary": "Output Format",
+                                    "enum": [
+                                        "markdown",
+                                        "json",
+                                        "html",
+                                        "text"
+                                    ],
+                                    "default": "markdown"
+                                },
+                                "pages": {
+                                    "type": "string",
+                                    "description": "Page range to convert (e.g., '1-5', '1,3,5'). Leave empty for all pages.",
+                                    "x-ms-summary": "Pages"
+                                },
+                                "useStructTree": {
+                                    "type": "boolean",
+                                    "description": "Use native PDF structure tags when available for more accurate extraction.",
+                                    "x-ms-summary": "Use Structure Tags",
+                                    "default": false
+                                },
+                                "hybrid": {
+                                    "type": "boolean",
+                                    "description": "Enable hybrid mode for higher accuracy on complex tables, scanned PDFs, and formulas.",
+                                    "x-ms-summary": "Hybrid Mode",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversion result",
+                        "schema": {
+                            "$ref": "#/definitions/ConvertResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tables": {
+            "post": {
+                "operationId": "ExtractTables",
+                "summary": "Extract Tables",
+                "description": "Extract tables from a PDF document. Returns structured table data with row and column content.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "source"
+                            ],
+                            "properties": {
+                                "source": {
+                                    "type": "string",
+                                    "description": "URL of the PDF, or base64-encoded PDF content.",
+                                    "x-ms-summary": "PDF Source"
+                                },
+                                "sourceType": {
+                                    "type": "string",
+                                    "description": "Whether the source is a URL or base64-encoded content.",
+                                    "x-ms-summary": "Source Type",
+                                    "enum": [
+                                        "url",
+                                        "base64"
+                                    ],
+                                    "default": "url"
+                                },
+                                "pages": {
+                                    "type": "string",
+                                    "description": "Page range to extract tables from (e.g., '1-5'). Leave empty for all pages.",
+                                    "x-ms-summary": "Pages"
+                                },
+                                "hybrid": {
+                                    "type": "boolean",
+                                    "description": "Enable hybrid mode for higher accuracy on complex or borderless tables.",
+                                    "x-ms-summary": "Hybrid Mode",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Extracted tables",
+                        "schema": {
+                            "$ref": "#/definitions/TablesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/elements": {
+            "post": {
+                "operationId": "GetPageElements",
+                "summary": "Get Page Elements",
+                "description": "Get structured elements from specific pages with bounding boxes and semantic types (headings, paragraphs, tables, images, lists, formulas).",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "source"
+                            ],
+                            "properties": {
+                                "source": {
+                                    "type": "string",
+                                    "description": "URL of the PDF, or base64-encoded PDF content.",
+                                    "x-ms-summary": "PDF Source"
+                                },
+                                "sourceType": {
+                                    "type": "string",
+                                    "description": "Whether the source is a URL or base64-encoded content.",
+                                    "x-ms-summary": "Source Type",
+                                    "enum": [
+                                        "url",
+                                        "base64"
+                                    ],
+                                    "default": "url"
+                                },
+                                "pages": {
+                                    "type": "string",
+                                    "description": "Page range to extract elements from (e.g., '1-3'). Leave empty for all pages.",
+                                    "x-ms-summary": "Pages"
+                                },
+                                "elementTypes": {
+                                    "type": "string",
+                                    "description": "Comma-separated element types to include (heading, paragraph, table, list, image, caption, formula). Leave empty for all types.",
+                                    "x-ms-summary": "Element Types"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Page elements with bounding boxes",
+                        "schema": {
+                            "$ref": "#/definitions/ElementsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/accessibility": {
+            "post": {
+                "operationId": "CheckAccessibility",
+                "summary": "Check PDF Accessibility",
+                "description": "Check if a PDF has structure tags and assess its accessibility status. Reports whether the PDF is tagged, the tag tree structure, and any issues found.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "source"
+                            ],
+                            "properties": {
+                                "source": {
+                                    "type": "string",
+                                    "description": "URL of the PDF, or base64-encoded PDF content.",
+                                    "x-ms-summary": "PDF Source"
+                                },
+                                "sourceType": {
+                                    "type": "string",
+                                    "description": "Whether the source is a URL or base64-encoded content.",
+                                    "x-ms-summary": "Source Type",
+                                    "enum": [
+                                        "url",
+                                        "base64"
+                                    ],
+                                    "default": "url"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Accessibility check result",
+                        "schema": {
+                            "$ref": "#/definitions/AccessibilityResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/info": {
+            "get": {
+                "operationId": "GetServerInfo",
+                "summary": "Get Server Info",
+                "description": "Get the OpenDataLoader PDF service configuration, version, and available capabilities.",
+                "x-ms-visibility": "advanced",
+                "responses": {
+                    "200": {
+                        "description": "Server information",
+                        "schema": {
+                            "$ref": "#/definitions/ServerInfoResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ConvertResponse": {
+            "type": "object",
+            "description": "Result of a PDF conversion operation.",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "description": "The converted content in the requested format.",
+                    "x-ms-summary": "Content"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "The output format used.",
+                    "x-ms-summary": "Format"
+                },
+                "pageCount": {
+                    "type": "integer",
+                    "description": "Total number of pages in the PDF.",
+                    "x-ms-summary": "Page Count"
+                },
+                "pagesProcessed": {
+                    "type": "integer",
+                    "description": "Number of pages processed.",
+                    "x-ms-summary": "Pages Processed"
+                }
+            }
+        },
+        "TablesResponse": {
+            "type": "object",
+            "description": "Result of a table extraction operation.",
+            "properties": {
+                "tables": {
+                    "type": "array",
+                    "description": "Extracted tables.",
+                    "x-ms-summary": "Tables",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "description": "Table identifier.",
+                                "x-ms-summary": "Table ID"
+                            },
+                            "pageNumber": {
+                                "type": "integer",
+                                "description": "Page where the table appears.",
+                                "x-ms-summary": "Page Number"
+                            },
+                            "boundingBox": {
+                                "type": "array",
+                                "description": "Bounding box coordinates [left, bottom, right, top] in PDF points.",
+                                "x-ms-summary": "Bounding Box",
+                                "items": {
+                                    "type": "number"
+                                }
+                            },
+                            "rowCount": {
+                                "type": "integer",
+                                "description": "Number of rows in the table.",
+                                "x-ms-summary": "Row Count"
+                            },
+                            "columnCount": {
+                                "type": "integer",
+                                "description": "Number of columns in the table.",
+                                "x-ms-summary": "Column Count"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Table content in markdown format.",
+                                "x-ms-summary": "Content"
+                            },
+                            "cells": {
+                                "type": "array",
+                                "description": "Individual cell data.",
+                                "x-ms-summary": "Cells",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "row": {
+                                            "type": "integer",
+                                            "description": "Row index (0-based).",
+                                            "x-ms-summary": "Row"
+                                        },
+                                        "column": {
+                                            "type": "integer",
+                                            "description": "Column index (0-based).",
+                                            "x-ms-summary": "Column"
+                                        },
+                                        "text": {
+                                            "type": "string",
+                                            "description": "Cell text content.",
+                                            "x-ms-summary": "Text"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tableCount": {
+                    "type": "integer",
+                    "description": "Total number of tables found.",
+                    "x-ms-summary": "Table Count"
+                }
+            }
+        },
+        "ElementsResponse": {
+            "type": "object",
+            "description": "Result of a page elements extraction operation.",
+            "properties": {
+                "elements": {
+                    "type": "array",
+                    "description": "Structured page elements.",
+                    "x-ms-summary": "Elements",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "description": "Element identifier.",
+                                "x-ms-summary": "Element ID"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Element type (heading, paragraph, table, list, image, caption, formula).",
+                                "x-ms-summary": "Type"
+                            },
+                            "pageNumber": {
+                                "type": "integer",
+                                "description": "Page where the element appears.",
+                                "x-ms-summary": "Page Number"
+                            },
+                            "boundingBox": {
+                                "type": "array",
+                                "description": "Bounding box coordinates [left, bottom, right, top] in PDF points.",
+                                "x-ms-summary": "Bounding Box",
+                                "items": {
+                                    "type": "number"
+                                }
+                            },
+                            "headingLevel": {
+                                "type": "integer",
+                                "description": "Heading level (1-6) for heading elements.",
+                                "x-ms-summary": "Heading Level"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "Element text content.",
+                                "x-ms-summary": "Content"
+                            },
+                            "font": {
+                                "type": "string",
+                                "description": "Font name used for the element.",
+                                "x-ms-summary": "Font"
+                            },
+                            "fontSize": {
+                                "type": "number",
+                                "description": "Font size in points.",
+                                "x-ms-summary": "Font Size"
+                            }
+                        }
+                    }
+                },
+                "elementCount": {
+                    "type": "integer",
+                    "description": "Total number of elements found.",
+                    "x-ms-summary": "Element Count"
+                },
+                "pageCount": {
+                    "type": "integer",
+                    "description": "Total pages in the document.",
+                    "x-ms-summary": "Page Count"
+                }
+            }
+        },
+        "AccessibilityResponse": {
+            "type": "object",
+            "description": "Result of a PDF accessibility check.",
+            "properties": {
+                "isTagged": {
+                    "type": "boolean",
+                    "description": "Whether the PDF has structure tags.",
+                    "x-ms-summary": "Is Tagged"
+                },
+                "tagCount": {
+                    "type": "integer",
+                    "description": "Number of structure tags found.",
+                    "x-ms-summary": "Tag Count"
+                },
+                "pageCount": {
+                    "type": "integer",
+                    "description": "Total pages in the document.",
+                    "x-ms-summary": "Page Count"
+                },
+                "hasTitle": {
+                    "type": "boolean",
+                    "description": "Whether the document has a title set.",
+                    "x-ms-summary": "Has Title"
+                },
+                "hasLanguage": {
+                    "type": "boolean",
+                    "description": "Whether the document language is set.",
+                    "x-ms-summary": "Has Language"
+                },
+                "summary": {
+                    "type": "string",
+                    "description": "Human-readable accessibility summary.",
+                    "x-ms-summary": "Summary"
+                },
+                "issues": {
+                    "type": "array",
+                    "description": "Accessibility issues found.",
+                    "x-ms-summary": "Issues",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "severity": {
+                                "type": "string",
+                                "description": "Issue severity (error, warning, info).",
+                                "x-ms-summary": "Severity"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "Issue description.",
+                                "x-ms-summary": "Message"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ServerInfoResponse": {
+            "type": "object",
+            "description": "OpenDataLoader PDF service configuration and capabilities.",
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "OpenDataLoader PDF version.",
+                    "x-ms-summary": "Version"
+                },
+                "hybridAvailable": {
+                    "type": "boolean",
+                    "description": "Whether hybrid mode is available on this server.",
+                    "x-ms-summary": "Hybrid Available"
+                },
+                "ocrAvailable": {
+                    "type": "boolean",
+                    "description": "Whether OCR is available for scanned PDFs.",
+                    "x-ms-summary": "OCR Available"
+                },
+                "supportedFormats": {
+                    "type": "array",
+                    "description": "Supported output formats.",
+                    "x-ms-summary": "Supported Formats",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "supportedLanguages": {
+                    "type": "array",
+                    "description": "Supported OCR languages.",
+                    "x-ms-summary": "Supported Languages",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "apiKey": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key"
+        }
+    },
+    "security": [
+        {
+            "apiKey": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://opendataloader.org/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://opendataloader.org/privacy"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Content and Files;AI"
+        }
+    ]
+}
