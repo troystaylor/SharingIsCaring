@@ -79,11 +79,15 @@ Write-Host "  $ResourceGroup in $Location"
 
 if (-not $SkipInfra) {
     Write-Host "`n[3/6] Deploying infrastructure (Bicep)..." -ForegroundColor Yellow
-    $deployment = az deployment group create `
-        --resource-group $ResourceGroup `
-        --template-file $bicepFile `
-        --parameters apiKey=$ApiKey `
-        --query "properties.outputs" -o json | ConvertFrom-Json
+    $bicepArgs = @(
+        "--resource-group", $ResourceGroup,
+        "--template-file", $bicepFile,
+        "--parameters", "apiKey=$ApiKey"
+    )
+    if ($UseGhcrImage) {
+        $bicepArgs += @("--parameters", "containerImage=ghcr.io/troystaylor/opendataloader-pdf-api:${ImageTag}")
+    }
+    $deployment = az deployment group create @bicepArgs --query "properties.outputs" -o json | ConvertFrom-Json
 
     $acrName = $deployment.acrName.value
     $acrLoginServer = $deployment.acrLoginServer.value
@@ -106,8 +110,9 @@ if (-not $SkipInfra) {
 
 if ($UseGhcrImage) {
     $imageName = "ghcr.io/troystaylor/opendataloader-pdf-api:${ImageTag}"
-    Write-Host "`n[4/6] Using pre-built GHCR image..." -ForegroundColor Yellow
+    Write-Host "`n[4/6] Using pre-built GHCR image (already set in Bicep)..." -ForegroundColor Yellow
     Write-Host "  Image: $imageName"
+    $SkipBuild = $true
 } elseif (-not $SkipBuild) {
     $imageName = "${acrLoginServer}/opendataloader-pdf-api:${ImageTag}"
     Write-Host "`n[4/6] Building container image..." -ForegroundColor Yellow
@@ -122,13 +127,17 @@ if ($UseGhcrImage) {
 
 # ── Step 5: Update Container App ──
 
-Write-Host "`n[5/6] Updating container app..." -ForegroundColor Yellow
-az containerapp update `
-    --name $acaAppName `
-    --resource-group $ResourceGroup `
-    --image $imageName `
-    -o none
-Write-Host "  Updated to: $imageName"
+if ($UseGhcrImage -and -not $SkipInfra) {
+    Write-Host "`n[5/6] Image already set via Bicep — skipping update" -ForegroundColor DarkGray
+} else {
+    Write-Host "`n[5/6] Updating container app..." -ForegroundColor Yellow
+    az containerapp update `
+        --name $acaAppName `
+        --resource-group $ResourceGroup `
+        --image $imageName `
+        -o none
+    Write-Host "  Updated to: $imageName"
+}
 
 # ── Step 6: Verify ──
 

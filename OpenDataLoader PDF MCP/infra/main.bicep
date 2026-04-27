@@ -110,7 +110,7 @@ resource acaApp 'Microsoft.App/containerApps@2024-03-01' = {
       containers: [
         {
           name: 'opendataloader-pdf-api'
-          image: containerImage != '' ? containerImage : '${acr.properties.loginServer}/opendataloader-pdf-api:latest'
+          image: containerImage != '' ? containerImage : 'mcr.microsoft.com/k8se/quickstart:latest'
           resources: {
             cpu: json('1.0')
             memory: '2Gi'
