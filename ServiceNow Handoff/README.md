@@ -322,18 +322,31 @@ Create a Business Rule in ServiceNow to POST agent replies to your webhook:
 
 ## Production Considerations
 
-- **Storage**: Replace in-memory mapping and `MemoryStorage` with Azure Cosmos DB or Blob Storage
-- **Credentials**: Store all secrets in Azure Key Vault and use Key Vault references in App Service
-- **OAuth**: Use `client_credentials` grant (not `password` grant) with a properly configured ServiceNow OAuth app
-- **Scaling**: The `ConversationMappingStore` uses `ConcurrentDictionary` which doesn't work across multiple instances. Use persistent storage
+- **Storage**: This project uses Azure Blob Storage with managed identity for persistent state
+- **Credentials**: Secrets are stored in Azure Key Vault with App Service Key Vault references
+- **OAuth**: Auto-detects `client_credentials` (production) vs `password` grant (dev instances)
+- **Scaling**: The `ConversationMappingStore` uses `IStorage` (Blob Storage) which supports multiple instances
 - **Security**: Ensure `WebhookSecret` is set — without it, the webhook accepts all requests
 - **Retry**: ServiceNow API calls use `Microsoft.Extensions.Http.Resilience` with exponential backoff and circuit breaker
+
+## Related Samples
+
+| Sample | Pattern | Channel | Proactive Push |
+|--------|---------|---------|----------------|
+| **This project** | Direct Line + Webhook | Any (WebChat, Teams, etc.) | Yes — via `ProcessProactiveAsync` |
+| [CopilotStudioSamples: skill-handoff](https://github.com/microsoft/CopilotStudioSamples/tree/main/contact-center/skill-handoff) | M365 Agents SDK Skill | Teams only | Yes — via Teams proactive messaging |
+| [CopilotStudioSamples: servicenow](https://github.com/microsoft/CopilotStudioSamples/tree/main/contact-center/servicenow) | Azure Function relay + Direct Line | ServiceNow widget | No — polling-based |
+| [M365 Agents SDK: GenesysHandoff](https://github.com/microsoft/Agents/tree/main/samples/dotnet/GenesysHandoff) | Agents SDK + Genesys Open Messaging | Teams | Yes — via webhook |
+
+> **Note:** The skill-handoff sample uses M365 Agents SDK Skills, which Microsoft notes are *"currently supported but not the recommended long-term pattern. For new implementations, consider using multi-agent orchestration."*
 
 ## Key References
 
 - [Copilot Studio: Hand off to ServiceNow](https://learn.microsoft.com/en-us/microsoft-copilot-studio/customer-copilot-servicenow)
 - [Copilot Studio: Integrate with M365 Agents SDK](https://learn.microsoft.com/en-us/microsoft-copilot-studio/publication-integrate-web-or-native-app-m365-agents-sdk)
 - [Copilot Studio: Configure generic handoff](https://learn.microsoft.com/en-us/microsoft-copilot-studio/configure-generic-handoff)
+- [CopilotStudioSamples: Skill-based handoff](https://github.com/microsoft/CopilotStudioSamples/tree/main/contact-center/skill-handoff)
+- [CopilotStudioSamples: ServiceNow integration](https://github.com/microsoft/CopilotStudioSamples/tree/main/contact-center/servicenow)
 - [M365 Agents SDK: GenesysHandoff sample](https://github.com/microsoft/Agents/tree/main/samples/dotnet/GenesysHandoff)
 - [M365 Agents SDK: CopilotStudio Client sample](https://github.com/microsoft/Agents/tree/main/samples/dotnet/copilotstudio-client)
 - [M365 Agents SDK documentation](https://learn.microsoft.com/en-us/microsoft-365/agents-sdk/)
