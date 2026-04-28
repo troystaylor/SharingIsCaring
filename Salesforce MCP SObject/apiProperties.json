@@ -1,0 +1,51 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "token": {
+                "type": "oauthSetting",
+                "oAuthSettings": {
+                    "identityProvider": "SalesforceV2",
+                    "clientId": "YOUR_CLIENT_ID",
+                    "clientSecret": "YOUR_CLIENT_SECRET",
+                    "scopes": [
+                        "mcp_api",
+                        "refresh_token"
+                    ],
+                    "redirectMode": "GlobalPerConnector",
+                    "redirectUrl": "https://global.consent.azure-apim.net/redirect/UNIQUE_IDENTIFIER_FOR_THIS_ENVIRONMENT",
+                    "properties": {
+                        "IsFirstParty": "False",
+                        "IsOnbehalfofLoginSupported": false
+                    },
+                    "customParameters": {
+                        "LoginUri": {
+                            "value": "https://YOUR_INSTANCE.my.salesforce.com"
+                        }
+                    }
+                },
+                "uiDefinition": {
+                    "displayName": "OAuth 2.0 Authentication",
+                    "description": "OAuth 2.0 authentication with Salesforce using mcp_api scope"
+                }
+            }
+        },
+        "policyTemplateInstances": [
+            {
+                "templateId": "setheader",
+                "title": "Set Accept Header for MCP",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "Accept",
+                    "x-ms-apimTemplateParameter.value": "application/json, text/event-stream",
+                    "x-ms-apimTemplateParameter.existsAction": "override",
+                    "x-ms-apimTemplate-policySection": "Request"
+                }
+            }
+        ],
+        "iconBrandColor": "#00A1E0",
+        "capabilities": [
+            "actions"
+        ],
+        "publisher": "Troy Taylor",
+        "stackOwner": "Salesforce"
+    }
+}

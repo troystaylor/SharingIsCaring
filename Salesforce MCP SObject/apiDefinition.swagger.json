@@ -1,0 +1,72 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Salesforce MCP SObject",
+        "version": "1.0.0",
+        "description": "Passthrough connector to Salesforce's official hosted MCP server for full SObject CRUD operations. Provides query (SOQL), search (SOSL), record create/read/update/delete, relationship traversal, schema discovery, and user info — all enforced by Salesforce's per-user field-level security, object permissions, and sharing rules. Requires a Salesforce External Client App with the mcp_api OAuth scope.",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.salesforce.com",
+    "basePath": "/platform/mcp/v1/platform/sobject-all",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "summary": "Invoke Salesforce MCP SObject",
+                "description": "Proxies MCP requests to Salesforce's hosted MCP SObject server. Tools include getObjectSchema, soqlQuery, find, getUserInfo, listRecentSobjectRecords, getRelatedRecords, createSobjectRecord, updateSobjectRecord, updateRelatedRecord, deleteSobjectRecord, and deleteRelatedRecord.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://YOUR_INSTANCE.my.salesforce.com/services/oauth2/authorize",
+            "tokenUrl": "https://YOUR_INSTANCE.my.salesforce.com/services/oauth2/token",
+            "scopes": {
+                "mcp_api": "Access Salesforce hosted MCP servers"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "mcp_api"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.salesforce.com/company/privacy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Sales and CRM"
+        }
+    ]
+}
