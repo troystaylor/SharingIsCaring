@@ -8,17 +8,15 @@ The hosted MCP server exposes these tools automatically:
 
 | Tool | Description |
 |------|-------------|
-| `getObjectSchema` | Returns schema info for all objects (index mode) or a specific object (detail mode) |
-| `soqlQuery` | Executes a SOQL query to retrieve records |
-| `find` | Text search across multiple objects via SOSL |
-| `getUserInfo` | Returns the authenticated user's identity and context |
-| `listRecentSobjectRecords` | Returns recently viewed/modified records of a specific type |
-| `getRelatedRecords` | Retrieves child records related to a parent record |
-| `createSobjectRecord` | Creates a new record |
-| `updateSobjectRecord` | Updates an existing record by ID |
-| `updateRelatedRecord` | Updates a child record via relationship traversal |
-| `deleteSobjectRecord` | Permanently deletes a record by ID |
-| `deleteRelatedRecord` | Deletes a child record via relationship traversal |
+| `getObjectSchema` | Returns schema info optimized for LLM consumption. Call with no parameters for an index of all queryable objects; call with object name(s) for field-level details |
+| `soqlQuery` | Executes a SOQL query to retrieve records. Supports relationship queries, subqueries, filtering, sorting, and aggregation |
+| `find` | Text search (SOSL) across multiple objects simultaneously with relevance-ranked results. Max 2,000 records |
+| `getUserInfo` | Returns current user's identity, role, profile, manager, local time, timezone, and admin-configured preferences |
+| `listRecentSobjectRecords` | Returns records of a specific type the user recently viewed or modified. Up to 2,000 records |
+| `getRelatedRecords` | Retrieves child records via relationship traversal. Supports multi-level traversal (e.g., Account → Contacts → Cases) |
+| `createSobjectRecord` | Creates a new record. Returns the new record's ID on success |
+| `updateSobjectRecord` | Updates an existing record by ID. Only include fields you want to change |
+| `updateRelatedRecord` | Updates a child record by navigating from a parent record through a relationship |
 
 All operations respect the authenticated user's field-level security, object permissions, and sharing rules.
 
