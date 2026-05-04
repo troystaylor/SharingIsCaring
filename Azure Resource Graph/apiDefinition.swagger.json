@@ -1,0 +1,1000 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Azure Resource Graph",
+        "description": "Query and explore Azure resources at scale using Kusto Query Language (KQL). Execute queries across subscriptions and management groups, manage saved queries, and leverage governance tools for policy compliance, security assessments, health monitoring, and more.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "management.azure.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Azure Resource Graph MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides 21 tools for querying Azure resources, governance, and saved query management.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/providers/Microsoft.ResourceGraph/resources": {
+            "post": {
+                "summary": "Query Resources",
+                "description": "Execute a Kusto Query Language (KQL) query against Azure Resource Graph. Returns resources matching the query across specified subscriptions or management groups.",
+                "operationId": "QueryResources",
+                "x-ms-summary": "Query Resources",
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The query request body.",
+                        "schema": {
+                            "$ref": "#/definitions/QueryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Query result.",
+                        "schema": {
+                            "$ref": "#/definitions/QueryResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/providers/Microsoft.ResourceGraph/operations": {
+            "get": {
+                "summary": "List Operations",
+                "description": "Lists all available REST API operations for Azure Resource Graph.",
+                "operationId": "ListOperations",
+                "x-ms-summary": "List Operations",
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of operations.",
+                        "schema": {
+                            "$ref": "#/definitions/OperationListResult"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/providers/Microsoft.ResourceGraph/queries": {
+            "get": {
+                "summary": "List Saved Queries by Subscription",
+                "description": "Get all saved graph queries defined within the specified subscription.",
+                "operationId": "ListSavedQueriesBySubscription",
+                "x-ms-summary": "List Saved Queries by Subscription",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of saved graph queries.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryListResult"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryError"
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ResourceGraph/queries": {
+            "get": {
+                "summary": "List Saved Queries",
+                "description": "Get all saved graph queries defined within the specified subscription and resource group.",
+                "operationId": "ListSavedQueries",
+                "x-ms-summary": "List Saved Queries",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource group.",
+                        "x-ms-summary": "Resource Group Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of saved graph queries.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryListResult"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryError"
+                        }
+                    }
+                },
+                "x-ms-pageable": {
+                    "nextLinkName": "nextLink"
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.ResourceGraph/queries/{resourceName}": {
+            "get": {
+                "summary": "Get Saved Query",
+                "description": "Get a single saved graph query by its resource name.",
+                "operationId": "GetSavedQuery",
+                "x-ms-summary": "Get Saved Query",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource group.",
+                        "x-ms-summary": "Resource Group Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the saved graph query resource.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A saved graph query.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryResource"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "summary": "Create or Update Saved Query",
+                "description": "Create a new saved graph query, or replace an existing one.",
+                "operationId": "CreateOrUpdateSavedQuery",
+                "x-ms-summary": "Create or Update Saved Query",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource group.",
+                        "x-ms-summary": "Resource Group Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the saved graph query resource.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "Properties to create or update the saved graph query.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryResource"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated graph query.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryResource"
+                        }
+                    },
+                    "201": {
+                        "description": "The newly created graph query.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryResource"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Saved Query",
+                "description": "Partially update an existing saved graph query.",
+                "operationId": "UpdateSavedQuery",
+                "x-ms-summary": "Update Saved Query",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource group.",
+                        "x-ms-summary": "Resource Group Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the saved graph query resource.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "Properties to update on the saved graph query.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryUpdateParameters"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated graph query.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryResource"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Saved Query",
+                "description": "Delete a saved graph query.",
+                "operationId": "DeleteSavedQuery",
+                "x-ms-summary": "Delete Saved Query",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource group.",
+                        "x-ms-summary": "Resource Group Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the saved graph query resource.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The saved query was deleted."
+                    },
+                    "204": {
+                        "description": "The resource does not exist."
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/GraphQueryError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "QueryRequest": {
+            "type": "object",
+            "description": "Describes a query to be executed.",
+            "required": [
+                "query"
+            ],
+            "properties": {
+                "subscriptions": {
+                    "type": "array",
+                    "description": "Azure subscription IDs to scope the query.",
+                    "x-ms-summary": "Subscriptions",
+                    "items": {
+                        "type": "string",
+                        "description": "Subscription ID."
+                    }
+                },
+                "managementGroups": {
+                    "type": "array",
+                    "description": "Azure management group names to scope the query. Example: ['mg1', 'mg2'].",
+                    "x-ms-summary": "Management Groups",
+                    "items": {
+                        "type": "string",
+                        "description": "Management group name."
+                    }
+                },
+                "query": {
+                    "type": "string",
+                    "description": "The KQL query to execute against Azure Resource Graph.",
+                    "x-ms-summary": "Query"
+                },
+                "options": {
+                    "$ref": "#/definitions/QueryRequestOptions"
+                },
+                "facets": {
+                    "type": "array",
+                    "description": "Facet requests to compute against the query result.",
+                    "x-ms-summary": "Facets",
+                    "items": {
+                        "$ref": "#/definitions/FacetRequest"
+                    }
+                }
+            }
+        },
+        "QueryRequestOptions": {
+            "type": "object",
+            "description": "Query evaluation options.",
+            "properties": {
+                "$skipToken": {
+                    "type": "string",
+                    "description": "Continuation token for pagination.",
+                    "x-ms-summary": "Skip Token"
+                },
+                "$top": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Maximum number of rows to return (1-1000).",
+                    "x-ms-summary": "Top",
+                    "minimum": 1,
+                    "maximum": 1000
+                },
+                "$skip": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of rows to skip from the beginning.",
+                    "x-ms-summary": "Skip",
+                    "minimum": 0
+                },
+                "resultFormat": {
+                    "type": "string",
+                    "description": "Result format: table or objectArray.",
+                    "x-ms-summary": "Result Format",
+                    "default": "objectArray",
+                    "enum": [
+                        "table",
+                        "objectArray"
+                    ]
+                },
+                "allowPartialScopes": {
+                    "type": "boolean",
+                    "description": "Allow partial scopes when subscription count exceeds limits.",
+                    "x-ms-summary": "Allow Partial Scopes",
+                    "default": false
+                },
+                "authorizationScopeFilter": {
+                    "type": "string",
+                    "description": "Authorization scope filter for returned resources.",
+                    "x-ms-summary": "Authorization Scope Filter",
+                    "default": "AtScopeAndBelow",
+                    "enum": [
+                        "AtScopeAndBelow",
+                        "AtScopeAndAbove",
+                        "AtScopeExact",
+                        "AtScopeAboveAndBelow"
+                    ]
+                }
+            }
+        },
+        "FacetRequest": {
+            "type": "object",
+            "description": "A facet request to compute statistics over query results.",
+            "required": [
+                "expression"
+            ],
+            "properties": {
+                "expression": {
+                    "type": "string",
+                    "description": "The column or expression to summarize by.",
+                    "x-ms-summary": "Expression"
+                },
+                "options": {
+                    "$ref": "#/definitions/FacetRequestOptions"
+                }
+            }
+        },
+        "FacetRequestOptions": {
+            "type": "object",
+            "description": "Options for facet evaluation.",
+            "properties": {
+                "sortBy": {
+                    "type": "string",
+                    "description": "Column name or expression to sort on. Defaults to count.",
+                    "x-ms-summary": "Sort By"
+                },
+                "sortOrder": {
+                    "type": "string",
+                    "description": "Sorting order.",
+                    "x-ms-summary": "Sort Order",
+                    "default": "desc",
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                },
+                "filter": {
+                    "type": "string",
+                    "description": "Filter condition applied before faceting.",
+                    "x-ms-summary": "Filter"
+                },
+                "$top": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Maximum number of facet rows (1-1000).",
+                    "x-ms-summary": "Top",
+                    "minimum": 1,
+                    "maximum": 1000
+                }
+            }
+        },
+        "QueryResponse": {
+            "type": "object",
+            "description": "Query result.",
+            "properties": {
+                "totalRecords": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Total records matching the query.",
+                    "x-ms-summary": "Total Records"
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "Number of records in this page.",
+                    "x-ms-summary": "Count"
+                },
+                "resultTruncated": {
+                    "type": "string",
+                    "description": "Whether query results are truncated.",
+                    "x-ms-summary": "Result Truncated",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
+                },
+                "$skipToken": {
+                    "type": "string",
+                    "description": "Continuation token for the next page.",
+                    "x-ms-summary": "Skip Token"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "Query output in JObject array or Table format.",
+                    "x-ms-summary": "Data"
+                },
+                "facets": {
+                    "type": "array",
+                    "description": "Query facets.",
+                    "x-ms-summary": "Facets",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "expression": {
+                                "type": "string",
+                                "description": "Facet expression."
+                            },
+                            "resultType": {
+                                "type": "string",
+                                "description": "Result type (FacetResult or FacetError)."
+                            },
+                            "totalRecords": {
+                                "type": "integer",
+                                "format": "int64",
+                                "description": "Total facet records."
+                            },
+                            "count": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "Facet records returned."
+                            },
+                            "data": {
+                                "type": "object",
+                                "description": "Facet data."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "GraphQueryListResult": {
+            "type": "object",
+            "description": "List of saved graph queries.",
+            "properties": {
+                "nextLink": {
+                    "type": "string",
+                    "description": "URL to fetch the next page.",
+                    "x-ms-summary": "Next Link"
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Array of saved graph queries.",
+                    "items": {
+                        "$ref": "#/definitions/GraphQueryResource"
+                    }
+                }
+            }
+        },
+        "GraphQueryResource": {
+            "type": "object",
+            "description": "Saved graph query resource.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Azure resource ID.",
+                    "x-ms-summary": "ID",
+                    "readOnly": true
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Resource name (GUID).",
+                    "x-ms-summary": "Name",
+                    "readOnly": true
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Azure resource type.",
+                    "x-ms-summary": "Type",
+                    "readOnly": true
+                },
+                "location": {
+                    "type": "string",
+                    "description": "The location of the resource.",
+                    "x-ms-summary": "Location"
+                },
+                "etag": {
+                    "type": "string",
+                    "description": "ETag for optimistic concurrency.",
+                    "x-ms-summary": "ETag"
+                },
+                "tags": {
+                    "type": "object",
+                    "description": "Resource tags.",
+                    "x-ms-summary": "Tags",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "properties": {
+                    "type": "object",
+                    "description": "Graph query properties.",
+                    "properties": {
+                        "timeModified": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Last modification time (UTC).",
+                            "x-ms-summary": "Time Modified",
+                            "readOnly": true
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Description of the graph query.",
+                            "x-ms-summary": "Description"
+                        },
+                        "query": {
+                            "type": "string",
+                            "description": "The KQL query.",
+                            "x-ms-summary": "Query"
+                        },
+                        "resultKind": {
+                            "type": "string",
+                            "description": "Type of graph query.",
+                            "x-ms-summary": "Result Kind",
+                            "readOnly": true,
+                            "enum": [
+                                "basic"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "GraphQueryUpdateParameters": {
+            "type": "object",
+            "description": "Parameters for updating a saved graph query.",
+            "properties": {
+                "tags": {
+                    "type": "object",
+                    "description": "Resource tags.",
+                    "x-ms-summary": "Tags",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "etag": {
+                    "type": "string",
+                    "description": "ETag for optimistic concurrency.",
+                    "x-ms-summary": "ETag"
+                },
+                "properties": {
+                    "type": "object",
+                    "description": "Properties to update.",
+                    "properties": {
+                        "description": {
+                            "type": "string",
+                            "description": "Description of the graph query.",
+                            "x-ms-summary": "Description"
+                        },
+                        "query": {
+                            "type": "string",
+                            "description": "The KQL query.",
+                            "x-ms-summary": "Query"
+                        }
+                    }
+                }
+            }
+        },
+        "OperationListResult": {
+            "type": "object",
+            "description": "List of Resource Graph operations.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "Available operations.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Operation name."
+                            },
+                            "display": {
+                                "type": "object",
+                                "description": "Display metadata.",
+                                "properties": {
+                                    "provider": {
+                                        "type": "string",
+                                        "description": "Service provider."
+                                    },
+                                    "resource": {
+                                        "type": "string",
+                                        "description": "Resource type."
+                                    },
+                                    "operation": {
+                                        "type": "string",
+                                        "description": "Operation type."
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Operation description."
+                                    }
+                                }
+                            },
+                            "origin": {
+                                "type": "string",
+                                "description": "Origin of the operation."
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "description": "Error response from the API.",
+            "properties": {
+                "error": {
+                    "type": "object",
+                    "description": "Error details.",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Error code."
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message."
+                        },
+                        "details": {
+                            "type": "array",
+                            "description": "Error details.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Detail error code."
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Detail error message."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "GraphQueryError": {
+            "type": "object",
+            "description": "Error response for graph query operations.",
+            "properties": {
+                "error": {
+                    "type": "object",
+                    "description": "Error details.",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Error code."
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message."
+                        },
+                        "details": {
+                            "type": "array",
+                            "description": "Validation error details.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Property-level error code."
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Property-level error message."
+                                    },
+                                    "target": {
+                                        "type": "string",
+                                        "description": "Property name."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://management.azure.com/.default": "Access Azure Resource Graph"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://management.azure.com/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/azure/governance/resource-graph/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
