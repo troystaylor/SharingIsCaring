@@ -1,0 +1,777 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power A2A Template",
+        "description": "Agent-to-Agent (A2A) protocol client for Power Platform. Connects to any A2A v1.0 agent from Power Automate (REST operations) and Copilot Studio (MCP tools). Supports JSON-RPC and HTTP+JSON protocol bindings.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "a2a-agent-host.example.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/a2a/agent-card": {
+            "post": {
+                "operationId": "GetAgentCard",
+                "summary": "Get Agent Card",
+                "description": "Discover agent identity, skills, capabilities, and authentication requirements. Retrieves the agent card from the well-known endpoint.",
+                "x-ms-summary": "Get Agent Card",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {}
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Agent card retrieved successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/AgentCardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/send-message": {
+            "post": {
+                "operationId": "SendMessage",
+                "summary": "Send Message",
+                "description": "Send a natural language message to an A2A agent and wait for a completed response. Uses synchronous mode — the call blocks until the agent finishes processing.",
+                "x-ms-summary": "Send Message",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Agent completed the task.",
+                        "schema": {
+                            "$ref": "#/definitions/TaskResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/send-message-async": {
+            "post": {
+                "operationId": "SendMessageAsync",
+                "summary": "Send Message (Async)",
+                "description": "Send a message to an A2A agent and return immediately with a task ID. Use Get Task to poll for the result.",
+                "x-ms-summary": "Send Message (Async)",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task submitted. Poll with Get Task for results.",
+                        "schema": {
+                            "$ref": "#/definitions/TaskResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/get-task": {
+            "post": {
+                "operationId": "GetTask",
+                "summary": "Get Task",
+                "description": "Get the current status, artifacts, and history of a task by its ID. Use after Send Message (Async) to poll for completion.",
+                "x-ms-summary": "Get Task",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GetTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task status retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/TaskResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/list-tasks": {
+            "post": {
+                "operationId": "ListTasks",
+                "summary": "List Tasks",
+                "description": "List tasks filtered by context ID, state, or other criteria. Supports pagination.",
+                "x-ms-summary": "List Tasks",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ListTasksRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task list retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/ListTasksResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/cancel-task": {
+            "post": {
+                "operationId": "CancelTask",
+                "summary": "Cancel Task",
+                "description": "Cancel an in-progress task by its ID.",
+                "x-ms-summary": "Cancel Task",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CancelTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Task cancelled.",
+                        "schema": {
+                            "$ref": "#/definitions/TaskResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/create-push-config": {
+            "post": {
+                "operationId": "CreatePushNotificationConfig",
+                "summary": "Create Push Notification Config",
+                "description": "Create a push notification configuration for a task. The agent will POST task updates to the specified webhook URL.",
+                "x-ms-summary": "Create Push Notification Config",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreatePushConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Push notification config created.",
+                        "schema": {
+                            "$ref": "#/definitions/PushConfigResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/get-push-config": {
+            "post": {
+                "operationId": "GetPushNotificationConfig",
+                "summary": "Get Push Notification Config",
+                "description": "Retrieve a push notification configuration by task ID and config ID.",
+                "x-ms-summary": "Get Push Notification Config",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GetPushConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Push notification config retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/PushConfigResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/list-push-configs": {
+            "post": {
+                "operationId": "ListPushNotificationConfigs",
+                "summary": "List Push Notification Configs",
+                "description": "List all push notification configurations for a task.",
+                "x-ms-summary": "List Push Notification Configs",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ListPushConfigsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Push notification configs listed.",
+                        "schema": {
+                            "$ref": "#/definitions/ListPushConfigsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/delete-push-config": {
+            "post": {
+                "operationId": "DeletePushNotificationConfig",
+                "summary": "Delete Push Notification Config",
+                "description": "Delete a push notification configuration by task ID and config ID.",
+                "x-ms-summary": "Delete Push Notification Config",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DeletePushConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Push notification config deleted.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "description": "Whether the deletion was successful.",
+                                    "x-ms-summary": "Success"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke A2A Agent MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio agent integration. Exposes A2A operations as MCP tools.",
+                "x-ms-summary": "Invoke A2A Agent MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response."
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "SendMessageRequest": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "The natural language message to send to the agent.",
+                    "x-ms-summary": "Message"
+                },
+                "contextId": {
+                    "type": "string",
+                    "description": "Context ID for multi-turn conversations. Pass the contextId from a previous response to continue the conversation.",
+                    "x-ms-summary": "Context ID"
+                },
+                "agentId": {
+                    "type": "string",
+                    "description": "Target a specific agent on multi-agent gateways. Leave empty to use the default agent.",
+                    "x-ms-summary": "Agent ID"
+                },
+                "timeZone": {
+                    "type": "string",
+                    "description": "IANA time zone name for time-sensitive queries (e.g., America/Los_Angeles). Required by Work IQ for queries like 'today' or 'this week'.",
+                    "x-ms-summary": "Time Zone"
+                },
+                "timeZoneOffset": {
+                    "type": "integer",
+                    "description": "UTC offset in minutes (e.g., -480 for PST). Used with Time Zone for location context.",
+                    "x-ms-summary": "Time Zone Offset"
+                },
+                "acceptedOutputModes": {
+                    "type": "array",
+                    "description": "MIME types the client can accept (e.g., text/plain, application/json).",
+                    "x-ms-summary": "Accepted Output Modes",
+                    "x-ms-visibility": "advanced",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "historyLength": {
+                    "type": "integer",
+                    "description": "Maximum number of recent messages from the task history to include in the response.",
+                    "x-ms-summary": "History Length",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "GetTaskRequest": {
+            "type": "object",
+            "required": [
+                "taskId"
+            ],
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "The unique identifier of the task to retrieve.",
+                    "x-ms-summary": "Task ID"
+                },
+                "historyLength": {
+                    "type": "integer",
+                    "description": "Maximum number of recent messages from the task history to include.",
+                    "x-ms-summary": "History Length",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "ListTasksRequest": {
+            "type": "object",
+            "properties": {
+                "contextId": {
+                    "type": "string",
+                    "description": "Filter tasks by context ID.",
+                    "x-ms-summary": "Context ID"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Filter tasks by state.",
+                    "x-ms-summary": "State",
+                    "enum": [
+                        "submitted",
+                        "working",
+                        "completed",
+                        "failed",
+                        "canceled",
+                        "input_required",
+                        "auth_required",
+                        "rejected"
+                    ]
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "Maximum number of tasks to return (1-100, default 50).",
+                    "x-ms-summary": "Page Size",
+                    "x-ms-visibility": "advanced"
+                },
+                "pageToken": {
+                    "type": "string",
+                    "description": "Page token from a previous response to retrieve the next page.",
+                    "x-ms-summary": "Page Token",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "CancelTaskRequest": {
+            "type": "object",
+            "required": [
+                "taskId"
+            ],
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "The unique identifier of the task to cancel.",
+                    "x-ms-summary": "Task ID"
+                }
+            }
+        },
+        "CreatePushConfigRequest": {
+            "type": "object",
+            "required": [
+                "taskId",
+                "url"
+            ],
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "The task ID to configure push notifications for.",
+                    "x-ms-summary": "Task ID"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "The webhook URL where task update notifications should be sent.",
+                    "x-ms-summary": "Webhook URL"
+                },
+                "token": {
+                    "type": "string",
+                    "description": "A token unique to this task or session for webhook verification.",
+                    "x-ms-summary": "Verification Token",
+                    "x-ms-visibility": "advanced"
+                },
+                "authScheme": {
+                    "type": "string",
+                    "description": "HTTP authentication scheme for the webhook (e.g., Bearer).",
+                    "x-ms-summary": "Auth Scheme",
+                    "x-ms-visibility": "advanced"
+                },
+                "authCredentials": {
+                    "type": "string",
+                    "description": "Credentials for the webhook authentication scheme.",
+                    "x-ms-summary": "Auth Credentials",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "GetPushConfigRequest": {
+            "type": "object",
+            "required": [
+                "taskId",
+                "configId"
+            ],
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "The parent task ID.",
+                    "x-ms-summary": "Task ID"
+                },
+                "configId": {
+                    "type": "string",
+                    "description": "The push notification config ID to retrieve.",
+                    "x-ms-summary": "Config ID"
+                }
+            }
+        },
+        "ListPushConfigsRequest": {
+            "type": "object",
+            "required": [
+                "taskId"
+            ],
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "The task ID to list push notification configs for.",
+                    "x-ms-summary": "Task ID"
+                }
+            }
+        },
+        "DeletePushConfigRequest": {
+            "type": "object",
+            "required": [
+                "taskId",
+                "configId"
+            ],
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "The parent task ID.",
+                    "x-ms-summary": "Task ID"
+                },
+                "configId": {
+                    "type": "string",
+                    "description": "The push notification config ID to delete.",
+                    "x-ms-summary": "Config ID"
+                }
+            }
+        },
+        "TaskResponse": {
+            "type": "object",
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "Unique identifier for the task.",
+                    "x-ms-summary": "Task ID"
+                },
+                "contextId": {
+                    "type": "string",
+                    "description": "Context ID for multi-turn conversation continuity. Pass this to the next Send Message call.",
+                    "x-ms-summary": "Context ID"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Current task state: submitted, working, completed, failed, canceled, input_required, auth_required, rejected.",
+                    "x-ms-summary": "State"
+                },
+                "responseText": {
+                    "type": "string",
+                    "description": "Extracted text content from the agent's response artifacts.",
+                    "x-ms-summary": "Response Text"
+                },
+                "artifacts": {
+                    "type": "array",
+                    "description": "Structured output artifacts from the agent.",
+                    "x-ms-summary": "Artifacts",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "artifactId": {
+                                "type": "string",
+                                "description": "Unique artifact identifier.",
+                                "x-ms-summary": "Artifact ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Human-readable artifact name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "parts": {
+                                "type": "array",
+                                "description": "Content parts of the artifact.",
+                                "x-ms-summary": "Parts",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string",
+                                            "description": "Text content.",
+                                            "x-ms-summary": "Text"
+                                        },
+                                        "url": {
+                                            "type": "string",
+                                            "description": "URL reference to content.",
+                                            "x-ms-summary": "URL"
+                                        },
+                                        "mediaType": {
+                                            "type": "string",
+                                            "description": "MIME type of the content.",
+                                            "x-ms-summary": "Media Type"
+                                        },
+                                        "filename": {
+                                            "type": "string",
+                                            "description": "Optional filename.",
+                                            "x-ms-summary": "Filename"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "description": "Structured JSON data content.",
+                                            "x-ms-summary": "Data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "statusMessage": {
+                    "type": "string",
+                    "description": "Status message from the agent, if any.",
+                    "x-ms-summary": "Status Message"
+                }
+            }
+        },
+        "ListTasksResponse": {
+            "type": "object",
+            "properties": {
+                "tasks": {
+                    "type": "array",
+                    "description": "Array of tasks matching the filter criteria.",
+                    "x-ms-summary": "Tasks",
+                    "items": {
+                        "$ref": "#/definitions/TaskResponse"
+                    }
+                },
+                "totalSize": {
+                    "type": "integer",
+                    "description": "Total number of tasks matching the criteria.",
+                    "x-ms-summary": "Total Size"
+                },
+                "nextPageToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page of results.",
+                    "x-ms-summary": "Next Page Token"
+                }
+            }
+        },
+        "AgentCardResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Agent display name.",
+                    "x-ms-summary": "Name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Agent description.",
+                    "x-ms-summary": "Description"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Agent version.",
+                    "x-ms-summary": "Version"
+                },
+                "provider": {
+                    "type": "object",
+                    "description": "Agent provider information.",
+                    "x-ms-summary": "Provider",
+                    "properties": {
+                        "organization": {
+                            "type": "string",
+                            "description": "Provider organization name.",
+                            "x-ms-summary": "Organization"
+                        },
+                        "url": {
+                            "type": "string",
+                            "description": "Provider URL.",
+                            "x-ms-summary": "URL"
+                        }
+                    }
+                },
+                "skills": {
+                    "type": "array",
+                    "description": "Skills the agent can perform.",
+                    "x-ms-summary": "Skills",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Skill identifier.",
+                                "x-ms-summary": "ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Skill name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Skill description.",
+                                "x-ms-summary": "Description"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "description": "Skill tags.",
+                                "x-ms-summary": "Tags",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "examples": {
+                                "type": "array",
+                                "description": "Example prompts for this skill.",
+                                "x-ms-summary": "Examples",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "capabilities": {
+                    "type": "object",
+                    "description": "Agent capability flags.",
+                    "x-ms-summary": "Capabilities",
+                    "properties": {
+                        "streaming": {
+                            "type": "boolean",
+                            "description": "Whether the agent supports streaming.",
+                            "x-ms-summary": "Streaming"
+                        },
+                        "pushNotifications": {
+                            "type": "boolean",
+                            "description": "Whether the agent supports push notifications.",
+                            "x-ms-summary": "Push Notifications"
+                        }
+                    }
+                },
+                "defaultInputModes": {
+                    "type": "array",
+                    "description": "Supported input media types.",
+                    "x-ms-summary": "Default Input Modes",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "defaultOutputModes": {
+                    "type": "array",
+                    "description": "Supported output media types.",
+                    "x-ms-summary": "Default Output Modes",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "PushConfigResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Push notification config ID.",
+                    "x-ms-summary": "Config ID"
+                },
+                "taskId": {
+                    "type": "string",
+                    "description": "Associated task ID.",
+                    "x-ms-summary": "Task ID"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Webhook URL.",
+                    "x-ms-summary": "Webhook URL"
+                }
+            }
+        },
+        "ListPushConfigsResponse": {
+            "type": "object",
+            "properties": {
+                "configs": {
+                    "type": "array",
+                    "description": "Push notification configurations for the task.",
+                    "x-ms-summary": "Configs",
+                    "items": {
+                        "$ref": "#/definitions/PushConfigResponse"
+                    }
+                },
+                "nextPageToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page.",
+                    "x-ms-summary": "Next Page Token"
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {},
+    "security": [],
+    "tags": []
+}
