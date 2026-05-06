@@ -1,0 +1,190 @@
+{
+    "_comment": "Example tools/list response. Adapt tool names, descriptions, and schemas to your API. This file is for reference — your MCP server generates this response dynamically.",
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "tools": [
+            {
+                "name": "search_{{entity}}",
+                "description": "Search for {{entity}} by keyword, status, or date range. Returns matching records with summary fields. Use for discovery, filtering, and exploration requests.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Free text search across name and description fields"
+                        },
+                        "status": {
+                            "type": "string",
+                            "enum": ["active", "inactive", "archived"],
+                            "description": "Filter by record status"
+                        },
+                        "created_after": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "Only return records created after this date (ISO 8601, e.g., 2026-04-01)"
+                        },
+                        "created_before": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "Only return records created before this date (ISO 8601)"
+                        },
+                        "sort": {
+                            "type": "string",
+                            "enum": ["created_at", "updated_at", "name"],
+                            "default": "created_at",
+                            "description": "Field to sort results by"
+                        },
+                        "order": {
+                            "type": "string",
+                            "enum": ["asc", "desc"],
+                            "default": "desc",
+                            "description": "Sort direction"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "default": 25,
+                            "maximum": 200,
+                            "description": "Maximum number of results (default 25, max 200)"
+                        },
+                        "cursor": {
+                            "type": "string",
+                            "description": "Pagination cursor from a previous search response"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_{{entity}}",
+                "description": "Get full details of a specific {{entity}} by ID. Returns all fields including description, history, and related records.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "The unique identifier of the {{entity}} to retrieve"
+                        }
+                    },
+                    "required": ["id"]
+                }
+            },
+            {
+                "name": "create_{{entity}}",
+                "description": "Create a new {{entity}}. Returns the created record with its assigned ID and URL.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Display name for the new {{entity}}"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Detailed description or notes"
+                        },
+                        "category": {
+                            "type": "string",
+                            "enum": ["{{category_1}}", "{{category_2}}", "{{category_3}}"],
+                            "description": "Classification category"
+                        },
+                        "assignee": {
+                            "type": "string",
+                            "description": "Email address of the person to assign this to"
+                        }
+                    },
+                    "required": ["name"]
+                }
+            },
+            {
+                "name": "update_{{entity}}",
+                "description": "Update fields on an existing {{entity}}. Only include fields you want to change. Returns the updated record.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "The unique identifier of the {{entity}} to update"
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "New display name"
+                        },
+                        "status": {
+                            "type": "string",
+                            "enum": ["active", "inactive", "archived"],
+                            "description": "New status. Transitions: active→inactive, active→archived, inactive→active"
+                        },
+                        "assignee": {
+                            "type": "string",
+                            "description": "New assignee email address"
+                        },
+                        "comment": {
+                            "type": "string",
+                            "description": "Optional comment to record with the update"
+                        }
+                    },
+                    "required": ["id"]
+                }
+            },
+            {
+                "name": "record_skill_feedback",
+                "description": "Record feedback about a skill's performance. Use when the user corrects output, rephrases a request that should have activated a skill, or explicitly says something didn't work. Anonymize all user input before recording.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "skill_name": {
+                            "type": "string",
+                            "description": "The skill this feedback is about (e.g., 'search-and-explore')"
+                        },
+                        "feedback_type": {
+                            "type": "string",
+                            "enum": ["missed_activation", "wrong_skill", "poor_output", "missing_feature", "trigger_phrase"],
+                            "description": "What kind of problem occurred"
+                        },
+                        "user_input": {
+                            "type": "string",
+                            "description": "The anonymized request pattern (no PII — strip names, emails, IDs)"
+                        },
+                        "expected_behavior": {
+                            "type": "string",
+                            "description": "What should have happened instead"
+                        },
+                        "suggested_trigger": {
+                            "type": "string",
+                            "description": "A trigger phrase to add to the skill's description (for trigger_phrase type)"
+                        }
+                    },
+                    "required": ["skill_name", "feedback_type"]
+                }
+            },
+            {
+                "name": "get_skill_insights",
+                "description": "Retrieve accumulated skill feedback and improvement suggestions. Use during skill development to review what needs updating before the next plugin version.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "skill_name": {
+                            "type": "string",
+                            "description": "Filter to a specific skill (optional — omit for all skills)"
+                        },
+                        "feedback_type": {
+                            "type": "string",
+                            "enum": ["missed_activation", "wrong_skill", "poor_output", "missing_feature", "trigger_phrase"],
+                            "description": "Filter to a specific feedback type (optional)"
+                        },
+                        "since": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "Only return feedback recorded after this date (ISO 8601)"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "default": 50,
+                            "description": "Maximum number of feedback entries to return"
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}
