@@ -83,14 +83,6 @@ pac connector update --connector-id <CONNECTOR_ID> --api-definition-file apiDefi
 
 > Note: For this connector, use file arguments directly. Do not pass `--settings-file` unless the settings file is in PAC's expected GUID-based format.
 
-### Manual Upload
-
-1. Go to [Power Automate](https://make.powerautomate.com) or [Power Apps](https://make.powerapps.com)
-2. Navigate to **Data > Custom Connectors**
-3. Click **+ New custom connector > Import an OpenAPI file**
-4. Upload `apiDefinition.swagger.json`
-5. Configure connection settings with your OAuth credentials
-
 ## Configuration
 
 Use the following OAuth properties pattern (validated in Power Platform Demo):
