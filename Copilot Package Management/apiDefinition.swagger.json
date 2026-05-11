@@ -1,0 +1,530 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Copilot Package Management",
+        "description": "Manage Microsoft 365 Copilot agents and apps using the Package Management API. List, inspect, block, unblock, update, and reassign ownership of packages in your tenant catalog. Requires a Microsoft Agent 365 license.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Copilot Package Management MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/beta/copilot/admin/catalog/packages": {
+            "get": {
+                "operationId": "ListPackages",
+                "summary": "List packages",
+                "description": "Retrieve a list of all Copilot agents and apps available in the tenant catalog. Supports filtering by supported host, element type, and last modified date.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "OData filter expression. Filter by supportedHosts (Copilot, Outlook, Teams, M365), elementTypes (Bots, DeclarativeAgent, CustomEngineAgent), or lastModifiedDateTime.",
+                        "x-ms-summary": "Filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing packages list.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/CopilotPackage"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/copilot/admin/catalog/packages/{id}": {
+            "get": {
+                "operationId": "GetPackageDetails",
+                "summary": "Get package details",
+                "description": "Retrieve detailed information for a specific agent or app by ID, including element details, categories, and access information.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the package.",
+                        "x-ms-summary": "Package ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing package details.",
+                        "schema": {
+                            "$ref": "#/definitions/CopilotPackageDetail"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdatePackage",
+                "summary": "Update package",
+                "description": "Update a package's allowed and acquired users and groups to control availability and deployment.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the package.",
+                        "x-ms-summary": "Package ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "allowedUsersAndGroups": {
+                                    "type": "array",
+                                    "description": "Users and groups for whom the package is available.",
+                                    "x-ms-summary": "Allowed Users and Groups",
+                                    "items": {
+                                        "$ref": "#/definitions/PackageAccessEntity"
+                                    }
+                                },
+                                "acquireUsersAndGroups": {
+                                    "type": "array",
+                                    "description": "Users and groups for whom the package is deployed.",
+                                    "x-ms-summary": "Acquire Users and Groups",
+                                    "items": {
+                                        "$ref": "#/definitions/PackageAccessEntity"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Package updated successfully."
+                    }
+                }
+            }
+        },
+        "/beta/copilot/admin/catalog/packages/{id}/block": {
+            "post": {
+                "operationId": "BlockPackage",
+                "summary": "Block package",
+                "description": "Block a Copilot package to prevent its usage across the organization.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the package to block.",
+                        "x-ms-summary": "Package ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Package blocked successfully."
+                    }
+                }
+            }
+        },
+        "/beta/copilot/admin/catalog/packages/{id}/unblock": {
+            "post": {
+                "operationId": "UnblockPackage",
+                "summary": "Unblock package",
+                "description": "Unblock a Copilot package to allow its usage across the organization.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the package to unblock.",
+                        "x-ms-summary": "Package ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Package unblocked successfully."
+                    }
+                }
+            }
+        },
+        "/beta/copilot/admin/catalog/packages/{id}/reassign": {
+            "post": {
+                "operationId": "ReassignPackage",
+                "summary": "Reassign package",
+                "description": "Reassign ownership of a Copilot package to a different user.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the package to reassign.",
+                        "x-ms-summary": "Package ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "userId"
+                            ],
+                            "properties": {
+                                "userId": {
+                                    "type": "string",
+                                    "description": "The user ID of the new package owner.",
+                                    "x-ms-summary": "New Owner User ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Package ownership reassigned successfully."
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CopilotPackage": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique identifier for the Copilot package.",
+                    "x-ms-summary": "ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Human-readable name of the package.",
+                    "x-ms-summary": "Display Name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type classification: microsoft, external, shared, or custom.",
+                    "x-ms-summary": "Type"
+                },
+                "shortDescription": {
+                    "type": "string",
+                    "description": "Brief description of the package.",
+                    "x-ms-summary": "Short Description"
+                },
+                "isBlocked": {
+                    "type": "boolean",
+                    "description": "Whether the package is administratively blocked.",
+                    "x-ms-summary": "Is Blocked"
+                },
+                "availableTo": {
+                    "type": "string",
+                    "description": "Availability scope: all, some, or none.",
+                    "x-ms-summary": "Available To"
+                },
+                "deployedTo": {
+                    "type": "string",
+                    "description": "Deployment scope: all, some, or none.",
+                    "x-ms-summary": "Deployed To"
+                },
+                "lastModifiedDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Timestamp of the last modification.",
+                    "x-ms-summary": "Last Modified"
+                },
+                "supportedHosts": {
+                    "type": "array",
+                    "description": "Host applications where this package can be used.",
+                    "x-ms-summary": "Supported Hosts",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "elementTypes": {
+                    "type": "array",
+                    "description": "Element types in this package (bot, declarativeAgent, etc.).",
+                    "x-ms-summary": "Element Types",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "publisher": {
+                    "type": "string",
+                    "description": "Name of the publisher.",
+                    "x-ms-summary": "Publisher"
+                },
+                "platform": {
+                    "type": "string",
+                    "description": "Host platform (teams, outlook, web).",
+                    "x-ms-summary": "Platform"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Version of the package.",
+                    "x-ms-summary": "Version"
+                },
+                "manifestVersion": {
+                    "type": "string",
+                    "description": "Manifest schema version.",
+                    "x-ms-summary": "Manifest Version"
+                },
+                "manifestId": {
+                    "type": "string",
+                    "description": "Unique identifier from the manifest.",
+                    "x-ms-summary": "Manifest ID"
+                },
+                "appId": {
+                    "type": "string",
+                    "description": "Microsoft Entra app registration ID.",
+                    "x-ms-summary": "App ID"
+                },
+                "assetId": {
+                    "type": "string",
+                    "description": "Asset store reference identifier.",
+                    "x-ms-summary": "Asset ID"
+                }
+            }
+        },
+        "CopilotPackageDetail": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique identifier for the Copilot package.",
+                    "x-ms-summary": "ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Human-readable name of the package.",
+                    "x-ms-summary": "Display Name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Type classification: microsoft, external, shared, or custom.",
+                    "x-ms-summary": "Type"
+                },
+                "shortDescription": {
+                    "type": "string",
+                    "description": "Brief description of the package.",
+                    "x-ms-summary": "Short Description"
+                },
+                "longDescription": {
+                    "type": "string",
+                    "description": "Comprehensive description of the package.",
+                    "x-ms-summary": "Long Description"
+                },
+                "isBlocked": {
+                    "type": "boolean",
+                    "description": "Whether the package is administratively blocked.",
+                    "x-ms-summary": "Is Blocked"
+                },
+                "availableTo": {
+                    "type": "string",
+                    "description": "Availability scope: all, some, or none.",
+                    "x-ms-summary": "Available To"
+                },
+                "deployedTo": {
+                    "type": "string",
+                    "description": "Deployment scope: all, some, or none.",
+                    "x-ms-summary": "Deployed To"
+                },
+                "lastModifiedDateTime": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Timestamp of the last modification.",
+                    "x-ms-summary": "Last Modified"
+                },
+                "supportedHosts": {
+                    "type": "array",
+                    "description": "Host applications where this package can be used.",
+                    "x-ms-summary": "Supported Hosts",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "elementTypes": {
+                    "type": "array",
+                    "description": "Element types in this package.",
+                    "x-ms-summary": "Element Types",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "publisher": {
+                    "type": "string",
+                    "description": "Name of the publisher.",
+                    "x-ms-summary": "Publisher"
+                },
+                "platform": {
+                    "type": "string",
+                    "description": "Host platform.",
+                    "x-ms-summary": "Platform"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Version of the package.",
+                    "x-ms-summary": "Version"
+                },
+                "manifestVersion": {
+                    "type": "string",
+                    "description": "Manifest schema version.",
+                    "x-ms-summary": "Manifest Version"
+                },
+                "manifestId": {
+                    "type": "string",
+                    "description": "Unique identifier from the manifest.",
+                    "x-ms-summary": "Manifest ID"
+                },
+                "appId": {
+                    "type": "string",
+                    "description": "Microsoft Entra app registration ID.",
+                    "x-ms-summary": "App ID"
+                },
+                "assetId": {
+                    "type": "string",
+                    "description": "Asset store reference identifier.",
+                    "x-ms-summary": "Asset ID"
+                },
+                "sensitivity": {
+                    "type": "string",
+                    "description": "Sensitivity classification level.",
+                    "x-ms-summary": "Sensitivity"
+                },
+                "categories": {
+                    "type": "array",
+                    "description": "Category tags classifying the package.",
+                    "x-ms-summary": "Categories",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowedUsersAndGroups": {
+                    "type": "array",
+                    "description": "Users and groups permitted to access this package.",
+                    "x-ms-summary": "Allowed Users and Groups",
+                    "items": {
+                        "$ref": "#/definitions/PackageAccessEntity"
+                    }
+                },
+                "acquireUsersAndGroups": {
+                    "type": "array",
+                    "description": "Users and groups that have acquired this package.",
+                    "x-ms-summary": "Acquire Users and Groups",
+                    "items": {
+                        "$ref": "#/definitions/PackageAccessEntity"
+                    }
+                },
+                "elementDetails": {
+                    "type": "array",
+                    "description": "Detailed information about each element in the package.",
+                    "x-ms-summary": "Element Details",
+                    "items": {
+                        "$ref": "#/definitions/PackageElementDetail"
+                    }
+                }
+            }
+        },
+        "PackageAccessEntity": {
+            "type": "object",
+            "properties": {
+                "resourceType": {
+                    "type": "string",
+                    "description": "Type of resource: user or group.",
+                    "x-ms-summary": "Resource Type"
+                },
+                "resourceId": {
+                    "type": "string",
+                    "description": "The ID of the user or group.",
+                    "x-ms-summary": "Resource ID"
+                }
+            }
+        },
+        "PackageElementDetail": {
+            "type": "object",
+            "properties": {
+                "@odata.type": {
+                    "type": "string",
+                    "description": "OData type of the element detail.",
+                    "x-ms-summary": "OData Type"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "CopilotPackages.ReadWrite.All": "Read and update all packages information",
+                "offline_access": "Maintain access"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "CopilotPackages.ReadWrite.All",
+                "offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
