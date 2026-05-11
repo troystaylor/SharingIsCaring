@@ -148,9 +148,9 @@
       }
     },
     "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}/run": {
-      "get": {
+      "post": {
         "summary": "Start Agent Evaluation",
-        "description": "Trigger an asynchronous evaluation run for a test set against the agent. Returns a run ID to track progress and retrieve results.",
+        "description": "Trigger an asynchronous evaluation run for a test set against the agent. Returns a run ID to track progress and retrieve results. By default, evaluates the draft (unpublished) version of the agent.",
         "operationId": "StartAgentEvaluation",
         "parameters": [
           {
@@ -190,12 +190,31 @@
             "x-ms-summary": "API Version"
           },
           {
-            "name": "mcsConnectionId",
-            "in": "query",
-            "description": "Optional. The Copilot Studio connection ID to use as user profile for the evaluation. If not provided, the evaluation runs without authentication.",
+            "name": "body",
+            "in": "body",
+            "description": "Evaluation run configuration.",
             "required": false,
-            "type": "string",
-            "x-ms-summary": "Connection ID"
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mcsConnectionId": {
+                  "type": "string",
+                  "description": "The Copilot Studio connection ID for authenticated evaluation. If empty, the evaluation runs anonymously without access to authenticated tools or knowledge sources.",
+                  "x-ms-summary": "Connection ID"
+                },
+                "RunOnPublishedBot": {
+                  "type": "boolean",
+                  "description": "When true, evaluates the published version of the agent. Defaults to false (evaluates draft version).",
+                  "default": false,
+                  "x-ms-summary": "Run On Published Agent"
+                },
+                "EvaluationRunName": {
+                  "type": "string",
+                  "description": "Optional name for this evaluation run. Useful for identifying runs in dashboards and reports.",
+                  "x-ms-summary": "Evaluation Run Name"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -210,6 +229,9 @@
           },
           "404": {
             "description": "Agent or test set not found."
+          },
+          "422": {
+            "description": "Another evaluation run is already in progress for this agent. Only one run at a time is allowed."
           }
         },
         "security": [

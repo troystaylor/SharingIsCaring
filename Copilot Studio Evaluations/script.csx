@@ -152,7 +152,7 @@ public class Script : ScriptBase
 
             McpTool(
                 "start_evaluation",
-                "Start an asynchronous evaluation run for a test set.",
+                "Start an asynchronous evaluation run for a test set. By default evaluates the draft (unpublished) version.",
                 new JObject
                 {
                     ["type"] = "object",
@@ -161,7 +161,9 @@ public class Script : ScriptBase
                         ["environmentId"] = new JObject { ["type"] = "string", ["description"] = "Environment ID" },
                         ["botId"] = new JObject { ["type"] = "string", ["description"] = "Agent (bot) ID" },
                         ["testSetId"] = new JObject { ["type"] = "string", ["description"] = "Test set ID" },
-                        ["mcsConnectionId"] = new JObject { ["type"] = "string", ["description"] = "Optional Copilot Studio connection ID" }
+                        ["mcsConnectionId"] = new JObject { ["type"] = "string", ["description"] = "Optional Copilot Studio connection ID for authenticated evaluation" },
+                        ["runOnPublishedBot"] = new JObject { ["type"] = "boolean", ["description"] = "When true, evaluates the published version. Defaults to false (draft)." },
+                        ["evaluationRunName"] = new JObject { ["type"] = "string", ["description"] = "Optional name for this evaluation run for dashboards and reports." }
                     },
                     ["required"] = new JArray { "environmentId", "botId", "testSetId" }
                 }),
@@ -223,6 +225,7 @@ public class Script : ScriptBase
         try
         {
             string endpoint;
+            JObject evalBody = null;
 
             switch ((toolName ?? string.Empty).ToLowerInvariant())
             {
@@ -244,11 +247,14 @@ public class Script : ScriptBase
                     endpoint = BuildEndpoint(
                         args,
                         requiredKeys: new[] { "environmentId", "botId", "testSetId" },
-                        pathTemplate: "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}/run",
-                        optionalQuery: new Dictionary<string, string>
-                        {
-                            { "mcsConnectionId", args.Value<string>("mcsConnectionId") }
-                        });
+                        pathTemplate: "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}/run");
+                    evalBody = new JObject();
+                    if (!string.IsNullOrWhiteSpace(args.Value<string>("mcsConnectionId")))
+                        evalBody["mcsConnectionId"] = args.Value<string>("mcsConnectionId");
+                    if (args["runOnPublishedBot"] != null)
+                        evalBody["RunOnPublishedBot"] = args.Value<bool>("runOnPublishedBot");
+                    if (!string.IsNullOrWhiteSpace(args.Value<string>("evaluationRunName")))
+                        evalBody["EvaluationRunName"] = args.Value<string>("evaluationRunName");
                     break;
 
                 case "get_run_details":
@@ -269,7 +275,15 @@ public class Script : ScriptBase
                     return CreateJsonRpcErrorResponse(requestId, -32602, $"Unknown tool: {toolName}");
             }
 
-            var response = await InvokeBackendGetAsync(endpoint).ConfigureAwait(false);
+            HttpResponseMessage response;
+            if (toolName == "start_evaluation")
+            {
+                response = await InvokeBackendPostAsync(endpoint, evalBody).ConfigureAwait(false);
+            }
+            else
+            {
+                response = await InvokeBackendGetAsync(endpoint).ConfigureAwait(false);
+            }
             var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             JToken parsed;
@@ -348,6 +362,25 @@ public class Script : ScriptBase
     {
         var url = "https://api.powerplatform.com/copilotstudio" + endpointWithQuery;
         var outbound = new HttpRequestMessage(HttpMethod.Get, url);
+
+        if (this.Context.Request.Headers.Contains("Authorization"))
+        {
+            outbound.Headers.Add("Authorization", this.Context.Request.Headers.GetValues("Authorization"));
+        }
+
+        return await this.Context.SendAsync(outbound, this.CancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> InvokeBackendPostAsync(string endpointWithQuery, JObject body)
+    {
+        var url = "https://api.powerplatform.com/copilotstudio" + endpointWithQuery;
+        var outbound = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(
+                body.ToString(Newtonsoft.Json.Formatting.None),
+                Encoding.UTF8,
+                "application/json")
+        };
 
         if (this.Context.Request.Headers.Contains("Authorization"))
         {
