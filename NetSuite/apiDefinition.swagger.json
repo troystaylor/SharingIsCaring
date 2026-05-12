@@ -1,0 +1,679 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "NetSuite",
+        "description": "Custom MCP server for Oracle NetSuite REST Web Services. Provides CRUD operations on NetSuite records, SuiteQL query execution, record collection filtering, and metadata retrieval via Copilot Studio.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "system.netsuite.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "summary": "Invoke NetSuite MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides tools for NetSuite record CRUD, SuiteQL queries, collection filtering, and record metadata.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/suiteql": {
+            "post": {
+                "summary": "Run SuiteQL Query",
+                "description": "Execute a SuiteQL query against NetSuite. SuiteQL is SQL-like and supports SELECT, JOIN, GROUP BY, ORDER BY, aggregate functions, and subqueries. Returns up to 100,000 results with pagination. Common tables: transaction, customer, vendor, employee, item, contact, salesorder, purchaseorder, invoice, account, department, location, subsidiary.",
+                "operationId": "RunSuiteQL",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Max results per page (1-1000, default 100)",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results to skip for pagination (default 0)",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "q"
+                            ],
+                            "properties": {
+                                "q": {
+                                    "type": "string",
+                                    "description": "SuiteQL query string (e.g., SELECT id, companyname, email FROM customer WHERE isinactive = 'F' ORDER BY companyname)",
+                                    "x-ms-summary": "Query"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Query results",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer",
+                                    "description": "Number of items in this page"
+                                },
+                                "offset": {
+                                    "type": "integer",
+                                    "description": "Current offset"
+                                },
+                                "totalResults": {
+                                    "type": "integer",
+                                    "description": "Total number of matching results"
+                                },
+                                "hasMore": {
+                                    "type": "boolean",
+                                    "description": "Whether more results are available"
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "description": "Array of result rows",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/record/{recordType}": {
+            "get": {
+                "summary": "List Records",
+                "description": "List all instances of a NetSuite record type with optional collection filtering. Filter syntax: field OPERATOR value (e.g., email START_WITH barbara). Operators: String (CONTAIN, IS, START_WITH, END_WITH), Number (EQUAL, GREATER, LESS, BETWEEN, ANY_OF), Boolean (IS), Date (AFTER, BEFORE, ON, ON_OR_AFTER). Join with AND/OR.",
+                "operationId": "ListRecords",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The NetSuite record type (e.g., customer, vendor, salesorder, purchaseorder, invoice, employee, item, contact, inventoryitem, account, department, location, subsidiary, opportunity)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Collection filter query (e.g., companyname START_WITH \"Acme\" AND isinactive IS false)",
+                        "x-ms-summary": "Filter"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Comma-separated field names to return (e.g., id,companyname,email)",
+                        "x-ms-summary": "Fields"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Max results per page (1-1000, default 100)",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "type": "integer",
+                        "description": "Number of results to skip for pagination (default 0)",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "expandSubResources",
+                        "in": "query",
+                        "type": "boolean",
+                        "description": "If true, expand sub-resources (sublists) inline",
+                        "x-ms-summary": "Expand Sub-Resources"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Record collection",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer",
+                                    "description": "Number of items in this page"
+                                },
+                                "offset": {
+                                    "type": "integer",
+                                    "description": "Current offset"
+                                },
+                                "totalResults": {
+                                    "type": "integer",
+                                    "description": "Total number of matching records"
+                                },
+                                "hasMore": {
+                                    "type": "boolean",
+                                    "description": "Whether more results are available"
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "description": "Array of record references",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Record internal ID"
+                                            },
+                                            "links": {
+                                                "type": "array",
+                                                "description": "HATEOAS links",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "rel": {
+                                                            "type": "string"
+                                                        },
+                                                        "href": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Record",
+                "description": "Create a new NetSuite record. Provide the record type and a JSON body with field values. Use Get Record Metadata to discover available fields and required values.",
+                "operationId": "CreateRecord",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The NetSuite record type to create (e.g., customer, salesorder, invoice)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "description": "Record field values as key-value pairs (e.g., {companyname: \"Acme Corp\", subsidiary: {id: \"1\"}, email: \"info@acme.com\"})"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Record created successfully. The Location header contains the URL of the new record."
+                    }
+                }
+            }
+        },
+        "/record/{recordType}/{recordId}": {
+            "get": {
+                "summary": "Get Record",
+                "description": "Get a single NetSuite record by its type and internal ID. Returns all body fields and sublist links. Use expandSubResources to include sublists inline.",
+                "operationId": "GetRecord",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The NetSuite record type (e.g., customer, salesorder, invoice)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the record",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Comma-separated field names to return",
+                        "x-ms-summary": "Fields"
+                    },
+                    {
+                        "name": "expandSubResources",
+                        "in": "query",
+                        "type": "boolean",
+                        "description": "If true, expand sub-resources (sublists) inline",
+                        "x-ms-summary": "Expand Sub-Resources"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Record details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Record internal ID"
+                                },
+                                "links": {
+                                    "type": "array",
+                                    "description": "HATEOAS links to related resources and sublists",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "rel": {
+                                                "type": "string"
+                                            },
+                                            "href": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Record",
+                "description": "Update an existing NetSuite record by type and ID. Only include fields you want to change. Uses PATCH semantics — omitted fields are not modified.",
+                "operationId": "UpdateRecord",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The NetSuite record type (e.g., customer, salesorder)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the record to update",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "description": "Fields to update as key-value pairs"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Record updated successfully"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Record",
+                "description": "Delete a NetSuite record by type and internal ID. This action is permanent and cannot be undone.",
+                "operationId": "DeleteRecord",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The NetSuite record type (e.g., customer, invoice)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the record to delete",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Record deleted successfully"
+                    }
+                }
+            }
+        },
+        "/metadata": {
+            "get": {
+                "summary": "List Record Types",
+                "description": "List all available NetSuite record types accessible via REST Web Services. Returns record type names and links to their metadata.",
+                "operationId": "ListRecordTypes",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Record type catalog",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "items": {
+                                    "type": "array",
+                                    "description": "Array of available record types",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Record type name"
+                                            },
+                                            "href": {
+                                                "type": "string",
+                                                "description": "Link to record type metadata"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/{recordType}": {
+            "get": {
+                "summary": "Get Record Metadata",
+                "description": "Get the metadata (schema) for a NetSuite record type. Returns available fields, their types, whether they are required, filterable, and available sublists. Use this to discover field names before creating or updating records.",
+                "operationId": "GetRecordMetadata",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The NetSuite record type (e.g., customer, salesorder, invoice)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Record type metadata schema"
+                    }
+                }
+            }
+        },
+        "/record/{recordType}/{recordId}/{sublistId}": {
+            "get": {
+                "summary": "Get Sublist",
+                "description": "Get a sublist (line items) for a NetSuite record. For example, get all items on a sales order or address book entries on a customer.",
+                "operationId": "GetSublist",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent record type (e.g., salesorder, purchaseorder)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the parent record",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "sublistId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The sublist ID (e.g., item, addressbook, partners, salesteam)",
+                        "x-ms-summary": "Sublist ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sublist line items",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "items": {
+                                    "type": "array",
+                                    "description": "Array of sublist line items",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Add Sublist Line",
+                "description": "Add a new line to a record's sublist (e.g., add a line item to a sales order).",
+                "operationId": "AddSublistLine",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent record type (e.g., salesorder)",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the parent record",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "sublistId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The sublist ID (e.g., item)",
+                        "x-ms-summary": "Sublist ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "description": "Line field values (e.g., {item: {id: \"42\"}, quantity: 5, rate: 100})"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sublist line added successfully"
+                    }
+                }
+            }
+        },
+        "/record/{recordType}/{recordId}/{sublistId}/{lineId}": {
+            "patch": {
+                "summary": "Update Sublist Line",
+                "description": "Update an existing line on a record's sublist.",
+                "operationId": "UpdateSublistLine",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent record type",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the parent record",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "sublistId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The sublist ID (e.g., item)",
+                        "x-ms-summary": "Sublist ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "lineId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The line internal ID to update",
+                        "x-ms-summary": "Line ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "description": "Line fields to update"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sublist line updated successfully"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Sublist Line",
+                "description": "Remove a line from a record's sublist.",
+                "operationId": "DeleteSublistLine",
+                "parameters": [
+                    {
+                        "name": "recordType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent record type",
+                        "x-ms-summary": "Record Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "recordId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The internal ID of the parent record",
+                        "x-ms-summary": "Record ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "sublistId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The sublist ID (e.g., item)",
+                        "x-ms-summary": "Sublist ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "lineId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The line internal ID to delete",
+                        "x-ms-summary": "Line ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sublist line deleted successfully"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "securityDefinitions": {
+        "oauth2": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://system.netsuite.com/app/login/oauth2/authorize.nl",
+            "tokenUrl": "https://system.netsuite.com/services/rest/auth/oauth2/v1/token",
+            "scopes": {
+                "rest_webservices": "Access REST Web Services"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2": [
+                "rest_webservices"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Finance"
+        }
+    ]
+}
