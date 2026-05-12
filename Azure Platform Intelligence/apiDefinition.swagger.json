@@ -1,0 +1,880 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Azure Platform Intelligence",
+    "description": "Model Context Protocol connector for Azure platform engineering operations in Copilot Studio. Provides cost estimation, security analysis, drift detection, template validation, resource visualization, policy compliance, and infrastructure export tools. Inspired by the Git-Ape platform engineering framework.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "management.azure.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Azure Platform Intelligence MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio. Exposes all Azure platform engineering tools via JSON-RPC 2.0.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC 2.0 response"
+          }
+        }
+      }
+    },
+    "/subscriptions": {
+      "get": {
+        "summary": "List Subscriptions",
+        "description": "List Azure subscriptions the connected user has access to. Use this to discover subscription IDs for other operations.",
+        "operationId": "ListSubscriptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of subscriptions",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "subscriptions": {
+                  "type": "array",
+                  "x-ms-summary": "Subscriptions",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "subscriptionId": {
+                        "type": "string",
+                        "x-ms-summary": "Subscription ID"
+                      },
+                      "displayName": {
+                        "type": "string",
+                        "x-ms-summary": "Display Name"
+                      },
+                      "state": {
+                        "type": "string",
+                        "x-ms-summary": "State"
+                      },
+                      "tenantId": {
+                        "type": "string",
+                        "x-ms-summary": "Tenant ID"
+                      }
+                    }
+                  }
+                },
+                "count": {
+                  "type": "integer",
+                  "x-ms-summary": "Count"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourcegroups": {
+      "get": {
+        "summary": "List Resource Groups",
+        "description": "List resource groups in an Azure subscription.",
+        "operationId": "ListResourceGroups",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of resource groups",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "subscriptionId": {
+                  "type": "string",
+                  "x-ms-summary": "Subscription ID"
+                },
+                "resourceGroups": {
+                  "type": "array",
+                  "x-ms-summary": "Resource Groups",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "Name"
+                      },
+                      "location": {
+                        "type": "string",
+                        "x-ms-summary": "Location"
+                      },
+                      "provisioningState": {
+                        "type": "string",
+                        "x-ms-summary": "Provisioning State"
+                      }
+                    }
+                  }
+                },
+                "count": {
+                  "type": "integer",
+                  "x-ms-summary": "Count"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cost/estimate": {
+      "post": {
+        "summary": "Estimate Cost",
+        "description": "Estimate monthly cost for Azure resources using the Azure Retail Prices API. Provide a resource type and SKU, or an ARM template to estimate all resources. No Azure subscription required.",
+        "operationId": "EstimateCost",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "resourceType": {
+                  "type": "string",
+                  "description": "Azure resource type (e.g., 'Virtual Machines', 'Storage')",
+                  "x-ms-summary": "Resource Type"
+                },
+                "skuName": {
+                  "type": "string",
+                  "description": "SKU name (e.g., 'Standard_D2s_v3')",
+                  "x-ms-summary": "SKU Name"
+                },
+                "region": {
+                  "type": "string",
+                  "description": "Azure region (default: westus2)",
+                  "x-ms-summary": "Region"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "description": "Number of units per month (auto-detected if omitted)",
+                  "x-ms-summary": "Quantity"
+                },
+                "currencyCode": {
+                  "type": "string",
+                  "description": "ISO currency code (default: USD)",
+                  "x-ms-summary": "Currency Code"
+                },
+                "armTemplate": {
+                  "type": "object",
+                  "description": "ARM template JSON to estimate cost for all resources",
+                  "x-ms-summary": "ARM Template"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cost estimate",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "totalMonthlyEstimate": {
+                  "type": "number",
+                  "x-ms-summary": "Total Monthly Estimate"
+                },
+                "currency": {
+                  "type": "string",
+                  "x-ms-summary": "Currency"
+                },
+                "pricingItems": {
+                  "type": "array",
+                  "x-ms-summary": "Pricing Items",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "skuName": {
+                        "type": "string",
+                        "x-ms-summary": "SKU Name"
+                      },
+                      "productName": {
+                        "type": "string",
+                        "x-ms-summary": "Product Name"
+                      },
+                      "monthlyEstimate": {
+                        "type": "number",
+                        "x-ms-summary": "Monthly Estimate"
+                      },
+                      "retailPrice": {
+                        "type": "number",
+                        "x-ms-summary": "Retail Price"
+                      },
+                      "unitOfMeasure": {
+                        "type": "string",
+                        "x-ms-summary": "Unit of Measure"
+                      }
+                    }
+                  }
+                },
+                "note": {
+                  "type": "string",
+                  "x-ms-summary": "Note"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/security/assessments": {
+      "get": {
+        "summary": "Analyze Security",
+        "description": "Analyze Azure subscription security posture using Microsoft Defender for Cloud assessments. Returns findings sorted by severity with remediation guidance. Requires Security Reader role.",
+        "operationId": "AnalyzeSecurity",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "resourceGroup",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Optional resource group name to filter findings",
+            "x-ms-summary": "Resource Group",
+            "x-ms-dynamic-values": {
+              "operationId": "ListResourceGroups",
+              "parameters": {
+                "subscriptionId": {
+                  "parameter": "subscriptionId"
+                }
+              },
+              "value-collection": "resourceGroups",
+              "value-path": "name",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Security assessment results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "summary": {
+                  "type": "object",
+                  "x-ms-summary": "Summary",
+                  "properties": {
+                    "high": {
+                      "type": "integer",
+                      "x-ms-summary": "High Severity"
+                    },
+                    "medium": {
+                      "type": "integer",
+                      "x-ms-summary": "Medium Severity"
+                    },
+                    "low": {
+                      "type": "integer",
+                      "x-ms-summary": "Low Severity"
+                    },
+                    "healthy": {
+                      "type": "integer",
+                      "x-ms-summary": "Healthy"
+                    },
+                    "totalFindings": {
+                      "type": "integer",
+                      "x-ms-summary": "Total Findings"
+                    }
+                  }
+                },
+                "findings": {
+                  "type": "array",
+                  "x-ms-summary": "Findings",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string",
+                        "x-ms-summary": "Finding"
+                      },
+                      "severity": {
+                        "type": "string",
+                        "x-ms-summary": "Severity"
+                      },
+                      "status": {
+                        "type": "string",
+                        "x-ms-summary": "Status"
+                      },
+                      "remediation": {
+                        "type": "string",
+                        "x-ms-summary": "Remediation"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroup}/drift": {
+      "post": {
+        "summary": "Detect Drift",
+        "description": "Detect configuration drift by comparing a desired ARM template against live Azure state using the What-If API. Requires Contributor role.",
+        "operationId": "DetectDrift",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "resourceGroup",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Resource group name",
+            "x-ms-summary": "Resource Group",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListResourceGroups",
+              "parameters": {
+                "subscriptionId": {
+                  "parameter": "subscriptionId"
+                }
+              },
+              "value-collection": "resourceGroups",
+              "value-path": "name",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "armTemplate"
+              ],
+              "properties": {
+                "armTemplate": {
+                  "type": "object",
+                  "description": "ARM template representing the desired state",
+                  "x-ms-summary": "ARM Template"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drift detection results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "driftDetected": {
+                  "type": "boolean",
+                  "x-ms-summary": "Drift Detected"
+                },
+                "summary": {
+                  "type": "object",
+                  "x-ms-summary": "Summary",
+                  "properties": {
+                    "create": {
+                      "type": "integer",
+                      "x-ms-summary": "Create"
+                    },
+                    "modify": {
+                      "type": "integer",
+                      "x-ms-summary": "Modify"
+                    },
+                    "delete": {
+                      "type": "integer",
+                      "x-ms-summary": "Delete"
+                    },
+                    "noChange": {
+                      "type": "integer",
+                      "x-ms-summary": "No Change"
+                    }
+                  }
+                },
+                "changes": {
+                  "type": "array",
+                  "x-ms-summary": "Changes",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "resourceId": {
+                        "type": "string",
+                        "x-ms-summary": "Resource ID"
+                      },
+                      "changeType": {
+                        "type": "string",
+                        "x-ms-summary": "Change Type"
+                      },
+                      "resourceType": {
+                        "type": "string",
+                        "x-ms-summary": "Resource Type"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroup}/validate": {
+      "post": {
+        "summary": "Validate Template",
+        "description": "Validate an ARM template against Azure without deploying. Checks for schema errors, naming conflicts, and permission issues. Requires Contributor role.",
+        "operationId": "ValidateTemplate",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "resourceGroup",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Resource group name",
+            "x-ms-summary": "Resource Group",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListResourceGroups",
+              "parameters": {
+                "subscriptionId": {
+                  "parameter": "subscriptionId"
+                }
+              },
+              "value-collection": "resourceGroups",
+              "value-path": "name",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "armTemplate"
+              ],
+              "properties": {
+                "armTemplate": {
+                  "type": "object",
+                  "description": "ARM template to validate",
+                  "x-ms-summary": "ARM Template"
+                },
+                "parameters": {
+                  "type": "object",
+                  "description": "Template parameters (optional)",
+                  "x-ms-summary": "Parameters"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validation result",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "valid": {
+                  "type": "boolean",
+                  "x-ms-summary": "Valid"
+                },
+                "error": {
+                  "type": "object",
+                  "x-ms-summary": "Error"
+                },
+                "whatIfPreview": {
+                  "type": "object",
+                  "x-ms-summary": "What-If Preview",
+                  "properties": {
+                    "create": {
+                      "type": "integer",
+                      "x-ms-summary": "Create"
+                    },
+                    "modify": {
+                      "type": "integer",
+                      "x-ms-summary": "Modify"
+                    },
+                    "delete": {
+                      "type": "integer",
+                      "x-ms-summary": "Delete"
+                    },
+                    "noChange": {
+                      "type": "integer",
+                      "x-ms-summary": "No Change"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroup}/visualize": {
+      "get": {
+        "summary": "Visualize Resources",
+        "description": "Generate a Mermaid architecture diagram from an Azure resource group. Lists all resources, groups by type, and shows relationships. Requires Reader role.",
+        "operationId": "VisualizeResources",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "resourceGroup",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Resource group name",
+            "x-ms-summary": "Resource Group",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListResourceGroups",
+              "parameters": {
+                "subscriptionId": {
+                  "parameter": "subscriptionId"
+                }
+              },
+              "value-collection": "resourceGroups",
+              "value-path": "name",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource visualization",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "resourceGroup": {
+                  "type": "string",
+                  "x-ms-summary": "Resource Group"
+                },
+                "resourceCount": {
+                  "type": "integer",
+                  "x-ms-summary": "Resource Count"
+                },
+                "mermaid": {
+                  "type": "string",
+                  "x-ms-summary": "Mermaid Diagram"
+                },
+                "resources": {
+                  "type": "array",
+                  "x-ms-summary": "Resources",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "x-ms-summary": "Name"
+                      },
+                      "type": {
+                        "type": "string",
+                        "x-ms-summary": "Type"
+                      },
+                      "location": {
+                        "type": "string",
+                        "x-ms-summary": "Location"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/policy/compliance": {
+      "get": {
+        "summary": "Check Policy Compliance",
+        "description": "Check Azure Policy compliance for a subscription or resource group. Returns a summary of compliant and non-compliant policies. Requires Reader role.",
+        "operationId": "CheckPolicy",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "resourceGroup",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Optional resource group name to scope the check",
+            "x-ms-summary": "Resource Group",
+            "x-ms-dynamic-values": {
+              "operationId": "ListResourceGroups",
+              "parameters": {
+                "subscriptionId": {
+                  "parameter": "subscriptionId"
+                }
+              },
+              "value-collection": "resourceGroups",
+              "value-path": "name",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy compliance results",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "overallCompliance": {
+                  "type": "object",
+                  "x-ms-summary": "Overall Compliance",
+                  "properties": {
+                    "nonCompliantResources": {
+                      "type": "integer",
+                      "x-ms-summary": "Non-Compliant Resources"
+                    },
+                    "nonCompliantPolicies": {
+                      "type": "integer",
+                      "x-ms-summary": "Non-Compliant Policies"
+                    },
+                    "totalResources": {
+                      "type": "integer",
+                      "x-ms-summary": "Total Resources"
+                    }
+                  }
+                },
+                "nonCompliantAssignments": {
+                  "type": "array",
+                  "x-ms-summary": "Non-Compliant Assignments",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "policyAssignmentId": {
+                        "type": "string",
+                        "x-ms-summary": "Policy Assignment ID"
+                      },
+                      "nonCompliantResources": {
+                        "type": "integer",
+                        "x-ms-summary": "Non-Compliant Resources"
+                      }
+                    }
+                  }
+                },
+                "totalAssignments": {
+                  "type": "integer",
+                  "x-ms-summary": "Total Assignments"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroup}/export": {
+      "post": {
+        "summary": "Export Resources as ARM Template",
+        "description": "Export an Azure resource group as an ARM template. Reverse-engineers deployed resources into Infrastructure as Code. Requires Reader role.",
+        "operationId": "ImportResources",
+        "parameters": [
+          {
+            "name": "subscriptionId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Azure subscription ID",
+            "x-ms-summary": "Subscription ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSubscriptions",
+              "value-collection": "subscriptions",
+              "value-path": "subscriptionId",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "resourceGroup",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Resource group name",
+            "x-ms-summary": "Resource Group",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListResourceGroups",
+              "parameters": {
+                "subscriptionId": {
+                  "parameter": "subscriptionId"
+                }
+              },
+              "value-collection": "resourceGroups",
+              "value-path": "name",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "resources": {
+                  "type": "array",
+                  "description": "Specific resource IDs to export (default: all)",
+                  "x-ms-summary": "Resource IDs",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exported ARM template",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "exportSuccess": {
+                  "type": "boolean",
+                  "x-ms-summary": "Export Success"
+                },
+                "resourceCount": {
+                  "type": "integer",
+                  "x-ms-summary": "Resource Count"
+                },
+                "template": {
+                  "type": "object",
+                  "x-ms-summary": "ARM Template"
+                },
+                "truncated": {
+                  "type": "boolean",
+                  "x-ms-summary": "Truncated"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://management.azure.com/.default": "Access Azure Management APIs"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "https://management.azure.com/.default"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://azure.github.io/git-ape/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "IT Operations;AI"
+    }
+  ]
+}
