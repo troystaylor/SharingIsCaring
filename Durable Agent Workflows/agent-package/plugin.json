@@ -1,0 +1,90 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.4/schema.json",
+  "schema_version": "v2.4",
+  "name_for_human": "Durable Workflows",
+  "namespace": "durableworkflows",
+  "description_for_human": "IT triage, agent evaluation, and document review via durable workflows with human-in-the-loop approval.",
+  "description_for_model": "Use this plugin to run enterprise durable workflows. TriageTicket analyzes IT helpdesk tickets with parallel sentiment/category/KB analysis and manager approval. EvaluateResponse scores AI agent outputs on safety, accuracy, groundedness, and relevance with human review. ReviewDocument runs documents through legal, compliance, brand, and technical reviewers with author revision and final approval gates. Each workflow is durable and checkpointed — it survives failures and pauses at approval gates for human input.",
+  "contact_email": "troy@troystaylor.com",
+  "legal_info_url": "https://github.com/troystaylor/SharingIsCaring",
+  "privacy_policy_url": "https://github.com/troystaylor/SharingIsCaring",
+  "functions": [
+    {
+      "name": "TriageTicket",
+      "description": "Triage an IT helpdesk ticket through parallel sentiment analysis, category classification, and KB article search, then pause for manager approval before team assignment.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "The helpdesk ticket text describing the IT issue"
+          }
+        },
+        "required": ["input"]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["DataTransform"]
+        }
+      },
+      "returns": { "type": "string" }
+    },
+    {
+      "name": "EvaluateResponse",
+      "description": "Evaluate an AI agent response using four parallel evaluators (safety, accuracy, groundedness, relevance), aggregate scores, then pause for human review before publishing.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "The AI agent response to evaluate, optionally preceded by the original question and context"
+          }
+        },
+        "required": ["input"]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["DataTransform"]
+        }
+      },
+      "returns": { "type": "string" }
+    },
+    {
+      "name": "ReviewDocument",
+      "description": "Review a document through parallel legal, compliance, brand, and technical reviewers, consolidate feedback, then pause for author revision and final approval before publishing.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "type": "string",
+            "description": "The document text to review for publishing readiness"
+          }
+        },
+        "required": ["input"]
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["DataTransform"]
+        }
+      },
+      "returns": { "type": "string" }
+    }
+  ],
+  "runtimes": [
+    {
+      "type": "RemoteMCPServer",
+      "run_for_functions": [
+        "TriageTicket",
+        "EvaluateResponse",
+        "ReviewDocument"
+      ],
+      "auth": {
+        "type": "OAuthPluginVault",
+        "reference_id": "REPLACE_WITH_OAUTH_REFERENCE_ID"
+      },
+      "spec": {
+        "url": "https://YOUR_FUNCTIONS_APP.azurewebsites.net/runtime/webhooks/mcp"
+      }
+    }
+  ]
+}
