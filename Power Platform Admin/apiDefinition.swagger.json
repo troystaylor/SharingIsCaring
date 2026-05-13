@@ -1,0 +1,328 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power Platform Admin",
+        "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, and application packages via the Power Platform Admin API.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.powerplatform.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Power Platform Admin MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides cross-environment administration tools for Power Platform.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/admin/environments": {
+            "get": {
+                "summary": "List Environments",
+                "description": "List all Power Platform environments with capacity metrics, types, states, and Dataverse URLs.",
+                "operationId": "ListEnvironments",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of environments",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "environmentCount": {
+                                    "type": "integer",
+                                    "description": "Total number of environments",
+                                    "x-ms-summary": "Environment Count"
+                                },
+                                "environments": {
+                                    "type": "array",
+                                    "description": "Array of environments",
+                                    "x-ms-summary": "Environments",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Environment ID (GUID)",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Display name of the environment",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Environment type (Production, Sandbox, Developer, Trial, Default)",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "state": {
+                                                "type": "string",
+                                                "description": "Management state",
+                                                "x-ms-summary": "State"
+                                            },
+                                            "location": {
+                                                "type": "string",
+                                                "description": "Azure region",
+                                                "x-ms-summary": "Location"
+                                            },
+                                            "dataverseUrl": {
+                                                "type": "string",
+                                                "description": "Dataverse instance URL",
+                                                "x-ms-summary": "Dataverse URL"
+                                            },
+                                            "updateCadence": {
+                                                "type": "string",
+                                                "description": "Update cadence (Frequent or Moderate)",
+                                                "x-ms-summary": "Update Cadence"
+                                            },
+                                            "capacity": {
+                                                "type": "object",
+                                                "description": "Capacity metrics",
+                                                "x-ms-summary": "Capacity"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/environment": {
+            "get": {
+                "summary": "Get Environment",
+                "description": "Get full details of a specific environment including properties, database settings, capacity, runtime endpoints, and protection status.",
+                "operationId": "GetEnvironment",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Environment details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Display name",
+                                    "x-ms-summary": "Name"
+                                },
+                                "properties": {
+                                    "type": "object",
+                                    "description": "Full environment properties"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/settings": {
+            "get": {
+                "summary": "Get Settings",
+                "description": "Get PPAC management settings for an environment (SAS IP rules, audit logging, etc.).",
+                "operationId": "GetSettings",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "select",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of setting names to return. Omit for all settings.",
+                        "x-ms-summary": "Select Settings",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Environment settings",
+                        "schema": {
+                            "type": "object",
+                            "description": "Key-value pairs of setting names and their values"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/settings/update": {
+            "post": {
+                "summary": "Update Settings",
+                "description": "Update one or more PPAC management settings on an environment.",
+                "operationId": "UpdateSettings",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "settings": {
+                                    "type": "object",
+                                    "description": "Key-value pairs of setting names and their new values",
+                                    "x-ms-summary": "Settings"
+                                }
+                            },
+                            "required": [
+                                "settings"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Update result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Operation status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "updatedSettings": {
+                                    "type": "object",
+                                    "description": "Settings that were updated",
+                                    "x-ms-summary": "Updated Settings"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/environments": {
+            "get": {
+                "summary": "Get Environment List",
+                "description": "Internal operation for dynamic dropdowns. Returns environment IDs and names.",
+                "operationId": "GetEnvironmentDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Environment list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Environment ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment display name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/power-platform/admin/programmability-and-extensibility/powerplatform-api-reference"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
