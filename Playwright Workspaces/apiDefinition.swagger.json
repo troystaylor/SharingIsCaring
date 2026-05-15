@@ -1,0 +1,1184 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Playwright Workspaces",
+        "description": "Full browser automation powered by Azure Playwright Workspaces remote browsers. Create sessions, navigate, click, type, scrape data, take screenshots, and automate multi-step web workflows — all running on managed cloud Chromium instances.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "pw-workspaces-broker.azurewebsites.net",
+    "basePath": "/api",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/sessions": {
+            "post": {
+                "operationId": "CreateSession",
+                "summary": "Create Browser Session",
+                "description": "Provision a remote Chromium browser on Azure Playwright Workspaces and create a persistent session. The browser runs in the cloud — no local installation required.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "Initial URL to navigate to after provisioning",
+                                    "x-ms-summary": "Start URL"
+                                },
+                                "ttlMinutes": {
+                                    "type": "integer",
+                                    "description": "Session time-to-live in minutes (default: 15, max: 60)",
+                                    "x-ms-summary": "Session TTL (minutes)"
+                                },
+                                "os": {
+                                    "type": "string",
+                                    "description": "Operating system for the remote browser",
+                                    "x-ms-summary": "OS",
+                                    "enum": [
+                                        "linux",
+                                        "windows"
+                                    ],
+                                    "default": "linux"
+                                },
+                                "viewport": {
+                                    "type": "object",
+                                    "description": "Browser viewport dimensions",
+                                    "properties": {
+                                        "width": {
+                                            "type": "integer",
+                                            "description": "Viewport width in pixels (default: 1280)",
+                                            "x-ms-summary": "Width"
+                                        },
+                                        "height": {
+                                            "type": "integer",
+                                            "description": "Viewport height in pixels (default: 720)",
+                                            "x-ms-summary": "Height"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Session created",
+                        "schema": {
+                            "$ref": "#/definitions/SessionResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Session limit reached"
+                    },
+                    "503": {
+                        "description": "Playwright Workspaces provisioning failed"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}": {
+            "get": {
+                "operationId": "GetSession",
+                "summary": "Get Session Status",
+                "description": "Get the current status of a browser session including page URL, title, and time remaining.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session details",
+                        "schema": {
+                            "$ref": "#/definitions/SessionStatusResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found or expired"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "CloseSession",
+                "summary": "Close Session",
+                "description": "Close a browser session and release the remote browser. Always close sessions when done to avoid unnecessary charges.",
+                "tags": [
+                    "Sessions"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Session closed"
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/navigate": {
+            "post": {
+                "operationId": "Navigate",
+                "summary": "Navigate to URL",
+                "description": "Navigate the remote browser to a new URL while preserving cookies and session state.",
+                "tags": [
+                    "Navigation"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "url"
+                            ],
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "URL to navigate to",
+                                    "x-ms-summary": "URL"
+                                },
+                                "waitUntil": {
+                                    "type": "string",
+                                    "description": "When to consider navigation complete",
+                                    "x-ms-summary": "Wait Until",
+                                    "enum": [
+                                        "load",
+                                        "domcontentloaded",
+                                        "networkidle"
+                                    ],
+                                    "default": "networkidle"
+                                },
+                                "waitForSelector": {
+                                    "type": "string",
+                                    "description": "CSS selector to wait for after navigation (optional)",
+                                    "x-ms-summary": "Wait for Selector"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Navigation complete",
+                        "schema": {
+                            "$ref": "#/definitions/NavigationResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    },
+                    "408": {
+                        "description": "Navigation timeout"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/click": {
+            "post": {
+                "operationId": "ClickElement",
+                "summary": "Click Element",
+                "description": "Click an element on the page by CSS selector, text content, or ARIA role.",
+                "tags": [
+                    "Interaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "selector": {
+                                    "type": "string",
+                                    "description": "CSS selector of element to click",
+                                    "x-ms-summary": "CSS Selector"
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "Click element containing this text (alternative to selector)",
+                                    "x-ms-summary": "Text Content"
+                                },
+                                "role": {
+                                    "type": "string",
+                                    "description": "ARIA role of element to click (e.g., button, link)",
+                                    "x-ms-summary": "ARIA Role"
+                                },
+                                "roleName": {
+                                    "type": "string",
+                                    "description": "Accessible name when using role-based click",
+                                    "x-ms-summary": "Role Name"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Element clicked",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session or element not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/type": {
+            "post": {
+                "operationId": "TypeText",
+                "summary": "Type Text",
+                "description": "Type text into an input field identified by CSS selector, label, or placeholder.",
+                "tags": [
+                    "Interaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "text"
+                            ],
+                            "properties": {
+                                "selector": {
+                                    "type": "string",
+                                    "description": "CSS selector of input element",
+                                    "x-ms-summary": "CSS Selector"
+                                },
+                                "label": {
+                                    "type": "string",
+                                    "description": "Label text of input field (alternative to selector)",
+                                    "x-ms-summary": "Field Label"
+                                },
+                                "placeholder": {
+                                    "type": "string",
+                                    "description": "Placeholder text of input field (alternative to selector)",
+                                    "x-ms-summary": "Placeholder"
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "Text to type into the field",
+                                    "x-ms-summary": "Text"
+                                },
+                                "submit": {
+                                    "type": "boolean",
+                                    "description": "Press Enter after typing (default: false)",
+                                    "x-ms-summary": "Submit"
+                                },
+                                "clear": {
+                                    "type": "boolean",
+                                    "description": "Clear existing text before typing (default: true)",
+                                    "x-ms-summary": "Clear First"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Text entered",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session or element not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/select": {
+            "post": {
+                "operationId": "SelectOption",
+                "summary": "Select Option",
+                "description": "Select an option from a dropdown or select element.",
+                "tags": [
+                    "Interaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "selector"
+                            ],
+                            "properties": {
+                                "selector": {
+                                    "type": "string",
+                                    "description": "CSS selector of the select element",
+                                    "x-ms-summary": "Selector"
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "Option value to select",
+                                    "x-ms-summary": "Value"
+                                },
+                                "label": {
+                                    "type": "string",
+                                    "description": "Option label/text to select (alternative to value)",
+                                    "x-ms-summary": "Label"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Option selected",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session or element not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/fill-form": {
+            "post": {
+                "operationId": "FillForm",
+                "summary": "Fill Form",
+                "description": "Fill multiple form fields at once using label-to-value or selector-to-value mappings.",
+                "tags": [
+                    "Interaction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "fields"
+                            ],
+                            "properties": {
+                                "fields": {
+                                    "type": "object",
+                                    "description": "Map of field selectors or labels to values (e.g., {\"#email\": \"user@example.com\", \"Password\": \"***\"})",
+                                    "x-ms-summary": "Fields"
+                                },
+                                "submit": {
+                                    "type": "boolean",
+                                    "description": "Click submit button after filling (default: false)",
+                                    "x-ms-summary": "Submit Form"
+                                },
+                                "submitSelector": {
+                                    "type": "string",
+                                    "description": "CSS selector of submit button (default: auto-detect)",
+                                    "x-ms-summary": "Submit Button Selector"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form filled",
+                        "schema": {
+                            "$ref": "#/definitions/FormFillResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/content": {
+            "get": {
+                "operationId": "GetPageContent",
+                "summary": "Get Page Content",
+                "description": "Get the text content or HTML of the current page.",
+                "tags": [
+                    "Extraction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "text",
+                            "html",
+                            "markdown"
+                        ],
+                        "description": "Output format (default: text)",
+                        "x-ms-summary": "Format"
+                    },
+                    {
+                        "name": "selector",
+                        "in": "query",
+                        "type": "string",
+                        "description": "CSS selector to extract content from a specific element (optional — defaults to full page)",
+                        "x-ms-summary": "Selector"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Page content",
+                        "schema": {
+                            "$ref": "#/definitions/ContentResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/element-text": {
+            "post": {
+                "operationId": "GetElementText",
+                "summary": "Get Element Text",
+                "description": "Get the text content of a specific element by CSS selector.",
+                "tags": [
+                    "Extraction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "selector"
+                            ],
+                            "properties": {
+                                "selector": {
+                                    "type": "string",
+                                    "description": "CSS selector of the element",
+                                    "x-ms-summary": "Selector"
+                                },
+                                "all": {
+                                    "type": "boolean",
+                                    "description": "Get text from all matching elements (default: false, returns first match)",
+                                    "x-ms-summary": "All Matches"
+                                },
+                                "attribute": {
+                                    "type": "string",
+                                    "description": "Get an attribute value instead of text (e.g., href, src)",
+                                    "x-ms-summary": "Attribute"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Element text",
+                        "schema": {
+                            "$ref": "#/definitions/ElementTextResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session or element not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/scrape": {
+            "post": {
+                "operationId": "ScrapeData",
+                "summary": "Scrape Structured Data",
+                "description": "Extract structured data from the page using CSS selectors. Define a mapping of field names to selectors and get back clean JSON.",
+                "tags": [
+                    "Extraction"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "fields"
+                            ],
+                            "properties": {
+                                "containerSelector": {
+                                    "type": "string",
+                                    "description": "CSS selector for repeating item containers (e.g., '.product-card'). Omit for single-item extraction.",
+                                    "x-ms-summary": "Container Selector"
+                                },
+                                "fields": {
+                                    "type": "object",
+                                    "description": "Map of field names to CSS selectors (e.g., {\"title\": \"h2.name\", \"price\": \".price\", \"link\": \"a@href\"}). Append @attr to get an attribute.",
+                                    "x-ms-summary": "Field Selectors"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "description": "Maximum number of items to extract (default: 50)",
+                                    "x-ms-summary": "Limit"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Scraped data",
+                        "schema": {
+                            "$ref": "#/definitions/ScrapeResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/screenshot": {
+            "get": {
+                "operationId": "TakeScreenshot",
+                "summary": "Take Screenshot",
+                "description": "Capture a screenshot of the current page in the remote browser.",
+                "tags": [
+                    "Utility"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fullPage",
+                        "in": "query",
+                        "type": "boolean",
+                        "description": "Capture full scrollable page (default: false)",
+                        "x-ms-summary": "Full Page"
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "type": "string",
+                        "enum": [
+                            "png",
+                            "jpeg"
+                        ],
+                        "description": "Image format (default: png)",
+                        "x-ms-summary": "Format"
+                    },
+                    {
+                        "name": "selector",
+                        "in": "query",
+                        "type": "string",
+                        "description": "CSS selector to screenshot a specific element",
+                        "x-ms-summary": "Element Selector"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Screenshot captured",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenshotResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/evaluate": {
+            "post": {
+                "operationId": "EvaluateJavaScript",
+                "summary": "Evaluate JavaScript",
+                "description": "Execute JavaScript code on the page and return the result.",
+                "tags": [
+                    "Utility"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "script"
+                            ],
+                            "properties": {
+                                "script": {
+                                    "type": "string",
+                                    "description": "JavaScript code to execute in the page context",
+                                    "x-ms-summary": "Script"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JavaScript result",
+                        "schema": {
+                            "$ref": "#/definitions/EvalResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/wait": {
+            "post": {
+                "operationId": "WaitForElement",
+                "summary": "Wait for Element",
+                "description": "Wait for an element to appear, become visible, or disappear on the page.",
+                "tags": [
+                    "Utility"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "selector"
+                            ],
+                            "properties": {
+                                "selector": {
+                                    "type": "string",
+                                    "description": "CSS selector to wait for",
+                                    "x-ms-summary": "Selector"
+                                },
+                                "state": {
+                                    "type": "string",
+                                    "description": "State to wait for",
+                                    "x-ms-summary": "State",
+                                    "enum": [
+                                        "visible",
+                                        "hidden",
+                                        "attached",
+                                        "detached"
+                                    ],
+                                    "default": "visible"
+                                },
+                                "timeout": {
+                                    "type": "integer",
+                                    "description": "Timeout in milliseconds (default: 30000)",
+                                    "x-ms-summary": "Timeout (ms)"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Element found",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    },
+                    "408": {
+                        "description": "Wait timeout"
+                    }
+                }
+            }
+        },
+        "/sessions/{sessionId}/scroll": {
+            "post": {
+                "operationId": "ScrollPage",
+                "summary": "Scroll Page",
+                "description": "Scroll the page or a specific element in the remote browser.",
+                "tags": [
+                    "Utility"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Session ID",
+                        "x-ms-summary": "Session ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "direction": {
+                                    "type": "string",
+                                    "description": "Scroll direction",
+                                    "x-ms-summary": "Direction",
+                                    "enum": [
+                                        "up",
+                                        "down",
+                                        "top",
+                                        "bottom"
+                                    ],
+                                    "default": "down"
+                                },
+                                "amount": {
+                                    "type": "integer",
+                                    "description": "Pixels to scroll (default: 500)",
+                                    "x-ms-summary": "Amount (pixels)"
+                                },
+                                "selector": {
+                                    "type": "string",
+                                    "description": "CSS selector of element to scroll (optional — scrolls page if omitted)",
+                                    "x-ms-summary": "Element Selector"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Scrolled",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Session not found"
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Playwright Workspaces MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Full browser automation — navigate, click, type, scrape, and screenshot — on remote cloud browsers.",
+                "tags": [
+                    "MCP"
+                ],
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "SessionResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Unique session identifier",
+                    "x-ms-summary": "Session ID"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL",
+                    "x-ms-summary": "URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Current page title",
+                    "x-ms-summary": "Title"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Session expiration time",
+                    "x-ms-summary": "Expires At"
+                },
+                "region": {
+                    "type": "string",
+                    "description": "Azure region of the remote browser",
+                    "x-ms-summary": "Region"
+                }
+            }
+        },
+        "SessionStatusResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session identifier",
+                    "x-ms-summary": "Session ID"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL",
+                    "x-ms-summary": "URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Current page title",
+                    "x-ms-summary": "Title"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Session creation time",
+                    "x-ms-summary": "Created At"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Session expiration time",
+                    "x-ms-summary": "Expires At"
+                },
+                "actionCount": {
+                    "type": "integer",
+                    "description": "Number of actions performed",
+                    "x-ms-summary": "Action Count"
+                }
+            }
+        },
+        "NavigationResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "Resolved URL after navigation",
+                    "x-ms-summary": "URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Page title",
+                    "x-ms-summary": "Title"
+                },
+                "status": {
+                    "type": "integer",
+                    "description": "HTTP status code",
+                    "x-ms-summary": "Status Code"
+                }
+            }
+        },
+        "ActionResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the action succeeded",
+                    "x-ms-summary": "Success"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Current URL after action",
+                    "x-ms-summary": "URL"
+                },
+                "pageChanged": {
+                    "type": "boolean",
+                    "description": "Whether the action caused a navigation",
+                    "x-ms-summary": "Page Changed"
+                }
+            }
+        },
+        "FormFillResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether all fields were filled",
+                    "x-ms-summary": "Success"
+                },
+                "filledFields": {
+                    "type": "integer",
+                    "description": "Number of fields filled",
+                    "x-ms-summary": "Fields Filled"
+                },
+                "errors": {
+                    "type": "array",
+                    "description": "Fields that could not be filled",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "field": {
+                                "type": "string",
+                                "description": "Field selector or label"
+                            },
+                            "error": {
+                                "type": "string",
+                                "description": "Error message"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ContentResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL",
+                    "x-ms-summary": "URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Page title",
+                    "x-ms-summary": "Title"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Page content in the requested format",
+                    "x-ms-summary": "Content"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Content format (text, html, or markdown)",
+                    "x-ms-summary": "Format"
+                }
+            }
+        },
+        "ElementTextResponse": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "Text content of the element (first match)",
+                    "x-ms-summary": "Text"
+                },
+                "texts": {
+                    "type": "array",
+                    "description": "Text content of all matching elements (when all=true)",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "Number of matching elements",
+                    "x-ms-summary": "Match Count"
+                }
+            }
+        },
+        "ScrapeResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "Extracted data items",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "Number of items extracted",
+                    "x-ms-summary": "Count"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Page URL data was scraped from",
+                    "x-ms-summary": "Source URL"
+                }
+            }
+        },
+        "ScreenshotResponse": {
+            "type": "object",
+            "properties": {
+                "image": {
+                    "type": "string",
+                    "description": "Base64-encoded screenshot image",
+                    "x-ms-summary": "Image (Base64)"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Image format (png or jpeg)",
+                    "x-ms-summary": "Format"
+                },
+                "width": {
+                    "type": "integer",
+                    "description": "Image width in pixels",
+                    "x-ms-summary": "Width"
+                },
+                "height": {
+                    "type": "integer",
+                    "description": "Image height in pixels",
+                    "x-ms-summary": "Height"
+                }
+            }
+        },
+        "EvalResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string",
+                    "description": "Serialized return value of the JavaScript expression",
+                    "x-ms-summary": "Result"
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/azure/app-testing/playwright-workspaces/overview-what-is-microsoft-playwright-workspaces"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Website;AI"
+        }
+    ]
+}
