@@ -1,0 +1,1298 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "UKG Pro WFM",
+    "description": "UKG Pro Workforce Management (formerly UKG Dimensions) REST API. Covers persons, schedules, timecards, punches, paycodes, time off, accruals, leave, hyperfinds, and tenant information across the Common Resources, Scheduling, Timekeeping, and Accruals domains.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "tenant.mykronos.com",
+  "basePath": "/",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/api/v1/commons/tenant": {
+      "get": {
+        "summary": "Retrieve Tenant Information",
+        "description": "Returns tenant-level configuration including identifiers and locale.",
+        "operationId": "RetrieveTenantInformation",
+        "tags": ["Common Resources"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/TenantInformation" }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/persons/me": {
+      "get": {
+        "summary": "Get Current User",
+        "description": "Returns the person record for the authenticated user.",
+        "operationId": "GetCurrentUser",
+        "tags": ["Common Resources"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Person" }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/persons": {
+      "get": {
+        "summary": "Retrieve Persons",
+        "description": "Retrieve all persons accessible to the authenticated user (paginated).",
+        "operationId": "RetrievePersons",
+        "tags": ["Common Resources"],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for pagination.",
+            "x-ms-summary": "Page Number",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Person" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/persons/extensions/multi_read": {
+      "post": {
+        "summary": "Retrieve Persons By Criteria",
+        "description": "Retrieve persons matching filter criteria such as a hyperfind ID or named query.",
+        "operationId": "RetrievePersonsByCriteria",
+        "tags": ["Common Resources"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/PersonCriteria" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Person" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/persons/{personIdentity}": {
+      "get": {
+        "summary": "Get Person By ID",
+        "description": "Retrieve a single person by person identity.",
+        "operationId": "GetPersonById",
+        "tags": ["Common Resources"],
+        "parameters": [
+          {
+            "name": "personIdentity",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The person identity (typically person number or person ID).",
+            "x-ms-summary": "Person Identity",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Person" }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/locations": {
+      "get": {
+        "summary": "Retrieve Locations",
+        "description": "Retrieve organizational locations configured for the tenant.",
+        "operationId": "RetrieveLocations",
+        "tags": ["Common Resources"],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for pagination.",
+            "x-ms-summary": "Page Number",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Location" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/jobs": {
+      "get": {
+        "summary": "Retrieve Jobs",
+        "description": "Retrieve job definitions configured for the tenant.",
+        "operationId": "RetrieveJobs",
+        "tags": ["Common Resources"],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for pagination.",
+            "x-ms-summary": "Page Number",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Job" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/cost_centers": {
+      "get": {
+        "summary": "Retrieve Cost Centers",
+        "description": "Retrieve cost centers configured for the tenant.",
+        "operationId": "RetrieveCostCenters",
+        "tags": ["Common Resources"],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for pagination.",
+            "x-ms-summary": "Page Number",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/CostCenter" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scheduling/employee_schedule/multi_read": {
+      "post": {
+        "summary": "Retrieve Employee Schedule",
+        "description": "Retrieve schedule details for one or more employees over a date range.",
+        "operationId": "RetrieveEmployeeSchedule",
+        "tags": ["Schedules"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ScheduleRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/ScheduleShift" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scheduling/schedule/multi_read": {
+      "post": {
+        "summary": "Retrieve Schedule",
+        "description": "Retrieve schedules as a manager across a hyperfind or location.",
+        "operationId": "RetrieveSchedule",
+        "tags": ["Schedules"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ScheduleRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/ScheduleShift" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scheduling/employee_schedule_changes/multi_read": {
+      "post": {
+        "summary": "Retrieve Employee Schedule Changes",
+        "description": "Retrieve schedule change events in a date range.",
+        "operationId": "RetrieveEmployeeScheduleChanges",
+        "tags": ["Schedules"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/ScheduleRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/ScheduleChange" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/timecard/employee": {
+      "get": {
+        "summary": "Retrieve Employee Timecard",
+        "description": "Retrieve the authenticated employee's timecard for a date range.",
+        "operationId": "RetrieveEmployeeTimecard",
+        "tags": ["Timecards"],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Start date (YYYY-MM-DD).",
+            "x-ms-summary": "Start Date"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "End date (YYYY-MM-DD).",
+            "x-ms-summary": "End Date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/Timecard" }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/timecard/multi_read": {
+      "post": {
+        "summary": "Retrieve Timecards",
+        "description": "Retrieve timecards for one or more employees as a manager.",
+        "operationId": "RetrieveTimecards",
+        "tags": ["Timecards"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/TimecardRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Timecard" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/punches/multi_read": {
+      "post": {
+        "summary": "Retrieve Punches",
+        "description": "Retrieve real-time punches for one or more employees.",
+        "operationId": "RetrievePunches",
+        "tags": ["Punches"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/PunchRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Punch" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/punches/bulk_import": {
+      "post": {
+        "summary": "Bulk Import Punches",
+        "description": "Bulk import punches asynchronously. Returns a job submission identifier.",
+        "operationId": "BulkImportPunches",
+        "tags": ["Punches"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/PunchBulkImport" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/AsyncJobSubmission" }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/timestamp": {
+      "get": {
+        "summary": "Retrieve Timestamp",
+        "description": "Retrieve the current timestamp state for an employee.",
+        "operationId": "RetrieveTimestamp",
+        "tags": ["Punches"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/TimestampState" }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add Timestamp",
+        "description": "Punch in or out via a timestamp.",
+        "operationId": "AddTimestamp",
+        "tags": ["Punches"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/TimestampRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/TimestampState" }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/setup/paycodes": {
+      "get": {
+        "summary": "Retrieve Paycodes",
+        "description": "Retrieve configured pay codes.",
+        "operationId": "RetrievePaycodes",
+        "tags": ["Paycodes"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Paycode" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/pay_code_edits": {
+      "post": {
+        "summary": "Create Pay Code Edit",
+        "description": "Add a pay code edit to an employee timecard.",
+        "operationId": "CreatePayCodeEdit",
+        "tags": ["Paycodes"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/PayCodeEdit" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/PayCodeEditResult" }
+          }
+        }
+      }
+    },
+    "/api/v1/timekeeping/pay_code_edits/bulk_import": {
+      "post": {
+        "summary": "Bulk Import Pay Code Edits",
+        "description": "Bulk import pay code edits asynchronously. Returns a job submission identifier.",
+        "operationId": "BulkImportPayCodeEdits",
+        "tags": ["Paycodes"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/PayCodeEditBulkImport" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/AsyncJobSubmission" }
+          }
+        }
+      }
+    },
+    "/api/v1/timeoff/employee": {
+      "get": {
+        "summary": "Retrieve Employee Time Off Requests",
+        "description": "Retrieve the authenticated employee's time off requests.",
+        "operationId": "RetrieveEmployeeTimeOffRequests",
+        "tags": ["Time Off"],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "type": "string",
+            "description": "Start date (YYYY-MM-DD).",
+            "x-ms-summary": "Start Date"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "type": "string",
+            "description": "End date (YYYY-MM-DD).",
+            "x-ms-summary": "End Date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/TimeOffRequest" }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Employee Time Off Request",
+        "description": "Submit a new time off request as the authenticated employee.",
+        "operationId": "CreateEmployeeTimeOffRequest",
+        "tags": ["Time Off"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/TimeOffRequestSubmission" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/TimeOffRequest" }
+          }
+        }
+      }
+    },
+    "/api/v1/timeoff/manager/multi_read": {
+      "post": {
+        "summary": "Retrieve Manager Time Off Requests",
+        "description": "Retrieve time off requests across a hyperfind or set of employees as a manager.",
+        "operationId": "RetrieveManagerTimeOffRequests",
+        "tags": ["Time Off"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/TimeOffManagerQuery" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/TimeOffRequest" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/timeoff/manager/{timeOffRequestId}": {
+      "put": {
+        "summary": "Update Manager Time Off Request",
+        "description": "Approve, reject, or cancel a time off request as a manager.",
+        "operationId": "UpdateManagerTimeOffRequest",
+        "tags": ["Time Off"],
+        "parameters": [
+          {
+            "name": "timeOffRequestId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The time off request identifier.",
+            "x-ms-summary": "Time Off Request ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/TimeOffManagerUpdate" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/TimeOffRequest" }
+          }
+        }
+      }
+    },
+    "/api/v1/accruals/profiles": {
+      "get": {
+        "summary": "Retrieve Accrual Profiles",
+        "description": "Retrieve all accrual profile definitions.",
+        "operationId": "RetrieveAccrualProfiles",
+        "tags": ["Accruals"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/AccrualProfile" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accruals/balances/multi_read": {
+      "post": {
+        "summary": "Retrieve Accrual Balance",
+        "description": "Retrieve accrual balances for one or more employees on a specific date.",
+        "operationId": "RetrieveAccrualBalance",
+        "tags": ["Accruals"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/AccrualBalanceRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/AccrualBalance" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/leave/cases": {
+      "get": {
+        "summary": "Retrieve Leave Cases",
+        "description": "Retrieve all leave cases.",
+        "operationId": "RetrieveLeaveCases",
+        "tags": ["Leave"],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for pagination.",
+            "x-ms-summary": "Page Number",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/LeaveCase" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/leave/cases/{caseId}": {
+      "get": {
+        "summary": "Retrieve Leave Case By ID",
+        "description": "Retrieve leave case details by case identifier.",
+        "operationId": "RetrieveLeaveCaseById",
+        "tags": ["Leave"],
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The leave case identifier.",
+            "x-ms-summary": "Case ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/LeaveCase" }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/hyperfind": {
+      "get": {
+        "summary": "Retrieve Hyperfind Queries",
+        "description": "Retrieve all hyperfind queries accessible to the authenticated user.",
+        "operationId": "RetrieveHyperfindQueries",
+        "tags": ["Hyperfinds"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/HyperfindQuery" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/commons/hyperfind/execute": {
+      "post": {
+        "summary": "Execute Hyperfind Query",
+        "description": "Execute a hyperfind by ID and return matching person identities.",
+        "operationId": "ExecuteHyperfindQuery",
+        "tags": ["Hyperfinds"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/HyperfindExecuteRequest" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/HyperfindResult" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "summary": "Retrieve Notifications",
+        "description": "Retrieve in-app notifications for the authenticated user.",
+        "operationId": "RetrieveNotifications",
+        "tags": ["Notifications"],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "type": "integer",
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "type": "integer",
+            "description": "Page number for pagination.",
+            "x-ms-summary": "Page Number",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/Notification" }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke UKG Pro WFM MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides AI agents access to UKG Pro WFM operations as tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "PersonIdentity": {
+      "type": "object",
+      "properties": {
+        "qualifier": {
+          "type": "string",
+          "description": "Identity qualifier (e.g. PersonNumber, PersonId).",
+          "x-ms-summary": "Qualifier"
+        },
+        "value": {
+          "type": "string",
+          "description": "Identity value.",
+          "x-ms-summary": "Value"
+        }
+      }
+    },
+    "TenantInformation": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Tenant ID" },
+        "name": { "type": "string", "x-ms-summary": "Tenant Name" },
+        "url": { "type": "string", "x-ms-summary": "Tenant URL" },
+        "country": { "type": "string", "x-ms-summary": "Country" },
+        "locale": { "type": "string", "x-ms-summary": "Locale" },
+        "timeZone": { "type": "string", "x-ms-summary": "Time Zone" }
+      }
+    },
+    "Person": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "personNumber": { "type": "string", "x-ms-summary": "Person Number" },
+        "firstName": { "type": "string", "x-ms-summary": "First Name" },
+        "lastName": { "type": "string", "x-ms-summary": "Last Name" },
+        "fullName": { "type": "string", "x-ms-summary": "Full Name" },
+        "email": { "type": "string", "x-ms-summary": "Email" },
+        "employmentStatus": { "type": "string", "x-ms-summary": "Employment Status" },
+        "primaryAccount": { "type": "string", "x-ms-summary": "Primary Account" },
+        "primaryJob": { "type": "string", "x-ms-summary": "Primary Job" },
+        "primaryLocation": { "type": "string", "x-ms-summary": "Primary Location" },
+        "managerName": { "type": "string", "x-ms-summary": "Manager Name" },
+        "hireDate": { "type": "string", "format": "date", "x-ms-summary": "Hire Date" },
+        "terminationDate": { "type": "string", "format": "date", "x-ms-summary": "Termination Date" }
+      }
+    },
+    "PersonCriteria": {
+      "type": "object",
+      "properties": {
+        "where": {
+          "type": "object",
+          "description": "Filter criteria for persons.",
+          "properties": {
+            "hyperfind": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "x-ms-summary": "Hyperfind ID" },
+                "qualifier": { "type": "string", "x-ms-summary": "Hyperfind Qualifier" }
+              }
+            },
+            "personNumbers": {
+              "type": "array",
+              "items": { "type": "string" },
+              "x-ms-summary": "Person Numbers"
+            }
+          }
+        }
+      }
+    },
+    "Location": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Location ID" },
+        "name": { "type": "string", "x-ms-summary": "Name" },
+        "path": { "type": "string", "x-ms-summary": "Path" },
+        "type": { "type": "string", "x-ms-summary": "Type" },
+        "parentId": { "type": "string", "x-ms-summary": "Parent ID" }
+      }
+    },
+    "Job": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Job ID" },
+        "name": { "type": "string", "x-ms-summary": "Name" },
+        "code": { "type": "string", "x-ms-summary": "Code" },
+        "description": { "type": "string", "x-ms-summary": "Description" },
+        "active": { "type": "boolean", "x-ms-summary": "Active" }
+      }
+    },
+    "CostCenter": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Cost Center ID" },
+        "name": { "type": "string", "x-ms-summary": "Name" },
+        "code": { "type": "string", "x-ms-summary": "Code" },
+        "description": { "type": "string", "x-ms-summary": "Description" },
+        "active": { "type": "boolean", "x-ms-summary": "Active" }
+      }
+    },
+    "ScheduleRequest": {
+      "type": "object",
+      "properties": {
+        "where": {
+          "type": "object",
+          "properties": {
+            "dateRange": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+                "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" }
+              }
+            },
+            "employees": {
+              "type": "object",
+              "properties": {
+                "hyperfindId": { "type": "string", "x-ms-summary": "Hyperfind ID" },
+                "personIdentities": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/PersonIdentity" }
+                }
+              }
+            },
+            "locationId": { "type": "string", "x-ms-summary": "Location ID" }
+          }
+        }
+      }
+    },
+    "ScheduleShift": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "startDateTime": { "type": "string", "format": "date-time", "x-ms-summary": "Start" },
+        "endDateTime": { "type": "string", "format": "date-time", "x-ms-summary": "End" },
+        "jobName": { "type": "string", "x-ms-summary": "Job" },
+        "locationName": { "type": "string", "x-ms-summary": "Location" },
+        "payCode": { "type": "string", "x-ms-summary": "Pay Code" },
+        "shiftType": { "type": "string", "x-ms-summary": "Shift Type" },
+        "totalHours": { "type": "number", "x-ms-summary": "Total Hours" }
+      }
+    },
+    "ScheduleChange": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "changeDateTime": { "type": "string", "format": "date-time", "x-ms-summary": "Change Time" },
+        "changeType": { "type": "string", "x-ms-summary": "Change Type" },
+        "previousValue": { "type": "string", "x-ms-summary": "Previous Value" },
+        "newValue": { "type": "string", "x-ms-summary": "New Value" },
+        "changedBy": { "type": "string", "x-ms-summary": "Changed By" }
+      }
+    },
+    "TimecardRequest": {
+      "type": "object",
+      "properties": {
+        "where": {
+          "type": "object",
+          "properties": {
+            "dateRange": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+                "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" }
+              }
+            },
+            "employees": {
+              "type": "object",
+              "properties": {
+                "hyperfindId": { "type": "string", "x-ms-summary": "Hyperfind ID" },
+                "personIdentities": {
+                  "type": "array",
+                  "items": { "$ref": "#/definitions/PersonIdentity" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Timecard": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "periodStart": { "type": "string", "format": "date", "x-ms-summary": "Period Start" },
+        "periodEnd": { "type": "string", "format": "date", "x-ms-summary": "Period End" },
+        "totals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "payCode": { "type": "string", "x-ms-summary": "Pay Code" },
+              "hours": { "type": "number", "x-ms-summary": "Hours" },
+              "amount": { "type": "number", "x-ms-summary": "Amount" }
+            }
+          }
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "x-ms-summary": "Exception Type" },
+              "date": { "type": "string", "format": "date", "x-ms-summary": "Date" },
+              "description": { "type": "string", "x-ms-summary": "Description" }
+            }
+          }
+        }
+      }
+    },
+    "PunchRequest": {
+      "type": "object",
+      "properties": {
+        "where": {
+          "type": "object",
+          "properties": {
+            "dateRange": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+                "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" }
+              }
+            },
+            "personIdentities": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/PersonIdentity" }
+            }
+          }
+        }
+      }
+    },
+    "Punch": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "punchDateTime": { "type": "string", "format": "date-time", "x-ms-summary": "Punch Time" },
+        "punchType": { "type": "string", "x-ms-summary": "Punch Type" },
+        "transferString": { "type": "string", "x-ms-summary": "Transfer" },
+        "deviceId": { "type": "string", "x-ms-summary": "Device ID" }
+      }
+    },
+    "PunchBulkImport": {
+      "type": "object",
+      "properties": {
+        "punches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+              "punchDateTime": { "type": "string", "format": "date-time", "x-ms-summary": "Punch Time" },
+              "punchType": { "type": "string", "x-ms-summary": "Punch Type" },
+              "transferString": { "type": "string", "x-ms-summary": "Transfer" }
+            }
+          }
+        }
+      }
+    },
+    "AsyncJobSubmission": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Job ID" },
+        "status": { "type": "string", "x-ms-summary": "Status" },
+        "submittedAt": { "type": "string", "format": "date-time", "x-ms-summary": "Submitted At" }
+      }
+    },
+    "TimestampRequest": {
+      "type": "object",
+      "properties": {
+        "punchType": { "type": "string", "x-ms-summary": "Punch Type", "description": "IN, OUT, BREAK_START, BREAK_END" },
+        "transferString": { "type": "string", "x-ms-summary": "Transfer" },
+        "comment": { "type": "string", "x-ms-summary": "Comment" }
+      }
+    },
+    "TimestampState": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "lastPunchDateTime": { "type": "string", "format": "date-time", "x-ms-summary": "Last Punch" },
+        "lastPunchType": { "type": "string", "x-ms-summary": "Last Punch Type" },
+        "currentlyIn": { "type": "boolean", "x-ms-summary": "Currently Punched In" }
+      }
+    },
+    "Paycode": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Pay Code ID" },
+        "name": { "type": "string", "x-ms-summary": "Name" },
+        "abbreviation": { "type": "string", "x-ms-summary": "Abbreviation" },
+        "type": { "type": "string", "x-ms-summary": "Type" },
+        "active": { "type": "boolean", "x-ms-summary": "Active" }
+      }
+    },
+    "PayCodeEdit": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "effectiveDate": { "type": "string", "format": "date", "x-ms-summary": "Effective Date" },
+        "payCodeName": { "type": "string", "x-ms-summary": "Pay Code Name" },
+        "amount": { "type": "number", "x-ms-summary": "Amount" },
+        "amountType": { "type": "string", "x-ms-summary": "Amount Type", "description": "Hours, Money, Days" },
+        "comment": { "type": "string", "x-ms-summary": "Comment" }
+      }
+    },
+    "PayCodeEditResult": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Edit ID" },
+        "status": { "type": "string", "x-ms-summary": "Status" },
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" }
+      }
+    },
+    "PayCodeEditBulkImport": {
+      "type": "object",
+      "properties": {
+        "payCodeEdits": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/PayCodeEdit" }
+        }
+      }
+    },
+    "TimeOffRequest": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Request ID" },
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "status": { "type": "string", "x-ms-summary": "Status" },
+        "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+        "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" },
+        "payCodeName": { "type": "string", "x-ms-summary": "Pay Code" },
+        "hours": { "type": "number", "x-ms-summary": "Hours" },
+        "submittedAt": { "type": "string", "format": "date-time", "x-ms-summary": "Submitted At" },
+        "approverComment": { "type": "string", "x-ms-summary": "Approver Comment" },
+        "requestorComment": { "type": "string", "x-ms-summary": "Requestor Comment" }
+      }
+    },
+    "TimeOffRequestSubmission": {
+      "type": "object",
+      "properties": {
+        "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+        "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" },
+        "payCodeName": { "type": "string", "x-ms-summary": "Pay Code Name" },
+        "hours": { "type": "number", "x-ms-summary": "Hours" },
+        "comment": { "type": "string", "x-ms-summary": "Comment" }
+      }
+    },
+    "TimeOffManagerQuery": {
+      "type": "object",
+      "properties": {
+        "where": {
+          "type": "object",
+          "properties": {
+            "dateRange": {
+              "type": "object",
+              "properties": {
+                "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+                "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" }
+              }
+            },
+            "hyperfindId": { "type": "string", "x-ms-summary": "Hyperfind ID" },
+            "status": { "type": "string", "x-ms-summary": "Status" }
+          }
+        }
+      }
+    },
+    "TimeOffManagerUpdate": {
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "x-ms-summary": "Action", "description": "approve, reject, cancel" },
+        "comment": { "type": "string", "x-ms-summary": "Comment" }
+      }
+    },
+    "AccrualProfile": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Profile ID" },
+        "name": { "type": "string", "x-ms-summary": "Name" },
+        "description": { "type": "string", "x-ms-summary": "Description" },
+        "active": { "type": "boolean", "x-ms-summary": "Active" }
+      }
+    },
+    "AccrualBalanceRequest": {
+      "type": "object",
+      "properties": {
+        "asOfDate": { "type": "string", "format": "date", "x-ms-summary": "As Of Date" },
+        "personIdentities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/PersonIdentity" }
+        }
+      }
+    },
+    "AccrualBalance": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "asOfDate": { "type": "string", "format": "date", "x-ms-summary": "As Of Date" },
+        "balances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "accrualCodeName": { "type": "string", "x-ms-summary": "Accrual Code" },
+              "balance": { "type": "number", "x-ms-summary": "Balance" },
+              "unit": { "type": "string", "x-ms-summary": "Unit" },
+              "expirationDate": { "type": "string", "format": "date", "x-ms-summary": "Expiration Date" }
+            }
+          }
+        }
+      }
+    },
+    "LeaveCase": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Case ID" },
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "leaveType": { "type": "string", "x-ms-summary": "Leave Type" },
+        "status": { "type": "string", "x-ms-summary": "Status" },
+        "startDate": { "type": "string", "format": "date", "x-ms-summary": "Start Date" },
+        "endDate": { "type": "string", "format": "date", "x-ms-summary": "End Date" },
+        "reason": { "type": "string", "x-ms-summary": "Reason" },
+        "submittedAt": { "type": "string", "format": "date-time", "x-ms-summary": "Submitted At" }
+      }
+    },
+    "HyperfindQuery": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Hyperfind ID" },
+        "name": { "type": "string", "x-ms-summary": "Name" },
+        "qualifier": { "type": "string", "x-ms-summary": "Qualifier" },
+        "visibility": { "type": "string", "x-ms-summary": "Visibility" }
+      }
+    },
+    "HyperfindExecuteRequest": {
+      "type": "object",
+      "properties": {
+        "hyperfindId": { "type": "string", "x-ms-summary": "Hyperfind ID" },
+        "asOfDate": { "type": "string", "format": "date", "x-ms-summary": "As Of Date" }
+      }
+    },
+    "HyperfindResult": {
+      "type": "object",
+      "properties": {
+        "personIdentity": { "$ref": "#/definitions/PersonIdentity" },
+        "personNumber": { "type": "string", "x-ms-summary": "Person Number" },
+        "fullName": { "type": "string", "x-ms-summary": "Full Name" }
+      }
+    },
+    "Notification": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "x-ms-summary": "Notification ID" },
+        "type": { "type": "string", "x-ms-summary": "Type" },
+        "subject": { "type": "string", "x-ms-summary": "Subject" },
+        "body": { "type": "string", "x-ms-summary": "Body" },
+        "createdAt": { "type": "string", "format": "date-time", "x-ms-summary": "Created At" },
+        "read": { "type": "boolean", "x-ms-summary": "Read" }
+      }
+    }
+  },
+  "securityDefinitions": {},
+  "security": [],
+  "tags": [
+    { "name": "Common Resources", "description": "Persons, tenant, locations, jobs, cost centers" },
+    { "name": "Schedules", "description": "Schedule retrieval and change events" },
+    { "name": "Timecards", "description": "Employee and manager timecard operations" },
+    { "name": "Punches", "description": "Punch retrieval, timestamps, and bulk import" },
+    { "name": "Paycodes", "description": "Pay code definitions and pay code edits" },
+    { "name": "Time Off", "description": "Employee and manager time off requests" },
+    { "name": "Accruals", "description": "Accrual profiles and balances" },
+    { "name": "Leave", "description": "Leave cases" },
+    { "name": "Hyperfinds", "description": "Hyperfind queries and execution" },
+    { "name": "Notifications", "description": "In-app notifications" },
+    { "name": "MCP", "description": "Model Context Protocol endpoint for Copilot Studio" }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://www.ukg.com/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://www.ukg.com/privacy"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Human Resources;Productivity"
+    }
+  ]
+}
