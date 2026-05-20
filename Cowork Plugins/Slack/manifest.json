@@ -1,0 +1,50 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/vDevPreview/MicrosoftTeams.schema.json",
+  "manifestVersion": "devPreview",
+  "version": "1.5.0",
+  "id": "cb4e4f54-13ec-43f5-9bb5-595c18c547a5",
+  "packageName": "com.troystaylor.slack-cowork-plugin",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "name": {
+    "short": "Slack Cowork Plugin",
+    "full": "Slack Cowork Plugin"
+  },
+  "description": {
+    "short": "Read, search, post, schedule, and manage Slack from Copilot Cowork.",
+    "full": "Brings Slack into Copilot Cowork with read and write skills: summarize channels, search and cite messages, recap threads, look up people, post and bulk-broadcast updates, react, share files, set status/DND, edit and schedule messages, pin to channels, create Slack reminders, and manage channels (create, invite, topic/purpose, rename, archive). Backed by an in-tenant MCP server hosted in your Azure subscription — no vendor-hosted MCP in the path. All write actions surface a confirmation prompt via MCP annotations."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#4A154B",
+  "agentSkills": [
+    { "folder": "./skills/slack-post-update" },
+    { "folder": "./skills/slack-channel-digest" },
+    { "folder": "./skills/slack-search-and-cite" },
+    { "folder": "./skills/slack-thread-recap" },
+    { "folder": "./skills/slack-people-lookup" },
+    { "folder": "./skills/slack-remind-me" }
+  ],
+  "agentConnectors": [
+    {
+      "id": "slack-cowork-plugin-mcp",
+      "displayName": "Slack Cowork Plugin",
+      "description": "Read and post to Slack channels, search messages, recap threads, and manage workspace items. Backed by an in-tenant MCP server.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://ca-am337ktfrw2ug.happyrock-9739dfd2.eastus2.azurecontainerapps.io/mcp/full",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "OGQ0YjdkYTctYzAzNi00NmU4LWEwNDAtY2YwZWNkZWVlZmVhIyMyMDYwNDVjYy0zMGZhLTQ5NjQtOGM2OS0xZWM3MmJkMDliMTY="
+          }
+        }
+      }
+    }
+  ]
+}
