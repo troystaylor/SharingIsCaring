@@ -32,9 +32,10 @@ public static class McpEndpoints
     public static IEndpointRouteBuilder MapMcpRoute(
         this IEndpointRouteBuilder app,
         string path,
-        IReadOnlySet<string>? filter)
+        IReadOnlySet<string>? filter,
+        bool requireAuthorization = false)
     {
-        app.MapPost(path, async (HttpContext ctx) =>
+        var endpoint = app.MapPost(path, async (HttpContext ctx) =>
         {
             var registry = ctx.RequestServices.GetRequiredService<ToolRegistry>();
 
@@ -78,6 +79,11 @@ public static class McpEndpoints
             await ctx.Response.WriteAsync(resp.ToJsonString(Json));
             return Results.Empty;
         });
+
+        if (requireAuthorization)
+        {
+            endpoint.RequireAuthorization();
+        }
 
         return app;
     }

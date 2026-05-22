@@ -9,7 +9,7 @@ different `tools/list`:
 
 | Route | tools/list | Used by |
 |---|---|---|
-| `POST /mcp/full` | All 11 tools (read + write) | Cowork plugin (`agentConnectors[].toolSource.remoteMcpServer.mcpServerUrl`) |
+| `POST /mcp/full` | All 14 tools (read + write) | Cowork plugin (`agentConnectors[].toolSource.remoteMcpServer.mcpServerUrl`) |
 | `POST /mcp/federated` | Read-only subset only | M365 admin center custom federated connector |
 
 ## Tools
@@ -26,7 +26,10 @@ Read-only (`readOnlyHint: true`):
 Write (`destructiveHint: true`):
 
 - `send_message` — `chat.postMessage`
-- `add_reaction` — `reactions.add`
+- `schedule_message` — `chat.scheduleMessage`
+- `pin_message` — `pins.add`
+- `add_bookmark` — `bookmarks.add`
+- `complete_or_delete_reminder` — `reminders.complete` / `reminders.delete`
 - `upload_file` — v2 external flow (`getUploadURLExternal` → PUT → `completeUploadExternal`)
 - `launch_slack` — generic invoker; validates `endpoint` against the capability index
 - `sequence_slack` — array of launch_slack-shaped requests, stop-on-error or continue
@@ -130,7 +133,7 @@ MCP annotations on each tool:
 | Tool | `readOnlyHint` | `destructiveHint` | Result in Cowork |
 |---|---|---|---|
 | `search_messages`, `list_channels`, `get_channel_history`, `get_user_info`, `list_users`, `scan_slack` | true | false | runs silently |
-| `send_message`, `add_reaction`, `upload_file`, `launch_slack`, `sequence_slack` | false | true | Cowork prompts the user to confirm before invoking |
+| `send_message`, `schedule_message`, `pin_message`, `add_bookmark`, `complete_or_delete_reminder`, `upload_file`, `launch_slack`, `sequence_slack` | true | true | Cowork prompts the user to confirm before invoking |
 
 Annotation titles (e.g. `"Send Slack message"`) are displayed in the
 confirmation dialog.
@@ -144,7 +147,7 @@ server/
 ├── Endpoints/McpEndpoints.cs         # JSON-RPC over POST; per-route tool filtering
 ├── Tools/
 │   ├── ToolDescriptor.cs, ToolRegistry.cs, ToolHelpers.cs
-│   └── *Tool.cs (11 tools)
+│   └── *Tool.cs (14 tools)
 ├── Slack/
 │   ├── SlackClient.cs                # bearer-forwarding HttpClient + 429 retry
 │   ├── SlackCapabilityIndex.cs       # BM25 scorer

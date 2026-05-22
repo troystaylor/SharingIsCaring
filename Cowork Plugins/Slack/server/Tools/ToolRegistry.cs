@@ -44,6 +44,10 @@ public sealed class ToolRegistry
         Add(GetUserInfoTool.Build());
         Add(ListUsersTool.Build());
         Add(SendMessageTool.Build());
+        Add(ScheduleMessageTool.Build());
+        Add(PinMessageTool.Build());
+        Add(AddBookmarkTool.Build());
+        Add(CompleteOrDeleteReminderTool.Build());
         Add(UploadFileTool.Build());
         Add(ScanSlackTool.Build());
         Add(LaunchSlackTool.Build());
