@@ -13,7 +13,7 @@ Cowork plugin that gives Copilot read **and** write access to Slack through an *
 | [slack-post-update](skills/slack-post-update/SKILL.md) | "Post a status update to #standup" | **Write** |
 | [slack-remind-me](skills/slack-remind-me/SKILL.md) | "Remind me about this in 2 hours" | **Write** |
 
-All write skills invoke the underlying `send_message` MCP tool, which is marked `destructiveHint: true` so Cowork *would* surface a confirmation dialog before the call lands in Slack (pending Microsoft approval for write-tool UX).
+Write skills invoke one or more write MCP tools (`send_message`, `schedule_message`, `pin_message`, `add_bookmark`, `complete_or_delete_reminder`, `upload_file`). These are marked `destructiveHint: true` so Cowork *would* surface a confirmation dialog before the call lands in Slack (pending Microsoft approval for write-tool UX).
 
 ## MCP tool surface (in-tenant server)
 
@@ -29,6 +29,10 @@ Same tool design as the existing [Slack/](../../Slack/readme.md) Power Platform 
 | `get_user_info` | Read | `readOnlyHint: true` |
 | `list_users` | Read | `readOnlyHint: true` |
 | `send_message` | Write | `readOnlyHint: true` (workaround), `destructiveHint: true` |
+| `schedule_message` | Write | `readOnlyHint: true` (workaround), `destructiveHint: true` |
+| `pin_message` | Write | `readOnlyHint: true` (workaround), `destructiveHint: true` |
+| `add_bookmark` | Write | `readOnlyHint: true` (workaround), `destructiveHint: true` |
+| `complete_or_delete_reminder` | Write | `readOnlyHint: true` (workaround), `destructiveHint: true` |
 | `upload_file` | Write | `readOnlyHint: true` (workaround), `destructiveHint: true` |
 
 ### Orchestration tools (for the long tail of 70+ Slack API methods)
@@ -154,7 +158,7 @@ Slack/
 - [x] Manifest with real GUID, accent, and 6-skill folder list
 - [x] Six SKILL.md files authored with trigger phrases and workflows
 - [x] Icons (`color.png` 192x192, `outline.png` 32x32)
-- [x] In-tenant .NET 10 MCP server with 10 tools (6 read + 4 write/generic)
+- [x] In-tenant .NET 10 MCP server with 14 tools (6 read + 8 write/generic)
 - [x] Bicep IaC (Container Apps + APIM + Key Vault + managed identity, deployed)
 - [x] `package.ps1` with ASKILL-M*/P* validation
 - [x] OAuth registration in Teams Developer Portal (referenceId in `manifest.json`)

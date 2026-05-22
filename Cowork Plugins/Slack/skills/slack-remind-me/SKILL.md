@@ -26,7 +26,7 @@ Wraps Slack's reminders API:
 - **Complete** — `reminders.complete` marks one done.
 - **Delete** — `reminders.delete` removes one.
 
-All write paths go through `launch_slack` (`destructiveHint: true`) and
+All write paths go through `launch_slack` or `complete_or_delete_reminder` (`destructiveHint: true`) and
 **always render the reminder text + target user + resolved fire time before
 calling the API**.
 
@@ -86,15 +86,16 @@ calling the API**.
 1. Identify the target reminder by id (from the list output or the user's description — match on text or fire time, then confirm).
 2. Show the reminder about to be modified.
 3. Wait for confirmation.
-4. Call `launch_slack`:
-   - Complete: `endpoint: reminders.complete`, `arguments: { "reminder": "<id>" }`
-   - Delete: `endpoint: reminders.delete`, `arguments: { "reminder": "<id>" }`
+4. Call `complete_or_delete_reminder`:
+  - Complete: `{ "reminder": "<id>", "action": "complete" }`
+  - Delete: `{ "reminder": "<id>", "action": "delete" }`
 5. Confirm.
 
 ## Tools
 
 - `slack-people-lookup` — resolve target user (skill hand-off)
-- `launch_slack` with `reminders.add` / `reminders.list` / `reminders.complete` / `reminders.delete`
+- `launch_slack` with `reminders.add` / `reminders.list`
+- `complete_or_delete_reminder` for `reminders.complete` / `reminders.delete`
 
 ## Confirmation prompt template (add)
 

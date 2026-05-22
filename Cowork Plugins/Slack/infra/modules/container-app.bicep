@@ -30,6 +30,12 @@ param slackClientSecret string = ''
 @description('Client secret the Cowork Plugin Vault sends at /oauth/token.')
 param coworkClientSecret string = ''
 
+@description('Entra tenant ID used by the protected /mcp/a365 JWT validation.')
+param entraTenantId string = ''
+
+@description('Expected JWT audience (app ID URI) for /mcp/a365.')
+param entraAudience string = ''
+
 // Container Registry to hold the MCP image built by `azd up`.
 // ACR names must be 5-50 alphanumerics; pad with a stable prefix so short
 // resourceToken values (e.g. dev tokens) still meet the 5-char minimum.
@@ -139,6 +145,14 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'OAuthShim__CoworkClientSecret'
               secretRef: 'cowork-client-secret'
+            }
+            {
+              name: 'EntraAuth__TenantId'
+              value: entraTenantId
+            }
+            {
+              name: 'EntraAuth__Audience'
+              value: entraAudience
             }
           ]
           // Probes target the real MCP server's health endpoints. Removed from

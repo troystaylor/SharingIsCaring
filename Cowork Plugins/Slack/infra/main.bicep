@@ -56,6 +56,12 @@ param apimPublisherEmail string
 @description('APIM publisher display name.')
 param apimPublisherName string
 
+@description('Entra tenant ID that issues JWT tokens for the protected /mcp/a365 route.')
+param entraTenantId string = subscription().tenantId
+
+@description('Expected JWT audience (app ID URI) for the protected /mcp/a365 route.')
+param entraAudience string = ''
+
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = {
   'azd-env-name': environmentName
@@ -129,6 +135,8 @@ module mcp 'modules/container-app.bicep' = {
     coworkClientId: coworkClientId
     slackClientSecret: slackClientSecret
     coworkClientSecret: coworkClientSecret
+    entraTenantId: entraTenantId
+    entraAudience: empty(entraAudience) ? entra.outputs.identifierUri : entraAudience
   }
 }
 
@@ -164,6 +172,7 @@ output AZURE_APIM_GATEWAY_URL string = apim.outputs.gatewayUrl
 output AZURE_KEY_VAULT_NAME string = kv.outputs.name
 output AZURE_APP_INSIGHTS_CONNECTION_STRING string = ai.outputs.connectionString
 output MCP_FULL_URL string = 'https://${mcp.outputs.fqdn}/mcp/full'
+output MCP_A365_URL string = 'https://${mcp.outputs.fqdn}/mcp/a365'
 output MCP_FEDERATED_URL string = '${apim.outputs.gatewayUrl}/mcp/federated'
 output OAUTH_AUTHORIZE_URL string = 'https://${mcp.outputs.fqdn}/oauth/authorize'
 output OAUTH_TOKEN_URL string = 'https://${mcp.outputs.fqdn}/oauth/token'
