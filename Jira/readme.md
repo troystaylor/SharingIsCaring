@@ -32,11 +32,7 @@ Power Platform custom connector for Jira Cloud with core REST operations and MCP
 
 ### 3. Create a Connection
 
-When creating a connection, provide:
-
-- **Client ID**: from your Atlassian OAuth app
-- **Client Secret**: from your Atlassian OAuth app
-- **Jira site URL**: `https://your-domain.atlassian.net`
+When creating a connection using OAuth 2.0 popup
 
 ### 4. Add to Copilot Studio
 
