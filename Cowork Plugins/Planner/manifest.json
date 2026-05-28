@@ -1,0 +1,52 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/vDevPreview/MicrosoftTeams.schema.json",
+  "manifestVersion": "devPreview",
+  "version": "1.0.0",
+  "id": "{{GUID}}",
+  "packageName": "com.troystaylor.planner-cowork-plugin",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "name": {
+    "short": "Planner Cowork Plugin",
+    "full": "Planner Cowork Plugin"
+  },
+  "description": {
+    "short": "Summarize and update Microsoft Planner plans and tasks from Copilot Cowork.",
+    "full": "Provides Microsoft Planner plan health, workload summaries, triage recommendations, and controlled task updates in Copilot Cowork using an in-tenant MCP server backed by Microsoft Graph Planner APIs."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0078D4",
+  "agentSkills": [
+    { "folder": "./skills/plan-health-summary" },
+    { "folder": "./skills/my-workload-snapshot" },
+    { "folder": "./skills/personal-task-list" },
+    { "folder": "./skills/personal-weekly-delta" },
+    { "folder": "./skills/task-triage" },
+    { "folder": "./skills/update-task" },
+    { "folder": "./skills/team-capacity-watch" },
+    { "folder": "./skills/plan-activity-recap" }
+  ],
+  "agentConnectors": [
+    {
+      "id": "planner-cowork-plugin-mcp",
+      "displayName": "Planner Cowork Plugin",
+      "description": "Read and update Microsoft Planner plans and tasks via an in-tenant MCP server.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://<YOUR-CONTAINER-APP-FQDN>/mcp/full",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "{{OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ]
+}
