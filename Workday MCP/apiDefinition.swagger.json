@@ -1577,6 +1577,58 @@
                     }
                 }
             }
+        },
+        "/soap/execute": {
+            "post": {
+                "operationId": "ExecuteSoapOperation",
+                "summary": "Execute SOAP operation",
+                "description": "Execute an arbitrary Workday SOAP operation against the specified service and version. Provide a complete SOAP envelope as the request body. Mirrors the certified Workday connector's Execute SOAP operation.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteSoapRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw SOAP response from Workday",
+                        "schema": {
+                            "$ref": "#/definitions/RawSoapResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/raas/execute": {
+            "post": {
+                "operationId": "ExecuteRaaSOperation",
+                "summary": "Execute RaaS operation",
+                "description": "Execute a Workday Report-as-a-Service (RaaS) call. Provide a complete SOAP envelope as the request body. Mirrors the certified Workday connector's Execute RaaS operation.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteRaaSRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw SOAP response from the Workday RaaS endpoint",
+                        "schema": {
+                            "$ref": "#/definitions/RawSoapResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1937,6 +1989,80 @@
                     "type": "string",
                     "description": "Target currency ISO code",
                     "x-ms-summary": "To Currency"
+                }
+            }
+        },
+        "ExecuteSoapRequest": {
+            "type": "object",
+            "required": ["service", "version", "requestBody"],
+            "properties": {
+                "service": {
+                    "type": "string",
+                    "description": "Workday web service name (e.g., Human_Resources, Staffing, Financial_Management)",
+                    "x-ms-summary": "Service name"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Workday WWS version (e.g., v46.0)",
+                    "x-ms-summary": "Service version",
+                    "default": "v46.0"
+                },
+                "requestBody": {
+                    "type": "string",
+                    "description": "Complete SOAP envelope XML to POST to the Workday service endpoint",
+                    "x-ms-summary": "SOAP request body"
+                }
+            }
+        },
+        "ExecuteRaaSRequest": {
+            "type": "object",
+            "required": ["accountName", "reportName", "requestBody"],
+            "properties": {
+                "accountName": {
+                    "type": "string",
+                    "description": "Workday report account name (owner)",
+                    "x-ms-summary": "Account name"
+                },
+                "reportName": {
+                    "type": "string",
+                    "description": "Workday report name",
+                    "x-ms-summary": "Report name"
+                },
+                "reportInstanceName": {
+                    "type": "string",
+                    "description": "Report instance / service name (e.g., customreport2 or Report2). Defaults to customreport2.",
+                    "x-ms-summary": "Report instance name",
+                    "default": "customreport2"
+                },
+                "requestBody": {
+                    "type": "string",
+                    "description": "Complete SOAP envelope XML to POST to the RaaS report endpoint",
+                    "x-ms-summary": "SOAP request body"
+                }
+            }
+        },
+        "RawSoapResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the HTTP call returned a successful status",
+                    "x-ms-summary": "Success"
+                },
+                "status_code": {
+                    "type": "integer",
+                    "description": "HTTP status code returned by Workday",
+                    "x-ms-summary": "Status code"
+                },
+                "soap_response": {
+                    "type": "string",
+                    "description": "Raw SOAP response body returned by Workday",
+                    "x-ms-summary": "SOAP response body"
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Error message if the request could not be sent",
+                    "x-ms-summary": "Error"
                 }
             }
         }

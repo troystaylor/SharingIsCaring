@@ -259,6 +259,14 @@ public class Script : ScriptBase
                     result = await HandleDirectOperation("Get_Requisitions", "Resource_Management", "get_requisitions").ConfigureAwait(false);
                     break;
 
+                // Raw passthrough operations (match certified connector)
+                case "ExecuteSoapOperation":
+                    result = await HandleExecuteSoapOperation().ConfigureAwait(false);
+                    break;
+                case "ExecuteRaaSOperation":
+                    result = await HandleExecuteRaaSOperation().ConfigureAwait(false);
+                    break;
+
                 default:
                     result = new HttpResponseMessage(HttpStatusCode.BadRequest)
                     {
@@ -758,6 +766,21 @@ public class Script : ScriptBase
             ["company_reference"] = Prop("string", "Company reference ID")
         }));
 
+        // ===== RAW PASSTHROUGH (matches certified Workday connector) =====
+        tools.Add(Tool("execute_soap_operation", "Execute SOAP Operation", "Execute an arbitrary Workday SOAP operation. Provide a complete SOAP envelope as requestBody. Mirrors the certified Workday connector's Execute SOAP operation.", new JObject
+        {
+            ["service"] = Prop("string", "Workday web service name (e.g., Human_Resources, Staffing, Financial_Management)"),
+            ["version"] = Prop("string", "Workday WWS version (e.g., v46.0)"),
+            ["requestBody"] = Prop("string", "Complete SOAP envelope XML to POST to the Workday service endpoint")
+        }, new JArray { "service", "version", "requestBody" }));
+        tools.Add(Tool("execute_raas_operation", "Execute RaaS Operation", "Execute a Workday Report-as-a-Service (RaaS) call. Provide a complete SOAP envelope as requestBody. Mirrors the certified Workday connector's Execute RaaS operation.", new JObject
+        {
+            ["accountName"] = Prop("string", "Workday report account name (owner)"),
+            ["reportName"] = Prop("string", "Workday report name"),
+            ["reportInstanceName"] = Prop("string", "Report instance / service name (e.g., customreport2 or Report2). Defaults to customreport2."),
+            ["requestBody"] = Prop("string", "Complete SOAP envelope XML to POST to the RaaS report endpoint")
+        }, new JArray { "accountName", "reportName", "requestBody" }));
+
         return tools;
     }
 
@@ -897,6 +920,21 @@ public class Script : ScriptBase
                 case "get_supplier_invoices": result = await CallWorkday("Get_Supplier_Invoices", "Resource_Management", BuildOptRefBody("Supplier_Invoice_Reference", "Supplier_Invoice_ID", arguments["supplier_invoice_reference"])).ConfigureAwait(false); break;
                 case "get_assets": result = await CallWorkday("Get_Assets", "Resource_Management", BuildOptRefBody("Asset_Reference", "Asset_ID", arguments["asset_reference"])).ConfigureAwait(false); break;
                 case "get_requisitions": result = await CallWorkday("Get_Requisitions", "Resource_Management", BuildOptRefBody("Requisition_Reference", "Requisition_ID", arguments["requisition_reference"])).ConfigureAwait(false); break;
+
+                // Raw passthrough (mirrors certified connector actions)
+                case "execute_soap_operation":
+                    result = await ExecuteRawSoap(
+                        arguments["service"]?.ToString() ?? "",
+                        arguments["version"]?.ToString() ?? ApiVersion,
+                        arguments["requestBody"]?.ToString() ?? "").ConfigureAwait(false);
+                    break;
+                case "execute_raas_operation":
+                    result = await ExecuteRawRaaS(
+                        arguments["accountName"]?.ToString() ?? "",
+                        arguments["reportName"]?.ToString() ?? "",
+                        arguments["reportInstanceName"]?.ToString(),
+                        arguments["requestBody"]?.ToString() ?? "").ConfigureAwait(false);
+                    break;
 
                 default:
                     return CreateMcpResponse(id, new JObject
@@ -1364,6 +1402,119 @@ public class Script : ScriptBase
         </wd:{soapAction}_Request>
     </soapenv:Body>
 </soapenv:Envelope>";
+    }
+
+    private async Task<HttpResponseMessage> HandleExecuteSoapOperation()
+    {
+        var args = await ReadJsonBody().ConfigureAwait(false);
+        var service = args["service"]?.ToString() ?? "";
+        var version = args["version"]?.ToString() ?? ApiVersion;
+        var requestBody = args["requestBody"]?.ToString() ?? "";
+
+        var result = await ExecuteRawSoap(service, version, requestBody).ConfigureAwait(false);
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(result.ToString(Newtonsoft.Json.Formatting.Indented), Encoding.UTF8, "application/json")
+        };
+    }
+
+    private async Task<HttpResponseMessage> HandleExecuteRaaSOperation()
+    {
+        var args = await ReadJsonBody().ConfigureAwait(false);
+        var accountName = args["accountName"]?.ToString() ?? "";
+        var reportName = args["reportName"]?.ToString() ?? "";
+        var reportInstanceName = args["reportInstanceName"]?.ToString();
+        var requestBody = args["requestBody"]?.ToString() ?? "";
+
+        var result = await ExecuteRawRaaS(accountName, reportName, reportInstanceName, requestBody).ConfigureAwait(false);
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(result.ToString(Newtonsoft.Json.Formatting.Indented), Encoding.UTF8, "application/json")
+        };
+    }
+
+    private async Task<JObject> ReadJsonBody()
+    {
+        try
+        {
+            var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(body))
+                return JObject.Parse(body);
+        }
+        catch { /* fall through */ }
+        return new JObject();
+    }
+
+    private async Task<JObject> ExecuteRawSoap(string service, string version, string requestBody)
+    {
+        if (string.IsNullOrWhiteSpace(service))
+            return new JObject { ["success"] = false, ["error"] = "'service' is required." };
+        if (string.IsNullOrWhiteSpace(requestBody))
+            return new JObject { ["success"] = false, ["error"] = "'requestBody' (full SOAP envelope) is required." };
+
+        var ver = string.IsNullOrWhiteSpace(version) ? ApiVersion : version;
+        var url = $"{SoapBaseUrl.TrimEnd('/')}/{Uri.EscapeUriString(service)}/{Uri.EscapeUriString(ver)}";
+        return await PostRawSoap(url, requestBody, $"ExecuteSoap:{service}").ConfigureAwait(false);
+    }
+
+    private async Task<JObject> ExecuteRawRaaS(string accountName, string reportName, string reportInstanceName, string requestBody)
+    {
+        if (string.IsNullOrWhiteSpace(accountName))
+            return new JObject { ["success"] = false, ["error"] = "'accountName' is required." };
+        if (string.IsNullOrWhiteSpace(reportName))
+            return new JObject { ["success"] = false, ["error"] = "'reportName' is required." };
+        if (string.IsNullOrWhiteSpace(requestBody))
+            return new JObject { ["success"] = false, ["error"] = "'requestBody' (full SOAP envelope) is required." };
+
+        var instance = string.IsNullOrWhiteSpace(reportInstanceName) ? "customreport2" : reportInstanceName;
+
+        // SoapBaseUrl format: https://<host>/ccx/service/<tenant>
+        var marker = "/ccx/service/";
+        var idx = SoapBaseUrl.LastIndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0)
+            return new JObject { ["success"] = false, ["error"] = $"SoapBaseUrl is not in the expected format (missing '{marker}'): {SoapBaseUrl}" };
+
+        var hostBase = SoapBaseUrl.Substring(0, idx);
+        var tenant = SoapBaseUrl.Substring(idx + marker.Length).Trim('/');
+        if (string.IsNullOrEmpty(tenant))
+            return new JObject { ["success"] = false, ["error"] = "Unable to extract tenant from SoapBaseUrl." };
+
+        var url = $"{hostBase}/ccx/service/{Uri.EscapeUriString(instance)}/{Uri.EscapeUriString(tenant)}/{Uri.EscapeUriString(accountName)}/{Uri.EscapeUriString(reportName)}";
+        return await PostRawSoap(url, requestBody, $"ExecuteRaaS:{accountName}/{reportName}").ConfigureAwait(false);
+    }
+
+    private async Task<JObject> PostRawSoap(string url, string envelope, string opLabel)
+    {
+        var bearerToken = GetBearerToken();
+        if (string.IsNullOrEmpty(bearerToken))
+            throw new InvalidOperationException("No OAuth bearer token found. Ensure the connection is authenticated.");
+
+        var startTime = DateTime.UtcNow;
+        var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url));
+        request.Content = new StringContent(envelope, Encoding.UTF8, "text/xml");
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/xml"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        await LogToAppInsights("RawSoapRequestCompleted", new Dictionary<string, string>
+        {
+            ["Operation"] = opLabel,
+            ["Url"] = url,
+            ["StatusCode"] = ((int)response.StatusCode).ToString(),
+            ["Success"] = response.IsSuccessStatusCode.ToString(),
+            ["DurationMs"] = (DateTime.UtcNow - startTime).TotalMilliseconds.ToString("F0"),
+            ["CorrelationId"] = _correlationId
+        });
+
+        return new JObject
+        {
+            ["success"] = response.IsSuccessStatusCode,
+            ["status_code"] = (int)response.StatusCode,
+            ["soap_response"] = responseContent
+        };
     }
 
     private string GetBearerToken()
