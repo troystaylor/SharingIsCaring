@@ -103,7 +103,8 @@ From `../infra`:
 
 ```pwsh
 azd auth login
-azd init env new slack-cowork-dev --subscription <SUBSCRIPTION_ID> --location eastus2
+azd init
+azd env new slack-cowork-dev --subscription <SUBSCRIPTION_ID> --location eastus2
 azd env set DEPLOYER_PRINCIPAL_ID (az ad signed-in-user show --query id -o tsv)
 azd env set SLACK_CLIENT_SECRET <slack-client-secret>
 azd provision --preview
