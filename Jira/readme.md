@@ -7,6 +7,7 @@ Power Platform custom connector for Jira Cloud with core REST operations and MCP
 - Lists projects, fields, users, and searches issues
 - Creates and updates issues, comments, and transitions
 - Exposes MCP tools for key operations (projects and issues)
+- Server-side auto-pagination for `SearchIssues` and `jira_list_comments` via an opt-in `limit` parameter
 - Includes optional Application Insights telemetry
 
 ## Prerequisites
@@ -61,7 +62,7 @@ When creating a connection using OAuth 2.0 popup
 | Operation | Description |
 |----------|-------------|
 | ListProjects | List projects |
-| SearchIssues | Search issues using JQL |
+| SearchIssues | Search issues using JQL (enhanced search `/rest/api/3/search/jql`, cursor-based pagination) |
 | GetIssue | Get an issue by ID or key |
 | CreateIssue | Create a new issue |
 | UpdateIssue | Update an issue |
@@ -75,6 +76,52 @@ When creating a connection using OAuth 2.0 popup
 | ListFields | List issue fields |
 | GetUser | Get a user by accountId |
 | SearchUsers | Search users |
+
+## Pagination
+
+Jira caps results at 100 records per page. To retrieve more, the connector supports opt-in server-side auto-pagination.
+
+### `SearchIssues` / `jira_search_issues`
+
+Uses Jira's enhanced search endpoint `POST /rest/api/3/search/jql` (cursor-based). The legacy `/rest/api/3/search` endpoint is being removed by Atlassian.
+
+Request fields:
+
+- `jql` (required) - JQL query string
+- `maxResults` (optional) - Records per Jira page (1-100)
+- `limit` (optional) - **Total cap across pages.** When set, the connector loops through Jira pages until this many records are collected or no more pages remain. When omitted, only a single page is returned (backward compatible).
+- `nextPageToken` (optional) - Cursor from a previous response. Use to manually resume paging when `limit` is not set.
+- `fields` (optional) - Field names to return
+
+Response:
+
+```json
+{
+  "isLast": false,
+  "nextPageToken": "CAEaAggB",
+  "fetched": 500,
+  "issues": [ ... ]
+}
+```
+
+> The new endpoint does not return a `total` count. Use `POST /rest/api/3/search/approximate-count` if you need an issue count.
+
+### `jira_list_comments`
+
+Uses the classic `startAt` / `maxResults` paging model.
+
+MCP tool arguments:
+
+- `issueIdOrKey` (required)
+- `startAt` (optional) - Index of first comment
+- `maxResults` (optional) - Comments per Jira page (1-100)
+- `limit` (optional) - **Total cap across pages.** When set, the tool auto-pages until this many comments are collected.
+
+Response includes `startAt`, `maxResults`, `total`, `fetched`, and `comments`.
+
+### Defaults
+
+When `limit` is omitted, both operations return a single Jira page (current/legacy behavior). This keeps existing Power Automate flows working.
 
 ## OAuth Scopes
 

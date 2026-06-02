@@ -18,7 +18,7 @@ public class Script : ScriptBase
 
     // MCP server metadata
     private const string ServerName = "jira-mcp";
-    private const string ServerVersion = "1.0.0";
+    private const string ServerVersion = "1.1.0";
     private const string ServerTitle = "Jira MCP";
     private const string ServerDescription = "Jira Cloud MCP tools for projects and issues.";
     private const string ProtocolVersion = "2025-11-25";
@@ -42,7 +42,7 @@ public class Script : ScriptBase
                     return await ProxyJiraAsync(correlationId, HttpMethod.Get, "/rest/api/3/project", null, true).ConfigureAwait(false);
 
                 case "SearchIssues":
-                    return await ProxyJiraAsync(correlationId, HttpMethod.Post, "/rest/api/3/search", await ReadBodyAsync(), false).ConfigureAwait(false);
+                    return await SearchIssuesProxyAsync(correlationId).ConfigureAwait(false);
 
                 case "GetIssue":
                     return await ProxyJiraAsync(correlationId, HttpMethod.Get, BuildIssuePath(), null, true).ConfigureAwait(false);
@@ -441,7 +441,7 @@ public class Script : ScriptBase
         return new JObject
         {
             ["name"] = "jira_search_issues",
-            ["description"] = "Search Jira issues using JQL.",
+            ["description"] = "Search Jira issues using JQL (enhanced search /rest/api/3/search/jql). Returns one page (~50 issues) by default. Set `limit` to fetch multiple pages automatically, or pass `nextPageToken` from a prior response to resume.",
             ["inputSchema"] = new JObject
             {
                 ["type"] = "object",
@@ -452,15 +452,20 @@ public class Script : ScriptBase
                         ["type"] = "string",
                         ["description"] = "JQL query string"
                     },
-                    ["startAt"] = new JObject
+                    ["nextPageToken"] = new JObject
                     {
-                        ["type"] = "integer",
-                        ["description"] = "Index of the first item to return"
+                        ["type"] = "string",
+                        ["description"] = "Cursor from a previous response. Use to resume paging when `limit` is not set."
                     },
                     ["maxResults"] = new JObject
                     {
                         ["type"] = "integer",
-                        ["description"] = "Maximum number of items to return"
+                        ["description"] = "Items per Jira page (1-100)."
+                    },
+                    ["limit"] = new JObject
+                    {
+                        ["type"] = "integer",
+                        ["description"] = "Optional total cap. When set, the tool auto-pages until this many records are collected."
                     },
                     ["fields"] = new JObject
                     {
@@ -592,7 +597,7 @@ public class Script : ScriptBase
         return new JObject
         {
             ["name"] = "jira_list_comments",
-            ["description"] = "List comments for an issue.",
+            ["description"] = "List comments for an issue. Returns one page (~50 comments) by default. Set `limit` to auto-page through all comments.",
             ["inputSchema"] = new JObject
             {
                 ["type"] = "object",
@@ -611,7 +616,12 @@ public class Script : ScriptBase
                     ["maxResults"] = new JObject
                     {
                         ["type"] = "integer",
-                        ["description"] = "Maximum number of comments to return"
+                        ["description"] = "Maximum number of comments per Jira page (1-100)."
+                    },
+                    ["limit"] = new JObject
+                    {
+                        ["type"] = "integer",
+                        ["description"] = "Optional total cap. When set, the tool auto-pages until this many comments are collected."
                     }
                 },
                 ["required"] = new JArray { "issueIdOrKey" }
@@ -711,11 +721,12 @@ public class Script : ScriptBase
             ["jql"] = RequireArgument(arguments, "jql")
         };
 
-        if (arguments["startAt"] != null) request["startAt"] = arguments["startAt"];
+        if (arguments["nextPageToken"] != null) request["nextPageToken"] = arguments["nextPageToken"];
         if (arguments["maxResults"] != null) request["maxResults"] = arguments["maxResults"];
         if (arguments["fields"] != null) request["fields"] = arguments["fields"];
 
-        return await ExecuteJiraToolAsync(HttpMethod.Post, "/rest/api/3/search", request, false).ConfigureAwait(false);
+        int? limit = arguments["limit"]?.Type == JTokenType.Integer ? (int?)arguments.Value<int>("limit") : null;
+        return await SearchIssuesPagedAsync(request, limit).ConfigureAwait(false);
     }
 
     private async Task<JObject> ExecuteCreateIssueToolAsync(JObject arguments)
@@ -772,14 +783,11 @@ public class Script : ScriptBase
     private async Task<JObject> ExecuteListCommentsToolAsync(JObject arguments)
     {
         var issueId = RequireArgument(arguments, "issueIdOrKey");
-        var query = BuildQueryString(new Dictionary<string, object>
-        {
-            ["startAt"] = arguments["startAt"],
-            ["maxResults"] = arguments["maxResults"]
-        });
+        int? startAt = arguments["startAt"]?.Type == JTokenType.Integer ? (int?)arguments.Value<int>("startAt") : null;
+        int? maxResults = arguments["maxResults"]?.Type == JTokenType.Integer ? (int?)arguments.Value<int>("maxResults") : null;
+        int? limit = arguments["limit"]?.Type == JTokenType.Integer ? (int?)arguments.Value<int>("limit") : null;
 
-        var path = $"/rest/api/3/issue/{Uri.EscapeDataString(issueId)}/comment{query}";
-        return await ExecuteJiraToolAsync(HttpMethod.Get, path, null, false).ConfigureAwait(false);
+        return await ListCommentsPagedAsync(issueId, startAt, maxResults, limit).ConfigureAwait(false);
     }
 
     private async Task<JObject> ExecuteAddCommentToolAsync(JObject arguments)
@@ -833,6 +841,187 @@ public class Script : ScriptBase
 
         var path = $"/rest/api/3/issue/{Uri.EscapeDataString(issueId)}/transitions";
         return await ExecuteJiraToolAsync(HttpMethod.Post, path, request, false).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> SearchIssuesProxyAsync(string correlationId)
+    {
+        var bodyText = await ReadBodyAsync().ConfigureAwait(false);
+        JObject request;
+        try
+        {
+            request = string.IsNullOrWhiteSpace(bodyText) ? new JObject() : JObject.Parse(bodyText);
+        }
+        catch (JsonException ex)
+        {
+            return CreateErrorResponse("Invalid JSON body: " + ex.Message, HttpStatusCode.BadRequest);
+        }
+
+        int? limit = null;
+        if (request["limit"] != null && request["limit"].Type == JTokenType.Integer)
+        {
+            limit = request.Value<int>("limit");
+        }
+        request.Remove("limit");
+
+        var aggregated = await SearchIssuesPagedAsync(request, limit).ConfigureAwait(false);
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(aggregated.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
+        };
+    }
+
+    private async Task<JObject> SearchIssuesPagedAsync(JObject userRequest, int? limit)
+    {
+        var aggregated = new JArray();
+        var working = (JObject)userRequest.DeepClone();
+        working.Remove("limit");
+
+        int pageSize = working["maxResults"]?.Type == JTokenType.Integer ? working.Value<int>("maxResults") : 100;
+        if (pageSize <= 0) pageSize = 100;
+        if (pageSize > 100) pageSize = 100;
+
+        string nextPageToken = working.Value<string>("nextPageToken");
+        bool isLast = true;
+
+        while (true)
+        {
+            if (string.IsNullOrEmpty(nextPageToken)) working.Remove("nextPageToken");
+            else working["nextPageToken"] = nextPageToken;
+
+            int requestSize = pageSize;
+            if (limit.HasValue)
+            {
+                var remaining = limit.Value - aggregated.Count;
+                if (remaining <= 0) break;
+                if (remaining < requestSize) requestSize = remaining;
+            }
+            working["maxResults"] = requestSize;
+
+            var response = await ProxyJiraAsync(null, HttpMethod.Post, "/rest/api/3/search/jql",
+                working.ToString(Newtonsoft.Json.Formatting.None), false).ConfigureAwait(false);
+            var payload = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new JObject
+                {
+                    ["error"] = true,
+                    ["statusCode"] = (int)response.StatusCode,
+                    ["body"] = TryParseToken(payload),
+                    ["fetched"] = aggregated.Count,
+                    ["issues"] = aggregated
+                };
+            }
+
+            JObject page;
+            try
+            {
+                page = string.IsNullOrWhiteSpace(payload) ? new JObject() : JObject.Parse(payload);
+            }
+            catch
+            {
+                page = new JObject();
+            }
+
+            var pageIssues = page["issues"] as JArray ?? new JArray();
+            foreach (var issue in pageIssues) aggregated.Add(issue);
+
+            isLast = page.Value<bool?>("isLast") ?? true;
+            nextPageToken = page.Value<string>("nextPageToken");
+
+            if (!limit.HasValue) break;
+            if (isLast || string.IsNullOrEmpty(nextPageToken)) break;
+            if (aggregated.Count >= limit.Value) break;
+            if (pageIssues.Count == 0) break;
+        }
+
+        return new JObject
+        {
+            ["isLast"] = isLast || string.IsNullOrEmpty(nextPageToken),
+            ["nextPageToken"] = nextPageToken,
+            ["fetched"] = aggregated.Count,
+            ["issues"] = aggregated
+        };
+    }
+
+    private async Task<JObject> ListCommentsPagedAsync(string issueIdOrKey, int? startAt, int? maxResults, int? limit)
+    {
+        var aggregated = new JArray();
+        int initialStart = startAt ?? 0;
+        int currentStart = initialStart;
+        int pageSize = maxResults ?? 100;
+        if (pageSize <= 0) pageSize = 100;
+        if (pageSize > 100) pageSize = 100;
+        int total = -1;
+        int lastMax = pageSize;
+
+        while (true)
+        {
+            int requestSize = pageSize;
+            if (limit.HasValue)
+            {
+                var remaining = limit.Value - aggregated.Count;
+                if (remaining <= 0) break;
+                if (remaining < requestSize) requestSize = remaining;
+            }
+
+            var query = $"?startAt={currentStart}&maxResults={requestSize}";
+            var path = $"/rest/api/3/issue/{Uri.EscapeDataString(issueIdOrKey)}/comment{query}";
+
+            var response = await ProxyJiraAsync(null, HttpMethod.Get, path, null, false).ConfigureAwait(false);
+            var payload = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new JObject
+                {
+                    ["error"] = true,
+                    ["statusCode"] = (int)response.StatusCode,
+                    ["body"] = TryParseToken(payload),
+                    ["fetched"] = aggregated.Count,
+                    ["comments"] = aggregated
+                };
+            }
+
+            JObject page;
+            try
+            {
+                page = string.IsNullOrWhiteSpace(payload) ? new JObject() : JObject.Parse(payload);
+            }
+            catch
+            {
+                page = new JObject();
+            }
+
+            var pageComments = page["comments"] as JArray ?? new JArray();
+            foreach (var comment in pageComments) aggregated.Add(comment);
+
+            total = page.Value<int?>("total") ?? aggregated.Count;
+            lastMax = page.Value<int?>("maxResults") ?? requestSize;
+            int pageStart = page.Value<int?>("startAt") ?? currentStart;
+
+            if (!limit.HasValue) break;
+            if (pageComments.Count == 0) break;
+            currentStart = pageStart + pageComments.Count;
+            if (currentStart >= total) break;
+            if (aggregated.Count >= limit.Value) break;
+        }
+
+        return new JObject
+        {
+            ["startAt"] = initialStart,
+            ["maxResults"] = lastMax,
+            ["total"] = total,
+            ["fetched"] = aggregated.Count,
+            ["comments"] = aggregated
+        };
+    }
+
+    private static JToken TryParseToken(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return JValue.CreateNull();
+        try { return JToken.Parse(text); }
+        catch { return new JValue(text); }
     }
 
     private async Task<JObject> ExecuteJiraToolAsync(HttpMethod method, string path, JObject body, bool includeQuery)

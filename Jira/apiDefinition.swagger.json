@@ -3,7 +3,7 @@
   "info": {
     "title": "Jira",
     "description": "Jira Cloud connector with MCP tools for issues and projects, plus core REST API operations.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "contact": {
       "name": "Troy Taylor",
       "email": "troy@troytaylor.com"
@@ -53,10 +53,10 @@
         }
       }
     },
-    "/rest/api/3/search": {
+    "/rest/api/3/search/jql": {
       "post": {
         "summary": "Search Issues",
-        "description": "Search issues using JQL.",
+        "description": "Search issues using JQL (enhanced search). Returns one Jira page (up to 100 records) by default. Set `limit` to opt into server-side pagination across multiple pages, or pass `nextPageToken` to manually resume from a previous response.",
         "operationId": "SearchIssues",
         "x-ms-visibility": "important",
         "parameters": [
@@ -117,7 +117,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Issue ID or key"
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
           }
         ],
         "responses": {
@@ -139,7 +140,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Issue ID or key"
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
           },
           {
             "name": "body",
@@ -168,7 +170,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Issue ID or key"
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
           },
           {
             "name": "startAt",
@@ -204,7 +207,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Issue ID or key"
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
           },
           {
             "name": "body",
@@ -236,7 +240,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Issue ID or key"
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
           }
         ],
         "responses": {
@@ -258,7 +263,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Issue ID or key"
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
           },
           {
             "name": "body",
@@ -305,7 +311,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Project ID or key"
+            "description": "Project ID or key",
+            "x-ms-url-encoding": "single"
           }
         ],
         "responses": {
@@ -329,7 +336,8 @@
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Project ID or key"
+            "description": "Project ID or key",
+            "x-ms-url-encoding": "single"
           }
         ],
         "responses": {
@@ -486,13 +494,17 @@
           "type": "string",
           "description": "JQL query string"
         },
-        "startAt": {
-          "type": "integer",
-          "description": "Index of the first item to return"
+        "nextPageToken": {
+          "type": "string",
+          "description": "Cursor returned by a previous Search Issues call. Use to manually fetch the next page when `limit` is not set."
         },
         "maxResults": {
           "type": "integer",
-          "description": "Maximum number of items to return"
+          "description": "Maximum number of items to return per Jira page (1-100). Defaults to Jira's server default."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Optional total cap. When set, the connector pages through Jira automatically until this many records are collected or no more pages remain."
         },
         "fields": {
           "type": "array",
@@ -506,14 +518,17 @@
     "IssueSearchResponse": {
       "type": "object",
       "properties": {
-        "startAt": {
-          "type": "integer"
+        "isLast": {
+          "type": "boolean",
+          "description": "True when no more pages are available from Jira."
         },
-        "maxResults": {
-          "type": "integer"
+        "nextPageToken": {
+          "type": "string",
+          "description": "Cursor to pass back as `nextPageToken` to fetch the next page. Null/absent when `isLast` is true."
         },
-        "total": {
-          "type": "integer"
+        "fetched": {
+          "type": "integer",
+          "description": "Number of issues returned in this response (after applying `limit`, if any)."
         },
         "issues": {
           "type": "array",
