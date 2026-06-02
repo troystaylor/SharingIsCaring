@@ -114,9 +114,9 @@ Reference: [Configure authentication for MCP and API plugins in agents in Micros
    | Base URL | The MCP server's public URL — must match the `mcpServerUrl` in `manifest.json` (e.g. `https://ca-<resourceToken>.<region>.azurecontainerapps.io`) |
    | Client ID | Slack app Client ID (from **Basic Information**) |
    | Client secret | Slack app Client Secret (from **Basic Information** / Key Vault) |
-   | Authorization endpoint | `https://slack.com/oauth/v2/authorize` |
-   | Token endpoint | `https://slack.com/api/oauth.v2.access` |
-   | Refresh endpoint | `https://slack.com/api/oauth.v2.access` |
+   | Authorization endpoint | `https://{{MCP_SERVER_HOST}}/oauth/v2/authorize` |
+   | Token endpoint | `https://{{MCP_SERVER_HOST}}/api/oauth.v2.access` |
+   | Refresh endpoint | `https://{{MCP_SERVER_HOST}}/api/oauth.v2.access` |
    | Scope | Full space-separated user-scope list from step 3 of the Slack app setup |
    | Enable PKCE | **Off** (Cowork's token service is a confidential client) |
 5. **Save**. The portal generates an **OAuth client registration ID** — copy it.
