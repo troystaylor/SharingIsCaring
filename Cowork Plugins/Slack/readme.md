@@ -83,13 +83,13 @@ flowchart LR
 ## Slack app setup
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**.
-2. Under **OAuth & Permissions** → **Redirect URLs**, add the fixed Microsoft 365 Copilot redirect:
+2. Under **OAuth & Permissions** → **Redirect URLs**, add the **OAuth shim's** callback on your Container App:
 
    ```
-   https://teams.microsoft.com/api/platform/v1.0/oAuthRedirect
+   https://<container-app-fqdn>/oauth/callback
    ```
 
-   This URL is the same for every tenant and every plugin — Copilot's Bot Framework Token Service uses it as the callback for all `OAuthPluginVault` flows.
+   Replace `<container-app-fqdn>` with the `AZURE_CONTAINER_APP_FQDN` azd output. Cowork talks to the shim (which lives on the Container App), and the shim handles the Slack v2 bot/user scope split server-side — see [server/Auth/OAUTH_SHIM.md](server/Auth/OAUTH_SHIM.md). Do **not** point Slack at `https://teams.microsoft.com/api/platform/v1.0/oAuthRedirect`; that's the Cowork-facing redirect, and Slack never sees it.
 3. Add the **User Token Scopes**: `channels:read`, `channels:history`, `channels:write`, `chat:write`, `users:read`, `users:read.email`, `users.profile:read`, `users.profile:write`, `files:read`, `files:write`, `reactions:read`, `reactions:write`, `pins:read`, `pins:write`, `search:read`, `groups:read`, `groups:history`, `groups:write`, `im:read`, `im:history`, `im:write`, `mpim:read`, `mpim:history`, `mpim:write`, `reminders:read`, `reminders:write`, `bookmarks:read`, `bookmarks:write`, `usergroups:read`, `usergroups:write`, `emoji:read`, `dnd:read`, `dnd:write`, `team:read`. All scopes go under **User Token Scopes** (not Bot Token Scopes) — Cowork mints user (`xoxp-*`) tokens, not bot tokens.
 4. Under **OAuth & Permissions → Advanced token security**, enable **Token Rotation** so refresh tokens work.
 5. **Install to Workspace** to get consent for the scope set. Each time you add a scope, you must reinstall to apply it.
@@ -101,6 +101,21 @@ For `OAuthPluginVault` plugins, the OAuth client is registered in the **Teams De
 
 Reference: [Configure authentication for MCP and API plugins in agents in Microsoft 365 Copilot](https://learn.microsoft.com/microsoft-365/copilot/extensibility/plugin-authentication).
 
+> **You register the OAuth shim here, not Slack directly.** Slack v2 splits bot vs. user token scopes across two parameters and returns the user token at `authed_user.access_token`, which the Cowork Plugin Vault's standard OAuth flow doesn't model. The shim on the Container App translates between the two, so Cowork must talk to the shim's `/oauth/authorize` and `/oauth/token` endpoints with the shim's client id/secret. The Slack client id/secret stay inside the Container App's config (see [server/Auth/OAUTH_SHIM.md](server/Auth/OAUTH_SHIM.md)).
+
+### Prerequisite — set the shim credentials
+
+Before registering, set these `azd` env vars and run `azd deploy` so the Container App has them:
+
+```pwsh
+azd env set SLACK_CLIENT_ID     "<slack-app-client-id>"
+azd env set SLACK_CLIENT_SECRET  "<slack-app-client-secret>"
+azd env set COWORK_CLIENT_ID     "slack-cowork-shim"
+azd env set COWORK_CLIENT_SECRET "<random-strong-secret-you-generate>"
+```
+
+`COWORK_CLIENT_ID` and `COWORK_CLIENT_SECRET` are the credentials Cowork will present to the shim — pick any values and paste the same pair into the Teams Developer Portal below.
+
 ### Steps
 
 1. Sign in to the Teams Developer Portal at <https://dev.teams.microsoft.com/tools> with an account in your Cowork-flighted tenant.
@@ -110,26 +125,28 @@ Reference: [Configure authentication for MCP and API plugins in agents in Micros
 
    | Field | Value |
    |---|---|
-   | Registration name | `Slack OAuth (Cowork)` (or any friendly name) |
-   | Base URL | The MCP server's public URL — must match the `mcpServerUrl` in `manifest.json` (e.g. `https://ca-<resourceToken>.<region>.azurecontainerapps.io`) |
-   | Client ID | Slack app Client ID (from **Basic Information**) |
-   | Client secret | Slack app Client Secret (from **Basic Information** / Key Vault) |
-   | Authorization endpoint | `https://{{MCP_SERVER_HOST}}/oauth/v2/authorize` |
-   | Token endpoint | `https://{{MCP_SERVER_HOST}}/api/oauth.v2.access` |
-   | Refresh endpoint | `https://{{MCP_SERVER_HOST}}/api/oauth.v2.access` |
-   | Scope | Full space-separated user-scope list from step 3 of the Slack app setup |
-   | Enable PKCE | **Off** (Cowork's token service is a confidential client) |
+   | Registration name | `Slack Cowork Shim` (or any friendly name) |
+   | Base URL | The Container App's public URL — must match the `mcpServerUrl` in `manifest.json` (e.g. `https://ca-<resourceToken>.<region>.azurecontainerapps.io`) |
+   | Client ID | `slack-cowork-shim` (must match `COWORK_CLIENT_ID`) |
+   | Client secret | The `COWORK_CLIENT_SECRET` you generated above (the shim's secret — **not** the Slack client secret) |
+   | Authorization endpoint | `https://<container-app-fqdn>/oauth/authorize` |
+   | Token endpoint | `https://<container-app-fqdn>/oauth/token` |
+   | Refresh endpoint | Leave blank — Slack user tokens are long-lived and the shim doesn't expose a refresh endpoint |
+   | Scope | Leave blank or use a placeholder — the shim ignores it; real scopes come from `SLACK_BOT_SCOPES` / `SLACK_USER_SCOPES` env vars on the Container App |
+   | Enable PKCE | **On** |
 5. **Save**. The portal generates an **OAuth client registration ID** — copy it.
 6. Update `agentConnectors[0].toolSource.remoteMcpServer.authorization.referenceId` in `manifest.json` with the generated ID, bump `version`, then run `.\package.ps1` to rebuild `Slack.zip`.
 7. Re-upload the new zip in **M365 Admin Center → Settings → Integrated apps → Upload custom apps** (replacing the previous version if present).
 
 ### Updating the registration
 
-If you rotate the Slack client secret or change the scope list later:
+If you rotate the **shim** secret (`COWORK_CLIENT_SECRET`) or change the Slack scope list later:
 
-1. Update the secret/scopes in the same **OAuth client registration** entry in the Teams Developer Portal.
-2. The registration ID stays the same — **no manifest change required**.
-3. Existing Cowork users may need to sign out and back in to refresh their token if scopes changed.
+1. For a shim-secret rotation: `azd env set COWORK_CLIENT_SECRET "<new>"` → `azd deploy`, then update the **Client secret** field in the same Teams Developer Portal entry.
+2. For Slack scope changes: update `SLACK_USER_SCOPES` / `SLACK_BOT_SCOPES` via `azd env set` and `azd deploy`. The Teams Developer Portal registration does **not** need to change — its scope field is unused.
+3. For a Slack client-secret rotation: `azd env set SLACK_CLIENT_SECRET "<new>"` → `azd deploy`. The Teams Developer Portal registration does **not** need to change.
+4. In all cases the registration ID stays the same — **no manifest change required**.
+5. Existing Cowork users may need to sign out and back in to refresh their token if Slack scopes changed.
 
 ## Folder layout
 
