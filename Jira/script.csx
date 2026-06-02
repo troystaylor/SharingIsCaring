@@ -23,6 +23,11 @@ public class Script : ScriptBase
     private const string ServerDescription = "Jira Cloud MCP tools for projects and issues.";
     private const string ProtocolVersion = "2025-11-25";
 
+    // Atlassian OAuth 2.0 (3LO) routes API calls through api.atlassian.com using a per-site cloudId.
+    private const string AtlassianApiBase = "https://api.atlassian.com";
+    private const string AccessibleResourcesUrl = "https://api.atlassian.com/oauth/token/accessible-resources";
+    private string _cachedCloudId;
+
     /// <summary>
     /// Entry point for connector operations.
     /// </summary>
@@ -1055,10 +1060,9 @@ public class Script : ScriptBase
 
     private async Task<HttpResponseMessage> ProxyJiraAsync(string correlationId, HttpMethod method, string path, string body, bool includeQuery)
     {
-        var siteUrl = GetRequiredConnectionParameter("siteUrl");
-        var baseUrl = NormalizeSiteUrl(siteUrl);
+        var cloudId = await GetCloudIdAsync().ConfigureAwait(false);
         var query = includeQuery ? this.Context.Request.RequestUri.Query : string.Empty;
-        var requestUri = new Uri(baseUrl.TrimEnd('/') + path + query);
+        var requestUri = new Uri($"{AtlassianApiBase}/ex/jira/{cloudId}{path}{query}");
 
         await LogToAppInsights("RequestReceived", new
         {
@@ -1081,6 +1085,50 @@ public class Script : ScriptBase
         }
 
         return await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<string> GetCloudIdAsync()
+    {
+        if (!string.IsNullOrEmpty(_cachedCloudId))
+        {
+            return _cachedCloudId;
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Get, new Uri(AccessibleResourcesUrl));
+        var authHeader = this.Context.Request.Headers.Authorization;
+        if (authHeader != null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue(authHeader.Scheme, authHeader.Parameter);
+        }
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var payload = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Failed to resolve Atlassian cloudId (status {(int)response.StatusCode}): {payload}");
+        }
+
+        JArray sites;
+        try
+        {
+            sites = JArray.Parse(payload);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Unexpected accessible-resources response: {payload}", ex);
+        }
+
+        var first = sites.FirstOrDefault() as JObject;
+        var id = first?["id"]?.ToString();
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new InvalidOperationException("No accessible Jira sites returned for the authenticated user.");
+        }
+
+        _cachedCloudId = id;
+        return _cachedCloudId;
     }
 
     private async Task<string> ReadBodyAsync()
@@ -1157,46 +1205,6 @@ public class Script : ScriptBase
                 }
             }
         };
-    }
-
-    private string GetRequiredConnectionParameter(string name)
-    {
-        var value = GetConnectionParameter(name);
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new ArgumentException($"Missing connection parameter: {name}");
-        }
-        return value;
-    }
-
-    private string GetConnectionParameter(string name)
-    {
-        try
-        {
-            var raw = this.Context.ConnectionParameters[name]?.ToString();
-            return string.IsNullOrWhiteSpace(raw) ? null : raw;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private string NormalizeSiteUrl(string siteUrl)
-    {
-        var trimmed = (siteUrl ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
-        {
-            throw new ArgumentException("siteUrl is required");
-        }
-
-        if (!trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-            !trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            trimmed = "https://" + trimmed;
-        }
-
-        return trimmed.TrimEnd('/');
     }
 
     private string RequireArgument(JObject args, string name)
