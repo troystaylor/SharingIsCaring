@@ -1,0 +1,65 @@
+agent_control_specification_version: "0.3.1-beta"
+metadata:
+  name: example-agent
+  description: |
+    Sample ACS manifest covering the full agent lifecycle with a single
+    allow-everything Rego policy. Replace policy/example.rego with real rules
+    or split into per-point policies for production use.
+
+policies:
+  lifecycle_allow:
+    type: rego
+    bundle: ./policy
+    query: data.example.verdict
+
+intervention_points:
+  agent_startup:
+    policy_target: "$.session"
+    policy:
+      id: lifecycle_allow
+
+  input:
+    policy_target: "$.input.text"
+    policy_target_kind: user_input
+    policy:
+      id: lifecycle_allow
+
+  pre_model_call:
+    policy_target: "$.model_request"
+    policy:
+      id: lifecycle_allow
+
+  post_model_call:
+    policy_target: "$.model_response"
+    policy:
+      id: lifecycle_allow
+
+  pre_tool_call:
+    policy_target: "$.tool_call.args"
+    policy_target_kind: tool_args
+    tool_name_from: "$.tool_call.name"
+    policy:
+      id: lifecycle_allow
+
+  post_tool_call:
+    policy_target: "$.tool_result"
+    policy_target_kind: tool_result
+    tool_name_from: "$.tool_call.name"
+    policy:
+      id: lifecycle_allow
+
+  output:
+    policy_target: "$.output.text"
+    policy:
+      id: lifecycle_allow
+
+  agent_shutdown:
+    policy_target: "$.session"
+    policy:
+      id: lifecycle_allow
+
+tools:
+  send_email:
+    type: Tool
+    id: send_email
+    clearance: internal

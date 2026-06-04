@@ -11,4 +11,20 @@
     <PackageReference Include="Microsoft.AgentGovernance" Version="3.0.2" />
   </ItemGroup>
 
+  <!--
+    Auto-enable Agent Control Specification (ACS) when a nupkg + marker are
+    present in local-packages/. The package is restored from the local NuGet
+    source defined in NuGet.config and the ACS_ENABLED symbol activates the
+    SDK code paths in Program.cs. To build the nupkg, run
+    scripts/build-acs-nupkg.ps1 (which also writes local-packages/.acs-enabled).
+  -->
+  <PropertyGroup Condition="Exists('local-packages\.acs-enabled')">
+    <DefineConstants>$(DefineConstants);ACS_ENABLED</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('local-packages\.acs-enabled')">
+    <PackageReference Include="AgentControlSpecification" Version="0.3.*-*" />
+  </ItemGroup>
+
 </Project>
+

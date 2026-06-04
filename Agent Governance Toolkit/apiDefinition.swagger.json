@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Agent Governance Toolkit",
-    "description": "Runtime security governance for AI agents. Evaluate actions against policies, check compliance (EU AI Act, HIPAA, SOC2, OWASP), detect prompt injection, manage trust scores, enforce circuit breakers, and scan MCP tools for security risks. Covers all 10 OWASP Agentic AI Top 10 risks. Requires a self-hosted Container App deployment of the Agent Governance Toolkit.",
+    "description": "Runtime security governance for AI agents. Evaluate actions against policies, check compliance (EU AI Act, HIPAA, SOC2, OWASP), detect prompt injection, manage trust scores, enforce circuit breakers, and scan MCP tools for security risks. Includes Agent Control Specification (ACS) lifecycle policy evaluation across 8 intervention points (input/model/tool/output) with allow/deny/warn/escalate/transform verdicts. Covers all 10 OWASP Agentic AI Top 10 risks. Requires a self-hosted Container App deployment of the Agent Governance Toolkit.",
     "version": "1.0.0",
     "contact": {
       "name": "Troy Taylor",
@@ -352,6 +352,208 @@
         }
       }
     },
+    "/api/acs/manifest/load": {
+      "post": {
+        "operationId": "LoadAcsManifest",
+        "summary": "Load ACS Manifest",
+        "description": "Register an Agent Control Specification (ACS) manifest by id. Manifest files live under the container's MANIFEST_DIR (defaults to /app/manifests). Call this once at agent startup, then reference the manifest id from EvaluateIntervention and TransformPayload calls.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Manifest filename (relative to MANIFEST_DIR) or absolute path.",
+                  "x-ms-summary": "Manifest Path"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Identifier used to reference this manifest in later evaluate/transform calls. Defaults to the filename without extension.",
+                  "x-ms-summary": "Manifest ID",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Manifest load result.",
+            "schema": {
+              "$ref": "#/definitions/AcsLoadManifestResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/acs/evaluate": {
+      "post": {
+        "operationId": "EvaluateIntervention",
+        "summary": "Evaluate ACS Intervention Point",
+        "description": "Submit a snapshot at one of the 8 ACS intervention points (agent_startup, input, pre_model_call, post_model_call, pre_tool_call, post_tool_call, output, agent_shutdown) and return the verdict. Verdicts include allow, deny, warn, escalate, and transform.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "manifestId",
+                "interventionPoint",
+                "snapshot"
+              ],
+              "properties": {
+                "manifestId": {
+                  "type": "string",
+                  "description": "ID of a manifest previously registered with LoadAcsManifest.",
+                  "x-ms-summary": "Manifest ID"
+                },
+                "interventionPoint": {
+                  "type": "string",
+                  "description": "Which lifecycle point to evaluate.",
+                  "x-ms-summary": "Intervention Point",
+                  "enum": [
+                    "agent_startup",
+                    "input",
+                    "pre_model_call",
+                    "post_model_call",
+                    "pre_tool_call",
+                    "post_tool_call",
+                    "output",
+                    "agent_shutdown"
+                  ]
+                },
+                "snapshot": {
+                  "type": "object",
+                  "description": "The complete JSON snapshot the policy evaluates against. Shape matches the ACS policy_target paths declared in the manifest.",
+                  "x-ms-summary": "Snapshot"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Tool name. Required for pre_tool_call and post_tool_call intervention points.",
+                  "x-ms-summary": "Tool Name",
+                  "x-ms-visibility": "advanced"
+                },
+                "mode": {
+                  "type": "string",
+                  "description": "Enforcement mode. 'enforce' (default) applies verdicts; 'evaluate_only' returns the verdict without enforcing.",
+                  "x-ms-summary": "Mode",
+                  "x-ms-visibility": "advanced",
+                  "enum": [
+                    "enforce",
+                    "evaluate_only"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intervention point verdict.",
+            "schema": {
+              "$ref": "#/definitions/AcsVerdictResponse"
+            }
+          },
+          "501": {
+            "description": "ACS SDK not wired in this container. See manifests/README.md.",
+            "schema": {
+              "$ref": "#/definitions/AcsNotConfiguredResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/acs/transform": {
+      "post": {
+        "operationId": "TransformPayload",
+        "summary": "Transform Payload via ACS",
+        "description": "Evaluate an intervention point and, when the verdict is 'transform', return the transformed policy target (e.g., a redacted body). For 'allow'/'warn' returns the original target. For 'deny'/'escalate' surfaces the verdict so the host can block or escalate.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "manifestId",
+                "interventionPoint",
+                "snapshot"
+              ],
+              "properties": {
+                "manifestId": {
+                  "type": "string",
+                  "description": "ID of a manifest previously registered with LoadAcsManifest.",
+                  "x-ms-summary": "Manifest ID"
+                },
+                "interventionPoint": {
+                  "type": "string",
+                  "description": "Which lifecycle point to evaluate.",
+                  "x-ms-summary": "Intervention Point",
+                  "enum": [
+                    "agent_startup",
+                    "input",
+                    "pre_model_call",
+                    "post_model_call",
+                    "pre_tool_call",
+                    "post_tool_call",
+                    "output",
+                    "agent_shutdown"
+                  ]
+                },
+                "snapshot": {
+                  "type": "object",
+                  "description": "The complete JSON snapshot the policy evaluates against.",
+                  "x-ms-summary": "Snapshot"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Tool name. Required for pre_tool_call and post_tool_call intervention points.",
+                  "x-ms-summary": "Tool Name",
+                  "x-ms-visibility": "advanced"
+                },
+                "mode": {
+                  "type": "string",
+                  "description": "Enforcement mode.",
+                  "x-ms-summary": "Mode",
+                  "x-ms-visibility": "advanced",
+                  "enum": [
+                    "enforce",
+                    "evaluate_only"
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transformed payload or verdict.",
+            "schema": {
+              "$ref": "#/definitions/AcsTransformResponse"
+            }
+          },
+          "501": {
+            "description": "ACS SDK not wired in this container. See manifests/README.md.",
+            "schema": {
+              "$ref": "#/definitions/AcsNotConfiguredResponse"
+            }
+          }
+        }
+      }
+    },
     "/mcp": {
       "post": {
         "operationId": "InvokeMCP",
@@ -609,6 +811,129 @@
           "type": "string",
           "description": "URL to the NuGet package page.",
           "x-ms-summary": "NuGet URL"
+        }
+      }
+    },
+    "AcsLoadManifestResponse": {
+      "type": "object",
+      "properties": {
+        "manifestId": {
+          "type": "string",
+          "description": "ID assigned to the loaded manifest.",
+          "x-ms-summary": "Manifest ID"
+        },
+        "path": {
+          "type": "string",
+          "description": "Resolved path to the manifest file.",
+          "x-ms-summary": "Path"
+        },
+        "loaded": {
+          "type": "boolean",
+          "description": "Whether the manifest was registered successfully.",
+          "x-ms-summary": "Loaded"
+        },
+        "sdkBound": {
+          "type": "boolean",
+          "description": "Whether the AgentControlSpecification SDK is wired in this container. False means live evaluation will return HTTP 501.",
+          "x-ms-summary": "SDK Bound"
+        },
+        "note": {
+          "type": "string",
+          "description": "Human-readable status note.",
+          "x-ms-summary": "Note"
+        }
+      }
+    },
+    "AcsVerdictResponse": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "description": "Verdict decision: allow, deny, warn, escalate, or transform.",
+          "x-ms-summary": "Decision"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Low-cardinality reason code from the policy.",
+          "x-ms-summary": "Reason"
+        },
+        "message": {
+          "type": "string",
+          "description": "Host-facing message from the policy.",
+          "x-ms-summary": "Message"
+        },
+        "manifestId": {
+          "type": "string",
+          "description": "Manifest that produced this verdict.",
+          "x-ms-summary": "Manifest ID"
+        },
+        "interventionPoint": {
+          "type": "string",
+          "description": "Intervention point that was evaluated.",
+          "x-ms-summary": "Intervention Point"
+        },
+        "evidence": {
+          "type": "object",
+          "description": "Optional evidence object propagated by the policy."
+        },
+        "resultLabels": {
+          "type": "array",
+          "description": "Optional labels the host can persist with produced data.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AcsTransformResponse": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "description": "Verdict decision: allow, deny, warn, escalate, or transform.",
+          "x-ms-summary": "Decision"
+        },
+        "transformed": {
+          "type": "boolean",
+          "description": "Whether the policy returned a transformed payload.",
+          "x-ms-summary": "Transformed"
+        },
+        "payload": {
+          "type": "object",
+          "description": "The original or transformed policy target. For allow/warn this is the original snapshot target; for transform it is the policy-supplied replacement."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Low-cardinality reason code from the policy.",
+          "x-ms-summary": "Reason"
+        },
+        "message": {
+          "type": "string",
+          "description": "Host-facing message from the policy.",
+          "x-ms-summary": "Message"
+        }
+      }
+    },
+    "AcsNotConfiguredResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "Always 'ACS SDK not wired'.",
+          "x-ms-summary": "Error"
+        },
+        "manifestId": {
+          "type": "string",
+          "x-ms-summary": "Manifest ID"
+        },
+        "interventionPoint": {
+          "type": "string",
+          "x-ms-summary": "Intervention Point"
+        },
+        "setup": {
+          "type": "string",
+          "description": "Pointer to the setup steps required to enable live ACS evaluation.",
+          "x-ms-summary": "Setup"
         }
       }
     }

@@ -288,6 +288,105 @@ public class Script : ScriptBase
                     },
                     ["required"] = new JArray { "tool_definition" }
                 }
+            },
+            new JObject
+            {
+                ["name"] = "load_manifest",
+                ["description"] = "Register an Agent Control Specification (ACS) manifest by id for lifecycle-aware policy evaluation. Call this once at agent startup, then reference the manifest id from evaluate_intervention and transform_payload calls.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["path"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Manifest filename (relative to MANIFEST_DIR) or absolute path"
+                        },
+                        ["id"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Identifier to reference this manifest later. Defaults to filename without extension."
+                        }
+                    },
+                    ["required"] = new JArray { "path" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "evaluate_intervention",
+                ["description"] = "Submit a snapshot at one of the 8 ACS intervention points (agent_startup, input, pre_model_call, post_model_call, pre_tool_call, post_tool_call, output, agent_shutdown) and return the verdict. Verdicts include allow, deny, warn, escalate, and transform. Use this for lifecycle-aware policy enforcement that goes beyond simple allow/deny tool checks.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["manifest_id"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "ID of a manifest previously registered with load_manifest"
+                        },
+                        ["intervention_point"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Lifecycle point to evaluate: agent_startup, input, pre_model_call, post_model_call, pre_tool_call, post_tool_call, output, or agent_shutdown"
+                        },
+                        ["snapshot"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "JSON string snapshot the policy evaluates against. Shape matches the policy_target paths in the manifest."
+                        },
+                        ["tool_name"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Tool name (required for pre_tool_call and post_tool_call)"
+                        },
+                        ["mode"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Enforcement mode: enforce (default) or evaluate_only"
+                        }
+                    },
+                    ["required"] = new JArray { "manifest_id", "intervention_point", "snapshot" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "transform_payload",
+                ["description"] = "Evaluate an ACS intervention point and surface the transformed payload when the verdict is 'transform' (e.g., a redacted body). For 'allow'/'warn' returns the original payload; for 'deny'/'escalate' surfaces the verdict so the host can block or escalate.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["manifest_id"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "ID of a manifest previously registered with load_manifest"
+                        },
+                        ["intervention_point"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Lifecycle point to evaluate"
+                        },
+                        ["snapshot"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "JSON string snapshot the policy evaluates against"
+                        },
+                        ["tool_name"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Tool name (required for pre_tool_call and post_tool_call)"
+                        },
+                        ["mode"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Enforcement mode: enforce (default) or evaluate_only"
+                        }
+                    },
+                    ["required"] = new JArray { "manifest_id", "intervention_point", "snapshot" }
+                }
             }
         };
 
@@ -377,6 +476,39 @@ public class Script : ScriptBase
                     };
                     break;
 
+                case "load_manifest":
+                    apiPath = "/api/acs/manifest/load";
+                    apiBody = new JObject
+                    {
+                        ["path"] = arguments.Value<string>("path"),
+                        ["id"] = arguments.Value<string>("id")
+                    };
+                    break;
+
+                case "evaluate_intervention":
+                    apiPath = "/api/acs/evaluate";
+                    apiBody = new JObject
+                    {
+                        ["manifestId"] = arguments.Value<string>("manifest_id"),
+                        ["interventionPoint"] = arguments.Value<string>("intervention_point"),
+                        ["snapshot"] = ParseArgsString(arguments.Value<string>("snapshot")),
+                        ["toolName"] = arguments.Value<string>("tool_name"),
+                        ["mode"] = arguments.Value<string>("mode")
+                    };
+                    break;
+
+                case "transform_payload":
+                    apiPath = "/api/acs/transform";
+                    apiBody = new JObject
+                    {
+                        ["manifestId"] = arguments.Value<string>("manifest_id"),
+                        ["interventionPoint"] = arguments.Value<string>("intervention_point"),
+                        ["snapshot"] = ParseArgsString(arguments.Value<string>("snapshot")),
+                        ["toolName"] = arguments.Value<string>("tool_name"),
+                        ["mode"] = arguments.Value<string>("mode")
+                    };
+                    break;
+
                 default:
                     throw new ArgumentException($"Unknown tool: {toolName}");
             }
@@ -433,6 +565,14 @@ public class Script : ScriptBase
 
         var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        // 501 from ACS endpoints means the SDK is not wired — pass the structured
+        // setup hint through to the MCP client rather than throwing.
+        if ((int)response.StatusCode == 501)
+        {
+            try { return JObject.Parse(content); }
+            catch { return new JObject { ["error"] = "ACS SDK not wired", ["raw"] = content }; }
+        }
 
         if (!response.IsSuccessStatusCode)
         {

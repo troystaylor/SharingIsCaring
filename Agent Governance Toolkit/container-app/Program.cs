@@ -7,6 +7,9 @@ using AgentGovernance.Policy;
 using AgentGovernance.Security;
 using AgentGovernance.Sre;
 using AgentGovernance.Trust;
+#if ACS_ENABLED
+using AgentControlSpecification;
+#endif
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -320,7 +323,137 @@ app.MapPost("/api/mcp/scan", (McpScanRequest req) =>
 });
 
 // ========================================
-// 8. CHECK VERSION
+// 8. ACS — LOAD MANIFEST
+// ========================================
+//
+// Registers an Agent Control Specification (ACS) manifest by id. Manifest
+// files live under MANIFEST_DIR (defaults to ./manifests). When the
+// AgentControlSpecification SDK is wired (ACS_ENABLED), the manifest is also
+// loaded into a native AgentControl instance so subsequent evaluate/transform
+// calls hit the Rust core directly.
+
+app.MapPost("/api/acs/manifest/load", (AcsLoadManifestRequest req) =>
+{
+    var manifestDir = Environment.GetEnvironmentVariable("MANIFEST_DIR") ?? "manifests";
+    var path = Path.IsPathRooted(req.Path)
+        ? req.Path
+        : Path.Combine(manifestDir, req.Path);
+
+    if (!File.Exists(path))
+    {
+        return Results.NotFound(new { error = $"Manifest not found at {path}" });
+    }
+
+    var id = req.Id ?? Path.GetFileNameWithoutExtension(path);
+
+    try
+    {
+        AcsRegistry.Register(id, path);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = $"Failed to load manifest: {ex.Message}" });
+    }
+
+    return Results.Ok(new
+    {
+        manifestId = id,
+        path,
+        loaded = true,
+        sdkBound = AcsRegistry.SdkAvailable,
+        note = AcsRegistry.SdkAvailable
+            ? "Live SDK evaluation enabled."
+            : "Manifest registered. Live ACS evaluation requires the AgentControlSpecification SDK — see manifests/README.md."
+    });
+});
+
+// ========================================
+// 9. ACS — EVALUATE INTERVENTION POINT
+// ========================================
+//
+// Submits a snapshot at one of the 8 ACS intervention points
+// (agent_startup, input, pre_model_call, post_model_call, pre_tool_call,
+// post_tool_call, output, agent_shutdown) and returns the verdict.
+
+app.MapPost("/api/acs/evaluate", async (AcsEvaluateRequest req) =>
+{
+    if (!AcsRegistry.TryGet(req.ManifestId, out var manifestPath))
+    {
+        return Results.NotFound(new { error = $"Manifest '{req.ManifestId}' not registered. Call /api/acs/manifest/load first." });
+    }
+
+#if ACS_ENABLED
+    try
+    {
+        var result = await AcsRegistry.EvaluateAsync(req).ConfigureAwait(false);
+        return Results.Ok(AcsRegistry.ProjectVerdict(result, req));
+    }
+    catch (ArgumentOutOfRangeException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = "ACS evaluation failed", detail = ex.Message }, statusCode: 500);
+    }
+#else
+    await Task.CompletedTask;
+    _ = manifestPath;
+    return Results.Json(new
+    {
+        error = "ACS SDK not wired",
+        manifestId = req.ManifestId,
+        interventionPoint = req.InterventionPoint,
+        setup = "Drop an AgentControlSpecification nupkg into container-app/local-packages/ and rebuild. See manifests/README.md."
+    }, statusCode: 501);
+#endif
+});
+
+// ========================================
+// 10. ACS — TRANSFORM PAYLOAD
+// ========================================
+//
+// Convenience wrapper: evaluates the intervention point and, when the verdict
+// is `transform`, returns the transformed policy target (e.g., redacted body).
+// For `allow`/`warn` returns the original target untouched. For `deny`/`escalate`
+// returns the verdict so the host can block or escalate.
+
+app.MapPost("/api/acs/transform", async (AcsEvaluateRequest req) =>
+{
+    if (!AcsRegistry.TryGet(req.ManifestId, out var manifestPath))
+    {
+        return Results.NotFound(new { error = $"Manifest '{req.ManifestId}' not registered. Call /api/acs/manifest/load first." });
+    }
+
+#if ACS_ENABLED
+    try
+    {
+        var result = await AcsRegistry.EvaluateAsync(req).ConfigureAwait(false);
+        return Results.Ok(AcsRegistry.ProjectTransform(result, req));
+    }
+    catch (ArgumentOutOfRangeException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = "ACS evaluation failed", detail = ex.Message }, statusCode: 500);
+    }
+#else
+    await Task.CompletedTask;
+    _ = manifestPath;
+    return Results.Json(new
+    {
+        error = "ACS SDK not wired",
+        manifestId = req.ManifestId,
+        interventionPoint = req.InterventionPoint,
+        setup = "Drop an AgentControlSpecification nupkg into container-app/local-packages/ and rebuild. See manifests/README.md."
+    }, statusCode: 501);
+#endif
+});
+
+// ========================================
+// 11. CHECK VERSION
 // ========================================
 
 app.MapGet("/api/version", async () =>
@@ -371,3 +504,110 @@ record InjectionRequest(string Text);
 record AuditRequest(string? AgentId, string? Action, string? ToolName, string? Result);
 record CircuitBreakerRequest(string? ServiceId);
 record McpScanRequest(string? ToolDefinition);
+record AcsLoadManifestRequest(string Path, string? Id);
+record AcsEvaluateRequest(string ManifestId, string InterventionPoint, JsonElement Snapshot, string? ToolName, string? Mode);
+
+// ========================================
+// ACS REGISTRY
+// ========================================
+//
+// In-memory manifest registry plus the live SDK call path (compiled when
+// ACS_ENABLED is defined). The csproj defines ACS_ENABLED automatically when
+// an AgentControlSpecification nupkg is dropped into ./local-packages/.
+// Build the nupkg with scripts/build-acs-nupkg.ps1.
+
+static class AcsRegistry
+{
+#if ACS_ENABLED
+    private static readonly Dictionary<string, AgentControl> _controls = new();
+#endif
+    private static readonly Dictionary<string, string> _manifests = new();
+    private static readonly object _lock = new();
+
+#if ACS_ENABLED
+    public const bool SdkAvailable = true;
+#else
+    public const bool SdkAvailable = false;
+#endif
+
+    public static void Register(string id, string path)
+    {
+        lock (_lock)
+        {
+            _manifests[id] = path;
+#if ACS_ENABLED
+            // Eagerly load the manifest so syntax errors surface at registration time.
+            _controls[id] = AgentControl.FromPath(path);
+#endif
+        }
+    }
+
+    public static bool TryGet(string id, out string path)
+    {
+        lock (_lock) { return _manifests.TryGetValue(id, out path!); }
+    }
+
+#if ACS_ENABLED
+    public static async ValueTask<InterventionPointResult> EvaluateAsync(AcsEvaluateRequest req)
+    {
+        AgentControl control;
+        lock (_lock)
+        {
+            if (!_controls.TryGetValue(req.ManifestId, out control!))
+            {
+                throw new InvalidOperationException($"Manifest '{req.ManifestId}' not registered.");
+            }
+        }
+
+        var interventionPoint = InterventionPointExtensions.FromWireName(req.InterventionPoint);
+        var mode = string.Equals(req.Mode, "evaluate_only", StringComparison.OrdinalIgnoreCase)
+            ? EnforcementMode.EvaluateOnly
+            : EnforcementMode.Enforce;
+
+        return await control.EvaluateInterventionPointAsync(interventionPoint, req.Snapshot, mode)
+            .ConfigureAwait(false);
+    }
+
+    public static object ProjectVerdict(InterventionPointResult result, AcsEvaluateRequest req) => new
+    {
+        decision = result.Verdict.Decision.ToWireName(),
+        reason = result.Verdict.Reason,
+        message = result.Verdict.Message,
+        manifestId = req.ManifestId,
+        interventionPoint = req.InterventionPoint,
+        evidence = result.Verdict.Evidence,
+        resultLabels = result.Verdict.ResultLabels,
+        actionIdentity = result.EnforcedIdentity ?? result.ActionIdentity,
+        inputIdentity = result.InputIdentity
+    };
+
+    public static object ProjectTransform(InterventionPointResult result, AcsEvaluateRequest req)
+    {
+        var decision = result.Verdict.Decision;
+        var isTransform = decision == Decision.Transform;
+        JsonElement? payload = isTransform && result.TransformedPolicyTarget.HasValue
+            ? result.TransformedPolicyTarget
+            : ExtractOriginalPolicyTarget(result);
+
+        return new
+        {
+            decision = decision.ToWireName(),
+            transformed = isTransform,
+            payload,
+            reason = result.Verdict.Reason,
+            message = result.Verdict.Message,
+            manifestId = req.ManifestId,
+            interventionPoint = req.InterventionPoint
+        };
+    }
+
+    private static JsonElement? ExtractOriginalPolicyTarget(InterventionPointResult result)
+    {
+        if (!result.PolicyInput.HasValue) return null;
+        if (result.PolicyInput.Value.ValueKind != JsonValueKind.Object) return null;
+        if (!result.PolicyInput.Value.TryGetProperty("policy_target", out var pt)) return null;
+        if (pt.ValueKind != JsonValueKind.Object) return pt;
+        return pt.TryGetProperty("value", out var v) ? v : pt;
+    }
+#endif
+}

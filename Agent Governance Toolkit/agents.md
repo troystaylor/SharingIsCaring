@@ -29,6 +29,9 @@ For regulated data, insert `check_compliance` between steps 2 and 3.
 | "Log what happened" | `log_audit` | After every significant action |
 | "Is this service healthy?" | `check_circuit_breaker` | Before calling external services with known reliability issues |
 | "Is this MCP tool safe?" | `scan_mcp_tool` | Before connecting to unknown or untrusted MCP servers |
+| "Register a lifecycle policy" | `load_manifest` | Once at agent startup, before any ACS evaluation |
+| "Run a lifecycle policy check" | `evaluate_intervention` | At any of the 8 ACS intervention points when you need verdicts beyond allow/deny (warn, escalate, transform) |
+| "Get a redacted version of this payload" | `transform_payload` | When the policy may rewrite the body (e.g., output redaction) instead of just blocking |
 
 ## Tool Details
 
@@ -79,6 +82,39 @@ For regulated data, insert `check_compliance` between steps 2 and 3.
 - **Required args:** `tool_definition` (JSON string of the MCP tool)
 - **Response:** `safe` (boolean), `riskLevel`, `risks[]`
 - **If not safe:** Warn the user about detected risks before proceeding.
+
+### load_manifest
+- **Purpose:** Register an Agent Control Specification (ACS) manifest for lifecycle-aware policy evaluation
+- **Required args:** `path` (filename in MANIFEST_DIR, or absolute path)
+- **Optional args:** `id` (defaults to filename without extension)
+- **Response:** `manifestId`, `loaded`, `sdkBound`, `note`
+- **Call once per manifest at agent startup.** Subsequent `evaluate_intervention` and `transform_payload` calls reference the returned `manifestId`.
+- **If `sdkBound` is false:** The container is running in scaffold mode. Live ACS evaluation will return HTTP 501 until the SDK is wired (see `container-app/manifests/README.md`).
+
+### evaluate_intervention
+- **Purpose:** ACS lifecycle policy evaluation at any of 8 intervention points
+- **Required args:** `manifest_id`, `intervention_point`, `snapshot` (JSON string)
+- **Optional args:** `tool_name` (required for `pre_tool_call`/`post_tool_call`), `mode` (`enforce` or `evaluate_only`)
+- **Intervention points:** `agent_startup`, `input`, `pre_model_call`, `post_model_call`, `pre_tool_call`, `post_tool_call`, `output`, `agent_shutdown`
+- **Response:** `decision` (allow/deny/warn/escalate/transform), `reason`, `message`, `evidence`, `resultLabels`
+- **Use this over `evaluate_action`** when you need lifecycle context (model I/O, output redaction, escalation flows) rather than a simple tool name check.
+
+### transform_payload
+- **Purpose:** Same as `evaluate_intervention`, but surfaces the transformed payload when verdict is `transform`
+- **Required args:** `manifest_id`, `intervention_point`, `snapshot` (JSON string)
+- **Optional args:** `tool_name`, `mode`
+- **Response:** `decision`, `transformed` (boolean), `payload`, `reason`, `message`
+- **If `transformed` is true:** Use `payload` (the redacted/rewritten body) instead of the original.
+- **If decision is `deny`/`escalate`:** Treat like `evaluate_intervention` — block or escalate.
+
+## ACS vs. Per-Tool Policy
+
+| Use the per-tool layer (`evaluate_action`, etc.) when... | Use ACS (`evaluate_intervention`, etc.) when... |
+|---|---|
+| You just need allow/deny on a tool name | You need warn, escalate, or transform verdicts |
+| Policy is keyed on `tool_name` + simple args | Policy depends on model I/O, output text, or session state |
+| One snapshot point is enough | You need consistent enforcement across the full agent loop |
+| YAML rules in `policies/default.yaml` are sufficient | You need Rego, Cedar, or composable manifests |
 
 ## Example Governance Flow
 
