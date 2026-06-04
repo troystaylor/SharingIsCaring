@@ -2,14 +2,14 @@
   "swagger": "2.0",
   "info": {
     "title": "Jira",
-    "description": "Jira Cloud connector with MCP tools for issues and projects, plus core REST API operations.",
-    "version": "1.1.0",
+    "description": "Jira Cloud connector with MCP tools and typed REST operations covering issues, comments, worklogs, watchers, votes, links, attachments, filters, projects, versions, components, users, groups, statuses, boards, sprints, and epics.",
+    "version": "1.3.0",
     "contact": {
       "name": "Troy Taylor",
       "email": "troy@troytaylor.com"
     }
   },
-  "host": "your-domain.atlassian.net",
+  "host": "api.atlassian.com",
   "basePath": "/mcp",
   "schemes": [
     "https"
@@ -150,6 +150,35 @@
             "schema": {
               "$ref": "#/definitions/IssueUpdateRequest"
             }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Issue",
+        "description": "Delete an issue.",
+        "operationId": "DeleteIssue",
+        "parameters": [
+          {
+            "name": "issueIdOrKey",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Issue ID or key",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "deleteSubtasks",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "description": "Delete subtasks of the issue",
+            "x-ms-summary": "Delete Subtasks",
+            "x-ms-visibility": "advanced"
           }
         ],
         "responses": {
@@ -434,6 +463,1067 @@
             }
           }
         }
+      }
+    },
+    "/rest/api/3/user/assignable/search": {
+      "get": {
+        "summary": "List Users By Project",
+        "description": "List users assignable to issues in the specified project.",
+        "operationId": "ListUsersByProject",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Project key (for example, ENG)",
+            "x-ms-summary": "Project Key"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Substring matched against display name and email address",
+            "x-ms-summary": "Search Text"
+          },
+          {
+            "name": "sessionId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Session ID used to associate the request with a session",
+            "x-ms-summary": "Session ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Filter by Atlassian account ID",
+            "x-ms-summary": "Account ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "startAt",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Index of the first user to return (zero-based)",
+            "x-ms-summary": "Start At",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "maxResults",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Maximum number of users to return (1-1000, defaults to 50)",
+            "x-ms-summary": "Max Results",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "actionDescriptorId",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Workflow transition ID used to limit users by transition permissions",
+            "x-ms-summary": "Action Descriptor ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "recommend",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "description": "Whether to use the recommendations service",
+            "x-ms-summary": "Recommend",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignable user list",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/filter/search": {
+      "get": {
+        "summary": "List Filters",
+        "description": "Search Jira issue filters visible to the user.",
+        "operationId": "ListFilters",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "filterName",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Substring matched against filter name",
+            "x-ms-summary": "Filter Name"
+          },
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Filter by owner Atlassian account ID",
+            "x-ms-summary": "Owner Account ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "groupname",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Deprecated. Use groupId instead.",
+            "x-ms-summary": "Group Name",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Filter by group ID shared with",
+            "x-ms-summary": "Group ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Filter by project ID shared with",
+            "x-ms-summary": "Project ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "orderBy",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Order results by field (e.g. name, -name, owner, favourite_count)",
+            "x-ms-summary": "Order By",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "startAt",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Index of the first item to return (zero-based)",
+            "x-ms-summary": "Start At",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "maxResults",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "description": "Maximum number of filters to return (defaults to 50)",
+            "x-ms-summary": "Max Results",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Comma-separated list of properties to expand (e.g. description,owner,jql,sharePermissions)",
+            "x-ms-summary": "Expand",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filter search results",
+            "schema": {
+              "$ref": "#/definitions/FilterSearchResponse"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/task/{taskId}": {
+      "get": {
+        "summary": "Get Task",
+        "description": "Get the status of a long-running asynchronous task.",
+        "operationId": "GetTask",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Task ID",
+            "x-ms-summary": "Task ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task status",
+            "schema": {
+              "$ref": "#/definitions/TaskInfo"
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/task/{taskId}/cancel": {
+      "post": {
+        "summary": "Cancel Task",
+        "description": "Cancel a long-running asynchronous task that has not yet completed.",
+        "operationId": "CancelTask",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Task ID",
+            "x-ms-summary": "Task ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Cancellation accepted"
+          }
+        }
+      }
+    },
+    "/oauth/token/accessible-resources": {
+      "get": {
+        "summary": "List Accessible Resources",
+        "description": "List the Atlassian sites (resources) the authenticated user has access to.",
+        "operationId": "ListAccessibleResources",
+        "x-ms-visibility": "important",
+        "responses": {
+          "200": {
+            "description": "Accessible resources",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AccessibleResource"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/comment/{id}": {
+      "get": {
+        "summary": "Get Comment",
+        "description": "Get a single comment on an issue.",
+        "operationId": "GetComment",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Comment ID", "x-ms-summary": "Comment ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": {
+          "200": { "description": "Comment", "schema": { "$ref": "#/definitions/Comment" } }
+        }
+      },
+      "put": {
+        "summary": "Update Comment",
+        "description": "Update an existing comment on an issue.",
+        "operationId": "UpdateComment",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Comment ID", "x-ms-summary": "Comment ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/CommentCreateRequest" } }
+        ],
+        "responses": {
+          "200": { "description": "Updated comment", "schema": { "$ref": "#/definitions/Comment" } }
+        }
+      },
+      "delete": {
+        "summary": "Delete Comment",
+        "description": "Delete a comment from an issue.",
+        "operationId": "DeleteComment",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Comment ID", "x-ms-summary": "Comment ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/assignee": {
+      "put": {
+        "summary": "Assign Issue",
+        "description": "Assign an issue to a user. Send accountId, '-1' for the default assignee, or null to clear the assignee.",
+        "operationId": "AssignIssue",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/AssignRequest" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/editmeta": {
+      "get": {
+        "summary": "Get Edit Issue Metadata",
+        "description": "Get the editable fields and allowed values for an issue.",
+        "operationId": "GetEditIssueMeta",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Edit metadata", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/notify": {
+      "post": {
+        "summary": "Notify Issue Watchers",
+        "description": "Send an email notification about an issue to the configured recipients.",
+        "operationId": "NotifyIssue",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/NotifyRequest" } }
+        ],
+        "responses": { "204": { "description": "Notification sent" } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/watchers": {
+      "get": {
+        "summary": "Get Issue Watchers",
+        "description": "Return the list of watchers for an issue.",
+        "operationId": "GetIssueWatchers",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Watchers", "schema": { "$ref": "#/definitions/Watchers" } } }
+      },
+      "post": {
+        "summary": "Add Watcher",
+        "description": "Add a watcher to an issue. Send the accountId as a JSON string (e.g. \"557058:...\").",
+        "operationId": "AddWatcher",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "type": "string", "description": "Atlassian account ID of the user to add as a watcher" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      },
+      "delete": {
+        "summary": "Remove Watcher",
+        "description": "Remove a watcher from an issue.",
+        "operationId": "RemoveWatcher",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "accountId", "in": "query", "required": true, "type": "string", "description": "Atlassian account ID of the watcher to remove", "x-ms-summary": "Account ID" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/votes": {
+      "get": {
+        "summary": "Get Votes",
+        "description": "Return vote information for an issue.",
+        "operationId": "GetVotes",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Votes", "schema": { "$ref": "#/definitions/Votes" } } }
+      },
+      "post": {
+        "summary": "Add Vote",
+        "description": "Cast a vote for the current user on an issue.",
+        "operationId": "AddVote",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      },
+      "delete": {
+        "summary": "Remove Vote",
+        "description": "Withdraw the current user's vote on an issue.",
+        "operationId": "RemoveVote",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/issueLink": {
+      "post": {
+        "summary": "Link Issues",
+        "description": "Create a link between two issues.",
+        "operationId": "LinkIssues",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/IssueLinkRequest" } }
+        ],
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/rest/api/3/issueLink/{linkId}": {
+      "get": {
+        "summary": "Get Issue Link",
+        "description": "Get a single issue link by ID.",
+        "operationId": "GetIssueLink",
+        "parameters": [
+          { "name": "linkId", "in": "path", "required": true, "type": "string", "description": "Issue link ID", "x-ms-summary": "Link ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Issue link", "schema": { "$ref": "#/definitions/IssueLink" } } }
+      },
+      "delete": {
+        "summary": "Delete Issue Link",
+        "description": "Delete an issue link.",
+        "operationId": "DeleteIssueLink",
+        "parameters": [
+          { "name": "linkId", "in": "path", "required": true, "type": "string", "description": "Issue link ID", "x-ms-summary": "Link ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/issueLinkType": {
+      "get": {
+        "summary": "List Issue Link Types",
+        "description": "Return the available issue link types in the Jira instance.",
+        "operationId": "GetIssueLinkTypes",
+        "responses": { "200": { "description": "Issue link types", "schema": { "$ref": "#/definitions/IssueLinkTypeListResponse" } } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/worklog": {
+      "get": {
+        "summary": "List Worklogs",
+        "description": "List worklogs for an issue.",
+        "operationId": "GetIssueWorklogs",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first worklog to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of worklogs to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Worklogs", "schema": { "$ref": "#/definitions/WorklogListResponse" } } }
+      },
+      "post": {
+        "summary": "Add Worklog",
+        "description": "Add a worklog entry to an issue.",
+        "operationId": "AddWorklog",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "notifyUsers", "in": "query", "required": false, "type": "boolean", "description": "Whether to send notifications about the worklog change", "x-ms-visibility": "advanced" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/WorklogCreateRequest" } }
+        ],
+        "responses": { "201": { "description": "Created worklog", "schema": { "$ref": "#/definitions/Worklog" } } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/worklog/{worklogId}": {
+      "put": {
+        "summary": "Update Worklog",
+        "description": "Update a worklog entry.",
+        "operationId": "UpdateWorklog",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "worklogId", "in": "path", "required": true, "type": "string", "description": "Worklog ID", "x-ms-summary": "Worklog ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/WorklogUpdateRequest" } }
+        ],
+        "responses": { "200": { "description": "Updated worklog", "schema": { "$ref": "#/definitions/Worklog" } } }
+      },
+      "delete": {
+        "summary": "Delete Worklog",
+        "description": "Delete a worklog entry.",
+        "operationId": "DeleteWorklog",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "worklogId", "in": "path", "required": true, "type": "string", "description": "Worklog ID", "x-ms-summary": "Worklog ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/issue/bulk": {
+      "post": {
+        "summary": "Bulk Create Issues",
+        "description": "Create multiple issues in a single request.",
+        "operationId": "BulkCreateIssues",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/BulkIssueCreateRequest" } }
+        ],
+        "responses": { "201": { "description": "Bulk create result", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/issue/bulkfetch": {
+      "post": {
+        "summary": "Bulk Fetch Issues",
+        "description": "Fetch multiple issues by ID or key in one call.",
+        "operationId": "BulkFetchIssues",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/BulkFetchRequest" } }
+        ],
+        "responses": { "200": { "description": "Bulk fetch result", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/issue/archive": {
+      "put": {
+        "summary": "Archive Issues",
+        "description": "Archive issues by ID or key.",
+        "operationId": "ArchiveIssues",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/IssueIdOrKeyList" } }
+        ],
+        "responses": { "200": { "description": "Archive result", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/issue/unarchive": {
+      "put": {
+        "summary": "Unarchive Issues",
+        "description": "Restore archived issues.",
+        "operationId": "UnarchiveIssues",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/IssueIdOrKeyList" } }
+        ],
+        "responses": { "200": { "description": "Unarchive result", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/filter": {
+      "post": {
+        "summary": "Create Filter",
+        "description": "Create a new JQL filter.",
+        "operationId": "CreateFilter",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/FilterWriteRequest" } }
+        ],
+        "responses": { "200": { "description": "Created filter", "schema": { "$ref": "#/definitions/Filter" } } }
+      }
+    },
+    "/rest/api/3/filter/{id}": {
+      "get": {
+        "summary": "Get Filter",
+        "description": "Get a single filter by ID.",
+        "operationId": "GetFilter",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Filter ID", "x-ms-summary": "Filter ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Filter", "schema": { "$ref": "#/definitions/Filter" } } }
+      },
+      "put": {
+        "summary": "Update Filter",
+        "description": "Update an existing filter.",
+        "operationId": "UpdateFilter",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Filter ID", "x-ms-summary": "Filter ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/FilterWriteRequest" } }
+        ],
+        "responses": { "200": { "description": "Updated filter", "schema": { "$ref": "#/definitions/Filter" } } }
+      },
+      "delete": {
+        "summary": "Delete Filter",
+        "description": "Delete a filter.",
+        "operationId": "DeleteFilter",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Filter ID", "x-ms-summary": "Filter ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/filter/my": {
+      "get": {
+        "summary": "Get My Filters",
+        "description": "Return filters owned by the current user.",
+        "operationId": "GetMyFilters",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "expand", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of properties to expand", "x-ms-visibility": "advanced" },
+          { "name": "includeFavourites", "in": "query", "required": false, "type": "boolean", "description": "Include favourite filters in the result", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Filters", "schema": { "type": "array", "items": { "$ref": "#/definitions/Filter" } } } }
+      }
+    },
+    "/rest/api/3/filter/favourite": {
+      "get": {
+        "summary": "Get Favourite Filters",
+        "description": "Return the current user's favourite filters.",
+        "operationId": "GetFavouriteFilters",
+        "parameters": [
+          { "name": "expand", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of properties to expand", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Favourite filters", "schema": { "type": "array", "items": { "$ref": "#/definitions/Filter" } } } }
+      }
+    },
+    "/rest/api/3/filter/{id}/favourite": {
+      "put": {
+        "summary": "Set Filter Favourite",
+        "description": "Mark a filter as a favourite for the current user.",
+        "operationId": "SetFilterFavourite",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Filter ID", "x-ms-summary": "Filter ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Updated filter", "schema": { "$ref": "#/definitions/Filter" } } }
+      },
+      "delete": {
+        "summary": "Remove Filter Favourite",
+        "description": "Remove a filter from the current user's favourites.",
+        "operationId": "DeleteFilterFavourite",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Filter ID", "x-ms-summary": "Filter ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Updated filter", "schema": { "$ref": "#/definitions/Filter" } } }
+      }
+    },
+    "/rest/api/3/project/{projectIdOrKey}": {
+      "get": {
+        "summary": "Get Project",
+        "description": "Get a project by ID or key.",
+        "operationId": "GetProject",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "projectIdOrKey", "in": "path", "required": true, "type": "string", "description": "Project ID or key", "x-ms-summary": "Project ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "expand", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of properties to expand (description,issueTypes,lead,projectKeys,url)", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Project", "schema": { "$ref": "#/definitions/Project" } } }
+      }
+    },
+    "/rest/api/3/project/search": {
+      "get": {
+        "summary": "Search Projects",
+        "description": "Search projects with paging and filters.",
+        "operationId": "SearchProjects",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "query", "in": "query", "required": false, "type": "string", "description": "Substring matched against project name or key", "x-ms-summary": "Search Text" },
+          { "name": "typeKey", "in": "query", "required": false, "type": "string", "description": "Project type key (software, service_desk, business)", "x-ms-visibility": "advanced" },
+          { "name": "categoryId", "in": "query", "required": false, "type": "integer", "description": "Category ID to filter by", "x-ms-visibility": "advanced" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first project to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of projects to return", "x-ms-visibility": "advanced" },
+          { "name": "orderBy", "in": "query", "required": false, "type": "string", "description": "Order results by field (e.g. category, name, key, lastIssueUpdatedTime)", "x-ms-visibility": "advanced" },
+          { "name": "action", "in": "query", "required": false, "type": "string", "description": "Filter by permission action (view, browse, edit)", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Project search results", "schema": { "$ref": "#/definitions/ProjectSearchResponse" } } }
+      }
+    },
+    "/rest/api/3/project/{projectIdOrKey}/versions": {
+      "get": {
+        "summary": "List Project Versions",
+        "description": "Return all versions for a project.",
+        "operationId": "GetProjectVersions",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "projectIdOrKey", "in": "path", "required": true, "type": "string", "description": "Project ID or key", "x-ms-summary": "Project ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Versions", "schema": { "type": "array", "items": { "$ref": "#/definitions/Version" } } } }
+      }
+    },
+    "/rest/api/3/version": {
+      "post": {
+        "summary": "Create Version",
+        "description": "Create a project version.",
+        "operationId": "CreateVersion",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/VersionWriteRequest" } }
+        ],
+        "responses": { "201": { "description": "Created version", "schema": { "$ref": "#/definitions/Version" } } }
+      }
+    },
+    "/rest/api/3/version/{id}": {
+      "get": {
+        "summary": "Get Version",
+        "description": "Get a project version by ID.",
+        "operationId": "GetVersion",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Version ID", "x-ms-summary": "Version ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Version", "schema": { "$ref": "#/definitions/Version" } } }
+      },
+      "put": {
+        "summary": "Update Version",
+        "description": "Update a project version.",
+        "operationId": "UpdateVersion",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Version ID", "x-ms-summary": "Version ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/VersionWriteRequest" } }
+        ],
+        "responses": { "200": { "description": "Updated version", "schema": { "$ref": "#/definitions/Version" } } }
+      },
+      "delete": {
+        "summary": "Delete Version",
+        "description": "Delete a project version.",
+        "operationId": "DeleteVersion",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Version ID", "x-ms-summary": "Version ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/project/{projectIdOrKey}/components": {
+      "get": {
+        "summary": "List Project Components",
+        "description": "Return all components for a project.",
+        "operationId": "GetProjectComponents",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "projectIdOrKey", "in": "path", "required": true, "type": "string", "description": "Project ID or key", "x-ms-summary": "Project ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Components", "schema": { "type": "array", "items": { "$ref": "#/definitions/Component" } } } }
+      }
+    },
+    "/rest/api/3/component": {
+      "post": {
+        "summary": "Create Component",
+        "description": "Create a project component.",
+        "operationId": "CreateComponent",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/ComponentWriteRequest" } }
+        ],
+        "responses": { "201": { "description": "Created component", "schema": { "$ref": "#/definitions/Component" } } }
+      }
+    },
+    "/rest/api/3/component/{id}": {
+      "get": {
+        "summary": "Get Component",
+        "description": "Get a component by ID.",
+        "operationId": "GetComponent",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Component ID", "x-ms-summary": "Component ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Component", "schema": { "$ref": "#/definitions/Component" } } }
+      },
+      "put": {
+        "summary": "Update Component",
+        "description": "Update a component.",
+        "operationId": "UpdateComponent",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Component ID", "x-ms-summary": "Component ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/ComponentWriteRequest" } }
+        ],
+        "responses": { "200": { "description": "Updated component", "schema": { "$ref": "#/definitions/Component" } } }
+      },
+      "delete": {
+        "summary": "Delete Component",
+        "description": "Delete a component.",
+        "operationId": "DeleteComponent",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Component ID", "x-ms-summary": "Component ID", "x-ms-url-encoding": "single" },
+          { "name": "moveIssuesTo", "in": "query", "required": false, "type": "string", "description": "If set, move issues that had this component to the named component", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/api/3/groups/picker": {
+      "get": {
+        "summary": "Find Groups",
+        "description": "Find groups by name (picker-style).",
+        "operationId": "FindGroups",
+        "parameters": [
+          { "name": "query", "in": "query", "required": false, "type": "string", "description": "Substring matched against group name", "x-ms-summary": "Search Text" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of groups to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Groups", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/group/member": {
+      "get": {
+        "summary": "Get Group Members",
+        "description": "Return members of a group.",
+        "operationId": "GetGroupMembers",
+        "parameters": [
+          { "name": "groupId", "in": "query", "required": false, "type": "string", "description": "Group ID (preferred over groupname)", "x-ms-summary": "Group ID" },
+          { "name": "groupname", "in": "query", "required": false, "type": "string", "description": "Group name (deprecated; use groupId)", "x-ms-summary": "Group Name", "x-ms-visibility": "advanced" },
+          { "name": "includeInactiveUsers", "in": "query", "required": false, "type": "boolean", "description": "Include inactive users", "x-ms-visibility": "advanced" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first member to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of members to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Group member list", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/api/3/statuses": {
+      "get": {
+        "summary": "List Statuses",
+        "description": "List all statuses in the Jira instance.",
+        "operationId": "GetStatuses",
+        "responses": { "200": { "description": "Statuses", "schema": { "type": "array", "items": { "$ref": "#/definitions/ProjectStatus" } } } }
+      }
+    },
+    "/rest/api/3/issue/{issueIdOrKey}/attachments": {
+      "post": {
+        "summary": "Upload Attachment",
+        "description": "Attach a file to an issue. Send the file content as a base64-encoded string; the connector converts it to multipart/form-data internally. Maximum size is 10 MB after decoding.",
+        "operationId": "UploadAttachment",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "issueIdOrKey", "in": "path", "required": true, "type": "string", "description": "Issue ID or key", "x-ms-summary": "Issue ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/AttachmentUploadRequest" } }
+        ],
+        "responses": { "200": { "description": "Uploaded attachments", "schema": { "type": "array", "items": { "$ref": "#/definitions/Attachment" } } } }
+      }
+    },
+    "/rest/api/3/attachment/{id}": {
+      "get": {
+        "summary": "Get Attachment Metadata",
+        "description": "Get attachment metadata by ID.",
+        "operationId": "GetAttachmentMetadata",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Attachment ID", "x-ms-summary": "Attachment ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Attachment metadata", "schema": { "$ref": "#/definitions/Attachment" } } }
+      },
+      "delete": {
+        "summary": "Delete Attachment",
+        "description": "Delete an attachment by ID.",
+        "operationId": "DeleteAttachment",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string", "description": "Attachment ID", "x-ms-summary": "Attachment ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/agile/1.0/board": {
+      "get": {
+        "summary": "List Boards",
+        "description": "List Jira Software boards visible to the user.",
+        "operationId": "ListBoards",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first board to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of boards to return", "x-ms-visibility": "advanced" },
+          { "name": "type", "in": "query", "required": false, "type": "string", "description": "Filter by board type (scrum, kanban, simple)", "x-ms-summary": "Board Type" },
+          { "name": "name", "in": "query", "required": false, "type": "string", "description": "Substring matched against board name", "x-ms-summary": "Search Text" },
+          { "name": "projectKeyOrId", "in": "query", "required": false, "type": "string", "description": "Filter boards by project key or ID", "x-ms-summary": "Project Key or ID" }
+        ],
+        "responses": { "200": { "description": "Board list", "schema": { "$ref": "#/definitions/BoardListResponse" } } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}": {
+      "get": {
+        "summary": "Get Board",
+        "description": "Get a board by ID.",
+        "operationId": "GetBoard",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Board", "schema": { "$ref": "#/definitions/Board" } } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}/configuration": {
+      "get": {
+        "summary": "Get Board Configuration",
+        "description": "Get the configuration of a board.",
+        "operationId": "GetBoardConfiguration",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Board configuration", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}/issue": {
+      "get": {
+        "summary": "Get Board Issues",
+        "description": "Get issues on a board.",
+        "operationId": "GetBoardIssues",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first issue to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of issues to return", "x-ms-visibility": "advanced" },
+          { "name": "jql", "in": "query", "required": false, "type": "string", "description": "Additional JQL filter", "x-ms-summary": "JQL Filter", "x-ms-visibility": "advanced" },
+          { "name": "fields", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of fields to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Issues", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}/backlog": {
+      "get": {
+        "summary": "Get Board Backlog",
+        "description": "Get issues in the backlog of a board.",
+        "operationId": "GetBoardBacklog",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first issue to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of issues to return", "x-ms-visibility": "advanced" },
+          { "name": "jql", "in": "query", "required": false, "type": "string", "description": "Additional JQL filter", "x-ms-summary": "JQL Filter", "x-ms-visibility": "advanced" },
+          { "name": "fields", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of fields to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Backlog issues", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}/project": {
+      "get": {
+        "summary": "Get Board Projects",
+        "description": "Get projects associated with a board.",
+        "operationId": "GetBoardProjects",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first project to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of projects to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Projects", "schema": { "type": "object" } } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}/sprint": {
+      "get": {
+        "summary": "List Board Sprints",
+        "description": "List sprints on a board.",
+        "operationId": "ListBoardSprints",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first sprint to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of sprints to return", "x-ms-visibility": "advanced" },
+          { "name": "state", "in": "query", "required": false, "type": "string", "description": "Filter by state (future, active, closed; comma-separate for multiple)", "x-ms-summary": "State" }
+        ],
+        "responses": { "200": { "description": "Sprints", "schema": { "$ref": "#/definitions/SprintListResponse" } } }
+      }
+    },
+    "/rest/agile/1.0/sprint": {
+      "post": {
+        "summary": "Create Sprint",
+        "description": "Create a new sprint on a Scrum board.",
+        "operationId": "CreateSprint",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/SprintCreateRequest" } }
+        ],
+        "responses": { "201": { "description": "Created sprint", "schema": { "$ref": "#/definitions/Sprint" } } }
+      }
+    },
+    "/rest/agile/1.0/sprint/{sprintId}": {
+      "get": {
+        "summary": "Get Sprint",
+        "description": "Get a sprint by ID.",
+        "operationId": "GetSprint",
+        "parameters": [
+          { "name": "sprintId", "in": "path", "required": true, "type": "integer", "description": "Sprint ID", "x-ms-summary": "Sprint ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Sprint", "schema": { "$ref": "#/definitions/Sprint" } } }
+      },
+      "post": {
+        "summary": "Update Sprint",
+        "description": "Partially update a sprint (name, state, startDate, endDate, goal).",
+        "operationId": "UpdateSprint",
+        "parameters": [
+          { "name": "sprintId", "in": "path", "required": true, "type": "integer", "description": "Sprint ID", "x-ms-summary": "Sprint ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/SprintUpdateRequest" } }
+        ],
+        "responses": { "200": { "description": "Updated sprint", "schema": { "$ref": "#/definitions/Sprint" } } }
+      },
+      "delete": {
+        "summary": "Delete Sprint",
+        "description": "Delete a sprint. Any issues are moved back to the backlog.",
+        "operationId": "DeleteSprint",
+        "parameters": [
+          { "name": "sprintId", "in": "path", "required": true, "type": "integer", "description": "Sprint ID", "x-ms-summary": "Sprint ID", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/agile/1.0/sprint/{sprintId}/issue": {
+      "get": {
+        "summary": "Get Sprint Issues",
+        "description": "Get issues in a sprint.",
+        "operationId": "GetSprintIssues",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "sprintId", "in": "path", "required": true, "type": "integer", "description": "Sprint ID", "x-ms-summary": "Sprint ID", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first issue to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of issues to return", "x-ms-visibility": "advanced" },
+          { "name": "jql", "in": "query", "required": false, "type": "string", "description": "Additional JQL filter", "x-ms-summary": "JQL Filter", "x-ms-visibility": "advanced" },
+          { "name": "fields", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of fields to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Sprint issues", "schema": { "type": "object" } } }
+      },
+      "post": {
+        "summary": "Move Issues To Sprint",
+        "description": "Move issues into a sprint.",
+        "operationId": "MoveIssuesToSprint",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "sprintId", "in": "path", "required": true, "type": "integer", "description": "Sprint ID", "x-ms-summary": "Sprint ID", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/MoveIssuesRequest" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/agile/1.0/backlog/issue": {
+      "post": {
+        "summary": "Move Issues To Backlog",
+        "description": "Move issues out of any sprint and back into the backlog.",
+        "operationId": "MoveIssuesToBacklog",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/MoveIssuesRequest" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/agile/1.0/board/{boardId}/epic": {
+      "get": {
+        "summary": "List Board Epics",
+        "description": "List epics on a board.",
+        "operationId": "ListBoardEpics",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "boardId", "in": "path", "required": true, "type": "integer", "description": "Board ID", "x-ms-summary": "Board ID", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first epic to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of epics to return", "x-ms-visibility": "advanced" },
+          { "name": "done", "in": "query", "required": false, "type": "string", "description": "Filter by completion state (true, false)", "x-ms-summary": "Done" }
+        ],
+        "responses": { "200": { "description": "Epics", "schema": { "$ref": "#/definitions/EpicListResponse" } } }
+      }
+    },
+    "/rest/agile/1.0/epic/{epicIdOrKey}": {
+      "get": {
+        "summary": "Get Epic",
+        "description": "Get an epic by ID or key.",
+        "operationId": "GetEpic",
+        "parameters": [
+          { "name": "epicIdOrKey", "in": "path", "required": true, "type": "string", "description": "Epic ID or key", "x-ms-summary": "Epic ID or Key", "x-ms-url-encoding": "single" }
+        ],
+        "responses": { "200": { "description": "Epic", "schema": { "$ref": "#/definitions/Epic" } } }
+      }
+    },
+    "/rest/agile/1.0/epic/{epicIdOrKey}/issue": {
+      "get": {
+        "summary": "Get Epic Issues",
+        "description": "Get issues in an epic.",
+        "operationId": "GetEpicIssues",
+        "x-ms-visibility": "important",
+        "parameters": [
+          { "name": "epicIdOrKey", "in": "path", "required": true, "type": "string", "description": "Epic ID or key", "x-ms-summary": "Epic ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "startAt", "in": "query", "required": false, "type": "integer", "description": "Index of the first issue to return", "x-ms-visibility": "advanced" },
+          { "name": "maxResults", "in": "query", "required": false, "type": "integer", "description": "Maximum number of issues to return", "x-ms-visibility": "advanced" },
+          { "name": "jql", "in": "query", "required": false, "type": "string", "description": "Additional JQL filter", "x-ms-summary": "JQL Filter", "x-ms-visibility": "advanced" },
+          { "name": "fields", "in": "query", "required": false, "type": "string", "description": "Comma-separated list of fields to return", "x-ms-visibility": "advanced" }
+        ],
+        "responses": { "200": { "description": "Epic issues", "schema": { "type": "object" } } }
+      },
+      "post": {
+        "summary": "Move Issues To Epic",
+        "description": "Move issues into an epic.",
+        "operationId": "MoveIssuesToEpic",
+        "parameters": [
+          { "name": "epicIdOrKey", "in": "path", "required": true, "type": "string", "description": "Epic ID or key", "x-ms-summary": "Epic ID or Key", "x-ms-url-encoding": "single" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/MoveIssuesRequest" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
+      }
+    },
+    "/rest/agile/1.0/epic/none/issue": {
+      "post": {
+        "summary": "Remove Issues From Epic",
+        "description": "Remove issues from their current epic (move them to no epic).",
+        "operationId": "RemoveIssuesFromEpic",
+        "parameters": [
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/MoveIssuesRequest" } }
+        ],
+        "responses": { "204": { "description": "No Content" } }
       }
     }
   },
@@ -790,6 +1880,525 @@
         "schema": {
           "type": "object",
           "description": "Field schema"
+        }
+      }
+    },
+    "Filter": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Filter ID"
+        },
+        "self": {
+          "type": "string",
+          "description": "Filter URL"
+        },
+        "name": {
+          "type": "string",
+          "description": "Filter name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Filter description"
+        },
+        "jql": {
+          "type": "string",
+          "description": "JQL query string"
+        },
+        "favourite": {
+          "type": "boolean",
+          "description": "Whether the filter is a favourite of the user"
+        },
+        "favouritedCount": {
+          "type": "integer",
+          "description": "Number of users who have favourited the filter"
+        },
+        "owner": {
+          "$ref": "#/definitions/User"
+        },
+        "viewUrl": {
+          "type": "string",
+          "description": "URL to view the filter in Jira"
+        },
+        "searchUrl": {
+          "type": "string",
+          "description": "URL to run the filter via the REST API"
+        }
+      }
+    },
+    "FilterSearchResponse": {
+      "type": "object",
+      "properties": {
+        "isLast": {
+          "type": "boolean",
+          "description": "Whether this is the last page"
+        },
+        "maxResults": {
+          "type": "integer",
+          "description": "Maximum number of items returned per page"
+        },
+        "startAt": {
+          "type": "integer",
+          "description": "Index of the first item returned"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of filters matching the query"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Filter"
+          }
+        }
+      }
+    },
+    "TaskInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Task ID"
+        },
+        "self": {
+          "type": "string",
+          "description": "Task URL"
+        },
+        "description": {
+          "type": "string",
+          "description": "Task description"
+        },
+        "status": {
+          "type": "string",
+          "description": "Task status (ENQUEUED, RUNNING, COMPLETE, FAILED, CANCEL_REQUESTED, CANCELLED, DEAD)"
+        },
+        "submittedBy": {
+          "type": "integer",
+          "description": "ID of the user that submitted the task"
+        },
+        "progress": {
+          "type": "integer",
+          "description": "Task progress (0-100)"
+        },
+        "elapsedRuntime": {
+          "type": "integer",
+          "description": "Task runtime in milliseconds"
+        },
+        "submitted": {
+          "type": "integer",
+          "description": "Timestamp when the task was submitted (epoch ms)"
+        },
+        "started": {
+          "type": "integer",
+          "description": "Timestamp when the task started (epoch ms)"
+        },
+        "finished": {
+          "type": "integer",
+          "description": "Timestamp when the task finished (epoch ms)"
+        },
+        "lastUpdate": {
+          "type": "integer",
+          "description": "Timestamp of the last task status update (epoch ms)"
+        },
+        "result": {
+          "type": "object",
+          "description": "Task result payload"
+        },
+        "message": {
+          "type": "string",
+          "description": "Task status message"
+        }
+      }
+    },
+    "AccessibleResource": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Resource (site) ID, used as the cloudId"
+        },
+        "url": {
+          "type": "string",
+          "description": "Site URL"
+        },
+        "name": {
+          "type": "string",
+          "description": "Site name"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scopes granted on the site"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the site avatar"
+        }
+      }
+    },
+    "AssignRequest": {
+      "type": "object",
+      "properties": {
+        "accountId": { "type": "string", "description": "Atlassian account ID of the assignee. Use '-1' for the project default assignee, or null to unassign." }
+      }
+    },
+    "NotifyRequest": {
+      "type": "object",
+      "required": ["subject", "textBody"],
+      "properties": {
+        "subject": { "type": "string", "description": "Email subject" },
+        "textBody": { "type": "string", "description": "Plain-text email body" },
+        "htmlBody": { "type": "string", "description": "Optional HTML email body" },
+        "to": { "type": "object", "description": "Notification recipients block (reporter, assignee, watchers, voters, users, groups)" },
+        "restrict": { "type": "object", "description": "Optional restriction block (permissions, groups)" }
+      }
+    },
+    "Watchers": {
+      "type": "object",
+      "properties": {
+        "self": { "type": "string", "description": "Watcher resource URL" },
+        "isWatching": { "type": "boolean", "description": "Whether the current user is watching" },
+        "watchCount": { "type": "integer", "description": "Number of watchers" },
+        "watchers": { "type": "array", "items": { "$ref": "#/definitions/User" } }
+      }
+    },
+    "Votes": {
+      "type": "object",
+      "properties": {
+        "self": { "type": "string", "description": "Vote resource URL" },
+        "votes": { "type": "integer", "description": "Number of votes" },
+        "hasVoted": { "type": "boolean", "description": "Whether the current user has voted" },
+        "voters": { "type": "array", "items": { "$ref": "#/definitions/User" } }
+      }
+    },
+    "IssueLinkRequest": {
+      "type": "object",
+      "required": ["type", "inwardIssue", "outwardIssue"],
+      "properties": {
+        "type": { "type": "object", "description": "Link type (e.g. { name: 'Blocks' } or { id: '10000' })" },
+        "inwardIssue": { "type": "object", "description": "Inward issue (e.g. { key: 'ENG-1' })" },
+        "outwardIssue": { "type": "object", "description": "Outward issue (e.g. { key: 'ENG-2' })" },
+        "comment": { "type": "object", "description": "Optional comment to add when creating the link" }
+      }
+    },
+    "IssueLink": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Issue link ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "type": { "$ref": "#/definitions/IssueLinkType" },
+        "inwardIssue": { "$ref": "#/definitions/Issue" },
+        "outwardIssue": { "$ref": "#/definitions/Issue" }
+      }
+    },
+    "IssueLinkType": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Link type ID" },
+        "name": { "type": "string", "description": "Link type name (e.g. Blocks)" },
+        "inward": { "type": "string", "description": "Inward description (e.g. 'is blocked by')" },
+        "outward": { "type": "string", "description": "Outward description (e.g. 'blocks')" },
+        "self": { "type": "string", "description": "Resource URL" }
+      }
+    },
+    "IssueLinkTypeListResponse": {
+      "type": "object",
+      "properties": {
+        "issueLinkTypes": { "type": "array", "items": { "$ref": "#/definitions/IssueLinkType" } }
+      }
+    },
+    "Worklog": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Worklog ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "issueId": { "type": "string", "description": "Issue ID" },
+        "author": { "$ref": "#/definitions/User" },
+        "updateAuthor": { "$ref": "#/definitions/User" },
+        "comment": { "type": "object", "description": "Comment in Jira document format" },
+        "created": { "type": "string", "description": "Created timestamp" },
+        "updated": { "type": "string", "description": "Updated timestamp" },
+        "started": { "type": "string", "description": "Work start timestamp (ISO 8601)" },
+        "timeSpent": { "type": "string", "description": "Time spent (e.g. '3h 20m')" },
+        "timeSpentSeconds": { "type": "integer", "description": "Time spent in seconds" }
+      }
+    },
+    "WorklogListResponse": {
+      "type": "object",
+      "properties": {
+        "startAt": { "type": "integer" },
+        "maxResults": { "type": "integer" },
+        "total": { "type": "integer" },
+        "worklogs": { "type": "array", "items": { "$ref": "#/definitions/Worklog" } }
+      }
+    },
+    "WorklogCreateRequest": {
+      "type": "object",
+      "properties": {
+        "comment": { "type": "object", "description": "Worklog comment in Jira document format" },
+        "started": { "type": "string", "description": "Work start timestamp (ISO 8601, e.g. 2026-06-04T10:00:00.000+0000)" },
+        "timeSpent": { "type": "string", "description": "Time spent (e.g. '3h 20m')" },
+        "timeSpentSeconds": { "type": "integer", "description": "Time spent in seconds (alternative to timeSpent)" },
+        "visibility": { "type": "object", "description": "Visibility restrictions" }
+      }
+    },
+    "WorklogUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "comment": { "type": "object", "description": "Worklog comment in Jira document format" },
+        "started": { "type": "string", "description": "Work start timestamp (ISO 8601)" },
+        "timeSpent": { "type": "string", "description": "Time spent (e.g. '3h 20m')" },
+        "timeSpentSeconds": { "type": "integer", "description": "Time spent in seconds" },
+        "visibility": { "type": "object", "description": "Visibility restrictions" }
+      }
+    },
+    "BulkIssueCreateRequest": {
+      "type": "object",
+      "required": ["issueUpdates"],
+      "properties": {
+        "issueUpdates": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/IssueCreateRequest" },
+          "description": "Array of issue create payloads"
+        }
+      }
+    },
+    "BulkFetchRequest": {
+      "type": "object",
+      "required": ["issueIdsOrKeys"],
+      "properties": {
+        "issueIdsOrKeys": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Issue IDs or keys to fetch (up to 100)"
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Field names to return"
+        },
+        "expand": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Properties to expand"
+        }
+      }
+    },
+    "IssueIdOrKeyList": {
+      "type": "object",
+      "required": ["issueIdsOrKeys"],
+      "properties": {
+        "issueIdsOrKeys": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Issue IDs or keys"
+        }
+      }
+    },
+    "FilterWriteRequest": {
+      "type": "object",
+      "required": ["name", "jql"],
+      "properties": {
+        "name": { "type": "string", "description": "Filter name" },
+        "description": { "type": "string", "description": "Filter description" },
+        "jql": { "type": "string", "description": "JQL query string" },
+        "favourite": { "type": "boolean", "description": "Whether to favourite the filter" },
+        "sharePermissions": {
+          "type": "array",
+          "items": { "type": "object", "description": "Share permission entry" },
+          "description": "Share permission entries"
+        }
+      }
+    },
+    "ProjectSearchResponse": {
+      "type": "object",
+      "properties": {
+        "self": { "type": "string" },
+        "nextPage": { "type": "string" },
+        "maxResults": { "type": "integer" },
+        "startAt": { "type": "integer" },
+        "total": { "type": "integer" },
+        "isLast": { "type": "boolean" },
+        "values": { "type": "array", "items": { "$ref": "#/definitions/Project" } }
+      }
+    },
+    "Version": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Version ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "name": { "type": "string", "description": "Version name" },
+        "description": { "type": "string", "description": "Version description" },
+        "archived": { "type": "boolean", "description": "Whether the version is archived" },
+        "released": { "type": "boolean", "description": "Whether the version is released" },
+        "startDate": { "type": "string", "description": "Start date (YYYY-MM-DD)" },
+        "releaseDate": { "type": "string", "description": "Release date (YYYY-MM-DD)" },
+        "userStartDate": { "type": "string", "description": "Start date in user-format" },
+        "userReleaseDate": { "type": "string", "description": "Release date in user-format" },
+        "projectId": { "type": "integer", "description": "Project ID this version belongs to" }
+      }
+    },
+    "VersionWriteRequest": {
+      "type": "object",
+      "required": ["name", "projectId"],
+      "properties": {
+        "name": { "type": "string", "description": "Version name" },
+        "description": { "type": "string", "description": "Version description" },
+        "projectId": { "type": "integer", "description": "Project ID this version belongs to" },
+        "archived": { "type": "boolean", "description": "Whether the version is archived" },
+        "released": { "type": "boolean", "description": "Whether the version is released" },
+        "startDate": { "type": "string", "description": "Start date (YYYY-MM-DD)" },
+        "releaseDate": { "type": "string", "description": "Release date (YYYY-MM-DD)" }
+      }
+    },
+    "Component": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Component ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "name": { "type": "string", "description": "Component name" },
+        "description": { "type": "string", "description": "Component description" },
+        "lead": { "$ref": "#/definitions/User" },
+        "leadAccountId": { "type": "string", "description": "Lead user account ID" },
+        "assigneeType": { "type": "string", "description": "Default assignee type (PROJECT_DEFAULT, COMPONENT_LEAD, PROJECT_LEAD, UNASSIGNED)" },
+        "assignee": { "$ref": "#/definitions/User" },
+        "isAssigneeTypeValid": { "type": "boolean", "description": "Whether the assignee type is valid" },
+        "project": { "type": "string", "description": "Project key" },
+        "projectId": { "type": "integer", "description": "Project ID" }
+      }
+    },
+    "ComponentWriteRequest": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "description": "Component name" },
+        "description": { "type": "string", "description": "Component description" },
+        "leadAccountId": { "type": "string", "description": "Lead user account ID" },
+        "assigneeType": { "type": "string", "description": "Default assignee type (PROJECT_DEFAULT, COMPONENT_LEAD, PROJECT_LEAD, UNASSIGNED)" },
+        "project": { "type": "string", "description": "Project key" },
+        "projectId": { "type": "integer", "description": "Project ID" }
+      }
+    },
+    "Attachment": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Attachment ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "filename": { "type": "string", "description": "File name" },
+        "author": { "$ref": "#/definitions/User" },
+        "created": { "type": "string", "description": "Created timestamp" },
+        "size": { "type": "integer", "description": "Size in bytes" },
+        "mimeType": { "type": "string", "description": "MIME type" },
+        "content": { "type": "string", "description": "Content URL" },
+        "thumbnail": { "type": "string", "description": "Thumbnail URL" }
+      }
+    },
+    "AttachmentUploadRequest": {
+      "type": "object",
+      "required": ["filename", "contentBase64"],
+      "properties": {
+        "filename": { "type": "string", "description": "File name (e.g. report.pdf)" },
+        "contentBase64": { "type": "string", "description": "File content encoded as base64. Maximum 10 MB after decoding." },
+        "contentType": { "type": "string", "description": "MIME type (e.g. application/pdf). Defaults to application/octet-stream." }
+      }
+    },
+    "Board": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "Board ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "name": { "type": "string", "description": "Board name" },
+        "type": { "type": "string", "description": "Board type (scrum, kanban, simple)" },
+        "location": { "type": "object", "description": "Board location (project info)" }
+      }
+    },
+    "BoardListResponse": {
+      "type": "object",
+      "properties": {
+        "maxResults": { "type": "integer" },
+        "startAt": { "type": "integer" },
+        "total": { "type": "integer" },
+        "isLast": { "type": "boolean" },
+        "values": { "type": "array", "items": { "$ref": "#/definitions/Board" } }
+      }
+    },
+    "Sprint": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "Sprint ID" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "state": { "type": "string", "description": "Sprint state (future, active, closed)" },
+        "name": { "type": "string", "description": "Sprint name" },
+        "startDate": { "type": "string", "description": "Sprint start date (ISO 8601)" },
+        "endDate": { "type": "string", "description": "Sprint end date (ISO 8601)" },
+        "completeDate": { "type": "string", "description": "Sprint complete date (ISO 8601)" },
+        "originBoardId": { "type": "integer", "description": "Origin board ID" },
+        "goal": { "type": "string", "description": "Sprint goal" }
+      }
+    },
+    "SprintListResponse": {
+      "type": "object",
+      "properties": {
+        "maxResults": { "type": "integer" },
+        "startAt": { "type": "integer" },
+        "isLast": { "type": "boolean" },
+        "values": { "type": "array", "items": { "$ref": "#/definitions/Sprint" } }
+      }
+    },
+    "SprintCreateRequest": {
+      "type": "object",
+      "required": ["name", "originBoardId"],
+      "properties": {
+        "name": { "type": "string", "description": "Sprint name" },
+        "originBoardId": { "type": "integer", "description": "Origin board ID" },
+        "startDate": { "type": "string", "description": "Sprint start date (ISO 8601)" },
+        "endDate": { "type": "string", "description": "Sprint end date (ISO 8601)" },
+        "goal": { "type": "string", "description": "Sprint goal" }
+      }
+    },
+    "SprintUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Sprint name" },
+        "state": { "type": "string", "description": "Sprint state (future, active, closed). Setting to active starts the sprint." },
+        "startDate": { "type": "string", "description": "Sprint start date (ISO 8601)" },
+        "endDate": { "type": "string", "description": "Sprint end date (ISO 8601)" },
+        "completeDate": { "type": "string", "description": "Sprint complete date (ISO 8601)" },
+        "goal": { "type": "string", "description": "Sprint goal" }
+      }
+    },
+    "Epic": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer", "description": "Epic ID" },
+        "key": { "type": "string", "description": "Epic key" },
+        "self": { "type": "string", "description": "Resource URL" },
+        "name": { "type": "string", "description": "Epic name" },
+        "summary": { "type": "string", "description": "Epic summary" },
+        "color": { "type": "object", "description": "Epic color" },
+        "done": { "type": "boolean", "description": "Whether the epic is done" }
+      }
+    },
+    "EpicListResponse": {
+      "type": "object",
+      "properties": {
+        "maxResults": { "type": "integer" },
+        "startAt": { "type": "integer" },
+        "isLast": { "type": "boolean" },
+        "values": { "type": "array", "items": { "$ref": "#/definitions/Epic" } }
+      }
+    },
+    "MoveIssuesRequest": {
+      "type": "object",
+      "required": ["issues"],
+      "properties": {
+        "issues": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Issue IDs or keys to move"
         }
       }
     }

@@ -1,14 +1,22 @@
 # Jira
 
-Power Platform custom connector for Jira Cloud with core REST operations and MCP tools for issues and projects.
+Power Platform custom connector for Jira Cloud — dual-mode connector exposing 91 REST operations across Jira Platform (`/rest/api/3`) and Jira Agile (`/rest/agile/1.0`), plus 50 MCP tools for Copilot Studio agents.
 
 ## What It Does
 
-- Lists projects, fields, users, and searches issues
-- Creates and updates issues, comments, and transitions
-- Exposes MCP tools for key operations (projects and issues)
-- Server-side auto-pagination for `SearchIssues` and `jira_list_comments` via an opt-in `limit` parameter
-- Includes optional Application Insights telemetry
+- **Issues** — search (JQL), CRUD, bulk create/fetch, assign, delete, archive/unarchive, edit meta, notify
+- **Comments / transitions / fields** — full lifecycle including get/update/delete single comment
+- **Engagement** — watchers, votes, issue links, worklogs (CRUD), file attachments (multipart upload, metadata, delete)
+- **Filters** — full CRUD, my filters, favourites
+- **Projects / versions / components** — search, get, list and CRUD versions/components
+- **Users / groups / statuses** — search, by-project, group membership, status catalog
+- **Agile** — boards (list, configuration, issues, backlog, projects), sprints (CRUD + state transitions, move issues, backlog), epics (list, issues, move/remove)
+- **Async tasks** — get/cancel long-running task IDs returned by archive/move/bulk APIs
+- **MCP server** — single `/mcp` endpoint with 50 tools optimised for Copilot Studio
+- Server-side auto-pagination for `SearchIssues` and `jira_list_comments` via opt-in `limit`
+- Multipart attachment upload from base64 payload with 10 MB cap
+- Per-site `cloudId` cached after first call
+- Optional Application Insights telemetry
 
 ## Prerequisites
 
@@ -33,49 +41,93 @@ Power Platform custom connector for Jira Cloud with core REST operations and MCP
 
 ### 3. Create a Connection
 
-When creating a connection using OAuth 2.0 popup
+When creating a connection use the OAuth 2.0 popup flow with the Client ID and Client Secret from your Atlassian developer console app.
 
 ### 4. Add to Copilot Studio
 
 1. In Copilot Studio, open your agent
-2. Add this connector as an action
-3. Test with prompts like "List Jira projects" or "Search Jira issues with JQL"
+2. Add this connector as an action (MCP server)
+3. Test with prompts like "List Jira projects", "Search Jira issues with JQL", or "Show me board 1's active sprint"
 
-## MCP Tools
+## MCP Tools (50)
 
-- `jira_list_projects` - List visible projects
-- `jira_list_issue_types` - List issue types
-- `jira_list_project_roles` - List roles for a project
-- `jira_list_project_statuses` - List statuses for a project
-- `jira_search_issues` - Search issues using JQL
-- `jira_get_issue` - Get an issue by ID or key
-- `jira_create_issue` - Create a new issue
-- `jira_create_issue_simple` - Create an issue from common fields
-- `jira_update_issue` - Update an existing issue
-- `jira_list_comments` - List comments for an issue
-- `jira_add_comment` - Add a comment to an issue
-- `jira_get_transitions` - List available transitions
-- `jira_transition_issue` - Transition an issue to a new status
+### Discovery
 
-## REST Operations
+- `jira_list_projects`, `jira_search_projects`, `jira_get_project`
+- `jira_get_project_versions`, `jira_get_project_components`
+- `jira_list_issue_types`, `jira_list_project_roles`, `jira_list_project_statuses`
+- `jira_get_issue_link_types`
+- `jira_search_users`, `jira_list_users_by_project`
+- `jira_list_filters`
+- `jira_list_accessible_resources`
 
-| Operation | Description |
-|----------|-------------|
-| ListProjects | List projects |
-| SearchIssues | Search issues using JQL (enhanced search `/rest/api/3/search/jql`, cursor-based pagination) |
-| GetIssue | Get an issue by ID or key |
-| CreateIssue | Create a new issue |
-| UpdateIssue | Update an issue |
-| ListIssueTypes | List issue types |
-| GetProjectRoles | Get roles for a project |
-| GetProjectStatuses | Get statuses for a project |
-| ListComments | List comments for an issue |
-| AddComment | Add a comment to an issue |
-| GetTransitions | List available transitions |
-| TransitionIssue | Transition an issue |
-| ListFields | List issue fields |
-| GetUser | Get a user by accountId |
-| SearchUsers | Search users |
+### Issues
+
+- `jira_search_issues`, `jira_get_issue`
+- `jira_create_issue`, `jira_create_issue_simple`
+- `jira_update_issue`, `jira_delete_issue`
+- `jira_assign_issue`
+- `jira_bulk_create_issues`, `jira_bulk_fetch_issues`
+
+### Comments / transitions
+
+- `jira_list_comments`, `jira_add_comment`
+- `jira_get_transitions`, `jira_transition_issue`
+
+### Engagement
+
+- `jira_get_watchers`, `jira_add_watcher`, `jira_remove_watcher`
+- `jira_link_issues`
+- `jira_add_worklog`, `jira_get_issue_worklogs`
+- `jira_upload_attachment`
+
+### Filters
+
+- `jira_get_filter`, `jira_create_filter`, `jira_update_filter`, `jira_delete_filter`
+
+### Project versions / components
+
+- `jira_create_version`, `jira_create_component`
+
+### Async tasks
+
+- `jira_get_task`, `jira_cancel_task`
+
+### Agile (Jira Software)
+
+- `jira_list_boards`, `jira_get_board_issues`, `jira_get_board_backlog`
+- `jira_list_board_sprints`, `jira_list_board_epics`
+- `jira_create_sprint`, `jira_update_sprint`, `jira_get_sprint_issues`, `jira_move_issues_to_sprint`
+
+Tools that operate on a discoverable resource include a cross-reference in their description (Option A) so an agent always knows which discovery tool to call first. For example, `jira_get_issue` advises calling `jira_search_issues` first; `jira_update_sprint` advises calling `jira_list_board_sprints` first.
+
+## REST Operations (91)
+
+### Jira Platform (`/rest/api/3`)
+
+| Group | Operations |
+|-------|------------|
+| Projects | `ListProjects`, `SearchProjects`, `GetProject`, `GetProjectVersions`, `CreateVersion`, `GetVersion`, `UpdateVersion`, `DeleteVersion`, `GetProjectComponents`, `CreateComponent`, `GetComponent`, `UpdateComponent`, `DeleteComponent`, `GetStatuses`, `GetProjectRoles`, `GetProjectStatuses` |
+| Issues | `SearchIssues`, `GetIssue`, `CreateIssue`, `UpdateIssue`, `DeleteIssue`, `AssignIssue`, `GetEditIssueMeta`, `NotifyIssue`, `BulkCreateIssues`, `BulkFetchIssues`, `ArchiveIssues`, `UnarchiveIssues`, `ListIssueTypes` |
+| Comments | `ListComments`, `AddComment`, `GetComment`, `UpdateComment`, `DeleteComment` |
+| Transitions | `GetTransitions`, `TransitionIssue` |
+| Watchers / votes | `GetIssueWatchers`, `AddWatcher`, `RemoveWatcher`, `GetVotes`, `AddVote`, `RemoveVote` |
+| Issue links | `LinkIssues`, `GetIssueLink`, `DeleteIssueLink`, `GetIssueLinkTypes` |
+| Worklogs | `AddWorklog`, `GetIssueWorklogs`, `UpdateWorklog`, `DeleteWorklog` |
+| Attachments | `UploadAttachment`, `GetAttachmentMetadata`, `DeleteAttachment` |
+| Filters | `ListFilters`, `GetFilter`, `CreateFilter`, `UpdateFilter`, `DeleteFilter`, `GetMyFilters`, `GetFavouriteFilters`, `SetFilterFavourite`, `DeleteFilterFavourite` |
+| Users / groups / fields | `GetUser`, `SearchUsers`, `ListUsersByProject`, `FindGroups`, `GetGroupMembers`, `ListFields` |
+| Async tasks | `GetTask`, `CancelTask` |
+| OAuth | `ListAccessibleResources` |
+| MCP | `InvokeMCP` |
+
+### Jira Agile (`/rest/agile/1.0`)
+
+| Group | Operations |
+|-------|------------|
+| Boards | `ListBoards`, `GetBoard`, `GetBoardConfiguration`, `GetBoardIssues`, `GetBoardBacklog`, `GetBoardProjects` |
+| Sprints | `ListBoardSprints`, `GetSprint`, `CreateSprint`, `UpdateSprint`, `DeleteSprint`, `GetSprintIssues`, `MoveIssuesToSprint`, `MoveIssuesToBacklog` |
+| Epics | `ListBoardEpics`, `GetEpic`, `GetEpicIssues`, `MoveIssuesToEpic`, `RemoveIssuesFromEpic` |
 
 ## Pagination
 
@@ -123,6 +175,28 @@ Response includes `startAt`, `maxResults`, `total`, `fetched`, and `comments`.
 
 When `limit` is omitted, both operations return a single Jira page (current/legacy behavior). This keeps existing Power Automate flows working.
 
+## Attachments
+
+`UploadAttachment` (REST) and `jira_upload_attachment` (MCP) both accept a JSON body with:
+
+```json
+{
+  "filename": "report.pdf",
+  "contentBase64": "JVBERi0xLjQK...",
+  "contentType": "application/pdf"
+}
+```
+
+The connector:
+
+1. Validates the base64 payload and enforces a 10 MB cap (decoded size).
+2. Builds a `multipart/form-data` request with the file part named `file`.
+3. Sets `X-Atlassian-Token: no-check` (required by the Jira attachments API to bypass XSRF check).
+4. Forwards the user's OAuth Bearer token.
+5. POSTs to `/rest/api/3/issue/{issueIdOrKey}/attachments`.
+
+`contentType` defaults to `application/octet-stream` when omitted.
+
 ## OAuth Scopes
 
 The connector requests the following scopes:
@@ -133,13 +207,15 @@ The connector requests the following scopes:
 
 Adjust scopes in `apiProperties.json` if you add or remove operations.
 
+> Jira Software (Agile) operations are gated by the same `read:jira-work` / `write:jira-work` scopes. If your Atlassian app needs finer-grained Agile scopes (e.g. `read:sprint:jira-software`), add them in the developer console and update `apiProperties.json` accordingly.
+
 ## Jira Document Format (ADF)
 
-Jira Cloud uses Atlassian Document Format for rich text fields. MCP tools that accept plain text for descriptions or comments convert the text into a simple ADF document before sending the request.
+Jira Cloud uses Atlassian Document Format for rich text fields. MCP tools that accept plain text for descriptions, comments, or worklog notes convert the text into a simple ADF document before sending the request.
 
 ## Application Insights
 
-To enable telemetry, set the `APP_INSIGHTS_CONNECTION_STRING` constant in `script.csx`.
+To enable telemetry, set the `APP_INSIGHTS_INSTRUMENTATION_KEY` constant in `script.csx`. Telemetry is silently skipped when the placeholder value is unchanged.
 
 Events tracked:
 
@@ -150,3 +226,10 @@ Events tracked:
 - `McpToolCallStarted`
 - `McpToolCallCompleted`
 - `McpToolCallError`
+
+## Version History
+
+- **1.3.0** — Added Agile (boards / sprints / epics), bulk issues, watchers / votes / links / worklogs, attachments (multipart upload), filter CRUD, project versions / components CRUD, groups / status catalog, and 32 new MCP tools (total 50). Cross-reference suffixes (Option A) added to dependent tool descriptions.
+- **1.2.0** — Added `GetIssueByKey` discovery, filters search, transitions, users-by-project, task get/cancel, accessible resources list.
+- **1.1.0** — Enhanced search via `/rest/api/3/search/jql` with auto-pagination.
+- **1.0.0** — Initial release.
