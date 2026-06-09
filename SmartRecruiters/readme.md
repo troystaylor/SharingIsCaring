@@ -1,6 +1,6 @@
-# SmartRecruiters connector
+# SmartRecruiters
 
-Dual-mode Power Platform custom connector for [SmartRecruiters](https://www.smartrecruiters.com/) covering the Customer API, Application API, public Posting API, Reporting API, Webhooks, Approvals, Reviews, Interviews, Self-Scheduling, Interview Templates, Messages, Users, Configuration, Event Management, Onboarding, and Audit.
+Dual-mode Power Platform custom MCP connector for [SmartRecruiters](https://www.smartrecruiters.com/) covering the Customer API, Application API, public Posting API, Reporting API, Webhooks, Approvals, Reviews, Interviews, Self-Scheduling, Interview Templates, Messages, Users, Configuration, Event Management, Onboarding, and Audit.
 
 - **MCP endpoint** (`POST /mcp`) — Streamable Model Context Protocol server for Copilot Studio agents. **116 `sr_*` tools** focused on chat-natural workflows.
 - **Typed REST operations** — **235 first-class operations** with full schemas, descriptions, and `x-ms-summary` on every parameter — ready for Power Automate.
