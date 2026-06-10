@@ -1,0 +1,51 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/vDevPreview/MicrosoftTeams.schema.json",
+  "manifestVersion": "devPreview",
+  "version": "1.0.0",
+  "id": "{{GUID}}",
+  "packageName": "com.troystaylor.sharepoint-file-transfer-cowork",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "name": {
+    "short": "SharePoint File Transfer",
+    "full": "SharePoint File Transfer for Copilot Cowork"
+  },
+  "description": {
+    "short": "Upload files from URLs to SharePoint, browse sites and libraries, manage folders and sharing links.",
+    "full": "SharePoint File Transfer brings server-side file ingestion into Copilot Cowork. Upload files from any public HTTPS URL directly into SharePoint document libraries — small files upload inline, large files (250 MB+) stream in background with resumable chunked uploads. Browse SharePoint sites, document libraries, and folders. Create folders, move/rename items, set metadata columns, and generate sharing links. Backed by a remote MCP server deployed to Azure Container Apps with Microsoft Entra SSO and On-Behalf-Of token exchange for Microsoft Graph."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#008080",
+  "agentSkills": [
+    { "folder": "./skills/upload-to-sharepoint" },
+    { "folder": "./skills/find-library" },
+    { "folder": "./skills/create-destination-folder" },
+    { "folder": "./skills/get-share-link" },
+    { "folder": "./skills/resume-failed-upload" },
+    { "folder": "./skills/cancel-upload" },
+    { "folder": "./skills/copy-across-sites" }
+  ],
+  "agentConnectors": [
+    {
+      "id": "sharepoint-file-transfer-mcp",
+      "displayName": "SharePoint File Transfer",
+      "description": "Upload files from URLs to SharePoint, browse sites and libraries, create folders, set metadata, and generate sharing links via a remote MCP server with Microsoft Entra SSO.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://<YOUR-CONTAINER-APP-FQDN>/mcp",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "<YOUR-OAUTH-REFERENCE-ID>"
+          }
+        }
+      }
+    }
+  ]
+}
