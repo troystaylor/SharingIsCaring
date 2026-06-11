@@ -4,7 +4,7 @@ Decision-support skills + a remote MCP connector for Microsoft 365 Copilot Cowor
 
 ## What's in the box
 
-Nine skills, one connector, no Copilot connector dependency.
+Nine skills, one MCP server, one plugin.
 
 ### Analysis skills (one per MCP tool)
 
