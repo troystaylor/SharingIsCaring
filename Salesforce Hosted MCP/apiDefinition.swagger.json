@@ -1,0 +1,60 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Salesforce Hosted MCP",
+        "version": "1.0.0",
+        "description": "Passthrough connector to Salesforce's hosted MCP servers. Connect Copilot Studio agents to any standard or custom Salesforce Hosted MCP Server — SObject All, SObject Reads, SObject Mutations, SObject Deletes, Data 360, Tableau Next, or custom servers built from Apex Actions and Flows. Change the basePath to target a different server. Requires a Salesforce External Client App with the mcp_api OAuth scope.",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.salesforce.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json",
+        "text/event-stream"
+    ],
+    "paths": {
+        "/platform/mcp/v1/platform/sobject-all": {
+            "post": {
+                "summary": "Invoke Salesforce Hosted MCP Server",
+                "description": "Proxies MCP requests to a Salesforce Hosted MCP Server. Tools are defined and executed by Salesforce — the connector is a passthrough. Change the basePath to target a different server: sobject-all, sobject-reads, sobject-mutations, sobject-deletes, data-cloud-queries, tableau-next, or a custom server API name.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.salesforce.com/services/oauth2/authorize",
+            "tokenUrl": "https://login.salesforce.com/services/oauth2/token",
+            "scopes": {
+                "mcp_api": "Access Salesforce hosted MCP servers",
+                "refresh_token": "Perform requests at any time"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "mcp_api",
+                "refresh_token"
+            ]
+        }
+    ]
+}
