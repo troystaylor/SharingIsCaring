@@ -649,6 +649,193 @@
                     }
                 }
             }
+        },
+        "/restlet/scripts": {
+            "get": {
+                "summary": "List RESTlet Scripts",
+                "description": "List all deployed RESTlet scripts in the NetSuite account. Used internally to populate dynamic dropdowns.",
+                "operationId": "ListRESTletScripts",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of RESTlet scripts",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "scriptid": {
+                                                "type": "string",
+                                                "description": "Script internal ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Script display name"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/restlet/deployments": {
+            "get": {
+                "summary": "List RESTlet Deployments",
+                "description": "List all released deployments for a given RESTlet script. Used internally to populate dynamic dropdowns.",
+                "operationId": "ListRESTletDeployments",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "scriptId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The script ID to list deployments for",
+                        "x-ms-summary": "Script ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of RESTlet deployments",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "deployid": {
+                                                "type": "string",
+                                                "description": "Deployment internal ID"
+                                            },
+                                            "title": {
+                                                "type": "string",
+                                                "description": "Deployment title"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/restlet": {
+            "get": {
+                "summary": "Call RESTlet (GET)",
+                "description": "Call a deployed NetSuite RESTlet using the GET method. RESTlets are custom SuiteScript endpoints that enable integration with external systems. The response format depends on the RESTlet implementation. Common use case: calling a RESTlet that uses File.getContents() to retrieve file content by internal ID.",
+                "operationId": "CallRESTletGet",
+                "parameters": [
+                    {
+                        "name": "scriptId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The script ID of the deployed RESTlet",
+                        "x-ms-summary": "Script",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListRESTletScripts",
+                            "value-path": "scriptid",
+                            "value-title": "name",
+                            "value-collection": "items"
+                        }
+                    },
+                    {
+                        "name": "deployId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The deployment ID of the RESTlet",
+                        "x-ms-summary": "Deployment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListRESTletDeployments",
+                            "parameters": {
+                                "scriptId": {
+                                    "parameter": "scriptId"
+                                }
+                            },
+                            "value-path": "deployid",
+                            "value-title": "title",
+                            "value-collection": "items"
+                        }
+                    },
+                    {
+                        "name": "params",
+                        "in": "query",
+                        "type": "string",
+                        "description": "Additional query parameters to pass to the RESTlet as key=value pairs separated by & (e.g., fileId=123&format=json)",
+                        "x-ms-summary": "Parameters"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "RESTlet response. Format depends on the deployed script implementation."
+                    }
+                }
+            },
+            "post": {
+                "summary": "Call RESTlet (POST)",
+                "description": "Call a deployed NetSuite RESTlet using the POST method with a JSON request body. RESTlets are custom SuiteScript endpoints that enable integration with external systems. Common use case: sending a file ID to a RESTlet that uses File.getContents() to return file content. The response format depends on the RESTlet implementation.",
+                "operationId": "CallRESTletPost",
+                "parameters": [
+                    {
+                        "name": "scriptId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The script ID of the deployed RESTlet",
+                        "x-ms-summary": "Script",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListRESTletScripts",
+                            "value-path": "scriptid",
+                            "value-title": "name",
+                            "value-collection": "items"
+                        }
+                    },
+                    {
+                        "name": "deployId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The deployment ID of the RESTlet",
+                        "x-ms-summary": "Deployment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListRESTletDeployments",
+                            "parameters": {
+                                "scriptId": {
+                                    "parameter": "scriptId"
+                                }
+                            },
+                            "value-path": "deployid",
+                            "value-title": "title",
+                            "value-collection": "items"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "description": "JSON body to send to the RESTlet (e.g., {\"fileId\": \"123\"} for a file download RESTlet)"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "RESTlet response. Format depends on the deployed script implementation."
+                    }
+                }
+            }
         }
     },
     "definitions": {},
@@ -659,14 +846,16 @@
             "authorizationUrl": "https://system.netsuite.com/app/login/oauth2/authorize.nl",
             "tokenUrl": "https://system.netsuite.com/services/rest/auth/oauth2/v1/token",
             "scopes": {
-                "rest_webservices": "Access REST Web Services"
+                "rest_webservices": "Access REST Web Services",
+                "restlets": "Access RESTlets"
             }
         }
     },
     "security": [
         {
             "oauth2": [
-                "rest_webservices"
+                "rest_webservices",
+                "restlets"
             ]
         }
     ],

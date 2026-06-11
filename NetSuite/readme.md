@@ -19,6 +19,10 @@ Power Platform custom MCP connector for Oracle NetSuite REST Web Services. Expos
 | Add Sublist Line | POST `/record/{recordType}/{recordId}/{sublistId}` | Add a line to a sublist |
 | Update Sublist Line | PATCH `/record/{recordType}/{recordId}/{sublistId}/{lineId}` | Update a sublist line |
 | Delete Sublist Line | DELETE `/record/{recordType}/{recordId}/{sublistId}/{lineId}` | Remove a sublist line |
+| Call RESTlet (GET) | GET `/restlet` | Call a deployed RESTlet with query parameters |
+| Call RESTlet (POST) | POST `/restlet` | Call a deployed RESTlet with a JSON body |
+
+The Script and Deployment fields on the RESTlet operations use dynamic dropdowns — Power Automate automatically queries your NetSuite account for available RESTlet scripts and their released deployments.
 
 ## Prerequisites
 
@@ -28,13 +32,14 @@ Power Platform custom MCP connector for Oracle NetSuite REST Web Services. Expos
    - Enable **Token-Based Authentication** and **OAuth 2.0**
    - Set callback URL to `https://global.consent.azure-apim.net/redirect`
    - Note the **Client ID** and **Client Secret** (shown once)
-   - Under Scope, enable `rest_webservices`
+   - Under Scope, enable `rest_webservices` and `restlets`
 3. **Account ID**: Found at Setup > Company > Company Information (e.g., `1234567` or `TSTDRV1234567_SB1` for sandbox — replace hyphens with underscores)
+4. **(For RESTlets)** A deployed RESTlet script with Status set to **Released** — for file content downloads, deploy a RESTlet that uses `file.load()` and `File.getContents()` from the N/file module
 
 ## Setup
 
 1. In [apiProperties.json](apiProperties.json), replace `[[REPLACE_WITH_NETSUITE_CLIENT_ID]]` with your Client ID
-2. In [script.csx](script.csx), replace `[[REPLACE_WITH_ACCOUNT_ID]]` in the `NETSUITE_BASE_URL` constant with your NetSuite account ID
+2. In [script.csx](script.csx), replace `[[REPLACE_WITH_ACCOUNT_ID]]` in both the `NETSUITE_BASE_URL` and `NETSUITE_RESTLET_URL` constants with your NetSuite account ID
 3. Import via Power Platform Maker portal → Custom connectors → Import OpenAPI file
 4. Configure the OAuth 2.0 security with your Client ID and Client Secret
 5. Create a connection and authorize with your NetSuite credentials
@@ -57,6 +62,9 @@ SELECT id, firstname, lastname, email, department FROM employee WHERE isinactive
 
 -- Join example: invoices with customer names
 SELECT t.id, t.tranid, t.total, c.companyname FROM transaction t JOIN customer c ON t.entity = c.id WHERE t.type = 'CustInvc'
+
+-- List all deployed RESTlet scripts
+SELECT s.id, s.name, s.scriptid FROM script s WHERE s.scripttype = 'RESTLET' ORDER BY s.name
 ```
 
 ## Notes
@@ -67,12 +75,9 @@ SELECT t.id, t.tranid, t.total, c.companyname FROM transaction t JOIN customer c
 - NetSuite loads records in edit mode even for GET requests — this can affect permission checks
 - Custom sublists are not available through REST Web Services
 - Maximum 100,000 results per SuiteQL query; use pagination (`limit`/`offset`) for large result sets
-
-## Files
-
-- [apiDefinition.swagger.json](apiDefinition.swagger.json) — OpenAPI 2.0 with MCP endpoint + individual operations
-- [apiProperties.json](apiProperties.json) — OAuth 2.0 configuration
-- [script.csx](script.csx) — Dual-mode script: MCP JSON-RPC handler + direct operation forwarding to NetSuite REST API
+- RESTlet responses have no fixed schema — the format depends entirely on the deployed SuiteScript
+- RESTlets use a different subdomain (`restlets.api.netsuite.com`) than REST Web Services (`suitetalk.api.netsuite.com`)
+- `File.getContents()` has a 10 MB file size limit; check `file.size` before calling
 
 ## Files
 

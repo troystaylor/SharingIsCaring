@@ -17,6 +17,7 @@ public class Script : ScriptBase
 
     // Developer: replace with your NetSuite account ID (e.g., 1234567 or TSTDRV1234567_SB1)
     private const string NETSUITE_BASE_URL = "https://[[REPLACE_WITH_ACCOUNT_ID]].suitetalk.api.netsuite.com/services/rest";
+    private const string NETSUITE_RESTLET_URL = "https://[[REPLACE_WITH_ACCOUNT_ID]].restlets.api.netsuite.com/app/site/hosting/restlet.nl";
 
     private const string APP_INSIGHTS_CONNECTION_STRING = "";
 
@@ -66,6 +67,14 @@ public class Script : ScriptBase
                     return await ForwardUpdateSublistLine();
                 case "DeleteSublistLine":
                     return await ForwardDeleteSublistLine();
+                case "CallRESTletGet":
+                    return await ForwardCallRESTletGet();
+                case "CallRESTletPost":
+                    return await ForwardCallRESTletPost();
+                case "ListRESTletScripts":
+                    return await ForwardListRESTletScripts();
+                case "ListRESTletDeployments":
+                    return await ForwardListRESTletDeployments();
                 default:
                     return new HttpResponseMessage(HttpStatusCode.BadRequest)
                     {
@@ -223,6 +232,82 @@ public class Script : ScriptBase
         var lineId = GetPathSegment("lineId");
         var url = $"/record/v1/{Uri.EscapeDataString(recordType)}/{Uri.EscapeDataString(recordId)}/{Uri.EscapeDataString(sublistId)}/{Uri.EscapeDataString(lineId)}";
         return await ForwardToNetSuite(HttpMethod.Delete, url);
+    }
+
+    // ── RESTlet Forwarding ───────────────────────────────────────────────
+
+    private async Task<HttpResponseMessage> ForwardCallRESTletGet()
+    {
+        var scriptId = GetQueryParam("scriptId");
+        var deployId = GetQueryParam("deployId");
+        var additionalParams = GetQueryParam("params");
+
+        if (string.IsNullOrWhiteSpace(scriptId))
+            throw new ArgumentException("Required parameter 'scriptId' is missing.");
+        if (string.IsNullOrWhiteSpace(deployId))
+            throw new ArgumentException("Required parameter 'deployId' is missing.");
+
+        return await ForwardToRestlet(HttpMethod.Get, scriptId, deployId, additionalParams: additionalParams);
+    }
+
+    private async Task<HttpResponseMessage> ForwardCallRESTletPost()
+    {
+        var scriptId = GetQueryParam("scriptId");
+        var deployId = GetQueryParam("deployId");
+        var body = await ReadRequestBody();
+
+        if (string.IsNullOrWhiteSpace(scriptId))
+            throw new ArgumentException("Required parameter 'scriptId' is missing.");
+        if (string.IsNullOrWhiteSpace(deployId))
+            throw new ArgumentException("Required parameter 'deployId' is missing.");
+
+        return await ForwardToRestlet(HttpMethod.Post, scriptId, deployId, body: body);
+    }
+
+    private async Task<HttpResponseMessage> ForwardToRestlet(
+        HttpMethod method,
+        string scriptId,
+        string deployId,
+        JObject body = null,
+        string additionalParams = null)
+    {
+        var url = $"{NETSUITE_RESTLET_URL}?script={Uri.EscapeDataString(scriptId)}&deploy={Uri.EscapeDataString(deployId)}";
+        if (!string.IsNullOrWhiteSpace(additionalParams))
+            url += "&" + additionalParams;
+
+        var request = new HttpRequestMessage(method, url);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (this.Context.Request.Headers.Authorization != null)
+            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+
+        if (body != null)
+        {
+            request.Content = new StringContent(
+                body.ToString(Newtonsoft.Json.Formatting.None),
+                Encoding.UTF8,
+                "application/json");
+        }
+
+        return await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> ForwardListRESTletScripts()
+    {
+        var suiteqlBody = new JObject { ["q"] = "SELECT s.id AS scriptid, s.name FROM script s WHERE s.scripttype = 'RESTLET' ORDER BY s.name" };
+        var url = "/query/v1/suiteql?limit=1000&offset=0";
+        return await ForwardToNetSuite(HttpMethod.Post, url, suiteqlBody, preferTransient: true);
+    }
+
+    private async Task<HttpResponseMessage> ForwardListRESTletDeployments()
+    {
+        var scriptId = GetQueryParam("scriptId");
+        if (string.IsNullOrWhiteSpace(scriptId))
+            throw new ArgumentException("Required parameter 'scriptId' is missing.");
+
+        var suiteqlBody = new JObject { ["q"] = $"SELECT sd.primarykey AS deployid, sd.title FROM scriptdeployment sd WHERE sd.script = {Uri.EscapeDataString(scriptId)} AND sd.status = 'Released' ORDER BY sd.title" };
+        var url = "/query/v1/suiteql?limit=1000&offset=0";
+        return await ForwardToNetSuite(HttpMethod.Post, url, suiteqlBody, preferTransient: true);
     }
 
     // ── Direct Forwarding HTTP Helper ────────────────────────────────────
@@ -505,7 +590,17 @@ public class Script : ScriptBase
                     P("recordId", "string", "The internal ID of the parent record", true),
                     P("sublistId", "string", "The sublist ID (e.g., item)", true),
                     P("lineId", "string", "The line internal ID to delete", true)
-                ), "recordType", "recordId", "sublistId", "lineId")
+                ), "recordType", "recordId", "sublistId", "lineId"),
+
+            // ── RESTlet ───────────────────────────────────────────────
+            Tool("call_restlet", "Call a deployed NetSuite RESTlet. RESTlets are custom SuiteScript endpoints. Common use case: calling a RESTlet that uses File.getContents() to retrieve file content by internal ID. The response format depends on the RESTlet script implementation.",
+                Props(
+                    P("scriptId", "string", "The script ID of the deployed RESTlet (numeric ID or customscript ID)", true),
+                    P("deployId", "string", "The deployment ID of the RESTlet (numeric ID or customdeploy ID, typically 1)", true),
+                    P("method", "string", "HTTP method to use: GET or POST (default GET)", false),
+                    P("body", "object", "JSON body to send with POST requests (e.g., {\"fileId\": \"123\"})", false),
+                    P("params", "string", "Additional query parameters for GET requests as key=value pairs separated by & (e.g., fileId=123&format=json)", false)
+                ), "scriptId", "deployId")
         };
 
         return CreateJsonRpcSuccessResponse(requestId, new JObject { ["tools"] = tools });
@@ -568,6 +663,11 @@ public class Script : ScriptBase
                     break;
                 case "delete_sublist_line":
                     result = await DeleteSublistLine(arguments);
+                    break;
+
+                // RESTlet
+                case "call_restlet":
+                    result = await CallRESTlet(arguments);
                     break;
 
                 default:
@@ -777,6 +877,70 @@ public class Script : ScriptBase
 
         var url = $"/record/v1/{Uri.EscapeDataString(recordType)}/{Uri.EscapeDataString(recordId)}/{Uri.EscapeDataString(sublistId)}/{Uri.EscapeDataString(lineId)}";
         return await SendNetSuiteRequest(HttpMethod.Delete, url);
+    }
+
+    // ── RESTlet ──────────────────────────────────────────────────────────
+
+    private async Task<JToken> CallRESTlet(JObject args)
+    {
+        var scriptId = Require(args, "scriptId");
+        var deployId = Require(args, "deployId");
+        var method = args["method"]?.ToString()?.ToUpperInvariant() ?? "GET";
+        var additionalParams = args["params"]?.ToString();
+        var body = args["body"] as JObject;
+
+        var httpMethod = method == "POST" ? HttpMethod.Post : HttpMethod.Get;
+        return await SendRestletRequest(httpMethod, scriptId, deployId, body, additionalParams);
+    }
+
+    private async Task<JToken> SendRestletRequest(
+        HttpMethod method,
+        string scriptId,
+        string deployId,
+        JObject body = null,
+        string additionalParams = null)
+    {
+        var url = $"{NETSUITE_RESTLET_URL}?script={Uri.EscapeDataString(scriptId)}&deploy={Uri.EscapeDataString(deployId)}";
+        if (!string.IsNullOrWhiteSpace(additionalParams))
+            url += "&" + additionalParams;
+
+        var request = new HttpRequestMessage(method, url);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (this.Context.Request.Headers.Authorization != null)
+            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+
+        if (body != null)
+        {
+            request.Content = new StringContent(
+                body.ToString(Newtonsoft.Json.Formatting.None),
+                Encoding.UTF8,
+                "application/json");
+        }
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            JToken errorBody;
+            try { errorBody = JToken.Parse(content); }
+            catch { errorBody = content; }
+
+            return new JObject
+            {
+                ["error"] = true,
+                ["statusCode"] = (int)response.StatusCode,
+                ["message"] = response.ReasonPhrase,
+                ["details"] = errorBody
+            };
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+            return new JObject { ["status"] = "success", ["statusCode"] = (int)response.StatusCode };
+
+        try { return JToken.Parse(content); }
+        catch { return new JObject { ["raw"] = content }; }
     }
 
     // ── HTTP Helper ──────────────────────────────────────────────────────
