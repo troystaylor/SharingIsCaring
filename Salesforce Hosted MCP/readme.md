@@ -34,7 +34,6 @@ Custom servers use the same pattern — replace the path segment with your custo
 5. In **Callback URL**, enter: `https://global.consent.azure-apim.net/redirect/ENVIRONMENT_CONNECTOR_ID`
 6. In **OAuth Scopes**, add:
    - **Access Salesforce hosted MCP servers** (`mcp_api`)
-   - **Perform requests at any time** (`refresh_token`)
 7. Under **Security**:
    - Uncheck **Require secret for Web Server Flow** and **Require secret for Refresh Token Flow**
 8. Click **Create**.
