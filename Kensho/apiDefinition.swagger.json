@@ -1,0 +1,82 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Kensho",
+        "description": "Custom connector for the S&P Global / Kensho LLM-Ready API (kFinance) Model Context Protocol (MCP) server. Connects Copilot Studio and Power Automate to Kensho financial data tools using OAuth 2.0 Authorization Code flow with PKCE.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "kfinance.kensho.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/integrations/mcp": {
+            "post": {
+                "summary": "Invoke Kensho MCP",
+                "description": "Sends a Model Context Protocol (MCP) streamable request to the Kensho LLM-Ready API MCP server. Used by Copilot Studio to discover and call Kensho financial data tools.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://kfinance.kensho.com/integrations/authorize",
+            "tokenUrl": "https://kfinance.kensho.com/integrations/token",
+            "scopes": {
+                "kensho:app:kfinance": "Access the Kensho kFinance LLM-Ready API",
+                "offline_access": "Receive a refresh token for silent token renewal"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "kensho:app:kfinance",
+                "offline_access"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://kensho.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://kensho.com/privacy-policy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Data"
+        }
+    ]
+}
