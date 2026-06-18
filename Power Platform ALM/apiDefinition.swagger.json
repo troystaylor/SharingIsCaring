@@ -1,0 +1,1434 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power Platform ALM",
+        "description": "Dual-mode connector for Power Platform Application Lifecycle Management. Manages solutions (list, export, import, publish, delete, version) and deployment pipelines (list, deploy, monitor) across environments. MCP endpoint for Copilot Studio agents plus typed operations with full schemas for Power Automate.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.powerplatform.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Power Platform ALM MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides solution management and deployment pipeline tools for Power Platform ALM.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/alm/solutions": {
+            "get": {
+                "summary": "List Solutions",
+                "description": "List all solutions in a Power Platform environment. Returns solution unique name, display name, version, managed status, publisher, and timestamps.",
+                "operationId": "ListSolutions",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of solutions",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "solutionCount": {
+                                    "type": "integer",
+                                    "description": "Total number of solutions",
+                                    "x-ms-summary": "Solution Count"
+                                },
+                                "solutions": {
+                                    "type": "array",
+                                    "description": "Array of solutions",
+                                    "x-ms-summary": "Solutions",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "solutionId": {
+                                                "type": "string",
+                                                "description": "Solution ID (GUID)",
+                                                "x-ms-summary": "Solution ID"
+                                            },
+                                            "uniqueName": {
+                                                "type": "string",
+                                                "description": "Solution unique name",
+                                                "x-ms-summary": "Unique Name"
+                                            },
+                                            "friendlyName": {
+                                                "type": "string",
+                                                "description": "Solution display name",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "version": {
+                                                "type": "string",
+                                                "description": "Solution version (e.g., 1.0.0.0)",
+                                                "x-ms-summary": "Version"
+                                            },
+                                            "isManaged": {
+                                                "type": "boolean",
+                                                "description": "Whether the solution is managed",
+                                                "x-ms-summary": "Is Managed"
+                                            },
+                                            "publisherName": {
+                                                "type": "string",
+                                                "description": "Publisher unique name",
+                                                "x-ms-summary": "Publisher"
+                                            },
+                                            "createdOn": {
+                                                "type": "string",
+                                                "description": "Date the solution was created",
+                                                "x-ms-summary": "Created On"
+                                            },
+                                            "modifiedOn": {
+                                                "type": "string",
+                                                "description": "Date the solution was last modified",
+                                                "x-ms-summary": "Modified On"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution": {
+            "get": {
+                "summary": "Get Solution",
+                "description": "Get details of a specific solution by unique name including version, components, and publisher information.",
+                "operationId": "GetSolution",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "solutionUniqueName",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The solution unique name",
+                        "x-ms-summary": "Solution Unique Name",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetSolutionDropdown",
+                            "value-path": "uniqueName",
+                            "value-title": "friendlyName",
+                            "parameters": {
+                                "environmentId": {
+                                    "parameter": "environmentId"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Solution details",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "solutionId": {
+                                    "type": "string",
+                                    "description": "Solution ID (GUID)",
+                                    "x-ms-summary": "Solution ID"
+                                },
+                                "uniqueName": {
+                                    "type": "string",
+                                    "description": "Solution unique name",
+                                    "x-ms-summary": "Unique Name"
+                                },
+                                "friendlyName": {
+                                    "type": "string",
+                                    "description": "Solution display name",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "version": {
+                                    "type": "string",
+                                    "description": "Solution version",
+                                    "x-ms-summary": "Version"
+                                },
+                                "isManaged": {
+                                    "type": "boolean",
+                                    "description": "Whether the solution is managed",
+                                    "x-ms-summary": "Is Managed"
+                                },
+                                "publisherName": {
+                                    "type": "string",
+                                    "description": "Publisher unique name",
+                                    "x-ms-summary": "Publisher"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Solution description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "installedOn": {
+                                    "type": "string",
+                                    "description": "Date the solution was installed",
+                                    "x-ms-summary": "Installed On"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/export": {
+            "post": {
+                "summary": "Export Solution",
+                "description": "Export a solution from an environment as a managed or unmanaged zip file. Returns the solution as a base64-encoded zip.",
+                "operationId": "ExportSolution",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "solutionName",
+                                "managed"
+                            ],
+                            "properties": {
+                                "solutionName": {
+                                    "type": "string",
+                                    "description": "The solution unique name to export",
+                                    "x-ms-summary": "Solution Name",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "GetSolutionDropdown",
+                                        "value-path": "uniqueName",
+                                        "value-title": "friendlyName",
+                                        "parameters": {
+                                            "environmentId": {
+                                                "parameter": "environmentId"
+                                            }
+                                        }
+                                    }
+                                },
+                                "managed": {
+                                    "type": "boolean",
+                                    "description": "Export as managed (true) or unmanaged (false)",
+                                    "x-ms-summary": "Managed",
+                                    "default": true
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exported solution",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "solutionName": {
+                                    "type": "string",
+                                    "description": "Solution unique name",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "managed": {
+                                    "type": "boolean",
+                                    "description": "Whether exported as managed",
+                                    "x-ms-summary": "Managed"
+                                },
+                                "exportedFile": {
+                                    "type": "string",
+                                    "description": "Base64-encoded solution zip file",
+                                    "x-ms-summary": "Exported File (Base64)"
+                                },
+                                "fileSizeBytes": {
+                                    "type": "integer",
+                                    "description": "Size of the exported file in bytes",
+                                    "x-ms-summary": "File Size (Bytes)"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/import": {
+            "post": {
+                "summary": "Import Solution",
+                "description": "Import a solution zip file into a target environment. Accepts base64-encoded solution zip. The import runs asynchronously.",
+                "operationId": "ImportSolution",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The target environment ID (GUID)",
+                        "x-ms-summary": "Target Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "customizationFile"
+                            ],
+                            "properties": {
+                                "customizationFile": {
+                                    "type": "string",
+                                    "description": "Base64-encoded solution zip file",
+                                    "x-ms-summary": "Solution File (Base64)"
+                                },
+                                "overwriteUnmanagedCustomizations": {
+                                    "type": "boolean",
+                                    "description": "Whether to overwrite unmanaged customizations",
+                                    "x-ms-summary": "Overwrite Customizations",
+                                    "default": false
+                                },
+                                "publishWorkflows": {
+                                    "type": "boolean",
+                                    "description": "Whether to publish workflows after import",
+                                    "x-ms-summary": "Publish Workflows",
+                                    "default": true
+                                },
+                                "holdingSolution": {
+                                    "type": "boolean",
+                                    "description": "Import as holding solution staged for upgrade",
+                                    "x-ms-summary": "Holding Solution",
+                                    "default": false,
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Import result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Import status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "importJobId": {
+                                    "type": "string",
+                                    "description": "Import job ID for tracking",
+                                    "x-ms-summary": "Import Job ID"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/publish": {
+            "post": {
+                "summary": "Publish Customizations",
+                "description": "Publish all customizations in an environment. This makes all unpublished changes live.",
+                "operationId": "PublishCustomizations",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Publish result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Publish status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/delete": {
+            "post": {
+                "summary": "Delete Solution",
+                "description": "Delete a solution from an environment. This removes the solution but not the components it contains if they exist in other solutions.",
+                "operationId": "DeleteSolution",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "solutionUniqueName"
+                            ],
+                            "properties": {
+                                "solutionUniqueName": {
+                                    "type": "string",
+                                    "description": "The solution unique name to delete",
+                                    "x-ms-summary": "Solution Unique Name",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "GetSolutionDropdown",
+                                        "value-path": "uniqueName",
+                                        "value-title": "friendlyName",
+                                        "parameters": {
+                                            "environmentId": {
+                                                "parameter": "environmentId"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Delete status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "solutionUniqueName": {
+                                    "type": "string",
+                                    "description": "Deleted solution name",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/version": {
+            "post": {
+                "summary": "Set Solution Version",
+                "description": "Update the version number of an unmanaged solution.",
+                "operationId": "SetSolutionVersion",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "solutionUniqueName",
+                                "version"
+                            ],
+                            "properties": {
+                                "solutionUniqueName": {
+                                    "type": "string",
+                                    "description": "The solution unique name",
+                                    "x-ms-summary": "Solution Unique Name",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "GetSolutionDropdown",
+                                        "value-path": "uniqueName",
+                                        "value-title": "friendlyName",
+                                        "parameters": {
+                                            "environmentId": {
+                                                "parameter": "environmentId"
+                                            }
+                                        }
+                                    }
+                                },
+                                "version": {
+                                    "type": "string",
+                                    "description": "New version number (e.g., 1.0.0.1)",
+                                    "x-ms-summary": "Version"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Version update result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Update status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "solutionUniqueName": {
+                                    "type": "string",
+                                    "description": "Solution name",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "version": {
+                                    "type": "string",
+                                    "description": "New version number",
+                                    "x-ms-summary": "Version"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/clone-patch": {
+            "post": {
+                "summary": "Clone as Patch",
+                "description": "Create a patch solution for an existing solution. Patches contain only changed components and are smaller than full solutions.",
+                "operationId": "CloneAsPatch",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentSolutionUniqueName",
+                                "displayName"
+                            ],
+                            "properties": {
+                                "parentSolutionUniqueName": {
+                                    "type": "string",
+                                    "description": "The parent solution unique name to patch",
+                                    "x-ms-summary": "Parent Solution",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "GetSolutionDropdown",
+                                        "value-path": "uniqueName",
+                                        "value-title": "friendlyName",
+                                        "parameters": {
+                                            "environmentId": {
+                                                "parameter": "environmentId"
+                                            }
+                                        }
+                                    }
+                                },
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Display name for the patch solution",
+                                    "x-ms-summary": "Patch Display Name"
+                                },
+                                "versionNumber": {
+                                    "type": "string",
+                                    "description": "Optional version number for the patch (e.g., 1.0.1.0)",
+                                    "x-ms-summary": "Version Number",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Clone patch result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "solutionId": {
+                                    "type": "string",
+                                    "description": "New patch solution ID",
+                                    "x-ms-summary": "Patch Solution ID"
+                                },
+                                "uniqueName": {
+                                    "type": "string",
+                                    "description": "Patch solution unique name",
+                                    "x-ms-summary": "Unique Name"
+                                },
+                                "version": {
+                                    "type": "string",
+                                    "description": "Patch version",
+                                    "x-ms-summary": "Version"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/clone": {
+            "post": {
+                "summary": "Clone as Solution",
+                "description": "Clone an existing solution as a new independent solution. Used for branching or forking a solution.",
+                "operationId": "CloneAsSolution",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentSolutionUniqueName",
+                                "displayName"
+                            ],
+                            "properties": {
+                                "parentSolutionUniqueName": {
+                                    "type": "string",
+                                    "description": "The source solution unique name to clone",
+                                    "x-ms-summary": "Source Solution",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "GetSolutionDropdown",
+                                        "value-path": "uniqueName",
+                                        "value-title": "friendlyName",
+                                        "parameters": {
+                                            "environmentId": {
+                                                "parameter": "environmentId"
+                                            }
+                                        }
+                                    }
+                                },
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Display name for the new cloned solution",
+                                    "x-ms-summary": "New Solution Display Name"
+                                },
+                                "versionNumber": {
+                                    "type": "string",
+                                    "description": "Optional version number for the clone (e.g., 2.0.0.0)",
+                                    "x-ms-summary": "Version Number",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Clone solution result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "solutionId": {
+                                    "type": "string",
+                                    "description": "New solution ID",
+                                    "x-ms-summary": "Solution ID"
+                                },
+                                "uniqueName": {
+                                    "type": "string",
+                                    "description": "New solution unique name",
+                                    "x-ms-summary": "Unique Name"
+                                },
+                                "version": {
+                                    "type": "string",
+                                    "description": "New solution version",
+                                    "x-ms-summary": "Version"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/solution/promote": {
+            "post": {
+                "summary": "Delete and Promote",
+                "description": "Delete the base solution and promote the holding solution to complete a staged upgrade. Use after importing with holdingSolution=true.",
+                "operationId": "DeleteAndPromote",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "solutionUniqueName"
+                            ],
+                            "properties": {
+                                "solutionUniqueName": {
+                                    "type": "string",
+                                    "description": "The solution unique name to promote (the holding solution's base name)",
+                                    "x-ms-summary": "Solution Unique Name"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Promote result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Promote status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "solutionUniqueName": {
+                                    "type": "string",
+                                    "description": "Promoted solution name",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/pipelines": {
+            "get": {
+                "summary": "List Pipelines",
+                "description": "List deployment pipelines configured in a pipeline host environment.",
+                "operationId": "ListPipelines",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline host environment ID (GUID)",
+                        "x-ms-summary": "Host Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pipelines",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "pipelineCount": {
+                                    "type": "integer",
+                                    "description": "Total number of pipelines",
+                                    "x-ms-summary": "Pipeline Count"
+                                },
+                                "pipelines": {
+                                    "type": "array",
+                                    "description": "Array of pipelines",
+                                    "x-ms-summary": "Pipelines",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "pipelineId": {
+                                                "type": "string",
+                                                "description": "Pipeline ID (GUID)",
+                                                "x-ms-summary": "Pipeline ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Pipeline name",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Pipeline description",
+                                                "x-ms-summary": "Description"
+                                            },
+                                            "stageCount": {
+                                                "type": "integer",
+                                                "description": "Number of stages",
+                                                "x-ms-summary": "Stage Count"
+                                            },
+                                            "createdOn": {
+                                                "type": "string",
+                                                "description": "Date created",
+                                                "x-ms-summary": "Created On"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/pipeline/stages": {
+            "get": {
+                "summary": "List Pipeline Stages",
+                "description": "List deployment stages for a specific pipeline. Returns stage names, target environments, and order.",
+                "operationId": "ListPipelineStages",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline host environment ID (GUID)",
+                        "x-ms-summary": "Host Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "pipelineId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline ID (GUID)",
+                        "x-ms-summary": "Pipeline",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetPipelineDropdown",
+                            "value-path": "pipelineId",
+                            "value-title": "name",
+                            "parameters": {
+                                "environmentId": {
+                                    "parameter": "environmentId"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of pipeline stages",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "stageCount": {
+                                    "type": "integer",
+                                    "description": "Total number of stages",
+                                    "x-ms-summary": "Stage Count"
+                                },
+                                "stages": {
+                                    "type": "array",
+                                    "description": "Array of stages",
+                                    "x-ms-summary": "Stages",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "stageId": {
+                                                "type": "string",
+                                                "description": "Stage ID (GUID)",
+                                                "x-ms-summary": "Stage ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Stage name",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "order": {
+                                                "type": "integer",
+                                                "description": "Stage order in pipeline",
+                                                "x-ms-summary": "Order"
+                                            },
+                                            "targetEnvironmentId": {
+                                                "type": "string",
+                                                "description": "Target environment ID",
+                                                "x-ms-summary": "Target Environment ID"
+                                            },
+                                            "targetEnvironmentName": {
+                                                "type": "string",
+                                                "description": "Target environment name",
+                                                "x-ms-summary": "Target Environment Name"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/pipeline/deploy": {
+            "post": {
+                "summary": "Deploy to Pipeline",
+                "description": "Trigger a deployment through a pipeline stage. Deploys the specified solution to the target environment of the selected stage.",
+                "operationId": "DeployToPipeline",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline host environment ID (GUID)",
+                        "x-ms-summary": "Host Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "pipelineId",
+                                "stageId",
+                                "solutionName"
+                            ],
+                            "properties": {
+                                "pipelineId": {
+                                    "type": "string",
+                                    "description": "The pipeline ID (GUID)",
+                                    "x-ms-summary": "Pipeline",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "GetPipelineDropdown",
+                                        "value-path": "pipelineId",
+                                        "value-title": "name",
+                                        "parameters": {
+                                            "environmentId": {
+                                                "parameter": "environmentId"
+                                            }
+                                        }
+                                    }
+                                },
+                                "stageId": {
+                                    "type": "string",
+                                    "description": "The target stage ID (GUID)",
+                                    "x-ms-summary": "Stage ID"
+                                },
+                                "solutionName": {
+                                    "type": "string",
+                                    "description": "The solution unique name to deploy",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "currentVersion": {
+                                    "type": "string",
+                                    "description": "Current solution version (e.g., 1.0.0.0)",
+                                    "x-ms-summary": "Current Version"
+                                },
+                                "newVersion": {
+                                    "type": "string",
+                                    "description": "New solution version to deploy (e.g., 1.0.0.1)",
+                                    "x-ms-summary": "New Version"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deployment result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Deployment status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "deploymentRunId": {
+                                    "type": "string",
+                                    "description": "Deployment run ID for tracking",
+                                    "x-ms-summary": "Deployment Run ID"
+                                },
+                                "pipelineName": {
+                                    "type": "string",
+                                    "description": "Pipeline name",
+                                    "x-ms-summary": "Pipeline Name"
+                                },
+                                "stageName": {
+                                    "type": "string",
+                                    "description": "Stage name",
+                                    "x-ms-summary": "Stage Name"
+                                },
+                                "solutionName": {
+                                    "type": "string",
+                                    "description": "Solution being deployed",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/pipeline/status": {
+            "get": {
+                "summary": "Get Deployment Status",
+                "description": "Get the status of a deployment run.",
+                "operationId": "GetDeploymentStatus",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline host environment ID (GUID)",
+                        "x-ms-summary": "Host Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "deploymentRunId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The deployment run ID (GUID)",
+                        "x-ms-summary": "Deployment Run ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deployment status",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "deploymentRunId": {
+                                    "type": "string",
+                                    "description": "Deployment run ID",
+                                    "x-ms-summary": "Deployment Run ID"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Current status (Queued, Running, Succeeded, Failed)",
+                                    "x-ms-summary": "Status"
+                                },
+                                "solutionName": {
+                                    "type": "string",
+                                    "description": "Solution being deployed",
+                                    "x-ms-summary": "Solution Name"
+                                },
+                                "stageName": {
+                                    "type": "string",
+                                    "description": "Target stage name",
+                                    "x-ms-summary": "Stage Name"
+                                },
+                                "startedOn": {
+                                    "type": "string",
+                                    "description": "Deployment start time",
+                                    "x-ms-summary": "Started On"
+                                },
+                                "completedOn": {
+                                    "type": "string",
+                                    "description": "Deployment completion time",
+                                    "x-ms-summary": "Completed On"
+                                },
+                                "errorMessage": {
+                                    "type": "string",
+                                    "description": "Error message if failed",
+                                    "x-ms-summary": "Error Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/alm/pipeline/history": {
+            "get": {
+                "summary": "List Deployment History",
+                "description": "List past deployment runs for a pipeline.",
+                "operationId": "ListDeploymentHistory",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline host environment ID (GUID)",
+                        "x-ms-summary": "Host Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "pipelineId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline ID (GUID)",
+                        "x-ms-summary": "Pipeline",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetPipelineDropdown",
+                            "value-path": "pipelineId",
+                            "value-title": "name",
+                            "parameters": {
+                                "environmentId": {
+                                    "parameter": "environmentId"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deployment history",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "runCount": {
+                                    "type": "integer",
+                                    "description": "Total number of runs",
+                                    "x-ms-summary": "Run Count"
+                                },
+                                "runs": {
+                                    "type": "array",
+                                    "description": "Array of deployment runs",
+                                    "x-ms-summary": "Runs",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "deploymentRunId": {
+                                                "type": "string",
+                                                "description": "Deployment run ID",
+                                                "x-ms-summary": "Deployment Run ID"
+                                            },
+                                            "status": {
+                                                "type": "string",
+                                                "description": "Run status",
+                                                "x-ms-summary": "Status"
+                                            },
+                                            "solutionName": {
+                                                "type": "string",
+                                                "description": "Solution deployed",
+                                                "x-ms-summary": "Solution Name"
+                                            },
+                                            "stageName": {
+                                                "type": "string",
+                                                "description": "Target stage",
+                                                "x-ms-summary": "Stage Name"
+                                            },
+                                            "startedOn": {
+                                                "type": "string",
+                                                "description": "Start time",
+                                                "x-ms-summary": "Started On"
+                                            },
+                                            "completedOn": {
+                                                "type": "string",
+                                                "description": "Completion time",
+                                                "x-ms-summary": "Completed On"
+                                            },
+                                            "requestedBy": {
+                                                "type": "string",
+                                                "description": "User who requested the deployment",
+                                                "x-ms-summary": "Requested By"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/environments": {
+            "get": {
+                "summary": "Get Environment List",
+                "description": "Internal operation for dynamic dropdowns. Returns environment IDs and names.",
+                "operationId": "GetEnvironmentDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Environment list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Environment ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment display name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/solutions": {
+            "get": {
+                "summary": "Get Solution List",
+                "description": "Internal operation for dynamic dropdowns. Returns solution names for a given environment.",
+                "operationId": "GetSolutionDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Solution list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "uniqueName": {
+                                        "type": "string",
+                                        "description": "Solution unique name"
+                                    },
+                                    "friendlyName": {
+                                        "type": "string",
+                                        "description": "Solution display name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/pipelines": {
+            "get": {
+                "summary": "Get Pipeline List",
+                "description": "Internal operation for dynamic dropdowns. Returns pipeline IDs and names for a given environment.",
+                "operationId": "GetPipelineDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The pipeline host environment ID (GUID)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pipeline list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "pipelineId": {
+                                        "type": "string",
+                                        "description": "Pipeline ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Pipeline name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/power-platform/alm"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
