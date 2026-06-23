@@ -1,0 +1,501 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "ARD Discovery",
+        "description": "Agentic Resource Discovery connector — search ARD registries to discover MCP servers, A2A agents, and other agentic resources, then invoke discovered capabilities via proxy with MCP elicitation for dynamic authentication.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "ard-discovery-nwi4g7r7x4vju.azurewebsites.net",
+    "basePath": "/api",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/search": {
+            "post": {
+                "operationId": "SearchCapabilities",
+                "summary": "Search Capabilities",
+                "description": "Search an ARD registry for agentic resources matching a natural language query. Returns ranked catalog entries with relevance scores.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "query"
+                            ],
+                            "properties": {
+                                "query": {
+                                    "type": "object",
+                                    "required": [
+                                        "text"
+                                    ],
+                                    "properties": {
+                                        "text": {
+                                            "type": "string",
+                                            "description": "Natural language description of the capability needed (e.g., 'find me a weather forecast tool').",
+                                            "x-ms-summary": "Search Text"
+                                        },
+                                        "filter": {
+                                            "type": "object",
+                                            "description": "Structured filter constraints. Keys are field paths, values are arrays.",
+                                            "x-ms-summary": "Filter",
+                                            "x-ms-visibility": "advanced",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "array",
+                                                    "description": "Filter by artifact type (e.g., application/mcp-server-card+json, application/a2a-agent-card+json).",
+                                                    "x-ms-summary": "Artifact Type",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "application/mcp-server-card+json",
+                                                            "application/a2a-agent-card+json",
+                                                            "application/ai-skill",
+                                                            "application/ai-catalog+json"
+                                                        ]
+                                                    }
+                                                },
+                                                "tags": {
+                                                    "type": "array",
+                                                    "description": "Filter by keyword tags.",
+                                                    "x-ms-summary": "Tags",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "federation": {
+                                    "type": "string",
+                                    "description": "Federation mode: auto (merged results), referrals (results + registry links), none (local only).",
+                                    "x-ms-summary": "Federation Mode",
+                                    "x-ms-visibility": "advanced",
+                                    "default": "auto",
+                                    "enum": [
+                                        "auto",
+                                        "referrals",
+                                        "none"
+                                    ]
+                                },
+                                "pageSize": {
+                                    "type": "integer",
+                                    "description": "Maximum results per page (1-100).",
+                                    "x-ms-summary": "Page Size",
+                                    "x-ms-visibility": "advanced",
+                                    "default": 10
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results with ranked catalog entries.",
+                        "schema": {
+                            "$ref": "#/definitions/SearchResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/explore": {
+            "post": {
+                "operationId": "ExploreRegistry",
+                "summary": "Explore Registry",
+                "description": "Explore an ARD registry to discover facet breakdowns (e.g., which artifact types or publishers are available). Does not return individual entries.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "resultType"
+                            ],
+                            "properties": {
+                                "query": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string",
+                                            "description": "Optional natural language query to narrow the aggregation.",
+                                            "x-ms-summary": "Search Text"
+                                        },
+                                        "filter": {
+                                            "type": "object",
+                                            "description": "Optional structured filter constraints.",
+                                            "x-ms-summary": "Filter"
+                                        }
+                                    }
+                                },
+                                "resultType": {
+                                    "type": "object",
+                                    "required": [
+                                        "facets"
+                                    ],
+                                    "properties": {
+                                        "facets": {
+                                            "type": "array",
+                                            "description": "Fields to aggregate over.",
+                                            "x-ms-summary": "Facet Fields",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "field": {
+                                                        "type": "string",
+                                                        "description": "Field path to aggregate (e.g., 'type', 'publisher').",
+                                                        "x-ms-summary": "Field"
+                                                    },
+                                                    "limit": {
+                                                        "type": "integer",
+                                                        "description": "Maximum number of buckets.",
+                                                        "x-ms-summary": "Limit"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Facet aggregation results.",
+                        "schema": {
+                            "$ref": "#/definitions/ExploreResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/agents": {
+            "get": {
+                "operationId": "ListAgents",
+                "summary": "List Agents",
+                "description": "Browse registered agents with deterministic ordering and filtering. Designed for developer portals and catalog browsing.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "EBNF filter expression (e.g., type=application/mcp-server-card+json).",
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "orderBy",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Sorting fields (e.g., 'name', 'created_at DESC').",
+                        "x-ms-summary": "Order By",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "type": "integer",
+                        "required": false,
+                        "description": "Max results per page (1-100, default 20).",
+                        "x-ms-summary": "Page Size",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "pageToken",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Pagination token from previous response.",
+                        "x-ms-summary": "Page Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of catalog entries.",
+                        "schema": {
+                            "$ref": "#/definitions/ListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/proxy": {
+            "post": {
+                "operationId": "InvokeCapability",
+                "summary": "Invoke Discovered Capability",
+                "description": "Proxy a request to a capability discovered via ARD search. The server handles authentication via MCP elicitation — if the target requires auth, the user will be prompted to sign in via a secure URL.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "targetUrl",
+                                "mcpRequest"
+                            ],
+                            "properties": {
+                                "targetUrl": {
+                                    "type": "string",
+                                    "description": "The URL of the discovered MCP endpoint to invoke.",
+                                    "x-ms-summary": "Target URL"
+                                },
+                                "mcpRequest": {
+                                    "type": "object",
+                                    "description": "The JSON-RPC 2.0 MCP request to forward to the target.",
+                                    "x-ms-summary": "MCP Request",
+                                    "properties": {
+                                        "jsonrpc": {
+                                            "type": "string",
+                                            "default": "2.0",
+                                            "x-ms-visibility": "internal",
+                                            "title": ""
+                                        },
+                                        "method": {
+                                            "type": "string",
+                                            "description": "MCP method (e.g., 'tools/list', 'tools/call').",
+                                            "x-ms-summary": "Method"
+                                        },
+                                        "params": {
+                                            "description": "Method parameters (JSON object).",
+                                            "x-ms-summary": "Parameters"
+                                        },
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "JSON-RPC request ID.",
+                                            "x-ms-summary": "Request ID",
+                                            "default": 1
+                                        }
+                                    },
+                                    "required": [
+                                        "jsonrpc",
+                                        "method",
+                                        "id"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proxied MCP response from the target capability.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "jsonrpc": {
+                                    "type": "string"
+                                },
+                                "result": {
+                                    "type": "object",
+                                    "description": "The MCP result from the target."
+                                },
+                                "id": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke ARD Discovery MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Exposes search_capabilities, explore_registry, and invoke_capability as MCP tools with elicitation support for dynamic authentication.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "MCP response."
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CatalogEntry": {
+            "type": "object",
+            "properties": {
+                "identifier": {
+                    "type": "string",
+                    "description": "Globally unique URN identifier (urn:air:<publisher>:<namespace>:<name>).",
+                    "x-ms-summary": "Identifier"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Human-readable name.",
+                    "x-ms-summary": "Display Name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Artifact media type.",
+                    "x-ms-summary": "Type"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "URL to retrieve the full artifact.",
+                    "x-ms-summary": "URL"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Short description of the capability.",
+                    "x-ms-summary": "Description"
+                },
+                "capabilities": {
+                    "type": "array",
+                    "description": "Specific skills or tools offered.",
+                    "x-ms-summary": "Capabilities",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "description": "Keywords for filtering.",
+                    "x-ms-summary": "Tags",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "score": {
+                    "type": "number",
+                    "description": "Relevance score (0-100).",
+                    "x-ms-summary": "Score"
+                },
+                "trustScore": {
+                    "type": "integer",
+                    "description": "Trust verification score (0-100). Higher = more verified (HTTPS=10, DNS TXT=+20, .well-known=+15, JWS signature=+30).",
+                    "x-ms-summary": "Trust Score"
+                },
+                "publisher": {
+                    "type": "string",
+                    "description": "Publisher domain or organization.",
+                    "x-ms-summary": "Publisher"
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Registry that returned this entry.",
+                    "x-ms-summary": "Source"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Version of the artifact.",
+                    "x-ms-summary": "Version"
+                }
+            }
+        },
+        "SearchResponse": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "description": "Ranked catalog entries matching the query.",
+                    "x-ms-summary": "Results",
+                    "items": {
+                        "$ref": "#/definitions/CatalogEntry"
+                    }
+                },
+                "referrals": {
+                    "type": "array",
+                    "description": "Other registries the client may query (when federation=referrals).",
+                    "x-ms-summary": "Referrals",
+                    "items": {
+                        "$ref": "#/definitions/CatalogEntry"
+                    }
+                },
+                "pageToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page.",
+                    "x-ms-summary": "Page Token"
+                }
+            }
+        },
+        "ExploreResponse": {
+            "type": "object",
+            "properties": {
+                "resultType": {
+                    "type": "string",
+                    "description": "Always 'facets'.",
+                    "x-ms-summary": "Result Type"
+                },
+                "facets": {
+                    "type": "object",
+                    "description": "Facet breakdown keyed by field name.",
+                    "x-ms-summary": "Facets"
+                }
+            }
+        },
+        "ListResponse": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "description": "Catalog entries in deterministic order.",
+                    "x-ms-summary": "Results",
+                    "items": {
+                        "$ref": "#/definitions/CatalogEntry"
+                    }
+                },
+                "pageToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page.",
+                    "x-ms-summary": "Page Token"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "apiKeyHeader": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "x-api-key",
+            "description": "API key for the ARD Discovery backend."
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://agenticresourcediscovery.org"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://agenticresourcediscovery.org"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Website"
+        }
+    ]
+}
