@@ -1,0 +1,631 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "ACA Code Interpreter",
+        "description": "Execute code in isolated ACA Sandbox microVMs. Supports 16 languages and modes including Python, JavaScript, PowerFx, PowerShell, Adaptive Card validation, FetchXML evaluation, OpenAPI linting, and Power Automate expression testing. Each session runs in a fresh sandbox with deny-default egress for maximum security.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "management.westus2.azuredevcompute.io",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/api/sessions": {
+            "post": {
+                "operationId": "CreateSession",
+                "summary": "Create Session",
+                "description": "Boot a new code interpreter sandbox with deny-default egress, pre-baked runtimes, and auto-suspend after 5 minutes idle.",
+                "x-ms-summary": "Create Session",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session created.",
+                        "schema": {
+                            "$ref": "#/definitions/SessionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/exec": {
+            "post": {
+                "operationId": "ExecuteCode",
+                "summary": "Execute Code",
+                "description": "Execute code in the specified language within an isolated sandbox session. Supports Python, JavaScript, TypeScript, PowerFx, Bash, PowerShell, Ruby, Perl, PHP, SQL, Adaptive Card validation, FetchXML evaluation, OpenAPI linting, prompt rendering, expression evaluation, and regex testing.",
+                "x-ms-summary": "Execute Code",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Code executed.",
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteCodeResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/files/upload": {
+            "post": {
+                "operationId": "UploadFile",
+                "summary": "Upload File",
+                "description": "Upload a file into the sandbox workspace for use during code execution (e.g., CSV data for analysis, JSON for validation).",
+                "x-ms-summary": "Upload File",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UploadFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File uploaded.",
+                        "schema": {
+                            "$ref": "#/definitions/FileOperationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/files/download": {
+            "post": {
+                "operationId": "DownloadFile",
+                "summary": "Download File",
+                "description": "Download a file from the sandbox workspace (e.g., generated charts, transformed data, output artifacts).",
+                "x-ms-summary": "Download File",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DownloadFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File downloaded.",
+                        "schema": {
+                            "$ref": "#/definitions/DownloadFileResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/files/list": {
+            "post": {
+                "operationId": "ListFiles",
+                "summary": "List Files",
+                "description": "List files in the sandbox /workspace directory.",
+                "x-ms-summary": "List Files",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ListFilesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File list retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/ListFilesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/status": {
+            "post": {
+                "operationId": "GetSession",
+                "summary": "Get Session",
+                "description": "Get the current state of a sandbox session (Running, Suspended, Terminated).",
+                "x-ms-summary": "Get Session",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SessionIdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session status retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/SessionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/destroy": {
+            "post": {
+                "operationId": "DestroySession",
+                "summary": "Destroy Session",
+                "description": "Delete the sandbox and reclaim all resources. This action is irreversible.",
+                "x-ms-summary": "Destroy Session",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SessionIdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session destroyed.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "description": "Whether the session was successfully destroyed.",
+                                    "x-ms-summary": "Success"
+                                },
+                                "sessionId": {
+                                    "type": "string",
+                                    "description": "The session that was destroyed.",
+                                    "x-ms-summary": "Session ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke ACA Code Interpreter MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio agent integration. Exposes code execution, file operations, and session management as MCP tools.",
+                "x-ms-summary": "Invoke ACA Code Interpreter MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response."
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CreateSessionRequest": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "string",
+                    "description": "CPU allocation in millicores (e.g., 1000m = 1 vCPU, 2000m = 2 vCPU).",
+                    "x-ms-summary": "CPU",
+                    "default": "1000m",
+                    "enum": [
+                        "500m",
+                        "1000m",
+                        "2000m",
+                        "4000m"
+                    ]
+                },
+                "memory": {
+                    "type": "string",
+                    "description": "Memory allocation (e.g., 2048Mi, 4096Mi).",
+                    "x-ms-summary": "Memory",
+                    "default": "2048Mi",
+                    "enum": [
+                        "1024Mi",
+                        "2048Mi",
+                        "4096Mi",
+                        "8192Mi"
+                    ]
+                },
+                "autoSuspendMinutes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Suspend the session after this many minutes idle. Default 5.",
+                    "x-ms-summary": "Auto-Suspend (minutes)",
+                    "default": 5,
+                    "x-ms-visibility": "advanced"
+                },
+                "egressAllowHosts": {
+                    "type": "array",
+                    "description": "Additional hosts to allow through the egress firewall (deny-default). Always allows pypi.org and npmjs.org.",
+                    "x-ms-summary": "Egress Allow Hosts",
+                    "x-ms-visibility": "advanced",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "ExecuteCodeRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "code"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID returned by Create Session.",
+                    "x-ms-summary": "Session ID"
+                },
+                "code": {
+                    "type": "string",
+                    "description": "The code or input to execute/evaluate.",
+                    "x-ms-summary": "Code"
+                },
+                "language": {
+                    "type": "string",
+                    "description": "The language or mode to execute in.",
+                    "x-ms-summary": "Language",
+                    "default": "python",
+                    "enum": [
+                        "python",
+                        "javascript",
+                        "typescript",
+                        "powerfx",
+                        "bash",
+                        "powershell",
+                        "ruby",
+                        "perl",
+                        "php",
+                        "sql",
+                        "adaptivecard",
+                        "fetchxml",
+                        "openapi-lint",
+                        "prompt",
+                        "expression",
+                        "regex"
+                    ]
+                },
+                "timeout": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Execution timeout in seconds. Default 30.",
+                    "x-ms-summary": "Timeout (seconds)",
+                    "default": 30,
+                    "x-ms-visibility": "advanced"
+                },
+                "variables": {
+                    "type": "object",
+                    "description": "Variables to pass into the execution context. Used by prompt and regex modes for template data or test strings.",
+                    "x-ms-summary": "Variables",
+                    "x-ms-visibility": "advanced",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "ExecuteCodeResponse": {
+            "type": "object",
+            "properties": {
+                "stdout": {
+                    "type": "string",
+                    "description": "Standard output from execution.",
+                    "x-ms-summary": "Output"
+                },
+                "stderr": {
+                    "type": "string",
+                    "description": "Standard error from execution.",
+                    "x-ms-summary": "Errors"
+                },
+                "exitCode": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Process exit code. 0 = success.",
+                    "x-ms-summary": "Exit Code"
+                },
+                "executionTimeMs": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Execution time in milliseconds.",
+                    "x-ms-summary": "Execution Time (ms)"
+                },
+                "language": {
+                    "type": "string",
+                    "description": "The language/mode that was executed.",
+                    "x-ms-summary": "Language"
+                },
+                "truncated": {
+                    "type": "boolean",
+                    "description": "Whether the output was truncated at 4KB.",
+                    "x-ms-summary": "Truncated"
+                },
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session the code ran in.",
+                    "x-ms-summary": "Session ID"
+                }
+            }
+        },
+        "UploadFileRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "fileName",
+                "content"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID to upload into.",
+                    "x-ms-summary": "Session ID"
+                },
+                "fileName": {
+                    "type": "string",
+                    "description": "Name for the file (e.g., data.csv, spec.json).",
+                    "x-ms-summary": "File Name"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "File content as base64-encoded string.",
+                    "x-ms-summary": "Content (Base64)",
+                    "format": "byte"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Target directory in sandbox. Default: /workspace",
+                    "x-ms-summary": "Path",
+                    "default": "/workspace",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "DownloadFileRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "filePath"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID to download from.",
+                    "x-ms-summary": "Session ID"
+                },
+                "filePath": {
+                    "type": "string",
+                    "description": "Full path to the file in the sandbox (e.g., /workspace/output.png).",
+                    "x-ms-summary": "File Path"
+                }
+            }
+        },
+        "DownloadFileResponse": {
+            "type": "object",
+            "properties": {
+                "fileName": {
+                    "type": "string",
+                    "description": "The file name.",
+                    "x-ms-summary": "File Name"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "File content as base64-encoded string.",
+                    "x-ms-summary": "Content (Base64)",
+                    "format": "byte"
+                },
+                "sizeBytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "File size in bytes.",
+                    "x-ms-summary": "Size (bytes)"
+                },
+                "mimeType": {
+                    "type": "string",
+                    "description": "Detected MIME type of the file.",
+                    "x-ms-summary": "MIME Type"
+                }
+            }
+        },
+        "ListFilesRequest": {
+            "type": "object",
+            "required": [
+                "sessionId"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID to list files from.",
+                    "x-ms-summary": "Session ID"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Directory to list. Default: /workspace",
+                    "x-ms-summary": "Path",
+                    "default": "/workspace"
+                }
+            }
+        },
+        "ListFilesResponse": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "The listed directory path.",
+                    "x-ms-summary": "Path"
+                },
+                "files": {
+                    "type": "array",
+                    "description": "Files in the directory.",
+                    "x-ms-summary": "Files",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "File or directory name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "size": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "Size in bytes.",
+                                "x-ms-summary": "Size"
+                            },
+                            "modified": {
+                                "type": "string",
+                                "description": "Last modified timestamp.",
+                                "x-ms-summary": "Modified"
+                            },
+                            "isDirectory": {
+                                "type": "boolean",
+                                "description": "Whether this entry is a directory.",
+                                "x-ms-summary": "Is Directory"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "SessionIdRequest": {
+            "type": "object",
+            "required": [
+                "sessionId"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                }
+            }
+        },
+        "SessionResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Unique session identifier.",
+                    "x-ms-summary": "Session ID"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Current sandbox state.",
+                    "x-ms-summary": "State",
+                    "enum": [
+                        "Running",
+                        "Suspended",
+                        "Terminated",
+                        "Creating"
+                    ]
+                },
+                "cpu": {
+                    "type": "string",
+                    "description": "Allocated CPU.",
+                    "x-ms-summary": "CPU"
+                },
+                "memory": {
+                    "type": "string",
+                    "description": "Allocated memory.",
+                    "x-ms-summary": "Memory"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "Session creation timestamp.",
+                    "x-ms-summary": "Created At"
+                },
+                "autoSuspendMinutes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Minutes until auto-suspend.",
+                    "x-ms-summary": "Auto-Suspend (minutes)"
+                }
+            }
+        },
+        "FileOperationResponse": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the operation succeeded.",
+                    "x-ms-summary": "Success"
+                },
+                "filePath": {
+                    "type": "string",
+                    "description": "Full path of the file in the sandbox.",
+                    "x-ms-summary": "File Path"
+                },
+                "sizeBytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "File size in bytes.",
+                    "x-ms-summary": "Size (bytes)"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://management.azure.com/.default": "Access ACA Sandboxes data plane"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "https://management.azure.com/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://sandboxes.azure.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;IT Operations"
+        }
+    ]
+}
