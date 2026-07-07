@@ -1,0 +1,259 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Work IQ",
+        "description": "Ask natural language questions about workplace data (email, meetings, documents, Teams messages, people) via the Microsoft Work IQ A2A API. Work IQ reasons across all Microsoft 365 data automatically with permission-trimmed, policy-enforced access.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "workiq.svc.cloud.microsoft",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Work IQ MCP",
+                "description": "Proxies MCP requests to the Work IQ Remote MCP server. Copilot Studio detects this endpoint and can invoke Work IQ tools via natural language.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/a2a/": {
+            "post": {
+                "summary": "Ask Work IQ",
+                "description": "Send a natural language question to Work IQ and receive a structured answer. Work IQ reasons over email, meetings, documents, Teams messages, and people context. Supports multi-turn conversations via contextId.",
+                "operationId": "AskWorkIQ",
+                "parameters": [
+                    {
+                        "name": "A2A-Version",
+                        "in": "header",
+                        "required": true,
+                        "type": "string",
+                        "default": "1.0",
+                        "x-ms-visibility": "internal",
+                        "x-ms-summary": "A2A Version"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "jsonrpc",
+                                "id",
+                                "method",
+                                "params"
+                            ],
+                            "properties": {
+                                "jsonrpc": {
+                                    "type": "string",
+                                    "default": "2.0",
+                                    "x-ms-visibility": "internal"
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "Unique request identifier (GUID)",
+                                    "x-ms-summary": "Request ID"
+                                },
+                                "method": {
+                                    "type": "string",
+                                    "default": "SendMessage",
+                                    "x-ms-visibility": "internal"
+                                },
+                                "params": {
+                                    "type": "object",
+                                    "required": [
+                                        "message"
+                                    ],
+                                    "properties": {
+                                        "message": {
+                                            "type": "object",
+                                            "required": [
+                                                "role",
+                                                "messageId",
+                                                "parts"
+                                            ],
+                                            "properties": {
+                                                "role": {
+                                                    "type": "string",
+                                                    "default": "ROLE_USER",
+                                                    "x-ms-visibility": "internal"
+                                                },
+                                                "messageId": {
+                                                    "type": "string",
+                                                    "description": "Unique message identifier (GUID)",
+                                                    "x-ms-summary": "Message ID"
+                                                },
+                                                "contextId": {
+                                                    "type": "string",
+                                                    "description": "Context ID from a previous response for multi-turn conversations",
+                                                    "x-ms-summary": "Context ID"
+                                                },
+                                                "parts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "text"
+                                                        ],
+                                                        "properties": {
+                                                            "text": {
+                                                                "type": "string",
+                                                                "description": "Your natural language question about workplace data",
+                                                                "x-ms-summary": "Question"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "metadata": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "Location": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "timeZoneOffset": {
+                                                                    "type": "integer",
+                                                                    "format": "int32",
+                                                                    "description": "UTC offset in minutes (e.g., -480 for PST)",
+                                                                    "x-ms-summary": "Time Zone Offset"
+                                                                },
+                                                                "timeZone": {
+                                                                    "type": "string",
+                                                                    "description": "IANA time zone (e.g., America/Los_Angeles)",
+                                                                    "x-ms-summary": "Time Zone"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work IQ response",
+                        "schema": {
+                            "$ref": "#/definitions/A2AResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "A2AResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Request ID echoed back"
+                },
+                "result": {
+                    "type": "object",
+                    "properties": {
+                        "task": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Task ID"
+                                },
+                                "contextId": {
+                                    "type": "string",
+                                    "description": "Context ID for multi-turn follow-ups"
+                                },
+                                "status": {
+                                    "type": "object",
+                                    "properties": {
+                                        "state": {
+                                            "type": "string",
+                                            "description": "Task state (e.g., TASK_STATE_COMPLETED)"
+                                        }
+                                    }
+                                },
+                                "artifacts": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "artifactId": {
+                                                "type": "string",
+                                                "description": "Artifact ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Artifact name"
+                                            },
+                                            "parts": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "text": {
+                                                            "type": "string",
+                                                            "description": "Response text from Work IQ"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://workiq.svc.cloud.microsoft/.default": "Access Work IQ API"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://workiq.svc.cloud.microsoft/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI"
+        }
+    ]
+}
