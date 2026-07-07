@@ -1,0 +1,651 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Agent 365 Blueprint",
+        "description": "Manages Agent 365 blueprint lifecycle via Microsoft Graph — create blueprints, configure permissions, manage agent identities, and govern agent registrations at scale.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/v1.0/applications": {
+            "post": {
+                "summary": "Create Blueprint",
+                "description": "Creates an Entra ID application registration configured as an Agent 365 blueprint. Sets required redirect URIs, API permissions, and blueprint metadata.",
+                "operationId": "CreateBlueprint",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "displayName"
+                            ],
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Blueprint display name (e.g., 'MyAgent Blueprint')",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "signInAudience": {
+                                    "type": "string",
+                                    "description": "Sign-in audience for the blueprint",
+                                    "default": "AzureADMyOrg",
+                                    "enum": [
+                                        "AzureADMyOrg",
+                                        "AzureADMultipleOrgs"
+                                    ],
+                                    "x-ms-summary": "Sign-In Audience"
+                                },
+                                "web": {
+                                    "type": "object",
+                                    "properties": {
+                                        "redirectUris": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Redirect URIs for the blueprint app"
+                                        }
+                                    }
+                                },
+                                "requiredResourceAccess": {
+                                    "type": "array",
+                                    "description": "API permissions to request on the blueprint",
+                                    "x-ms-summary": "Required Resource Access",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "resourceAppId": {
+                                                "type": "string",
+                                                "description": "Resource application ID (e.g., Microsoft Graph: 00000003-0000-0000-c000-000000000000)"
+                                            },
+                                            "resourceAccess": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "Permission ID (GUID)"
+                                                        },
+                                                        "type": {
+                                                            "type": "string",
+                                                            "description": "Permission type",
+                                                            "enum": [
+                                                                "Scope",
+                                                                "Role"
+                                                            ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Blueprint created",
+                        "schema": {
+                            "$ref": "#/definitions/Application"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/applications/{blueprintId}": {
+            "get": {
+                "summary": "Get Blueprint",
+                "description": "Retrieves the Entra ID application registration details for an Agent 365 blueprint.",
+                "operationId": "GetBlueprint",
+                "parameters": [
+                    {
+                        "name": "blueprintId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Blueprint application object ID",
+                        "x-ms-summary": "Blueprint ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Blueprint details",
+                        "schema": {
+                            "$ref": "#/definitions/Application"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Blueprint",
+                "description": "Updates properties of an existing Agent 365 blueprint application registration.",
+                "operationId": "UpdateBlueprint",
+                "parameters": [
+                    {
+                        "name": "blueprintId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Blueprint application object ID",
+                        "x-ms-summary": "Blueprint ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Updated display name",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "requiredResourceAccess": {
+                                    "type": "array",
+                                    "description": "Updated API permissions",
+                                    "x-ms-summary": "Required Resource Access",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "resourceAppId": {
+                                                "type": "string"
+                                            },
+                                            "resourceAccess": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string"
+                                                        },
+                                                        "type": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Blueprint updated"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Blueprint",
+                "description": "Deletes the Agent 365 blueprint application registration and its service principal from Entra ID.",
+                "operationId": "DeleteBlueprint",
+                "parameters": [
+                    {
+                        "name": "blueprintId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Blueprint application object ID",
+                        "x-ms-summary": "Blueprint ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Blueprint deleted"
+                    }
+                }
+            }
+        },
+        "/v1.0/servicePrincipals": {
+            "post": {
+                "summary": "Create Service Principal",
+                "description": "Creates a service principal for the blueprint application, required before granting permissions.",
+                "operationId": "CreateServicePrincipal",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "appId"
+                            ],
+                            "properties": {
+                                "appId": {
+                                    "type": "string",
+                                    "description": "Application (client) ID of the blueprint",
+                                    "x-ms-summary": "Application ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Service principal created",
+                        "schema": {
+                            "$ref": "#/definitions/ServicePrincipal"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/oauth2PermissionGrants": {
+            "post": {
+                "summary": "Grant Delegated Permissions",
+                "description": "Creates an OAuth2 delegated permission grant from the blueprint service principal to a resource (e.g., Work IQ MCP servers, Microsoft Graph, Bot API).",
+                "operationId": "GrantDelegatedPermissions",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "clientId",
+                                "consentType",
+                                "resourceId",
+                                "scope"
+                            ],
+                            "properties": {
+                                "clientId": {
+                                    "type": "string",
+                                    "description": "Service principal ID of the blueprint",
+                                    "x-ms-summary": "Blueprint SP ID"
+                                },
+                                "consentType": {
+                                    "type": "string",
+                                    "description": "Consent type (AllPrincipals for admin consent)",
+                                    "default": "AllPrincipals",
+                                    "enum": [
+                                        "AllPrincipals",
+                                        "Principal"
+                                    ],
+                                    "x-ms-summary": "Consent Type"
+                                },
+                                "resourceId": {
+                                    "type": "string",
+                                    "description": "Service principal ID of the resource API (e.g., Work IQ Mail MCP SP ID)",
+                                    "x-ms-summary": "Resource SP ID"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "description": "Space-separated scopes (e.g., 'Tools.ListInvoke.All' or 'McpServersMetadata.Read.All')",
+                                    "x-ms-summary": "Scopes"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Permission grant created",
+                        "schema": {
+                            "$ref": "#/definitions/OAuth2PermissionGrant"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/servicePrincipals/{servicePrincipalId}/oauth2PermissionGrants": {
+            "get": {
+                "summary": "List Blueprint Permission Grants",
+                "description": "Lists all OAuth2 delegated permission grants for the blueprint service principal. Shows which Work IQ servers and APIs the blueprint has access to.",
+                "operationId": "ListBlueprintPermissionGrants",
+                "parameters": [
+                    {
+                        "name": "servicePrincipalId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Service principal ID of the blueprint",
+                        "x-ms-summary": "Blueprint SP ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of permission grants",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/OAuth2PermissionGrant"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/servicePrincipals/{servicePrincipalId}/appRoleAssignments": {
+            "post": {
+                "summary": "Grant Application Permissions",
+                "description": "Assigns an app role to the blueprint service principal for S2S (server-to-server) authentication scenarios.",
+                "operationId": "GrantApplicationPermissions",
+                "parameters": [
+                    {
+                        "name": "servicePrincipalId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Service principal ID of the blueprint",
+                        "x-ms-summary": "Blueprint SP ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "principalId",
+                                "resourceId",
+                                "appRoleId"
+                            ],
+                            "properties": {
+                                "principalId": {
+                                    "type": "string",
+                                    "description": "Service principal ID being granted the role",
+                                    "x-ms-summary": "Principal ID"
+                                },
+                                "resourceId": {
+                                    "type": "string",
+                                    "description": "Service principal ID of the resource API",
+                                    "x-ms-summary": "Resource SP ID"
+                                },
+                                "appRoleId": {
+                                    "type": "string",
+                                    "description": "App role ID to assign",
+                                    "x-ms-summary": "App Role ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "App role assignment created",
+                        "schema": {
+                            "$ref": "#/definitions/AppRoleAssignment"
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "List Application Permissions",
+                "description": "Lists app role assignments for the blueprint service principal (S2S permissions).",
+                "operationId": "ListApplicationPermissions",
+                "parameters": [
+                    {
+                        "name": "servicePrincipalId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Service principal ID of the blueprint",
+                        "x-ms-summary": "Blueprint SP ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of app role assignments",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/AppRoleAssignment"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/applications/{blueprintId}/addPassword": {
+            "post": {
+                "summary": "Create Blueprint Secret",
+                "description": "Creates a client secret for the blueprint application. Used for agent runtime authentication.",
+                "operationId": "CreateBlueprintSecret",
+                "parameters": [
+                    {
+                        "name": "blueprintId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "Blueprint application object ID",
+                        "x-ms-summary": "Blueprint ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "passwordCredential"
+                            ],
+                            "properties": {
+                                "passwordCredential": {
+                                    "type": "object",
+                                    "properties": {
+                                        "displayName": {
+                                            "type": "string",
+                                            "description": "Display name for the secret",
+                                            "x-ms-summary": "Secret Name"
+                                        },
+                                        "endDateTime": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "description": "Expiry date (ISO 8601)",
+                                            "x-ms-summary": "Expiry Date"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Secret created",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "secretText": {
+                                    "type": "string",
+                                    "description": "The generated secret value (only returned once)"
+                                },
+                                "displayName": {
+                                    "type": "string"
+                                },
+                                "endDateTime": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "keyId": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Application": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Object ID of the application"
+                },
+                "appId": {
+                    "type": "string",
+                    "description": "Application (client) ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name"
+                },
+                "signInAudience": {
+                    "type": "string",
+                    "description": "Sign-in audience"
+                },
+                "requiredResourceAccess": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "resourceAppId": {
+                                "type": "string"
+                            },
+                            "resourceAccess": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ServicePrincipal": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Service principal object ID"
+                },
+                "appId": {
+                    "type": "string",
+                    "description": "Application (client) ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name"
+                }
+            }
+        },
+        "OAuth2PermissionGrant": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Grant ID"
+                },
+                "clientId": {
+                    "type": "string",
+                    "description": "Service principal ID of the client"
+                },
+                "consentType": {
+                    "type": "string",
+                    "description": "AllPrincipals or Principal"
+                },
+                "resourceId": {
+                    "type": "string",
+                    "description": "Service principal ID of the resource"
+                },
+                "scope": {
+                    "type": "string",
+                    "description": "Space-separated granted scopes"
+                }
+            }
+        },
+        "AppRoleAssignment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Assignment ID"
+                },
+                "principalId": {
+                    "type": "string",
+                    "description": "Principal (blueprint SP) ID"
+                },
+                "resourceId": {
+                    "type": "string",
+                    "description": "Resource SP ID"
+                },
+                "appRoleId": {
+                    "type": "string",
+                    "description": "App role ID"
+                },
+                "resourceDisplayName": {
+                    "type": "string",
+                    "description": "Resource display name"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://graph.microsoft.com/.default": "Access Microsoft Graph"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://graph.microsoft.com/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Administration"
+        }
+    ]
+}
