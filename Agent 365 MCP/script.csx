@@ -10,17 +10,19 @@ using Newtonsoft.Json.Linq;
 public class Script : ScriptBase
 {
     private const string ServerName = "Agent365McpProxy";
-    private const string ServerVersion = "1.0.0";
+    private const string ServerVersion = "1.1.0";
     private const string ProtocolVersion = "2025-12-01";
+
+    // Hard-code your Dataverse environment GUID here
+    private const string EnvId = "YOUR_ENVIRONMENT_ID";
 
     private static bool _isInitialized = false;
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
-        var envId = GetConnectionParameter("envId");
-        if (string.IsNullOrWhiteSpace(envId))
+        if (string.IsNullOrWhiteSpace(EnvId) || EnvId == "YOUR_ENVIRONMENT_ID")
         {
-            return CreateJsonRpcErrorResponse(null, -32602, "Invalid params", "Missing connection parameter: envId");
+            return CreateJsonRpcErrorResponse(null, -32602, "Invalid params", "EnvId not configured. Hard-code your environment GUID in script.csx.");
         }
 
         string body;
@@ -51,7 +53,7 @@ public class Script : ScriptBase
             switch (method)
             {
                 case "initialize":
-                    return HandleInitialize(envId, requestId);
+                    return HandleInitialize(EnvId, requestId);
 
                 case "notifications/initialized":
                     return HandleInitializedNotification();
@@ -60,7 +62,7 @@ public class Script : ScriptBase
                     return HandleToolsList(requestId);
 
                 case "tools/call":
-                    return await HandleToolsCallAsync(envId, request, requestId).ConfigureAwait(false);
+                    return await HandleToolsCallAsync(EnvId, request, requestId).ConfigureAwait(false);
 
                 default:
                     return CreateJsonRpcErrorResponse(requestId, -32601, "Method not found", method);
@@ -156,7 +158,7 @@ public class Script : ScriptBase
         var targetUrl = BuildServerUrl(envId, serverName);
         var forwardRequest = new HttpRequestMessage(HttpMethod.Post, targetUrl)
         {
-            Content = new StringContent(payload.ToString(Formatting.None), Encoding.UTF8, "application/json")
+            Content = new StringContent(payload.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
 
         var response = await this.Context.SendAsync(forwardRequest, this.CancellationToken).ConfigureAwait(false);
@@ -244,19 +246,6 @@ public class Script : ScriptBase
         };
     }
 
-    private string GetConnectionParameter(string name)
-    {
-        try
-        {
-            var raw = this.Context.ConnectionParameters[name]?.ToString();
-            return string.IsNullOrWhiteSpace(raw) ? null : raw;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private HttpResponseMessage CreateJsonRpcSuccessResponse(JToken id, JObject result)
     {
         var responseObj = new JObject
@@ -268,7 +257,7 @@ public class Script : ScriptBase
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
+            Content = new StringContent(responseObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 
@@ -294,7 +283,7 @@ public class Script : ScriptBase
 
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(responseObj.ToString(Formatting.None), Encoding.UTF8, "application/json")
+            Content = new StringContent(responseObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
         };
     }
 }
