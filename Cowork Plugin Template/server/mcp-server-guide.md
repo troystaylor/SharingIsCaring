@@ -456,6 +456,135 @@ bundles multiple tools into a single managed MCP-compatible endpoint.
 | Need full control over auth, caching, rate limiting | Self-hosted |
 | Production plugin for the M365 App Store | Self-hosted (until Toolbox exits preview) |
 
+## Tool Annotations and Confirmation Management
+
+Cowork reads the standard MCP `annotations` object on tools returned from
+`tools/list` and uses it to decide whether a tool call needs user confirmation
+and what label to show.
+
+### Available fields
+
+| Field | Type | Effect |
+|-------|------|--------|
+| `readOnlyHint` | bool | `false` → confirmation required before the tool runs |
+| `destructiveHint` | bool | `true` → confirmation required before the tool runs |
+| `title` | string | Human-readable label shown on the confirmation dialog (falls back to tool name) |
+
+### Confirmation rules
+
+- Confirmation is required if `readOnlyHint == false` OR `destructiveHint == true`
+- **All tools should have annotations.** Tools without annotations are treated
+  as destructive and require confirmation.
+- Safe read-only tools should set `"readOnlyHint": true` to auto-run without prompts
+
+### Examples
+
+A destructive action with a friendly label:
+
+```json
+{
+    "name": "delete_ticket",
+    "description": "Permanently delete a support ticket.",
+    "annotations": {
+        "title": "Delete Ticket",
+        "destructiveHint": true
+    },
+    "inputSchema": { ... }
+}
+```
+
+A safe read that auto-runs:
+
+```json
+{
+    "name": "search_tickets",
+    "description": "Search for support tickets.",
+    "annotations": {
+        "title": "Search Tickets",
+        "readOnlyHint": true
+    },
+    "inputSchema": { ... }
+}
+```
+
+A mutation that modifies data (default behavior — confirmation required):
+
+```json
+{
+    "name": "update_ticket",
+    "description": "Update fields on an existing ticket.",
+    "annotations": {
+        "title": "Update Ticket",
+        "readOnlyHint": false
+    },
+    "inputSchema": { ... }
+}
+```
+
+### Recommendation
+
+Set `annotations` on every tool from day one. Even though annotation-driven
+confirmation is being rolled out progressively for non-Microsoft MCP servers,
+setting the hints now is forward-compatible — confirmation prompts will surface
+as the rollout expands with no developer change required.
+
+## Widget-Enabled Tools (MCP Apps)
+
+Cowork supports rendering interactive UI widgets from your MCP server following
+the [MCP Apps Extension (SEP-1865)](https://github.com/modelcontextprotocol/ext-apps).
+A widget is an HTML/JS view rendered inline in the conversation inside a
+sandboxed iframe.
+
+### When to use widgets
+
+Use widgets when you need a rich, interactive, or visual surface: searchable
+pickers, dashboards, charts, previews, or live status. For simple confirmations
+or short forms, prefer MCP elicitation instead.
+
+### How it works
+
+1. **Declare a UI resource on the tool**: Add `_meta.ui.resourceUri` (with a
+   `ui://` scheme) to your tool's `tools/list` definition
+2. **Tool handler returns data, not HTML**: The tool's `tools/call` response
+   contains structured data that the widget renders
+3. **Serve the HTML via `resources/read`**: Cowork fetches the HTML template
+   from your server when the widget mounts
+
+### Key constraints
+
+| Constraint | Detail |
+|------------|--------|
+| `resourceUri` must use `ui://` scheme | Other schemes are ignored |
+| URI max length | 1024 characters |
+| MIME type | `text/html;profile=mcp-app` (set on `resources/read` response) |
+| Serve HTML as `text` field | Cowork doesn't decode base64 `blob` bodies |
+| Result size limit | `CallToolResult` payloads over 64 KiB aren't pushed to the widget |
+| Widget callbacks | Only `resources/read`, `tools/call`, and `ui/message` are forwarded |
+| Rate limit | 60 widget-initiated requests per minute per conversation |
+| Display modes | `inline` and `fullscreen` only (`pip` not supported) |
+
+### Widget tool example
+
+```json
+{
+    "name": "show_ticket_dashboard",
+    "description": "Show an interactive dashboard of ticket metrics.",
+    "_meta": {
+        "ui": { "resourceUri": "ui://your-app/ticket-dashboard.html" }
+    },
+    "inputSchema": { ... }
+}
+```
+
+### Graceful degradation
+
+Widget-enabled tools should always return meaningful text or `structuredContent`
+from their handler. If widget rendering is unavailable, the tool still runs and
+its data flows to the agent normally.
+
+For full implementation details, see the
+[MCP apps plugin author guide](https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/mcp-apps-support).
+
 ## Checklist
 
 Before connecting your MCP server to a Cowork plugin:
@@ -464,6 +593,7 @@ Before connecting your MCP server to a Cowork plugin:
 - [ ] Responds to `initialize`, `tools/list`, and `tools/call` methods
 - [ ] Returns valid JSON-RPC 2.0 responses for all methods
 - [ ] Every tool has a descriptive `name` and `description`
+- [ ] Every tool has `annotations` (readOnlyHint/destructiveHint) for confirmation management
 - [ ] Every input parameter has a `description` in the schema
 - [ ] Enum fields use `enum` in the schema (not just documented in text)
 - [ ] Required fields are marked in the `required` array
@@ -475,6 +605,7 @@ Before connecting your MCP server to a Cowork plugin:
 - [ ] Data is scoped to the authenticated user
 - [ ] HTTPS with TLS 1.2+ is enforced
 - [ ] No secrets or credentials in response payloads
+- [ ] (Optional) Widget tools declare `_meta.ui.resourceUri` and serve HTML via `resources/read`
 - [ ] (Optional) Feedback tools (`record_skill_feedback`, `get_skill_insights`) implemented for skill iteration
 
 ## Skill Feedback Tools (Optional)

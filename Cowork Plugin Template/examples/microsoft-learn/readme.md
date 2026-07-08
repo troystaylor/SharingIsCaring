@@ -46,6 +46,16 @@ Create `color.png` (192×192) and `outline.png` (32×32) in this folder.
 
 ### 3. Sideload
 
+**Option A: M365 Agents Toolkit CLI**
+
+```bash
+npm install -g @microsoft/m365agentstoolkit-cli
+atk auth login
+atk install --file-path "./microsoft-learn.zip" --scope Personal
+```
+
+**Option B: M365 Admin Center**
+
 1. **M365 Admin Center** → **Manage Apps** → **Upload custom app**
 2. Upload the generated `.zip`
 3. Open **Cowork** → **Sources & Skills** — three skills should appear

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PlannerCoworkMcp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d9f198239e62c8b380a52f8f513528b93fe0dd30")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+123b4720587d51d3519e1fe6bce5248399947d51")]
 [assembly: System.Reflection.AssemblyProductAttribute("PlannerCoworkMcp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PlannerCoworkMcp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

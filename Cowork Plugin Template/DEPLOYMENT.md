@@ -93,6 +93,20 @@ Add these steps for connector plugins:
 
 Before submitting to the App Store, test in your own tenant:
 
+### Option A: M365 Agents Toolkit CLI (recommended)
+
+1. Install the CLI: `npm install -g @microsoft/m365agentstoolkit-cli`
+2. Verify: `atk --version`
+3. Authenticate: `atk auth login`
+4. Install the package:
+   ```bash
+   atk install --file-path "./my-plugin.zip" --scope Personal
+   ```
+5. Save the returned `TitleId` and `AppId` for updates and uninstalls
+6. Open **Cowork** → **Sources & Skills** — your skills should appear
+
+### Option B: M365 Admin Center
+
 1. Run `.\package.ps1` to generate the .zip (requires icons)
 2. Go to **M365 Admin Center** → **Manage Apps** → **Upload custom app**
 3. Upload the .zip

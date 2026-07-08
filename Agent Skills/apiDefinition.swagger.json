@@ -1,0 +1,445 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Agent Skills",
+        "description": "Universal bridge from the agentskills.io open standard to Microsoft Copilot Studio and Power Automate. Discovers, enumerates, and retrieves Agent Skills from any GitHub repository following the agentskills.io specification. Implements progressive disclosure: metadata-only listing, on-demand skill loading, and cross-repository search.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.github.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Agent Skills MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Implements the agentskills.io progressive disclosure pattern: discover repositories, list skills (metadata only), and load full skill content on demand.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/search/repositories": {
+            "get": {
+                "summary": "Discover skill repositories",
+                "description": "Search GitHub for repositories containing Agent Skills (agentskills.io standard). Searches by topic, description, or SKILL.md presence.",
+                "operationId": "DiscoverRepositories",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Search query. Use topics like 'agent-skills' or keywords to find skill repositories.",
+                        "x-ms-summary": "Query",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort field.",
+                        "x-ms-summary": "Sort By",
+                        "type": "string",
+                        "enum": [
+                            "stars",
+                            "updated",
+                            "best-match"
+                        ],
+                        "default": "stars",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Results per page (max 30).",
+                        "x-ms-summary": "Per Page",
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 10,
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Repository search results.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "total_count": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Total matching repositories.",
+                                    "x-ms-summary": "Total Count"
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "description": "Matching repositories.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "full_name": {
+                                                "type": "string",
+                                                "description": "Repository full name (owner/repo).",
+                                                "x-ms-summary": "Repository"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Repository description.",
+                                                "x-ms-summary": "Description"
+                                            },
+                                            "html_url": {
+                                                "type": "string",
+                                                "description": "GitHub URL.",
+                                                "x-ms-summary": "URL"
+                                            },
+                                            "stargazers_count": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Star count.",
+                                                "x-ms-summary": "Stars"
+                                            },
+                                            "updated_at": {
+                                                "type": "string",
+                                                "description": "Last updated.",
+                                                "x-ms-summary": "Updated"
+                                            },
+                                            "topics": {
+                                                "type": "array",
+                                                "description": "Repository topics.",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repos/{owner}/{repo}/contents/{skillsPath}": {
+            "get": {
+                "summary": "List skills in repository",
+                "description": "List all skill directories in a repository at the specified path. Supports standard agentskills.io locations: .github/skills/, .claude/skills/, .agents/skills/, plugins/*/skills/.",
+                "operationId": "ListSkills",
+                "parameters": [
+                    {
+                        "name": "owner",
+                        "in": "path",
+                        "description": "Repository owner (e.g., dotnet, anthropics, laravel).",
+                        "x-ms-summary": "Owner",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "repo",
+                        "in": "path",
+                        "description": "Repository name (e.g., skills, boost).",
+                        "x-ms-summary": "Repository",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "skillsPath",
+                        "in": "path",
+                        "description": "Path to skills directory (e.g., plugins/dotnet-ai/skills, .github/skills).",
+                        "x-ms-summary": "Skills Path",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "ref",
+                        "in": "query",
+                        "description": "Branch or tag.",
+                        "x-ms-summary": "Branch",
+                        "type": "string",
+                        "default": "main",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of skill directories.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Skill directory name.",
+                                        "x-ms-summary": "Skill Name"
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Full path in repository.",
+                                        "x-ms-summary": "Path"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "description": "Entry type (dir or file).",
+                                        "x-ms-summary": "Type"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repos/{owner}/{repo}/contents/{skillPath}/SKILL.md": {
+            "get": {
+                "summary": "Get skill",
+                "description": "Retrieve the full SKILL.md content for a specific skill. Returns decoded markdown with frontmatter (name, description, license, compatibility) and body instructions.",
+                "operationId": "GetSkill",
+                "parameters": [
+                    {
+                        "name": "owner",
+                        "in": "path",
+                        "description": "Repository owner.",
+                        "x-ms-summary": "Owner",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "repo",
+                        "in": "path",
+                        "description": "Repository name.",
+                        "x-ms-summary": "Repository",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "skillPath",
+                        "in": "path",
+                        "description": "Path to skill directory (e.g., plugins/dotnet-ai/skills/technology-selection).",
+                        "x-ms-summary": "Skill Path",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "ref",
+                        "in": "query",
+                        "description": "Branch or tag.",
+                        "x-ms-summary": "Branch",
+                        "type": "string",
+                        "default": "main",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill file content (decoded).",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "File name.",
+                                    "x-ms-summary": "File Name"
+                                },
+                                "path": {
+                                    "type": "string",
+                                    "description": "File path.",
+                                    "x-ms-summary": "Path"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "Decoded SKILL.md content (markdown with YAML frontmatter).",
+                                    "x-ms-summary": "Content"
+                                },
+                                "html_url": {
+                                    "type": "string",
+                                    "description": "URL to view on GitHub.",
+                                    "x-ms-summary": "GitHub URL"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/search/code": {
+            "get": {
+                "summary": "Search skills",
+                "description": "Search for Agent Skills across GitHub by keyword. Finds SKILL.md files matching your query across any repository following the agentskills.io standard.",
+                "operationId": "SearchSkills",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Search query (e.g., 'PDF processing', 'testing', 'deployment').",
+                        "x-ms-summary": "Query",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Results per page (max 30).",
+                        "x-ms-summary": "Per Page",
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 10,
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Code search results.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "total_count": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Total matching files.",
+                                    "x-ms-summary": "Total Count"
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "description": "Matching skill files.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "File name.",
+                                                "x-ms-summary": "File Name"
+                                            },
+                                            "path": {
+                                                "type": "string",
+                                                "description": "File path in repo.",
+                                                "x-ms-summary": "Path"
+                                            },
+                                            "html_url": {
+                                                "type": "string",
+                                                "description": "URL to view on GitHub.",
+                                                "x-ms-summary": "GitHub URL"
+                                            },
+                                            "repository": {
+                                                "type": "object",
+                                                "description": "Source repository.",
+                                                "properties": {
+                                                    "full_name": {
+                                                        "type": "string",
+                                                        "description": "Repository (owner/repo).",
+                                                        "x-ms-summary": "Repository"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "description": "Repository description.",
+                                                        "x-ms-summary": "Repo Description"
+                                                    }
+                                                }
+                                            },
+                                            "text_matches": {
+                                                "type": "array",
+                                                "description": "Matching text fragments.",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "fragment": {
+                                                            "type": "string",
+                                                            "description": "Matched text.",
+                                                            "x-ms-summary": "Fragment"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repos/{owner}/{repo}/topics": {
+            "get": {
+                "summary": "Get repository topics",
+                "description": "Get topics for a repository to verify it follows the agentskills.io standard (look for 'agent-skills' topic).",
+                "operationId": "GetRepoTopics",
+                "parameters": [
+                    {
+                        "name": "owner",
+                        "in": "path",
+                        "description": "Repository owner.",
+                        "x-ms-summary": "Owner",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "repo",
+                        "in": "path",
+                        "description": "Repository name.",
+                        "x-ms-summary": "Repository",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Repository topics.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "names": {
+                                    "type": "array",
+                                    "description": "Topic names.",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;IT Operations"
+        }
+    ]
+}

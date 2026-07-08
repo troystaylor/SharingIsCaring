@@ -109,6 +109,17 @@ else {
                 if ($url -and $url -match '\{\{') {
                     $warnings += "Connector '$($conn.id)': mcpServerUrl contains template placeholder"
                 }
+
+                # Authorization validation per connector rules
+                $auth = $conn.toolSource.remoteMcpServer.authorization
+                if ($auth) {
+                    if ($auth.type -eq "None" -and $auth.referenceId) {
+                        $errors += "Connector '$($conn.id)': referenceId must not be present when authorization type is 'None'"
+                    }
+                    if ($auth.type -and $auth.type -ne "None" -and -not $auth.referenceId) {
+                        $errors += "Connector '$($conn.id)': referenceId is required when authorization type is '$($auth.type)'"
+                    }
+                }
             }
         }
     }

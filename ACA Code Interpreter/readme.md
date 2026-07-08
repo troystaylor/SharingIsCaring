@@ -1,6 +1,6 @@
 # ACA Code Interpreter
 
-A dual-mode Power Platform custom connector that executes code in isolated [ACA Sandbox](https://sandboxes.azure.com) microVMs. Supports 16 languages and modes from both Power Automate (typed operations) and Copilot Studio (MCP tools).
+A dual-mode Power Platform custom MCP connector that executes code in isolated [ACA Sandbox](https://sandboxes.azure.com) microVMs. Supports 16 languages and modes from both Power Automate (typed operations) and Copilot Studio (MCP tools).
 
 ## Supported Languages
 

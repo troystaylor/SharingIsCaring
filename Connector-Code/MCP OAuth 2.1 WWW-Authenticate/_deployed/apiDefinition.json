@@ -1,0 +1,134 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "MCP-OAuth21-WWWAuthenticate",
+    "description": "Template for an MCP connector with OAuth 2.1 authorization and WWW-Authenticate discovery. Replace host, basePath, auth endpoints, and scopes with values from your MCP server\u0027s Protected Resource Metadata. For MCP-only connectors, change basePath to \u0022/mcp\u0022 and path to \u0022/\u0022. For dual-mode connectors (MCP \u002B typed operations), keep basePath as \u0022/\u0022 and use path \u0022/mcp\u0022 for the MCP endpoint.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "your-mcp-server.azurecontainerapps.io",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke MCP Server",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 messages including initialize, tools/list, tools/call, and notifications.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "operationId": "InvokeMCP",
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC response"
+          },
+          "401": {
+            "description": "Authorization required. Check the WWW-Authenticate header for resource_metadata URL and required scopes."
+          },
+          "403": {
+            "description": "Insufficient scope. The access token does not have the required permissions."
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-protected-resource": {
+      "get": {
+        "summary": "Get Protected Resource Metadata",
+        "description": "RFC 9728 endpoint. Returns the authorization server URL and supported scopes for this MCP server. Use this to discover the auth configuration needed for apiProperties.json.",
+        "operationId": "GetResourceMetadata",
+        "x-ms-visibility": "internal",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Protected Resource Metadata",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "resource": {
+                  "type": "string",
+                  "description": "The canonical URI of this MCP server",
+                  "x-ms-summary": "Resource URI"
+                },
+                "authorization_servers": {
+                  "type": "array",
+                  "description": "Authorization server URLs",
+                  "items": {
+                    "type": "string"
+                  },
+                  "x-ms-summary": "Authorization Servers"
+                },
+                "scopes_supported": {
+                  "type": "array",
+                  "description": "OAuth scopes this resource supports",
+                  "items": {
+                    "type": "string"
+                  },
+                  "x-ms-summary": "Supported Scopes"
+                },
+                "bearer_methods_supported": {
+                  "type": "array",
+                  "description": "How bearer tokens should be sent",
+                  "items": {
+                    "type": "string"
+                  },
+                  "x-ms-summary": "Bearer Methods"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "tags": [],
+  "securityDefinitions": {
+    "oauth2-auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://YOUR_AUTH_SERVER/authorize",
+      "tokenUrl": "https://YOUR_AUTH_SERVER/token",
+      "scopes": {
+        "openid": "OpenID Connect",
+        "profile": "User profile",
+        "offline_access": "Refresh tokens"
+      },
+      "description": "OAuth 2.1 authorization. Replace URLs with values from /.well-known/oauth-protected-resource discovery."
+    }
+  },
+  "security": [
+    {
+      "oauth2-auth": [
+        "openid",
+        "profile",
+        "offline_access"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://your-mcp-server.example.com"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://your-mcp-server.example.com/privacy"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Business Intelligence"
+    }
+  ]
+}

@@ -71,7 +71,25 @@ For skills-only, rename `manifest-skills-only.json` to `manifest.json`.
 .\package.ps1 -Json          # structured output for CI/CD
 ```
 
+Or use the M365 Agents Toolkit CLI:
+
+```powershell
+atk package --manifest-file ./manifest.json --output-package-file ./plugin.zip --output-folder ./build
+```
+
 ### 7. Sideload for testing
+
+**Option A: M365 Agents Toolkit CLI (recommended)**
+
+```powershell
+npm install -g @microsoft/m365agentstoolkit-cli
+atk auth login
+atk install --file-path ".\my-plugin.zip" --scope Personal
+```
+
+Save the returned `TitleId` and `AppId` for updates and uninstalls.
+
+**Option B: M365 Admin Center**
 
 1. Open **M365 Admin Center** > **Manage Apps** > **Upload custom app**
 2. Upload the generated `.zip` file
@@ -93,6 +111,7 @@ Cowork Plugin Template/
 │   ├── README.md                              # Auth type guide and registration instructions
 │   ├── oauth-connector.json                   # OAuthPluginVault connector snippet
 │   ├── apikey-connector.json                  # ApiKeyPluginVault connector snippet
+│   ├── dcr-connector.json                     # Dynamic Client Registration connector snippet
 │   └── none-connector.json                    # No-auth connector snippet
 ├── server/                                    # MCP server design guidance
 │   ├── mcp-server-guide.md                    # Protocol, tool design, timeouts, hosting
@@ -120,7 +139,8 @@ The three included patterns cover ~80% of what business users ask an API-backed 
 |-------|---------|-----------------|
 | **search-and-explore** | Discovery | "Find", "look up", "show me", "check status" |
 | **create-and-update** | Mutation | "Create", "add", "update", "change", "close" |
-| **report-and-summarize** | Aggregation | "Summarize", "report on", "how are we doing", "weekly update" || **improve-skills** | Feedback | "That wasn't right", "you should have known", "review skill feedback" |
+| **report-and-summarize** | Aggregation | "Summarize", "report on", "how are we doing", "weekly update" |
+| **improve-skills** | Feedback | "That wasn't right", "you should have known", "review skill feedback" |
 Each SKILL.md includes:
 - Trigger phrase examples in the `description` frontmatter
 - Numbered workflow steps referencing specific MCP tools
@@ -136,7 +156,7 @@ Add skills when your API has **distinct workflow domains**. For example, a CRM A
 - `qualify-leads` — search + score + recommend
 - `prepare-meeting` — cross-entity: pull contact history + recent deals + open tickets
 
-Maximum 20 skills per plugin. Keep each SKILL.md under 2,000 words and move detailed reference material to `references/` subdirectories.
+Maximum 20 skills per plugin (10 connectors max). Keep each SKILL.md under 2,000 words and move detailed reference material to `references/` subdirectories.
 
 ### Avoid built-in skill name conflicts
 
@@ -183,7 +203,7 @@ description: Provides ServiceNow ticket access.
 | `None` | Public APIs, internal services | No prompt |
 | `OAuthPluginVault` | OAuth 2.0 APIs (recommended) | One-time consent flow |
 | `ApiKeyPluginVault` | API key services | User provides key once |
-| `DynamicClientRegistration` | RFC 7591 dynamic client registration | OAuth consent flow |
+| Dynamic Client Registration | MCP server supports RFC 7591 DCR | OAuth consent (auto-configured) |
 
 ### How it works
 
@@ -194,7 +214,12 @@ description: Provides ServiceNow ticket access.
 
 ### Configuration
 
-The `auth/` folder contains ready-to-use `agentConnectors` snippets. Copy the appropriate one into your `manifest.json`. See [`auth/README.md`](auth/README.md) for the full guide.
+The `auth/` folder contains ready-to-use `agentConnectors` snippets. Copy the appropriate one into your `manifest.json`. See [`auth/README.md`](auth/README.md) for the full guide including Dynamic Client Registration (DCR) setup.
+
+For `OAuthPluginVault` and `ApiKeyPluginVault`, the `referenceId` is the OAuth
+client registration ID you create when you
+[register an OAuth client with Agents Toolkit](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api-plugin-authentication#register-an-oauth-client-with-agents-toolkit).
+Set usage by organization to **Any Microsoft 365 Organization** for cross-tenant support.
 
 ### Auth handling in skills
 
@@ -220,6 +245,7 @@ If your plugin includes a connector, you need a remote MCP server. The `server/`
 | **30-second timeout** | Every tool call must complete within 30 seconds. Use pagination, pre-aggregation, or async job patterns |
 | **Structured JSON responses** | Return JSON objects with `total_count` and `has_more`, not prose |
 | **Parameter descriptions** | Every input parameter needs a `description` — this is how the agent decides what to pass |
+| **Tool annotations** | Every tool should have `annotations` (`readOnlyHint`/`destructiveHint`) — tools without them require user confirmation |
 | **Error format** | Use `isError: true` for business errors, JSON-RPC error codes only for protocol failures |
 | **Auth scoping** | Validate the user's OAuth token and scope data to that user on every request |
 

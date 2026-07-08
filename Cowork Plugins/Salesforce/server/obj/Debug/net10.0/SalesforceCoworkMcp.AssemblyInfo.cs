@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SalesforceCoworkMcp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+55800e88bb2983e62945b2b38665616deda97856")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+123b4720587d51d3519e1fe6bce5248399947d51")]
 [assembly: System.Reflection.AssemblyProductAttribute("SalesforceCoworkMcp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SalesforceCoworkMcp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

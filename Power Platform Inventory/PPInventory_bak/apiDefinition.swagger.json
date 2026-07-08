@@ -1,0 +1,1157 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power Platform Inventory",
+        "description": "MCP server and typed operations for querying the Power Platform inventory (PowerPlatformResources table in Azure Resource Graph). Exposes every sample query from the Microsoft Learn documentation as a callable operation so admins can count resources, find specific items, analyze connector usage, and run advanced KQL queries from Copilot Studio or Power Automate.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.powerplatform.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Power Platform Inventory MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Exposes every inventory sample query as an MCP tool.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/inventory/count-all": {
+            "get": {
+                "summary": "Count All Resources",
+                "description": "Returns the total number of Power Platform resources in the tenant (KQL: PowerPlatformResources | count).",
+                "operationId": "CountAllResources",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Total resource count",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalCount": {
+                                    "type": "integer",
+                                    "description": "Total number of Power Platform resources",
+                                    "x-ms-summary": "Total Count"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/count-by-type": {
+            "get": {
+                "summary": "Count Resources by Type",
+                "description": "Returns the count of resources grouped by resource type (canvas apps, model-driven apps, cloud flows, agents, etc.).",
+                "operationId": "CountByType",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Counts grouped by resource type",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Counts per resource type",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Resource type identifier",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Number of resources of this type",
+                                                "x-ms-summary": "Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/count-by-environment": {
+            "get": {
+                "summary": "Count Resources by Environment",
+                "description": "Returns the count of resources grouped by environment ID.",
+                "operationId": "CountByEnvironment",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Counts grouped by environment",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Counts per environment",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment ID (GUID)",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Number of resources in this environment",
+                                                "x-ms-summary": "Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/count-by-region": {
+            "get": {
+                "summary": "Count Resources by Region",
+                "description": "Returns the count of resources grouped by Azure region (location field).",
+                "operationId": "CountByRegion",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Counts grouped by region",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Counts per region",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "location": {
+                                                "type": "string",
+                                                "description": "Azure region",
+                                                "x-ms-summary": "Location"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Number of resources in this region",
+                                                "x-ms-summary": "Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/top-owners": {
+            "get": {
+                "summary": "Top Owners by Item Count",
+                "description": "Returns the users (owner object IDs) with the most Power Platform resources. Useful for identifying champions and orphan-risk users.",
+                "operationId": "TopOwners",
+                "parameters": [
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 25,
+                        "description": "Maximum number of owners to return",
+                        "x-ms-summary": "Top N"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Top owners",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Owners ranked by resource count",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "ownerId": {
+                                                "type": "string",
+                                                "description": "Object ID of the owner",
+                                                "x-ms-summary": "Owner ID"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Number of resources owned",
+                                                "x-ms-summary": "Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/recent": {
+            "get": {
+                "summary": "Recently Created Resources",
+                "description": "Returns resources created within the last N hours (default 24).",
+                "operationId": "RecentResources",
+                "parameters": [
+                    {
+                        "name": "hours",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 24,
+                        "description": "Look back window in hours",
+                        "x-ms-summary": "Hours"
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Maximum number of resources to return",
+                        "x-ms-summary": "Top N"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Recently created resources",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Resources created within the window",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Resource ID",
+                                                "x-ms-summary": "ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Resource name (unique identifier)",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Display name",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Resource type",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment ID",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "description": "Creation timestamp",
+                                                "x-ms-summary": "Created At"
+                                            },
+                                            "createdBy": {
+                                                "type": "string",
+                                                "description": "Object ID of the creator",
+                                                "x-ms-summary": "Created By"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/find": {
+            "get": {
+                "summary": "Find Resource by ID",
+                "description": "Finds a single resource by its unique name/ID across the tenant. Returns the full record including all properties.",
+                "operationId": "FindResource",
+                "parameters": [
+                    {
+                        "name": "resourceId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique resource ID (the 'name' field — for example, a Copilot Studio agent's GUID).",
+                        "x-ms-summary": "Resource ID"
+                    },
+                    {
+                        "name": "resourceType",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Optional resource type filter (for example, microsoft.copilotstudio/agents). Speeds up the lookup.",
+                        "x-ms-summary": "Resource Type",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetResourceTypeDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching resource records",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of matching records",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Matching resource records",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "ARM resource ID",
+                                                "x-ms-summary": "ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Unique resource identifier",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Resource type",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "location": {
+                                                "type": "string",
+                                                "description": "Region",
+                                                "x-ms-summary": "Location"
+                                            },
+                                            "tenantId": {
+                                                "type": "string",
+                                                "description": "Tenant ID",
+                                                "x-ms-summary": "Tenant ID"
+                                            },
+                                            "properties": {
+                                                "type": "object",
+                                                "description": "Full property bag for the resource"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/list": {
+            "get": {
+                "summary": "List Resources by Type",
+                "description": "Lists Power Platform resources of a given type with optional environment filter and paging. Use this for tabular inventory views.",
+                "operationId": "ListResourcesByType",
+                "parameters": [
+                    {
+                        "name": "resourceType",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource type to list (for example, microsoft.powerapps/canvasapps).",
+                        "x-ms-summary": "Resource Type",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetResourceTypeDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Optional environment ID filter.",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Maximum number of resources to return per page.",
+                        "x-ms-summary": "Top N"
+                    },
+                    {
+                        "name": "skipToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Continuation token from a previous response.",
+                        "x-ms-summary": "Skip Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of resources",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalRecords": {
+                                    "type": "integer",
+                                    "description": "Total matching records",
+                                    "x-ms-summary": "Total Records"
+                                },
+                                "count": {
+                                    "type": "integer",
+                                    "description": "Records returned in this page",
+                                    "x-ms-summary": "Count"
+                                },
+                                "skipToken": {
+                                    "type": "string",
+                                    "description": "Continuation token for next page (empty when finished)",
+                                    "x-ms-summary": "Skip Token"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Resource records",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Resource ID",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Display name",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "description": "Resource type",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "location": {
+                                                "type": "string",
+                                                "description": "Region",
+                                                "x-ms-summary": "Location"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment ID",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "ownerId": {
+                                                "type": "string",
+                                                "description": "Owner object ID",
+                                                "x-ms-summary": "Owner ID"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "description": "Creation timestamp",
+                                                "x-ms-summary": "Created At"
+                                            },
+                                            "createdBy": {
+                                                "type": "string",
+                                                "description": "Object ID of the creator",
+                                                "x-ms-summary": "Created By"
+                                            },
+                                            "lastModifiedAt": {
+                                                "type": "string",
+                                                "description": "Last modified timestamp",
+                                                "x-ms-summary": "Last Modified At"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/environments": {
+            "get": {
+                "summary": "List Environments",
+                "description": "Lists all environments in the inventory with type, state, group assignment, and region.",
+                "operationId": "ListEnvironments",
+                "parameters": [
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 200,
+                        "description": "Maximum number of environments to return",
+                        "x-ms-summary": "Top N"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of environments",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of environments returned",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Environment records",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Environment ID",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Display name",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "location": {
+                                                "type": "string",
+                                                "description": "Region",
+                                                "x-ms-summary": "Location"
+                                            },
+                                            "environmentType": {
+                                                "type": "string",
+                                                "description": "Environment type (Production, Sandbox, Default, etc.)",
+                                                "x-ms-summary": "Type"
+                                            },
+                                            "isManaged": {
+                                                "type": "boolean",
+                                                "description": "Whether the environment is managed",
+                                                "x-ms-summary": "Managed"
+                                            },
+                                            "environmentGroup": {
+                                                "type": "string",
+                                                "description": "Environment group name (if assigned)",
+                                                "x-ms-summary": "Group"
+                                            },
+                                            "environmentGroupId": {
+                                                "type": "string",
+                                                "description": "Environment group ID (if assigned)",
+                                                "x-ms-summary": "Group ID"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/environment-groups": {
+            "get": {
+                "summary": "List Environment Groups",
+                "description": "Lists all environment groups in the tenant.",
+                "operationId": "ListEnvironmentGroups",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of environment groups",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of groups",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Environment groups",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Group ID",
+                                                "x-ms-summary": "Group ID"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Group name",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "description": "Group description",
+                                                "x-ms-summary": "Description"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/connectors/top": {
+            "get": {
+                "summary": "Top Connectors",
+                "description": "Lists the connectors used by the most distinct resources across canvas apps, model-driven apps, cloud flows, agent flows, workflow agent flows, and Copilot Studio agents. (Connector inventory preview.)",
+                "operationId": "TopConnectors",
+                "parameters": [
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum number of connectors to return",
+                        "x-ms-summary": "Top N"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Top connectors",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Connectors ranked by distinct resource count",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "connectorId": {
+                                                "type": "string",
+                                                "description": "Connector identifier (for example, shared_sharepointonline)",
+                                                "x-ms-summary": "Connector ID"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Number of distinct resources using this connector",
+                                                "x-ms-summary": "Resource Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/connectors/distribution": {
+            "get": {
+                "summary": "Connector Count Distribution",
+                "description": "Shows how many resources use 0, 1, 2, or more connectors. Useful for spotting complexity outliers. (Connector inventory preview.)",
+                "operationId": "ConnectorCountDistribution",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Distribution of connector counts",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Distribution rows",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "connectorCount": {
+                                                "type": "integer",
+                                                "description": "Number of connectors used by a resource",
+                                                "x-ms-summary": "Connector Count"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Number of resources with this connector count",
+                                                "x-ms-summary": "Resource Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/connectors/resources": {
+            "get": {
+                "summary": "Resources Using Connector",
+                "description": "Finds every Power Platform resource that uses a specific connector. Critical for impact analysis when a connector has a known issue, is being deprecated, or requires new licensing. (Connector inventory preview.)",
+                "operationId": "ResourcesUsingConnector",
+                "parameters": [
+                    {
+                        "name": "connectorId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The connector identifier (for example, shared_sharepointonline).",
+                        "x-ms-summary": "Connector ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetConnectorDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "default": 200,
+                        "description": "Maximum number of resources to return",
+                        "x-ms-summary": "Top N"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resources using the connector",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "connectorId": {
+                                    "type": "string",
+                                    "description": "Connector queried",
+                                    "x-ms-summary": "Connector ID"
+                                },
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of resources returned",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Matching resources",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "resourceName": {
+                                                "type": "string",
+                                                "description": "Resource display name",
+                                                "x-ms-summary": "Resource Name"
+                                            },
+                                            "resourceId": {
+                                                "type": "string",
+                                                "description": "Resource ID",
+                                                "x-ms-summary": "Resource ID"
+                                            },
+                                            "resourceType": {
+                                                "type": "string",
+                                                "description": "Resource type",
+                                                "x-ms-summary": "Resource Type"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment ID",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "operationsUsed": {
+                                                "type": "array",
+                                                "description": "Operations invoked on the connector",
+                                                "x-ms-summary": "Operations Used",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "operationId": {
+                                                            "type": "string",
+                                                            "description": "Operation ID",
+                                                            "x-ms-summary": "Operation ID"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/connectors/by-environment": {
+            "get": {
+                "summary": "Connector Usage by Environment",
+                "description": "Lists every connector used in every environment with the count of distinct resources that use it. Useful for adoption analysis and DLP policy decisions. (Connector inventory preview.)",
+                "operationId": "ConnectorUsageByEnvironment",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Optional environment ID filter.",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connector usage rows",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "rowCount": {
+                                    "type": "integer",
+                                    "description": "Number of result rows",
+                                    "x-ms-summary": "Row Count"
+                                },
+                                "rows": {
+                                    "type": "array",
+                                    "description": "Connector usage per environment",
+                                    "x-ms-summary": "Rows",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment ID",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "connectorId": {
+                                                "type": "string",
+                                                "description": "Connector ID",
+                                                "x-ms-summary": "Connector ID"
+                                            },
+                                            "resourceCount": {
+                                                "type": "integer",
+                                                "description": "Distinct resources using this connector",
+                                                "x-ms-summary": "Resource Count"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/query": {
+            "post": {
+                "summary": "Run Inventory Query",
+                "description": "Advanced escape hatch. Submits a raw Power Platform inventory query (TableName + Clauses + Options) directly to the resource query endpoint. Use when no preset operation fits.",
+                "operationId": "RunQuery",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "TableName",
+                                "Clauses"
+                            ],
+                            "properties": {
+                                "TableName": {
+                                    "type": "string",
+                                    "description": "Target table (typically PowerPlatformResources).",
+                                    "default": "PowerPlatformResources",
+                                    "x-ms-summary": "Table Name"
+                                },
+                                "Clauses": {
+                                    "type": "array",
+                                    "description": "Array of query clause objects ($type: where, project, take, orderby, distinct, count, summarize, extend, join).",
+                                    "x-ms-summary": "Clauses",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "$type": {
+                                                "type": "string",
+                                                "description": "Clause type",
+                                                "x-ms-summary": "Type"
+                                            }
+                                        }
+                                    }
+                                },
+                                "Options": {
+                                    "type": "object",
+                                    "description": "Pagination and result options.",
+                                    "x-ms-summary": "Options",
+                                    "properties": {
+                                        "Top": {
+                                            "type": "integer",
+                                            "description": "Maximum number of rows",
+                                            "x-ms-summary": "Top"
+                                        },
+                                        "Skip": {
+                                            "type": "integer",
+                                            "description": "Number of rows to skip",
+                                            "x-ms-summary": "Skip"
+                                        },
+                                        "SkipToken": {
+                                            "type": "string",
+                                            "description": "Continuation token",
+                                            "x-ms-summary": "Skip Token"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Raw resource query result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "totalRecords": {
+                                    "type": "integer",
+                                    "description": "Total matching records",
+                                    "x-ms-summary": "Total Records"
+                                },
+                                "count": {
+                                    "type": "integer",
+                                    "description": "Records in this page",
+                                    "x-ms-summary": "Count"
+                                },
+                                "resultTruncated": {
+                                    "type": "integer",
+                                    "description": "1 if results were truncated",
+                                    "x-ms-summary": "Result Truncated"
+                                },
+                                "skipToken": {
+                                    "type": "string",
+                                    "description": "Continuation token (empty when finished)",
+                                    "x-ms-summary": "Skip Token"
+                                },
+                                "data": {
+                                    "type": "array",
+                                    "description": "Result rows",
+                                    "x-ms-summary": "Data",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/environments": {
+            "get": {
+                "summary": "Get Environment Dropdown",
+                "description": "Internal operation for dynamic dropdowns. Returns environment IDs and display names.",
+                "operationId": "GetEnvironmentDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Environment list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Environment ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment display name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/resource-types": {
+            "get": {
+                "summary": "Get Resource Type Dropdown",
+                "description": "Internal operation for dynamic dropdowns. Returns the static list of supported resource types.",
+                "operationId": "GetResourceTypeDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Resource type list",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Resource type identifier"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Friendly name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/connectors": {
+            "get": {
+                "summary": "Get Connector Dropdown",
+                "description": "Internal operation for dynamic dropdowns. Returns the distinct connectors observed in the tenant inventory.",
+                "operationId": "GetConnectorDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Connector list",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Connector ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Connector ID (display)"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://api.powerplatform.com/.default": "Access Power Platform APIs"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://api.powerplatform.com/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/power-platform/admin/power-platform-inventory"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}

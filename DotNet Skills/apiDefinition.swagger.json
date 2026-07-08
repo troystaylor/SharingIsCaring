@@ -1,0 +1,393 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": ".NET Skills",
+        "description": "Dual-mode connector for the dotnet/skills repository — curated .NET development guidance for AI coding agents. MCP endpoint for Copilot Studio agents and typed operations for Power Automate workflows. Covers C# LSP, MSBuild, NuGet, AI/ML, ASP.NET Core, Blazor, MAUI, testing, upgrades, and more.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.github.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke .NET Skills MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes tools to list plugins, retrieve skills, and search .NET development guidance from the dotnet/skills repository.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/repos/dotnet/skills/contents/plugins": {
+            "get": {
+                "summary": "List plugins",
+                "description": "List all available .NET skill plugins (e.g., dotnet, dotnet-ai, dotnet-msbuild, dotnet-nuget, dotnet-test).",
+                "operationId": "ListPlugins",
+                "parameters": [
+                    {
+                        "name": "ref",
+                        "in": "query",
+                        "description": "Branch or tag to read from.",
+                        "x-ms-summary": "Branch",
+                        "type": "string",
+                        "default": "main",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of plugin directories.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Plugin directory name.",
+                                        "x-ms-summary": "Plugin Name"
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Path relative to repo root.",
+                                        "x-ms-summary": "Path"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "description": "Entry type (dir or file).",
+                                        "x-ms-summary": "Type"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repos/dotnet/skills/contents/plugins/{plugin}/plugin.json": {
+            "get": {
+                "summary": "Get plugin details",
+                "description": "Retrieve the plugin.json manifest for a specific plugin including name, version, description, and available skills/agents.",
+                "operationId": "GetPluginDetails",
+                "parameters": [
+                    {
+                        "name": "plugin",
+                        "in": "path",
+                        "description": "Plugin name (e.g., dotnet-ai, dotnet-msbuild).",
+                        "x-ms-summary": "Plugin",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListPlugins",
+                            "value-path": "name",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "ref",
+                        "in": "query",
+                        "description": "Branch or tag to read from.",
+                        "x-ms-summary": "Branch",
+                        "type": "string",
+                        "default": "main",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File content response from GitHub.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "File name.",
+                                    "x-ms-summary": "File Name"
+                                },
+                                "path": {
+                                    "type": "string",
+                                    "description": "File path.",
+                                    "x-ms-summary": "Path"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "Base64-encoded file content.",
+                                    "x-ms-summary": "Content (Base64)"
+                                },
+                                "encoding": {
+                                    "type": "string",
+                                    "description": "Content encoding (base64).",
+                                    "x-ms-summary": "Encoding"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repos/dotnet/skills/contents/plugins/{plugin}/skills": {
+            "get": {
+                "summary": "List skills",
+                "description": "List all available skills within a specific plugin.",
+                "operationId": "ListSkills",
+                "parameters": [
+                    {
+                        "name": "plugin",
+                        "in": "path",
+                        "description": "Plugin name (e.g., dotnet-ai, dotnet-msbuild).",
+                        "x-ms-summary": "Plugin",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListPlugins",
+                            "value-path": "name",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "ref",
+                        "in": "query",
+                        "description": "Branch or tag to read from.",
+                        "x-ms-summary": "Branch",
+                        "type": "string",
+                        "default": "main",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of skill directories.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Skill directory name.",
+                                        "x-ms-summary": "Skill Name"
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "description": "Path relative to repo root.",
+                                        "x-ms-summary": "Path"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "description": "Entry type (dir or file).",
+                                        "x-ms-summary": "Type"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repos/dotnet/skills/contents/plugins/{plugin}/skills/{skill}/SKILL.md": {
+            "get": {
+                "summary": "Get skill content",
+                "description": "Retrieve the full SKILL.md content for a specific skill. Contains structured guidance, workflows, code examples, and validation checklists.",
+                "operationId": "GetSkill",
+                "parameters": [
+                    {
+                        "name": "plugin",
+                        "in": "path",
+                        "description": "Plugin name (e.g., dotnet-ai, dotnet-msbuild).",
+                        "x-ms-summary": "Plugin",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListPlugins",
+                            "value-path": "name",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "skill",
+                        "in": "path",
+                        "description": "Skill name (e.g., technology-selection, binlog-failure-analysis).",
+                        "x-ms-summary": "Skill",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListSkills",
+                            "parameters": {
+                                "plugin": {
+                                    "parameter": "plugin"
+                                }
+                            },
+                            "value-path": "name",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "ref",
+                        "in": "query",
+                        "description": "Branch or tag to read from.",
+                        "x-ms-summary": "Branch",
+                        "type": "string",
+                        "default": "main",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Skill file content.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "File name.",
+                                    "x-ms-summary": "File Name"
+                                },
+                                "path": {
+                                    "type": "string",
+                                    "description": "File path.",
+                                    "x-ms-summary": "Path"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "description": "Base64-encoded SKILL.md content.",
+                                    "x-ms-summary": "Content (Base64)"
+                                },
+                                "encoding": {
+                                    "type": "string",
+                                    "description": "Content encoding (base64).",
+                                    "x-ms-summary": "Encoding"
+                                },
+                                "html_url": {
+                                    "type": "string",
+                                    "description": "URL to view on GitHub.",
+                                    "x-ms-summary": "GitHub URL"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/search/code": {
+            "get": {
+                "summary": "Search skills",
+                "description": "Search across all .NET skills for relevant content by keyword. Searches SKILL.md files in the dotnet/skills repository.",
+                "operationId": "SearchSkills",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Search query (automatically scoped to repo:dotnet/skills path:plugins filename:SKILL.md).",
+                        "x-ms-summary": "Query",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "total_count": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Total matching results.",
+                                    "x-ms-summary": "Total Count"
+                                },
+                                "items": {
+                                    "type": "array",
+                                    "description": "Matching files.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "File name.",
+                                                "x-ms-summary": "File Name"
+                                            },
+                                            "path": {
+                                                "type": "string",
+                                                "description": "File path in repo.",
+                                                "x-ms-summary": "Path"
+                                            },
+                                            "html_url": {
+                                                "type": "string",
+                                                "description": "URL to view on GitHub.",
+                                                "x-ms-summary": "GitHub URL"
+                                            },
+                                            "repository": {
+                                                "type": "object",
+                                                "description": "Repository info.",
+                                                "properties": {
+                                                    "full_name": {
+                                                        "type": "string",
+                                                        "description": "Repository full name.",
+                                                        "x-ms-summary": "Repository"
+                                                    }
+                                                }
+                                            },
+                                            "text_matches": {
+                                                "type": "array",
+                                                "description": "Text match fragments.",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "fragment": {
+                                                            "type": "string",
+                                                            "description": "Matching text fragment.",
+                                                            "x-ms-summary": "Fragment"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;IT Operations"
+        }
+    ]
+}
