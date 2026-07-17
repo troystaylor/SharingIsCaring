@@ -1,0 +1,998 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "ACA Playwright",
+        "description": "Automate browser interactions in isolated Azure Container Apps Sandbox microVMs with Playwright and Chromium. Navigate pages, take screenshots, click elements, fill forms, extract content, generate PDFs, and run custom Playwright scripts — all in a secure sandbox with persistent browser state across calls.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "management.westus2.azuredevcompute.io",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/api/sessions": {
+            "post": {
+                "operationId": "CreateSession",
+                "summary": "Create Browser Session",
+                "description": "Boot a new Playwright sandbox with Chromium pre-installed. The browser context persists across operations until the session is destroyed.",
+                "x-ms-summary": "Create Browser Session",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session created.",
+                        "schema": {
+                            "$ref": "#/definitions/SessionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/navigate": {
+            "post": {
+                "operationId": "NavigateToUrl",
+                "summary": "Navigate to URL",
+                "description": "Navigate the browser to a URL. Optionally wait for a specific selector to appear or for network idle before returning.",
+                "x-ms-summary": "Navigate to URL",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NavigateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Navigation completed.",
+                        "schema": {
+                            "$ref": "#/definitions/NavigateResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/screenshot": {
+            "post": {
+                "operationId": "TakeScreenshot",
+                "summary": "Take Screenshot",
+                "description": "Capture a screenshot of the current page or a specific element. Returns the image as base64-encoded PNG.",
+                "x-ms-summary": "Take Screenshot",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ScreenshotRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Screenshot captured.",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenshotResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/click": {
+            "post": {
+                "operationId": "ClickElement",
+                "summary": "Click Element",
+                "description": "Click an element on the page by CSS selector, XPath, or Playwright locator text (e.g., 'text=Submit', 'role=button[name=\"Save\"]').",
+                "x-ms-summary": "Click Element",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ClickRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Element clicked.",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/fill": {
+            "post": {
+                "operationId": "FillForm",
+                "summary": "Fill Form Fields",
+                "description": "Fill one or more form fields by selector. Each entry maps a CSS/XPath selector to the value to type.",
+                "x-ms-summary": "Fill Form Fields",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FillRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fields filled.",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/extract": {
+            "post": {
+                "operationId": "ExtractContent",
+                "summary": "Extract Content",
+                "description": "Extract text, HTML, or attribute values from elements matching a selector. Use for scraping data from the current page.",
+                "x-ms-summary": "Extract Content",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExtractRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content extracted.",
+                        "schema": {
+                            "$ref": "#/definitions/ExtractResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/script": {
+            "post": {
+                "operationId": "RunScript",
+                "summary": "Run Playwright Script",
+                "description": "Execute a custom Playwright script (JavaScript/TypeScript). The script has access to 'page' (current page) and 'context' (browser context). Must call console.log(JSON.stringify(result)) to return data.",
+                "x-ms-summary": "Run Playwright Script",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ScriptRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Script executed.",
+                        "schema": {
+                            "$ref": "#/definitions/ScriptResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/pdf": {
+            "post": {
+                "operationId": "GeneratePdf",
+                "summary": "Generate PDF",
+                "description": "Export the current page as a PDF document. Returns base64-encoded PDF content.",
+                "x-ms-summary": "Generate PDF",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PdfRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PDF generated.",
+                        "schema": {
+                            "$ref": "#/definitions/PdfResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/console": {
+            "post": {
+                "operationId": "GetConsoleLog",
+                "summary": "Get Console Log",
+                "description": "Retrieve browser console messages captured during the last navigation or script execution.",
+                "x-ms-summary": "Get Console Log",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SessionIdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Console log retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/ConsoleResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/artifact": {
+            "post": {
+                "operationId": "DownloadArtifact",
+                "summary": "Download Artifact",
+                "description": "Download a file artifact from the sandbox workspace (screenshots, PDFs, HAR files, or any generated file).",
+                "x-ms-summary": "Download Artifact",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DownloadArtifactRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Artifact downloaded.",
+                        "schema": {
+                            "$ref": "#/definitions/ArtifactResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sessions/destroy": {
+            "post": {
+                "operationId": "DestroySession",
+                "summary": "Destroy Session",
+                "description": "Delete the browser sandbox and reclaim all resources. This action is irreversible.",
+                "x-ms-summary": "Destroy Session",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SessionIdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Session destroyed.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean",
+                                    "description": "Whether the session was successfully destroyed.",
+                                    "x-ms-summary": "Success"
+                                },
+                                "sessionId": {
+                                    "type": "string",
+                                    "description": "The session that was destroyed.",
+                                    "x-ms-summary": "Session ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke ACA Playwright MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio agent integration. Exposes browser automation, screenshots, content extraction, and PDF generation as MCP tools.",
+                "x-ms-summary": "Invoke ACA Playwright MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response."
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "CreateSessionRequest": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "string",
+                    "description": "CPU allocation in millicores (e.g., 2000m = 2 vCPU). Minimum 2000m recommended for Playwright.",
+                    "x-ms-summary": "CPU",
+                    "default": "2000m",
+                    "enum": [
+                        "2000m",
+                        "4000m"
+                    ]
+                },
+                "memory": {
+                    "type": "string",
+                    "description": "Memory allocation. Minimum 4096Mi recommended for Chromium.",
+                    "x-ms-summary": "Memory",
+                    "default": "4096Mi",
+                    "enum": [
+                        "4096Mi",
+                        "8192Mi"
+                    ]
+                },
+                "viewport": {
+                    "type": "string",
+                    "description": "Default viewport size as WxH (e.g., 1920x1080). Applied to all pages.",
+                    "x-ms-summary": "Viewport",
+                    "default": "1280x720",
+                    "x-ms-visibility": "advanced"
+                },
+                "userAgent": {
+                    "type": "string",
+                    "description": "Custom User-Agent string for the browser context.",
+                    "x-ms-summary": "User Agent",
+                    "x-ms-visibility": "advanced"
+                },
+                "locale": {
+                    "type": "string",
+                    "description": "Browser locale (e.g., en-US, fr-FR).",
+                    "x-ms-summary": "Locale",
+                    "default": "en-US",
+                    "x-ms-visibility": "advanced"
+                },
+                "recordHar": {
+                    "type": "boolean",
+                    "description": "Record a HAR file of all network requests for later download.",
+                    "x-ms-summary": "Record HAR",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "SessionResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Unique session identifier for subsequent operations.",
+                    "x-ms-summary": "Session ID"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Current session state.",
+                    "x-ms-summary": "State"
+                },
+                "cpu": {
+                    "type": "string",
+                    "description": "CPU allocation.",
+                    "x-ms-summary": "CPU"
+                },
+                "memory": {
+                    "type": "string",
+                    "description": "Memory allocation.",
+                    "x-ms-summary": "Memory"
+                },
+                "viewport": {
+                    "type": "string",
+                    "description": "Configured viewport size.",
+                    "x-ms-summary": "Viewport"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "Session creation timestamp.",
+                    "x-ms-summary": "Created At"
+                }
+            }
+        },
+        "NavigateRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "url"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID returned by Create Browser Session.",
+                    "x-ms-summary": "Session ID"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "The URL to navigate to.",
+                    "x-ms-summary": "URL"
+                },
+                "waitUntil": {
+                    "type": "string",
+                    "description": "When to consider navigation complete.",
+                    "x-ms-summary": "Wait Until",
+                    "default": "domcontentloaded",
+                    "enum": [
+                        "load",
+                        "domcontentloaded",
+                        "networkidle",
+                        "commit"
+                    ]
+                },
+                "waitForSelector": {
+                    "type": "string",
+                    "description": "CSS selector to wait for after navigation (optional).",
+                    "x-ms-summary": "Wait For Selector",
+                    "x-ms-visibility": "advanced"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Navigation timeout in seconds. Default 30.",
+                    "x-ms-summary": "Timeout (seconds)",
+                    "default": 30,
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "NavigateResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Final URL after any redirects.",
+                    "x-ms-summary": "Final URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Page title.",
+                    "x-ms-summary": "Page Title"
+                },
+                "status": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "HTTP response status code.",
+                    "x-ms-summary": "HTTP Status"
+                },
+                "loadTimeMs": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Time to complete navigation in milliseconds.",
+                    "x-ms-summary": "Load Time (ms)"
+                }
+            }
+        },
+        "ScreenshotRequest": {
+            "type": "object",
+            "required": [
+                "sessionId"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "selector": {
+                    "type": "string",
+                    "description": "CSS selector of element to screenshot. Omit for full page.",
+                    "x-ms-summary": "Element Selector"
+                },
+                "fullPage": {
+                    "type": "boolean",
+                    "description": "Capture the full scrollable page, not just the viewport.",
+                    "x-ms-summary": "Full Page",
+                    "default": false
+                },
+                "quality": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "JPEG quality (0-100). Only applies when format is jpeg.",
+                    "x-ms-summary": "Quality",
+                    "x-ms-visibility": "advanced"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Image format.",
+                    "x-ms-summary": "Format",
+                    "default": "png",
+                    "enum": [
+                        "png",
+                        "jpeg"
+                    ],
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "ScreenshotResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Base64-encoded image content.",
+                    "x-ms-summary": "Image Content (Base64)"
+                },
+                "mimeType": {
+                    "type": "string",
+                    "description": "Image MIME type.",
+                    "x-ms-summary": "MIME Type"
+                },
+                "sizeBytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Image file size in bytes.",
+                    "x-ms-summary": "Size (bytes)"
+                },
+                "filePath": {
+                    "type": "string",
+                    "description": "Path to the screenshot in the sandbox workspace.",
+                    "x-ms-summary": "File Path"
+                }
+            }
+        },
+        "ClickRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "selector"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "selector": {
+                    "type": "string",
+                    "description": "CSS selector, XPath, or Playwright locator (e.g., 'text=Submit', 'role=button[name=\"Save\"]').",
+                    "x-ms-summary": "Selector"
+                },
+                "button": {
+                    "type": "string",
+                    "description": "Mouse button to click.",
+                    "x-ms-summary": "Button",
+                    "default": "left",
+                    "enum": [
+                        "left",
+                        "right",
+                        "middle"
+                    ],
+                    "x-ms-visibility": "advanced"
+                },
+                "clickCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of clicks (2 for double-click).",
+                    "x-ms-summary": "Click Count",
+                    "default": 1,
+                    "x-ms-visibility": "advanced"
+                },
+                "waitAfter": {
+                    "type": "string",
+                    "description": "Wait condition after click: 'navigation', 'networkidle', or a CSS selector.",
+                    "x-ms-summary": "Wait After",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "FillRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "fields"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "fields": {
+                    "type": "array",
+                    "description": "Array of field selectors and values to fill.",
+                    "x-ms-summary": "Fields",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "selector",
+                            "value"
+                        ],
+                        "properties": {
+                            "selector": {
+                                "type": "string",
+                                "description": "CSS selector or Playwright locator for the input field.",
+                                "x-ms-summary": "Selector"
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "Value to fill into the field.",
+                                "x-ms-summary": "Value"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ExtractRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "selector"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "selector": {
+                    "type": "string",
+                    "description": "CSS selector or XPath to match elements.",
+                    "x-ms-summary": "Selector"
+                },
+                "extract": {
+                    "type": "string",
+                    "description": "What to extract from matched elements.",
+                    "x-ms-summary": "Extract",
+                    "default": "textContent",
+                    "enum": [
+                        "textContent",
+                        "innerText",
+                        "innerHTML",
+                        "outerHTML",
+                        "attribute"
+                    ]
+                },
+                "attribute": {
+                    "type": "string",
+                    "description": "Attribute name to extract (only used when extract is 'attribute').",
+                    "x-ms-summary": "Attribute Name",
+                    "x-ms-visibility": "advanced"
+                },
+                "all": {
+                    "type": "boolean",
+                    "description": "Extract from all matching elements (true) or just the first (false).",
+                    "x-ms-summary": "All Matches",
+                    "default": false
+                }
+            }
+        },
+        "ExtractResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "selector": {
+                    "type": "string",
+                    "description": "The selector that was queried.",
+                    "x-ms-summary": "Selector"
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of elements matched.",
+                    "x-ms-summary": "Match Count"
+                },
+                "results": {
+                    "type": "array",
+                    "description": "Extracted values from matched elements.",
+                    "x-ms-summary": "Results",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "ScriptRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "script"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "script": {
+                    "type": "string",
+                    "description": "Playwright script to execute. Has access to 'page' and 'context' variables. Use console.log(JSON.stringify(result)) to return data.",
+                    "x-ms-summary": "Script"
+                },
+                "timeout": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Script execution timeout in seconds. Default 60.",
+                    "x-ms-summary": "Timeout (seconds)",
+                    "default": 60,
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "ScriptResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "stdout": {
+                    "type": "string",
+                    "description": "Script standard output.",
+                    "x-ms-summary": "Output"
+                },
+                "stderr": {
+                    "type": "string",
+                    "description": "Script error output.",
+                    "x-ms-summary": "Errors"
+                },
+                "exitCode": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Process exit code (0 = success).",
+                    "x-ms-summary": "Exit Code"
+                },
+                "executionTimeMs": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Execution time in milliseconds.",
+                    "x-ms-summary": "Execution Time (ms)"
+                }
+            }
+        },
+        "PdfRequest": {
+            "type": "object",
+            "required": [
+                "sessionId"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Paper format.",
+                    "x-ms-summary": "Paper Format",
+                    "default": "Letter",
+                    "enum": [
+                        "Letter",
+                        "Legal",
+                        "Tabloid",
+                        "A3",
+                        "A4",
+                        "A5"
+                    ]
+                },
+                "landscape": {
+                    "type": "boolean",
+                    "description": "Use landscape orientation.",
+                    "x-ms-summary": "Landscape",
+                    "default": false,
+                    "x-ms-visibility": "advanced"
+                },
+                "printBackground": {
+                    "type": "boolean",
+                    "description": "Include background colors and images.",
+                    "x-ms-summary": "Print Background",
+                    "default": true,
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "PdfResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Base64-encoded PDF content.",
+                    "x-ms-summary": "PDF Content (Base64)"
+                },
+                "sizeBytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "PDF file size in bytes.",
+                    "x-ms-summary": "Size (bytes)"
+                },
+                "filePath": {
+                    "type": "string",
+                    "description": "Path to the PDF in the sandbox workspace.",
+                    "x-ms-summary": "File Path"
+                }
+            }
+        },
+        "SessionIdRequest": {
+            "type": "object",
+            "required": [
+                "sessionId"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                }
+            }
+        },
+        "ConsoleResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "messages": {
+                    "type": "array",
+                    "description": "Console messages captured during the session.",
+                    "x-ms-summary": "Messages",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "Message type (log, warn, error, info).",
+                                "x-ms-summary": "Type"
+                            },
+                            "text": {
+                                "type": "string",
+                                "description": "Message text.",
+                                "x-ms-summary": "Text"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "DownloadArtifactRequest": {
+            "type": "object",
+            "required": [
+                "sessionId",
+                "filePath"
+            ],
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "The session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "filePath": {
+                    "type": "string",
+                    "description": "Full path to the file in the sandbox (e.g., /workspace/screenshot.png).",
+                    "x-ms-summary": "File Path"
+                }
+            }
+        },
+        "ArtifactResponse": {
+            "type": "object",
+            "properties": {
+                "fileName": {
+                    "type": "string",
+                    "description": "File name.",
+                    "x-ms-summary": "File Name"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Base64-encoded file content.",
+                    "x-ms-summary": "Content (Base64)"
+                },
+                "sizeBytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "File size in bytes.",
+                    "x-ms-summary": "Size (bytes)"
+                },
+                "mimeType": {
+                    "type": "string",
+                    "description": "File MIME type.",
+                    "x-ms-summary": "MIME Type"
+                }
+            }
+        },
+        "ActionResponse": {
+            "type": "object",
+            "properties": {
+                "sessionId": {
+                    "type": "string",
+                    "description": "Session ID.",
+                    "x-ms-summary": "Session ID"
+                },
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the action completed successfully.",
+                    "x-ms-summary": "Success"
+                },
+                "url": {
+                    "type": "string",
+                    "description": "Current page URL after the action.",
+                    "x-ms-summary": "Current URL"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Current page title after the action.",
+                    "x-ms-summary": "Page Title"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/azure/container-apps/sessions"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Website"
+        }
+    ]
+}

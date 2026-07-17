@@ -1,0 +1,475 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "MCP Shield",
+    "description": "Supply chain integrity monitoring for MCP tool descriptions. Detects tool poisoning, description drift, imperative language injection, and outbound data exfiltration patterns. Stateless — caller maintains the hash registry.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "cognitiveservices.azure.com",
+  "basePath": "/",
+  "schemes": ["https"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "paths": {
+    "/hash": {
+      "post": {
+        "operationId": "HashToolDescription",
+        "summary": "Hash Tool Description",
+        "description": "Compute a SHA-256 hash of an MCP tool description. Store the returned hash in your registry (Dataverse, SharePoint, variable) and pass it to Check Description Drift on subsequent calls to detect silent changes.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["description", "toolName"],
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "The full MCP tool description text to hash",
+                  "x-ms-summary": "Tool Description"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Name of the MCP tool",
+                  "x-ms-summary": "Tool Name"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "Name or identifier of the MCP server",
+                  "x-ms-summary": "Server Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hash computed successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "hash": {
+                  "type": "string",
+                  "description": "SHA-256 hash of the tool description"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Tool name echoed back for registry storage"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "Server name echoed back"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "description": "UTC timestamp of when the hash was computed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check-drift": {
+      "post": {
+        "operationId": "CheckDescriptionDrift",
+        "summary": "Check Description Drift",
+        "description": "Compare a current MCP tool description against a previously stored hash. Detects silent tool description changes — the core defense against Phase 2 (silent re-trust) of MCP tool poisoning attacks.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["description", "expectedHash"],
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "The current MCP tool description to check",
+                  "x-ms-summary": "Current Description"
+                },
+                "expectedHash": {
+                  "type": "string",
+                  "description": "The previously stored SHA-256 hash from Hash Tool Description",
+                  "x-ms-summary": "Expected Hash"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Name of the MCP tool",
+                  "x-ms-summary": "Tool Name"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "Name or identifier of the MCP server",
+                  "x-ms-summary": "Server Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drift check completed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "drifted": {
+                  "type": "boolean",
+                  "description": "True if the description has changed since it was last hashed"
+                },
+                "currentHash": {
+                  "type": "string",
+                  "description": "SHA-256 hash of the current description"
+                },
+                "expectedHash": {
+                  "type": "string",
+                  "description": "The expected hash that was passed in"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Tool name"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "Server name"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "description": "UTC timestamp of the check"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scan-outbound": {
+      "post": {
+        "operationId": "ScanOutboundPayload",
+        "summary": "Scan Outbound Payload",
+        "description": "Inspect outbound tool call parameters for sensitive data patterns before they leave your environment. Detects SSN, credit card numbers, IBAN codes, bulk query indicators, and encoded data blocks that may indicate exfiltration (Phase 4 of MCP tool poisoning).",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["payload"],
+              "properties": {
+                "payload": {
+                  "type": "string",
+                  "description": "The outbound payload to scan (JSON-stringified tool call parameters)",
+                  "x-ms-summary": "Payload"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Name of the tool being called",
+                  "x-ms-summary": "Tool Name"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "Target MCP server",
+                  "x-ms-summary": "Server Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scan completed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "blocked": {
+                  "type": "boolean",
+                  "description": "True if the payload contains patterns that should be blocked"
+                },
+                "riskLevel": {
+                  "type": "string",
+                  "description": "Overall risk level: none, low, medium, high, critical"
+                },
+                "findings": {
+                  "type": "array",
+                  "description": "List of detected patterns",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "pattern": {
+                        "type": "string",
+                        "description": "Name of the pattern that matched"
+                      },
+                      "severity": {
+                        "type": "string",
+                        "description": "Severity: low, medium, high, critical"
+                      },
+                      "matchCount": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Number of matches found"
+                      }
+                    }
+                  }
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Tool name"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "Server name"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/detect-imperative": {
+      "post": {
+        "operationId": "DetectImperativeLanguage",
+        "summary": "Detect Imperative Language",
+        "description": "Scan an MCP tool description for imperative or instruction-like language that does not belong in a documentation field. Catches Phase 1 (tool description poisoning) where hidden instructions direct the agent to retrieve, attach, or forward data.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["description"],
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "The MCP tool description to analyze",
+                  "x-ms-summary": "Tool Description"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Name of the MCP tool",
+                  "x-ms-summary": "Tool Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analysis completed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "suspicious": {
+                  "type": "boolean",
+                  "description": "True if imperative or injection-like language was detected"
+                },
+                "riskScore": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Risk score from 0 (benign) to 100 (clearly malicious)"
+                },
+                "findings": {
+                  "type": "array",
+                  "description": "List of detected imperative patterns",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "description": "Category: exfiltration_verbs, override_instructions, hidden_directives, bulk_data_request, encoding_abuse"
+                      },
+                      "matched": {
+                        "type": "string",
+                        "description": "The text that matched"
+                      },
+                      "severity": {
+                        "type": "string",
+                        "description": "Severity: low, medium, high, critical"
+                      }
+                    }
+                  }
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "Tool name"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inspect-prompt-shields": {
+      "post": {
+        "operationId": "InspectWithPromptShields",
+        "summary": "Inspect with Prompt Shields",
+        "description": "Submit text to Azure AI Content Safety Prompt Shields for ML-grade injection detection. Requires a configured Content Safety endpoint and key in the connection. Use for high-value tool descriptions where regex-only detection is insufficient.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "Text to analyze with Prompt Shields (typically an MCP tool description)",
+                  "x-ms-summary": "Text"
+                },
+                "context": {
+                  "type": "string",
+                  "description": "Optional context about where this text appears",
+                  "x-ms-summary": "Context"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt Shields analysis completed",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "attackDetected": {
+                  "type": "boolean",
+                  "description": "True if Prompt Shields detected an attack"
+                },
+                "userPromptAttack": {
+                  "type": "boolean",
+                  "description": "Direct prompt attack detected"
+                },
+                "documentAttack": {
+                  "type": "boolean",
+                  "description": "Indirect (document) injection detected"
+                },
+                "details": {
+                  "type": "string",
+                  "description": "Raw response from Prompt Shields"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/log-event": {
+      "post": {
+        "operationId": "LogShieldEvent",
+        "summary": "Log Shield Event",
+        "description": "Record a structured security event to Application Insights for Microsoft Sentinel correlation. Use after drift detection, blocked payloads, or suspicious descriptions to build the evidence trail.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["eventType"],
+              "properties": {
+                "eventType": {
+                  "type": "string",
+                  "description": "Event type: drift_detected, payload_blocked, imperative_detected, prompt_shield_alert, description_approved",
+                  "x-ms-summary": "Event Type"
+                },
+                "serverName": {
+                  "type": "string",
+                  "description": "MCP server involved",
+                  "x-ms-summary": "Server Name"
+                },
+                "toolName": {
+                  "type": "string",
+                  "description": "MCP tool involved",
+                  "x-ms-summary": "Tool Name"
+                },
+                "details": {
+                  "type": "string",
+                  "description": "Additional details or findings JSON",
+                  "x-ms-summary": "Details"
+                },
+                "severity": {
+                  "type": "string",
+                  "description": "Severity level: info, warning, error, critical",
+                  "x-ms-summary": "Severity",
+                  "enum": ["info", "warning", "error", "critical"]
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event logged",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "logged": {
+                  "type": "boolean",
+                  "description": "True if the event was successfully sent to Application Insights"
+                },
+                "eventId": {
+                  "type": "string",
+                  "description": "Unique event ID for correlation"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "description": "UTC timestamp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke MCP Shield MCP",
+        "description": "MCP endpoint for Copilot Studio agents to perform supply chain integrity checks inline. Exposes hash_description, check_drift, scan_outbound, detect_imperative, and log_event as MCP tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Ocp-Apim-Subscription-Key"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/azure/ai-services/content-safety/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Security"
+    }
+  ]
+}
