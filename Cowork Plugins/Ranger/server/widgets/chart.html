@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: transparent;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.chart-container {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.chart-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+.chart-label {
+    font-size: 11px;
+    color: #666;
+    margin-top: 6px;
+    text-align: center;
+}
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+    .chart-container { box-shadow: 0 1px 3px rgba(255,255,255,0.05); }
+    .chart-label { color: #aaa; }
+}
+</style>
+</head>
+<body>
+<div class="chart-container" id="chart"></div>
+<div class="chart-label" id="label"></div>
+<script>
+(function() {
+    // MCP Apps handshake for Cowork
+    function init() {
+        const data = window.openai?.toolOutput || window.__mcpStructuredContent;
+        if (!data) {
+            // Fallback: listen for postMessage from Cowork host
+            window.addEventListener("message", function handler(e) {
+                if (e.data && e.data.structuredContent) {
+                    window.removeEventListener("message", handler);
+                    render(e.data.structuredContent);
+                }
+            });
+            // Signal ready
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: "ui/initialize" }, "*");
+            }
+            return;
+        }
+        render(data);
+    }
+
+    function render(data) {
+        const container = document.getElementById("chart");
+        const label = document.getElementById("label");
+
+        if (data.image && data.mimeType) {
+            const img = document.createElement("img");
+            img.src = "data:" + data.mimeType + ";base64," + data.image;
+            img.alt = data.fileName || "Chart";
+            img.onload = function() {
+                reportHeight();
+            };
+            container.appendChild(img);
+            if (data.fileName) {
+                label.textContent = data.fileName;
+            }
+        } else {
+            container.textContent = "No image data received.";
+        }
+
+        reportHeight();
+    }
+
+    function reportHeight() {
+        const h = document.body.scrollHeight;
+        // OpenAI Apps SDK
+        if (window.openai?.notifyIntrinsicHeight) {
+            window.openai.notifyIntrinsicHeight(h);
+        }
+        // Cowork MCP Apps
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: "ui/notifications/size-changed", height: h, width: document.body.scrollWidth }, "*");
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
