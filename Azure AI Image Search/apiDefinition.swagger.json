@@ -1,0 +1,386 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Azure AI Image Search",
+        "description": "Search images by natural language using Azure AI Search multimodal embeddings. Returns image thumbnails and metadata for agent reasoning. Dual-mode: MCP endpoint for Copilot Studio + typed operations for Power Automate.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "your-aca-app.azurecontainerapps.io",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Azure AI Image Search MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes image search, detail retrieval, and display tools via JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/api/search": {
+            "post": {
+                "operationId": "SearchImages",
+                "summary": "Search Images",
+                "description": "Search for images matching a natural language query. Returns thumbnails as base64 and structured metadata.",
+                "tags": [
+                    "Images"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "query"
+                            ],
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "Natural language description of images to find",
+                                    "x-ms-summary": "Search Query"
+                                },
+                                "max_results": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Maximum number of results (1-20)",
+                                    "default": 5,
+                                    "x-ms-summary": "Max Results",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Search results with thumbnails and metadata",
+                        "schema": {
+                            "$ref": "#/definitions/ImageSearchResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/images/{filename}": {
+            "get": {
+                "operationId": "GetImageDetails",
+                "summary": "Get Image Details",
+                "description": "Get full metadata and preview for a specific image by filename.",
+                "tags": [
+                    "Images"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filename",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The image filename",
+                        "x-ms-summary": "Filename",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image details and metadata",
+                        "schema": {
+                            "$ref": "#/definitions/ImageDetailsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/images/{filename}/url": {
+            "get": {
+                "operationId": "GetImageUrl",
+                "summary": "Get Image URL",
+                "description": "Get a time-limited SAS URL for the full-resolution image. Use this to display or download the image.",
+                "tags": [
+                    "Images"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "filename",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The image filename",
+                        "x-ms-summary": "Filename",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "expiry_minutes",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 60,
+                        "description": "URL expiry time in minutes",
+                        "x-ms-summary": "Expiry (minutes)",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SAS URL for the image",
+                        "schema": {
+                            "$ref": "#/definitions/ImageUrlResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/search-by-image": {
+            "post": {
+                "operationId": "SearchByImage",
+                "summary": "Search By Image",
+                "description": "Find visually similar images by providing an image URL or base64 data. Uses multimodal embeddings for vector similarity search.",
+                "tags": [
+                    "Images"
+                ],
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "image_url": {
+                                    "type": "string",
+                                    "description": "URL of an image to find similar images for",
+                                    "x-ms-summary": "Image URL"
+                                },
+                                "image_base64": {
+                                    "type": "string",
+                                    "description": "Base64-encoded image data to find similar images for",
+                                    "x-ms-summary": "Image (Base64)",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "max_results": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Maximum number of similar images (1-20)",
+                                    "default": 5,
+                                    "x-ms-summary": "Max Results",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Similar image results",
+                        "schema": {
+                            "$ref": "#/definitions/ImageSearchResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/upload": {
+            "post": {
+                "operationId": "UploadImage",
+                "summary": "Upload Image",
+                "description": "Upload an image to the collection. The image will appear in search results after the next indexer run.",
+                "tags": [
+                    "Images"
+                ],
+                "x-ms-visibility": "important",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "parameters": [
+                    {
+                        "name": "file",
+                        "in": "formData",
+                        "required": true,
+                        "type": "file",
+                        "description": "The image file to upload",
+                        "x-ms-summary": "Image File"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/UploadResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "UploadResponse": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "Uploaded filename"
+                },
+                "size_bytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "File size in bytes"
+                },
+                "content_type": {
+                    "type": "string",
+                    "description": "MIME type of the uploaded image"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Status message"
+                }
+            }
+        },
+        "ImageSearchResponse": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The original search query"
+                },
+                "total_results": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of results returned"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImageResult"
+                    }
+                }
+            }
+        },
+        "ImageResult": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "Image filename in storage"
+                },
+                "display_name": {
+                    "type": "string",
+                    "description": "Human-readable image name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "AI-generated image description"
+                },
+                "thumbnail_base64": {
+                    "type": "string",
+                    "description": "Base64-encoded thumbnail image"
+                },
+                "mime_type": {
+                    "type": "string",
+                    "description": "MIME type of the image"
+                }
+            }
+        },
+        "ImageDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "Image filename"
+                },
+                "mimeType": {
+                    "type": "string",
+                    "description": "MIME type"
+                },
+                "width": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Image width in pixels"
+                },
+                "height": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Image height in pixels"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "Image format (JPEG, PNG, etc.)"
+                },
+                "sizeBytes": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "File size in bytes"
+                },
+                "lastModified": {
+                    "type": "string",
+                    "description": "Last modified timestamp (ISO 8601)"
+                }
+            }
+        },
+        "ImageUrlResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "Time-limited SAS URL for the full-resolution image"
+                },
+                "filename": {
+                    "type": "string",
+                    "description": "Image filename"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "description": "URL expiry timestamp (ISO 8601)"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key"
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://azure.microsoft.com/products/ai-services/ai-search"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Data"
+        }
+    ]
+}
