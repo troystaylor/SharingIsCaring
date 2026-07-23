@@ -1,0 +1,179 @@
+<template>
+    <div class="chat-shell">
+        <!-- Header -->
+        <div class="chat-header">
+            <span class={statusDot}></span>
+            <span class="header-title">{cardTitle}</span>
+            <div class="header-actions">
+                <button class="icon-btn" title={themeTooltip} onclick={handleToggleTheme}>
+                    <svg viewBox="0 0 20 20" class="icon"><use href={themeSvgHref}></use></svg>
+                </button>
+                <button class="icon-btn" title="New conversation" onclick={handleNewConversation} disabled={isStartingConversation}>
+                    <svg viewBox="0 0 20 20" class="icon"><use href="#ic-plus"></use></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-container" lwc:ref="chatContainer">
+            <template if:true={isStartingConversation}>
+                <div class="spinner-wrap"><span class="spinner"></span></div>
+            </template>
+
+            <template for:each={messages} for:item="msg">
+                <div key={msg.id} class={msg.cssClass}>
+                    <template if:true={msg.hasText}>
+                        <div class={msg.bubbleClass}>
+                            <template if:true={msg.isRichText}>
+                                <lightning-formatted-rich-text value={msg.text}></lightning-formatted-rich-text>
+                            </template>
+                            <template if:false={msg.isRichText}>{msg.text}</template>
+                        </div>
+                    </template>
+                    <template if:true={msg.hasCards}>
+                        <template for:each={msg.cards} for:item="card">
+                            <div key={card.id} class="card-wrapper">
+                                <template if:true={card.isHeroOrThumbnail}>
+                                    <template if:true={card.hasImages}>
+                                        <div class="card-images">
+                                            <template for:each={card.images} for:item="img">
+                                                <img key={img.id} src={img.url} alt={img.alt} class="card-hero-image">
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <div class="card-body">
+                                        <template if:true={card.hasTitle}><div class="card-title">{card.title}</div></template>
+                                        <template if:true={card.hasSubtitle}><div class="card-subtitle">{card.subtitle}</div></template>
+                                        <template if:true={card.hasText}><div class="card-text">{card.text}</div></template>
+                                    </div>
+                                </template>
+                                <template if:true={card.isAdaptive}>
+                                    <div class="card-body">
+                                        <template if:true={card.hasBody}>
+                                            <template for:each={card.body} for:item="el">
+                                                <template if:true={el.isTextBlock}>
+                                                    <div key={el.id} class={el.sizeClass}>
+                                                        <template if:true={el.isBolder}><strong>{el.text}</strong></template>
+                                                        <template if:false={el.isBolder}>{el.text}</template>
+                                                    </div>
+                                                </template>
+                                                <template if:true={el.isImage}>
+                                                    <img key={el.id} src={el.url} alt={el.alt} class={el.sizeClass}>
+                                                </template>
+                                                <template if:true={el.isFactSet}>
+                                                    <div key={el.id} class="ac-factset">
+                                                        <template for:each={el.facts} for:item="fact">
+                                                            <div key={fact.id} class="ac-fact-row">
+                                                                <span class="ac-fact-title">{fact.title}</span>
+                                                                <span class="ac-fact-value">{fact.value}</span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template if:true={el.isColumnSet}>
+                                                    <div key={el.id} class="ac-columnset">
+                                                        <template for:each={el.columns} for:item="col">
+                                                            <div key={col.id} class={col.colClass}>
+                                                                <template for:each={col.items} for:item="nested">
+                                                                    <template if:true={nested.isTextBlock}>
+                                                                        <div key={nested.id} class={nested.sizeClass}>
+                                                                            <template if:true={nested.isBolder}><strong>{nested.text}</strong></template>
+                                                                            <template if:false={nested.isBolder}>{nested.text}</template>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template if:true={nested.isImage}>
+                                                                        <img key={nested.id} src={nested.url} alt={nested.alt} class={nested.sizeClass}>
+                                                                    </template>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template if:true={el.isContainer}>
+                                                    <div key={el.id} class="ac-container">
+                                                        <template for:each={el.items} for:item="nested">
+                                                            <template if:true={nested.isTextBlock}>
+                                                                <div key={nested.id} class={nested.sizeClass}>
+                                                                    <template if:true={nested.isBolder}><strong>{nested.text}</strong></template>
+                                                                    <template if:false={nested.isBolder}>{nested.text}</template>
+                                                                </div>
+                                                            </template>
+                                                            <template if:true={nested.isImage}>
+                                                                <img key={nested.id} src={nested.url} alt={nested.alt} class={nested.sizeClass}>
+                                                            </template>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template if:true={el.isActionSet}>
+                                                    <div key={el.id} class="card-actions">
+                                                        <template for:each={el.actions} for:item="act">
+                                                            <template if:true={act.isOpenUrl}>
+                                                                <a key={act.id} href={act.value} target="_blank" rel="noopener noreferrer" class="card-action-link">{act.title}</a>
+                                                            </template>
+                                                            <template if:true={act.isSubmit}>
+                                                                <button key={act.id} class="card-action-btn" data-action-type="submit" data-action-value={act.value} onclick={handleCardAction}>{act.title}</button>
+                                                            </template>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template if:true={card.isSignIn}>
+                                    <div class="card-body"><div class="card-text">{card.text}</div></div>
+                                </template>
+                                <template if:true={card.hasActions}>
+                                    <div class="card-actions">
+                                        <template for:each={card.actions} for:item="act">
+                                            <template if:true={act.isOpenUrl}>
+                                                <a key={act.id} href={act.value} target="_blank" rel="noopener noreferrer" class="card-action-link">{act.title}</a>
+                                            </template>
+                                            <template if:true={act.isSubmit}>
+                                                <button key={act.id} class="card-action-btn" data-action-type="submit" data-action-value={act.value} onclick={handleCardAction}>{act.title}</button>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </template>
+                    <template if:true={msg.timestamp}><div class="message-time">{msg.timestamp}</div></template>
+                </div>
+            </template>
+
+            <template if:true={hasSuggestedActions}>
+                <div class="suggested-actions">
+                    <template for:each={suggestedActions} for:item="action">
+                        <button key={action.value} class="chip" data-value={action.value} onclick={handleSuggestedAction}>{action.title}</button>
+                    </template>
+                </div>
+            </template>
+
+            <template if:true={isWaitingForBot}>
+                <div class="message message-bot">
+                    <div class="message-bubble bubble-bot typing-indicator">
+                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Input -->
+        <div class="input-area">
+            <input type="text" class="chat-input" placeholder="Type your message…" value={userInput}
+                   oninput={handleInputChange} onkeyup={handleKeyUp} disabled={isInputDisabled}>
+            <button class="send-btn" onclick={handleSend} disabled={isSendDisabled} title="Send">
+                <svg viewBox="0 0 20 20" class="icon"><use href="#ic-send"></use></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Inline SVG sprite (hidden) -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <symbol id="ic-send" viewBox="0 0 20 20"><path d="M2.72 2.05l15.74 7.1a1 1 0 010 1.81L2.72 18.06a.5.5 0 01-.7-.58L3.97 11H9.5a.5.5 0 000-1H3.97L2.02 2.63a.5.5 0 01.7-.58z" fill="currentColor"/></symbol>
+        <symbol id="ic-plus" viewBox="0 0 20 20"><path d="M10 3a.5.5 0 01.5.5V9.5H16a.5.5 0 010 1h-5.5V16a.5.5 0 01-1 0v-5.5H4a.5.5 0 010-1h5.5V3.5A.5.5 0 0110 3z" fill="currentColor"/></symbol>
+        <symbol id="ic-sun" viewBox="0 0 20 20"><path d="M10 2a.5.5 0 01.5.5V4a.5.5 0 01-1 0V2.5A.5.5 0 0110 2zm0 4.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM7.5 10a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0zm2-7.5zm.5 13a.5.5 0 01.5.5v1.5a.5.5 0 01-1 0V16a.5.5 0 01.5-.5zm7.5-5.5a.5.5 0 010 1H16a.5.5 0 010-1h1.5zM4 9.5a.5.5 0 01.5.5.5.5 0 01-.5.5H2.5a.5.5 0 010-1H4zm12.36-5.36a.5.5 0 010 .71L15.3 5.91a.5.5 0 01-.71-.71l1.06-1.06a.5.5 0 01.71 0zM5.4 14.8a.5.5 0 01.7.7l-1.06 1.06a.5.5 0 01-.71-.7L5.4 14.8zm10.6.7a.5.5 0 01-.71.71l-1.06-1.06a.5.5 0 01.71-.71l1.06 1.06zM4.33 4.14a.5.5 0 01.71.71L3.98 5.91a.5.5 0 01-.71-.71l1.06-1.06z" fill="currentColor"/></symbol>
+        <symbol id="ic-moon" viewBox="0 0 20 20"><path d="M10.6 2.1a.5.5 0 01-.09.6 4.5 4.5 0 006.8 6.8.5.5 0 01.78.55A7 7 0 1110.05 2a.5.5 0 01.55.1z" fill="currentColor"/></symbol>
+    </svg>
+</template>
