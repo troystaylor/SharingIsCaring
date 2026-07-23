@@ -1,0 +1,514 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft 365 Copilot Chat",
+        "description": "Send prompts to Microsoft 365 Copilot and receive grounded, enterprise-aware responses. Create multi-turn conversations, add OneDrive/SharePoint files or free-text as grounding context, and toggle web search. Includes Model Context Protocol (MCP) support for Copilot Studio. Uses the Microsoft Graph beta Copilot Chat API.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Microsoft 365 Copilot Chat MCP",
+                "description": "Model Context Protocol (MCP) endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for initialize, tools/list, and tools/call. Exposes ask_copilot, create_conversation, and send_message tools.",
+                "x-ms-summary": "Invoke Microsoft 365 Copilot Chat MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response.",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/ask": {
+            "post": {
+                "operationId": "AskCopilot",
+                "summary": "Ask Copilot",
+                "description": "One-shot convenience action: creates a new Copilot conversation and sends the first prompt, returning Copilot's reply. Use this when you don't need to continue a multi-turn conversation.",
+                "x-ms-summary": "Ask Copilot",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "text"
+                            ],
+                            "properties": {
+                                "text": {
+                                    "type": "string",
+                                    "description": "The prompt to send to Microsoft 365 Copilot.",
+                                    "x-ms-summary": "Prompt",
+                                    "x-ms-visibility": "important"
+                                },
+                                "timeZone": {
+                                    "type": "string",
+                                    "description": "IANA time zone used to interpret time-relative prompts (e.g., 'America/New_York'). Defaults to 'UTC'.",
+                                    "x-ms-summary": "Time Zone",
+                                    "default": "UTC"
+                                },
+                                "additionalContext": {
+                                    "type": "array",
+                                    "description": "Extra free-text grounding passed to Copilot (e.g., excerpts, facts). Each entry is added as additional context.",
+                                    "x-ms-summary": "Additional Context",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A single context string.",
+                                        "x-ms-summary": "Context Text"
+                                    }
+                                },
+                                "fileUris": {
+                                    "type": "array",
+                                    "description": "OneDrive or SharePoint file URLs to use as grounding context.",
+                                    "x-ms-summary": "File URLs",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A OneDrive/SharePoint file URL.",
+                                        "x-ms-summary": "File URL"
+                                    }
+                                },
+                                "isWebEnabled": {
+                                    "type": "boolean",
+                                    "description": "Whether web search grounding is allowed for this prompt. Set to false to restrict grounding to enterprise data only. Defaults to true.",
+                                    "x-ms-summary": "Enable Web Search",
+                                    "x-ms-visibility": "advanced",
+                                    "default": true
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success - Copilot reply.",
+                        "x-ms-summary": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/AskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters.",
+                        "x-ms-summary": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions or missing Microsoft 365 Copilot license.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded.",
+                        "x-ms-summary": "Rate Limit Exceeded"
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/beta/copilot/conversations": {
+            "post": {
+                "operationId": "CreateConversation",
+                "summary": "Create Conversation",
+                "description": "Creates a new Microsoft 365 Copilot conversation and returns its ID. Use the returned conversation ID with Send Chat Message to continue a multi-turn conversation.",
+                "x-ms-summary": "Create Conversation",
+                "x-ms-visibility": "important",
+                "responses": {
+                    "201": {
+                        "description": "Created - Conversation created.",
+                        "x-ms-summary": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/Conversation"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions or missing Microsoft 365 Copilot license.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/beta/copilot/conversations/{conversationId}/chat": {
+            "post": {
+                "operationId": "SendChatMessage",
+                "summary": "Send Chat Message",
+                "description": "Sends a prompt to an existing Microsoft 365 Copilot conversation and returns the full conversation with Copilot's response. Use Create Conversation first to obtain a conversation ID.",
+                "x-ms-summary": "Send Chat Message",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "conversationId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the Copilot conversation to continue.",
+                        "x-ms-summary": "Conversation ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "text"
+                            ],
+                            "properties": {
+                                "text": {
+                                    "type": "string",
+                                    "description": "The prompt to send to Microsoft 365 Copilot.",
+                                    "x-ms-summary": "Prompt",
+                                    "x-ms-visibility": "important"
+                                },
+                                "timeZone": {
+                                    "type": "string",
+                                    "description": "IANA time zone used to interpret time-relative prompts (e.g., 'America/New_York'). Defaults to 'UTC'.",
+                                    "x-ms-summary": "Time Zone",
+                                    "default": "UTC"
+                                },
+                                "additionalContext": {
+                                    "type": "array",
+                                    "description": "Extra free-text grounding passed to Copilot (e.g., excerpts, facts).",
+                                    "x-ms-summary": "Additional Context",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A single context string.",
+                                        "x-ms-summary": "Context Text"
+                                    }
+                                },
+                                "fileUris": {
+                                    "type": "array",
+                                    "description": "OneDrive or SharePoint file URLs to use as grounding context.",
+                                    "x-ms-summary": "File URLs",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A OneDrive/SharePoint file URL.",
+                                        "x-ms-summary": "File URL"
+                                    }
+                                },
+                                "isWebEnabled": {
+                                    "type": "boolean",
+                                    "description": "Whether web search grounding is allowed for this prompt. Set to false to restrict grounding to enterprise data only. Defaults to true.",
+                                    "x-ms-summary": "Enable Web Search",
+                                    "x-ms-visibility": "advanced",
+                                    "default": true
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success - Conversation with Copilot response.",
+                        "x-ms-summary": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/Conversation"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters.",
+                        "x-ms-summary": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions or missing Microsoft 365 Copilot license.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found - Conversation not found.",
+                        "x-ms-summary": "Not Found"
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded.",
+                        "x-ms-summary": "Rate Limit Exceeded"
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Conversation": {
+            "type": "object",
+            "description": "A Microsoft 365 Copilot conversation.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the conversation. Use this to continue the conversation.",
+                    "x-ms-summary": "Conversation ID"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "description": "The date and time the conversation was created.",
+                    "x-ms-summary": "Created Date Time"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The display name of the conversation (derived from the first prompt).",
+                    "x-ms-summary": "Display Name"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "The state of the conversation.",
+                    "x-ms-summary": "State"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "The status of the conversation (returned on creation).",
+                    "x-ms-summary": "Status"
+                },
+                "turnCount": {
+                    "type": "integer",
+                    "description": "The number of turns in the conversation.",
+                    "x-ms-summary": "Turn Count",
+                    "format": "int32"
+                },
+                "messages": {
+                    "type": "array",
+                    "description": "The messages in the conversation. The last message is Copilot's response.",
+                    "x-ms-summary": "Messages",
+                    "items": {
+                        "$ref": "#/definitions/ConversationMessage"
+                    }
+                }
+            }
+        },
+        "ConversationMessage": {
+            "type": "object",
+            "description": "A single message in a Copilot conversation.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the message.",
+                    "x-ms-summary": "Message ID"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "The message text. For Copilot responses, this is the answer (may contain Markdown).",
+                    "x-ms-summary": "Text"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "description": "The date and time the message was created.",
+                    "x-ms-summary": "Created Date Time"
+                },
+                "attributions": {
+                    "type": "array",
+                    "description": "Citations and annotations grounding the response.",
+                    "x-ms-summary": "Attributions",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "attributionType": {
+                                "type": "string",
+                                "description": "The type of attribution (e.g., citation, annotation).",
+                                "x-ms-summary": "Attribution Type"
+                            },
+                            "providerDisplayName": {
+                                "type": "string",
+                                "description": "The display name of the source.",
+                                "x-ms-summary": "Provider Display Name"
+                            },
+                            "attributionSource": {
+                                "type": "string",
+                                "description": "The source of the attribution (e.g., model, grounding).",
+                                "x-ms-summary": "Attribution Source"
+                            },
+                            "seeMoreWebUrl": {
+                                "type": "string",
+                                "description": "A URL to the referenced source.",
+                                "x-ms-summary": "See More URL"
+                            }
+                        }
+                    }
+                },
+                "sensitivityLabel": {
+                    "type": "object",
+                    "description": "Sensitivity label information for the message.",
+                    "x-ms-summary": "Sensitivity Label",
+                    "properties": {
+                        "sensitivityLabelId": {
+                            "type": "string",
+                            "description": "The ID of the sensitivity label.",
+                            "x-ms-summary": "Label ID"
+                        },
+                        "displayName": {
+                            "type": "string",
+                            "description": "The display name of the sensitivity label.",
+                            "x-ms-summary": "Display Name"
+                        },
+                        "tooltip": {
+                            "type": "string",
+                            "description": "The tooltip for the sensitivity label.",
+                            "x-ms-summary": "Tooltip"
+                        },
+                        "priority": {
+                            "type": "integer",
+                            "description": "The priority of the sensitivity label.",
+                            "x-ms-summary": "Priority",
+                            "format": "int32"
+                        },
+                        "color": {
+                            "type": "string",
+                            "description": "The color of the sensitivity label.",
+                            "x-ms-summary": "Color"
+                        },
+                        "isEncrypted": {
+                            "type": "boolean",
+                            "description": "Whether the content is encrypted.",
+                            "x-ms-summary": "Is Encrypted"
+                        }
+                    }
+                }
+            }
+        },
+        "AskResponse": {
+            "type": "object",
+            "description": "The result of a one-shot Ask Copilot action.",
+            "properties": {
+                "conversationId": {
+                    "type": "string",
+                    "description": "The ID of the conversation that was created. Reuse it with Send Chat Message to continue.",
+                    "x-ms-summary": "Conversation ID"
+                },
+                "reply": {
+                    "type": "string",
+                    "description": "Copilot's reply text (may contain Markdown).",
+                    "x-ms-summary": "Reply"
+                },
+                "turnCount": {
+                    "type": "integer",
+                    "description": "The number of turns in the conversation.",
+                    "x-ms-summary": "Turn Count",
+                    "format": "int32"
+                },
+                "conversation": {
+                    "$ref": "#/definitions/Conversation"
+                }
+            }
+        },
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "result": {
+                    "type": "object",
+                    "description": "MCP response result."
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "description": "Error code.",
+                            "format": "int32"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message."
+                        },
+                        "data": {
+                            "description": "Additional error data."
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Sites.Read.All Mail.Read People.Read.All OnlineMeetingTranscript.Read.All Chat.Read ChannelMessage.Read.All ExternalItem.Read.All": "Access the Microsoft 365 Copilot Chat API on behalf of the signed-in user."
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "Sites.Read.All Mail.Read People.Read.All OnlineMeetingTranscript.Read.All Chat.Read ChannelMessage.Read.All ExternalItem.Read.All"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/chat/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
