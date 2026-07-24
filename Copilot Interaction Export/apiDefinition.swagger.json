@@ -1,0 +1,374 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft 365 Copilot Interaction Export",
+        "description": "Export Microsoft 365 Copilot interaction history — user prompts and Copilot responses across Microsoft 365 apps (Teams, Word, Outlook, BizChat, and more) — using the Microsoft Graph AI Interaction Export API. Captures user intent, accessed resources, and responses for compliance, auditing, and analytics. Includes Model Context Protocol (MCP) support for Copilot Studio.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Microsoft 365 Copilot Interaction Export MCP",
+                "description": "Model Context Protocol (MCP) endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for initialize, tools/list, and tools/call. Exposes get_user_interactions and get_user_interactions_by_app tools.",
+                "x-ms-summary": "Invoke Microsoft 365 Copilot Interaction Export MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response.",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/copilot/users/{userId}/interactionHistory/getAllEnterpriseInteractions": {
+            "get": {
+                "operationId": "GetUserInteractions",
+                "summary": "Get User Interactions",
+                "description": "Get all Microsoft 365 Copilot interactions for a user, including prompts and responses across Microsoft 365 apps. Requires the AiEnterpriseInteraction.Read.All application permission.",
+                "x-ms-summary": "Get User Interactions",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID (object ID) or user principal name of the user whose Copilot interactions to retrieve.",
+                        "x-ms-summary": "User ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "$top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "The number of interactions to return. Recommended value is 100 for optimal performance.",
+                        "x-ms-summary": "Top",
+                        "format": "int32",
+                        "default": 100
+                    },
+                    {
+                        "name": "$filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "An OData filter to narrow results, e.g., \"appClass eq 'IPM.SkypeTeams.Message.Copilot.BizChat'\".",
+                        "x-ms-summary": "Filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success - A collection of Copilot interactions.",
+                        "x-ms-summary": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/InteractionCollection"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Missing AiEnterpriseInteraction.Read.All application permission or Copilot license.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found - User not found.",
+                        "x-ms-summary": "Not Found"
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded.",
+                        "x-ms-summary": "Rate Limit Exceeded"
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "InteractionCollection": {
+            "type": "object",
+            "description": "A collection of Microsoft 365 Copilot interactions.",
+            "properties": {
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "A URL to retrieve the next page of results, if present.",
+                    "x-ms-summary": "Next Link"
+                },
+                "value": {
+                    "type": "array",
+                    "description": "The list of Copilot interactions.",
+                    "x-ms-summary": "Interactions",
+                    "items": {
+                        "$ref": "#/definitions/Interaction"
+                    }
+                }
+            }
+        },
+        "Interaction": {
+            "type": "object",
+            "description": "A single Microsoft 365 Copilot interaction (prompt or response).",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The unique identifier of the interaction.",
+                    "x-ms-summary": "ID"
+                },
+                "sessionId": {
+                    "type": "string",
+                    "description": "The identifier of the session the interaction belongs to.",
+                    "x-ms-summary": "Session ID"
+                },
+                "requestId": {
+                    "type": "string",
+                    "description": "The identifier of the request.",
+                    "x-ms-summary": "Request ID"
+                },
+                "appClass": {
+                    "type": "string",
+                    "description": "The Microsoft 365 app the interaction occurred in (e.g., IPM.SkypeTeams.Message.Copilot.BizChat).",
+                    "x-ms-summary": "App Class"
+                },
+                "interactionType": {
+                    "type": "string",
+                    "description": "The type of interaction (e.g., userPrompt, aiResponse).",
+                    "x-ms-summary": "Interaction Type"
+                },
+                "conversationType": {
+                    "type": "string",
+                    "description": "The type of conversation (e.g., bizchat, appchat).",
+                    "x-ms-summary": "Conversation Type"
+                },
+                "etag": {
+                    "type": "string",
+                    "description": "The entity tag of the interaction.",
+                    "x-ms-summary": "ETag"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "description": "The date and time the interaction was created.",
+                    "x-ms-summary": "Created Date Time"
+                },
+                "locale": {
+                    "type": "string",
+                    "description": "The locale of the interaction.",
+                    "x-ms-summary": "Locale"
+                },
+                "body": {
+                    "type": "object",
+                    "description": "The content of the interaction.",
+                    "x-ms-summary": "Body",
+                    "properties": {
+                        "contentType": {
+                            "type": "string",
+                            "description": "The content type (text or html).",
+                            "x-ms-summary": "Content Type"
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "The content of the prompt or response.",
+                            "x-ms-summary": "Content"
+                        }
+                    }
+                },
+                "from": {
+                    "type": "object",
+                    "description": "The identity that sent the interaction.",
+                    "x-ms-summary": "From",
+                    "properties": {
+                        "user": {
+                            "type": "object",
+                            "description": "The user identity, if applicable.",
+                            "x-ms-summary": "User",
+                            "additionalProperties": true
+                        },
+                        "application": {
+                            "type": "object",
+                            "description": "The application identity, if applicable.",
+                            "x-ms-summary": "Application",
+                            "additionalProperties": true
+                        }
+                    }
+                },
+                "contexts": {
+                    "type": "array",
+                    "description": "The contexts associated with the interaction.",
+                    "x-ms-summary": "Contexts",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "contextReference": {
+                                "type": "string",
+                                "description": "A reference to the context resource.",
+                                "x-ms-summary": "Context Reference"
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "description": "The display name of the context.",
+                                "x-ms-summary": "Display Name"
+                            },
+                            "contextType": {
+                                "type": "string",
+                                "description": "The type of context.",
+                                "x-ms-summary": "Context Type"
+                            }
+                        }
+                    }
+                },
+                "attachments": {
+                    "type": "array",
+                    "description": "Attachments referenced by the interaction.",
+                    "x-ms-summary": "Attachments",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "attachmentId": {
+                                "type": "string",
+                                "description": "The identifier of the attachment.",
+                                "x-ms-summary": "Attachment ID"
+                            },
+                            "contentType": {
+                                "type": "string",
+                                "description": "The content type of the attachment.",
+                                "x-ms-summary": "Content Type"
+                            },
+                            "contentUrl": {
+                                "type": "string",
+                                "description": "A URL to the attachment content.",
+                                "x-ms-summary": "Content URL"
+                            },
+                            "content": {
+                                "type": "string",
+                                "description": "The inline content of the attachment, if any.",
+                                "x-ms-summary": "Content"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The name of the attachment.",
+                                "x-ms-summary": "Name"
+                            }
+                        }
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "description": "Links referenced by the interaction.",
+                    "x-ms-summary": "Links",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "mentions": {
+                    "type": "array",
+                    "description": "Mentions referenced by the interaction.",
+                    "x-ms-summary": "Mentions",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                }
+            }
+        },
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "result": {
+                    "type": "object",
+                    "description": "MCP response result."
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "description": "Error code.",
+                            "format": "int32"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message."
+                        },
+                        "data": {
+                            "description": "Additional error data."
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "application",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://graph.microsoft.com/.default": "Access the Microsoft 365 Copilot Interaction Export API with application permissions."
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "https://graph.microsoft.com/.default"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/ai-services/interaction-export/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
