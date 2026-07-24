@@ -1,0 +1,305 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft 365 Copilot Usage Reports",
+        "description": "Retrieve Microsoft 365 Copilot usage — per-user last-activity dates across Teams, Word, Excel, PowerPoint, Outlook, OneNote, Loop, and Copilot Chat, plus prompt counts and agent activity (v2). Uses the Microsoft Graph Copilot usage reports API. Includes Model Context Protocol (MCP) support for Copilot Studio.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Microsoft 365 Copilot Usage Reports MCP",
+                "description": "Model Context Protocol (MCP) endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for initialize, tools/list, and tools/call. Exposes get_usage_report tool.",
+                "x-ms-summary": "Invoke Microsoft 365 Copilot Usage Reports MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response.",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/usage-report": {
+            "get": {
+                "operationId": "GetUsageReport",
+                "summary": "Get Usage Report",
+                "description": "Get Microsoft 365 Copilot usage detail for enabled users over a period. Returns JSON by default; select CSV to receive the raw report. Version v2 adds prompt counts, active usage days, and agent activity.",
+                "x-ms-summary": "Get Usage Report",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The number of previous days to aggregate. v1 supports D7, D30, D90, D180, ALL. v2 supports D7, D28, D90, D180, ALL.",
+                        "x-ms-summary": "Period",
+                        "default": "D7",
+                        "enum": [
+                            "D7",
+                            "D28",
+                            "D30",
+                            "D90",
+                            "D180",
+                            "ALL"
+                        ]
+                    },
+                    {
+                        "name": "version",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "The report version. v1 (default) or v2 (adds prompt counts, active usage days, and agent activity).",
+                        "x-ms-summary": "Version",
+                        "default": "v2",
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ]
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "The response format. JSON (default) returns structured data; CSV returns the raw comma-separated report.",
+                        "x-ms-summary": "Format",
+                        "default": "json",
+                        "enum": [
+                            "json",
+                            "csv"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success - Copilot usage report.",
+                        "x-ms-summary": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/UsageReport"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Missing Reports.Read.All permission or a required admin role.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded.",
+                        "x-ms-summary": "Rate Limit Exceeded"
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "UsageReport": {
+            "type": "object",
+            "description": "A Microsoft 365 Copilot usage report (JSON format).",
+            "properties": {
+                "@odata.nextLink": {
+                    "type": "string",
+                    "description": "A URL to retrieve the next page of results, if present.",
+                    "x-ms-summary": "Next Link"
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Per-user Copilot usage records.",
+                    "x-ms-summary": "Users",
+                    "items": {
+                        "$ref": "#/definitions/UsageUserDetail"
+                    }
+                }
+            }
+        },
+        "UsageUserDetail": {
+            "type": "object",
+            "description": "Copilot usage detail for a single user.",
+            "properties": {
+                "reportRefreshDate": {
+                    "type": "string",
+                    "description": "The date the report data was last refreshed.",
+                    "x-ms-summary": "Report Refresh Date"
+                },
+                "userPrincipalName": {
+                    "type": "string",
+                    "description": "The user principal name.",
+                    "x-ms-summary": "User Principal Name"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The user's display name.",
+                    "x-ms-summary": "Display Name"
+                },
+                "lastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user had any Copilot activity.",
+                    "x-ms-summary": "Last Activity Date"
+                },
+                "copilotChatLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot Chat.",
+                    "x-ms-summary": "Copilot Chat Last Activity Date"
+                },
+                "microsoftTeamsCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for Microsoft Teams.",
+                    "x-ms-summary": "Teams Copilot Last Activity Date"
+                },
+                "wordCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for Word.",
+                    "x-ms-summary": "Word Copilot Last Activity Date"
+                },
+                "excelCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for Excel.",
+                    "x-ms-summary": "Excel Copilot Last Activity Date"
+                },
+                "powerPointCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for PowerPoint.",
+                    "x-ms-summary": "PowerPoint Copilot Last Activity Date"
+                },
+                "outlookCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for Outlook.",
+                    "x-ms-summary": "Outlook Copilot Last Activity Date"
+                },
+                "oneNoteCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for OneNote.",
+                    "x-ms-summary": "OneNote Copilot Last Activity Date"
+                },
+                "loopCopilotLastActivityDate": {
+                    "type": "string",
+                    "description": "The last date the user was active in Copilot for Loop.",
+                    "x-ms-summary": "Loop Copilot Last Activity Date"
+                },
+                "copilotActivityUserDetailsByPeriod": {
+                    "type": "array",
+                    "description": "Per-period activity details. For v2, each period entry also includes prompt counts and active usage days.",
+                    "x-ms-summary": "Activity By Period",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "reportPeriod": {
+                                "type": "integer",
+                                "description": "The number of days the period covers (for example, 7, 28, 30, 90, or 180).",
+                                "x-ms-summary": "Report Period",
+                                "format": "int32"
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                }
+            }
+        },
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "result": {
+                    "type": "object",
+                    "description": "MCP response result."
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "description": "Error code.",
+                            "format": "int32"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message."
+                        },
+                        "data": {
+                            "description": "Additional error data."
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Reports.Read.All": "Read Microsoft 365 usage reports on behalf of the signed-in admin."
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "Reports.Read.All"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/reports/copilotreportroot-getmicrosoft365copilotusageuserdetail"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
