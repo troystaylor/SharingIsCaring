@@ -1,0 +1,349 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Microsoft 365 Copilot Search",
+        "description": "Search across Microsoft 365 content — files, email, Teams messages, calendar events, SharePoint sites/lists, people, and Copilot connector (external) items — using the Microsoft Graph Search API. Results respect the signed-in user's access controls. Includes Model Context Protocol (MCP) support for Copilot Studio.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Microsoft 365 Copilot Search MCP",
+                "description": "Model Context Protocol (MCP) endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for initialize, tools/list, and tools/call. Exposes search, search_files, search_email, search_teams_messages, search_events, and search_external_items tools.",
+                "x-ms-summary": "Invoke Microsoft 365 Copilot Search MCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response.",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/search/query": {
+            "post": {
+                "operationId": "Search",
+                "summary": "Search",
+                "description": "Search Microsoft 365 content by entity type. Returns ranked hits with summaries and resource details, scoped to the signed-in user's permissions.",
+                "x-ms-summary": "Search",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "queryString",
+                                "entityTypes"
+                            ],
+                            "properties": {
+                                "queryString": {
+                                    "type": "string",
+                                    "description": "The search query. Supports Keyword Query Language (KQL), e.g., 'budget filetype:xlsx'.",
+                                    "x-ms-summary": "Query",
+                                    "x-ms-visibility": "important"
+                                },
+                                "entityTypes": {
+                                    "type": "array",
+                                    "description": "The types of content to search. File types (site, drive, driveItem, list, listItem) must be searched together.",
+                                    "x-ms-summary": "Entity Types",
+                                    "x-ms-visibility": "important",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "An entity type to search.",
+                                        "x-ms-summary": "Entity Type",
+                                        "enum": [
+                                            "driveItem",
+                                            "listItem",
+                                            "list",
+                                            "site",
+                                            "drive",
+                                            "message",
+                                            "event",
+                                            "chatMessage",
+                                            "person",
+                                            "externalItem"
+                                        ],
+                                        "x-ms-enum-values": [
+                                            { "value": "driveItem", "displayName": "Files (OneDrive/SharePoint)" },
+                                            { "value": "listItem", "displayName": "List Items" },
+                                            { "value": "list", "displayName": "Lists" },
+                                            { "value": "site", "displayName": "SharePoint Sites" },
+                                            { "value": "drive", "displayName": "Document Libraries" },
+                                            { "value": "message", "displayName": "Email Messages" },
+                                            { "value": "event", "displayName": "Calendar Events" },
+                                            { "value": "chatMessage", "displayName": "Teams Messages" },
+                                            { "value": "person", "displayName": "People" },
+                                            { "value": "externalItem", "displayName": "Copilot Connector Items" }
+                                        ]
+                                    }
+                                },
+                                "from": {
+                                    "type": "integer",
+                                    "description": "The zero-based index of the first result to return (for paging). Default is 0.",
+                                    "x-ms-summary": "From",
+                                    "x-ms-visibility": "advanced",
+                                    "format": "int32",
+                                    "default": 0
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "description": "The number of results to return (1-500 for files; up to 25 for some types). Default is 25.",
+                                    "x-ms-summary": "Size",
+                                    "x-ms-visibility": "advanced",
+                                    "format": "int32",
+                                    "default": 25
+                                },
+                                "fields": {
+                                    "type": "array",
+                                    "description": "Specific fields to return for each hit (e.g., 'title', 'author', 'lastModifiedDateTime').",
+                                    "x-ms-summary": "Fields",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A field name to return.",
+                                        "x-ms-summary": "Field"
+                                    }
+                                },
+                                "queryTemplate": {
+                                    "type": "string",
+                                    "description": "Optional KQL query template to refine results (e.g., '{searchTerms} CreatedBy:Bob').",
+                                    "x-ms-summary": "Query Template",
+                                    "x-ms-visibility": "advanced"
+                                },
+                                "contentSources": {
+                                    "type": "array",
+                                    "description": "For externalItem searches: the Copilot connector connection(s) to query, e.g., '/external/connections/connectionId'.",
+                                    "x-ms-summary": "Content Sources",
+                                    "x-ms-visibility": "advanced",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A connector content source path.",
+                                        "x-ms-summary": "Content Source"
+                                    }
+                                },
+                                "enableTopResults": {
+                                    "type": "boolean",
+                                    "description": "For email (message) searches: return the most relevant results first (hybrid sort). Default is false.",
+                                    "x-ms-summary": "Enable Top Results",
+                                    "x-ms-visibility": "advanced",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success - Search results.",
+                        "x-ms-summary": "Success",
+                        "schema": {
+                            "$ref": "#/definitions/SearchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid request parameters.",
+                        "x-ms-summary": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized - Authentication required.",
+                        "x-ms-summary": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden - Insufficient permissions for the requested entity types.",
+                        "x-ms-summary": "Forbidden"
+                    },
+                    "429": {
+                        "description": "Too Many Requests - Rate limit exceeded.",
+                        "x-ms-summary": "Rate Limit Exceeded"
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "x-ms-summary": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "SearchResponse": {
+            "type": "object",
+            "description": "The result of a Microsoft Graph search query.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The list of search responses (one per request).",
+                    "x-ms-summary": "Value",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "searchTerms": {
+                                "type": "array",
+                                "description": "The terms used for the search (may include spelling corrections).",
+                                "x-ms-summary": "Search Terms",
+                                "items": {
+                                    "type": "string",
+                                    "description": "A search term.",
+                                    "x-ms-summary": "Term"
+                                }
+                            },
+                            "hitsContainers": {
+                                "type": "array",
+                                "description": "The containers of search hits.",
+                                "x-ms-summary": "Hits Containers",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "total": {
+                                            "type": "integer",
+                                            "description": "The total number of results.",
+                                            "x-ms-summary": "Total",
+                                            "format": "int32"
+                                        },
+                                        "moreResultsAvailable": {
+                                            "type": "boolean",
+                                            "description": "Whether more results are available (page with 'from').",
+                                            "x-ms-summary": "More Results Available"
+                                        },
+                                        "hits": {
+                                            "type": "array",
+                                            "description": "The individual search hits.",
+                                            "x-ms-summary": "Hits",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "hitId": {
+                                                        "type": "string",
+                                                        "description": "The internal identifier of the hit.",
+                                                        "x-ms-summary": "Hit ID"
+                                                    },
+                                                    "rank": {
+                                                        "type": "integer",
+                                                        "description": "The rank of the result.",
+                                                        "x-ms-summary": "Rank",
+                                                        "format": "int32"
+                                                    },
+                                                    "summary": {
+                                                        "type": "string",
+                                                        "description": "A summary/snippet of the matched content.",
+                                                        "x-ms-summary": "Summary"
+                                                    },
+                                                    "resource": {
+                                                        "type": "object",
+                                                        "description": "The matched resource (shape varies by entity type).",
+                                                        "x-ms-summary": "Resource",
+                                                        "additionalProperties": true
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "result": {
+                    "type": "object",
+                    "description": "MCP response result."
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC version (always '2.0')."
+                },
+                "id": {
+                    "description": "Request identifier."
+                },
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "description": "Error code.",
+                            "format": "int32"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Error message."
+                        },
+                        "data": {
+                            "description": "Additional error data."
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "Mail.Read Calendars.Read Chat.Read ChannelMessage.Read.All Files.Read.All Sites.Read.All ExternalItem.Read.All People.Read": "Search Microsoft 365 content on behalf of the signed-in user."
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "Mail.Read Calendars.Read Chat.Read ChannelMessage.Read.All Files.Read.All Sites.Read.All ExternalItem.Read.All People.Read"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/en-us/graph/search-concept-overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/en-us/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
