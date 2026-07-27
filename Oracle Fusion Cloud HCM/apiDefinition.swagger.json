@@ -1,0 +1,859 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Oracle Fusion Cloud HCM",
+        "description": "Generic create, read, update, and delete access to the Oracle Fusion Cloud HCM REST API (ADF REST), plus an MCP endpoint for Copilot Studio. Works against any HCM resource collection (workers, emps, jobs, positions, grades, departments, absences, and more). Resource, field, and body pickers are populated dynamically from the pod's own metadata.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "url": "https://github.com/troystaylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "replace-pod-host.oraclecloud.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/hcmRestApi/resources/11.13.18.05/{resource}": {
+            "get": {
+                "summary": "Query records",
+                "description": "Queries records from any HCM REST resource collection using the ADF query grammar (q, fields, expand, orderBy, limit, offset).",
+                "operationId": "QueryRecords",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name, for example workers, emps, jobs, or positions.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Row filter using the ADF query grammar, for example PersonNumber='100010' or LastName LIKE 'Sm%'.",
+                        "x-ms-summary": "Filter (q)"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of attributes to return, for example PersonId,PersonNumber,DateOfBirth. The picker lists one attribute at a time; separate multiple with commas.",
+                        "x-ms-summary": "Fields",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceFields",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child resources to include, for example names,emails.",
+                        "x-ms-summary": "Expand",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "orderBy",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort expression, for example PersonNumber:asc.",
+                        "x-ms-summary": "Order By"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 25,
+                        "description": "Maximum number of records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Zero-based index of the first record to return (for paging).",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links from each record.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of records.",
+                        "schema": {
+                            "$ref": "#/definitions/RecordCollection"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create record",
+                "description": "Creates a new record in the specified HCM REST resource collection.",
+                "operationId": "CreateRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name, for example emps.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The attributes of the record to create. The form is generated from the selected resource's metadata.",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResourceSchema",
+                                "parameters": {
+                                    "resource": {
+                                        "parameter": "resource"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The created record.",
+                        "schema": {
+                            "$ref": "#/definitions/Record"
+                        }
+                    }
+                }
+            }
+        },
+        "/hcmRestApi/resources/11.13.18.05/{resource}/{id}": {
+            "get": {
+                "summary": "Get record",
+                "description": "Retrieves a single record by its resource key.",
+                "operationId": "GetRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The record key (primary key value from the resource's self link).",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of attributes to return.",
+                        "x-ms-summary": "Fields",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceFields",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child resources to include.",
+                        "x-ms-summary": "Expand",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links from the record.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The requested record.",
+                        "schema": {
+                            "$ref": "#/definitions/Record"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update record",
+                "description": "Partially updates an existing record. Include only the attributes that should change.",
+                "operationId": "UpdateRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The record key.",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The attributes to change. The form is generated from the selected resource's metadata.",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResourceSchema",
+                                "parameters": {
+                                    "resource": {
+                                        "parameter": "resource"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated record.",
+                        "schema": {
+                            "$ref": "#/definitions/Record"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete record",
+                "description": "Deletes a record by its resource key. Not all resources support delete.",
+                "operationId": "DeleteRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The record key.",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The record was deleted."
+                    }
+                }
+            }
+        },
+        "/hcmRestApi/resources/11.13.18.05/{resource}/describe": {
+            "get": {
+                "summary": "Describe resource",
+                "description": "Returns the metadata (attributes, actions, child resources) for a resource collection.",
+                "operationId": "DescribeResource",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The resource metadata document.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "Resources": {
+                                    "type": "object",
+                                    "description": "Map of resource metadata keyed by resource name."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/hcmRestApi/resources/11.13.18.05/workers": {
+            "get": {
+                "summary": "Search workers",
+                "description": "Searches the workers resource for person, employment, and assignment data.",
+                "operationId": "SearchWorkers",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Row filter, for example PersonNumber='100010' or DisplayName LIKE '%Smith%'.",
+                        "x-ms-summary": "Filter (q)"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of attributes to return.",
+                        "x-ms-summary": "Fields",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceFields",
+                            "parameters": {
+                                "resource": "workers"
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child resources to include, for example names,emails,assignments.",
+                        "x-ms-summary": "Expand",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": "workers"
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 25,
+                        "description": "Maximum number of workers to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of workers.",
+                        "schema": {
+                            "$ref": "#/definitions/WorkerCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/resources": {
+            "get": {
+                "summary": "List resources",
+                "description": "Internal resolver. Lists HCM resource collection names for the resource picker.",
+                "operationId": "ListResources",
+                "x-ms-visibility": "internal",
+                "responses": {
+                    "200": {
+                        "description": "The list of resources.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/fields": {
+            "get": {
+                "summary": "List resource fields",
+                "description": "Internal resolver. Lists the attributes of a resource for the field picker.",
+                "operationId": "ListResourceFields",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The list of fields.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/child-resources": {
+            "get": {
+                "summary": "List child resources",
+                "description": "Internal resolver. Lists the child resources of a resource for the expand picker.",
+                "operationId": "ListChildResources",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The list of child resources.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/schema": {
+            "get": {
+                "summary": "Get resource schema",
+                "description": "Internal resolver. Returns a JSON Schema for a resource's attributes for the dynamic create/update body.",
+                "operationId": "GetResourceSchema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The resource schema.",
+                        "schema": {
+                            "$ref": "#/definitions/SchemaResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Oracle Fusion Cloud HCM MCP",
+                "description": "Sends JSON-RPC 2.0 requests to the Model Context Protocol server for tool execution and capability management.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Record": {
+            "type": "object",
+            "description": "A single HCM record. Attributes vary by resource; use Describe Resource to inspect them.",
+            "properties": {
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the record.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "RecordCollection": {
+            "type": "object",
+            "description": "A page of records returned by a query.",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "The records in this page.",
+                    "items": {
+                        "$ref": "#/definitions/Record"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The number of records in this page.",
+                    "title": "Count"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "Whether more records are available beyond this page.",
+                    "title": "Has More"
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The page size used for this response.",
+                    "title": "Limit"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The zero-based index of the first record in this page.",
+                    "title": "Offset"
+                },
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the collection.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "Worker": {
+            "type": "object",
+            "description": "A worker record.",
+            "properties": {
+                "PersonId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "The unique identifier of the person.",
+                    "title": "Person ID"
+                },
+                "PersonNumber": {
+                    "type": "string",
+                    "description": "The person number.",
+                    "title": "Person Number"
+                },
+                "DisplayName": {
+                    "type": "string",
+                    "description": "The worker's display name.",
+                    "title": "Display Name"
+                },
+                "DateOfBirth": {
+                    "type": "string",
+                    "description": "The worker's date of birth.",
+                    "title": "Date of Birth"
+                },
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the worker.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "WorkerCollection": {
+            "type": "object",
+            "description": "A page of workers.",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "The workers in this page.",
+                    "items": {
+                        "$ref": "#/definitions/Worker"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The number of workers in this page.",
+                    "title": "Count"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "Whether more workers are available beyond this page.",
+                    "title": "Has More"
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The page size used for this response.",
+                    "title": "Limit"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The zero-based index of the first worker in this page.",
+                    "title": "Offset"
+                }
+            }
+        },
+        "Link": {
+            "type": "object",
+            "description": "A HATEOAS link.",
+            "properties": {
+                "rel": {
+                    "type": "string",
+                    "description": "The relationship of the link to the resource.",
+                    "title": "Relation"
+                },
+                "href": {
+                    "type": "string",
+                    "description": "The URL of the link.",
+                    "title": "Href"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The name of the link.",
+                    "title": "Name"
+                },
+                "kind": {
+                    "type": "string",
+                    "description": "The kind of resource the link points to.",
+                    "title": "Kind"
+                }
+            }
+        },
+        "ValueList": {
+            "type": "object",
+            "description": "A list of selectable values for a dynamic picker.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The selectable values.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The value to use.",
+                                "title": "Name"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "The display label.",
+                                "title": "Title"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "SchemaResult": {
+            "type": "object",
+            "description": "A wrapper for a dynamically generated JSON Schema.",
+            "properties": {
+                "schema": {
+                    "type": "object",
+                    "description": "The JSON Schema describing the resource's attributes.",
+                    "title": "Schema"
+                }
+            }
+        },
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC protocol version.",
+                    "title": "JSON-RPC Version"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Request identifier matching the original request.",
+                    "title": "Request ID"
+                },
+                "result": {
+                    "type": "object",
+                    "description": "Successful response data from the MCP method.",
+                    "title": "Result"
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC protocol version.",
+                    "title": "JSON-RPC Version"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Request identifier, or null if the request ID could not be determined.",
+                    "title": "Request ID"
+                },
+                "error": {
+                    "type": "object",
+                    "description": "The JSON-RPC error object.",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "format": "int32",
+                            "description": "The JSON-RPC error code.",
+                            "title": "Code"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "A short description of the error.",
+                            "title": "Message"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://replace-idcs-host.identity.oraclecloud.com/oauth2/v1/authorize",
+            "tokenUrl": "https://replace-idcs-host.identity.oraclecloud.com/oauth2/v1/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.oracle.com/human-capital-management/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.oracle.com/legal/privacy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Human Resources;Productivity"
+        }
+    ]
+}
