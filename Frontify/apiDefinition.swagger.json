@@ -1,0 +1,2036 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Frontify",
+        "description": "Work with your Frontify brand assets, libraries, and account through the Frontify GraphQL API. Each operation takes a simple JSON body and returns clean JSON - the connector builds the GraphQL request for you. Includes a generic Run Query operation for anything not covered by the typed operations.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "url": "https://github.com/troystaylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "demo.frontify.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/getAccount": {
+            "post": {
+                "operationId": "GetAccount",
+                "summary": "Get account",
+                "description": "Retrieve the current Frontify account details.",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Account details",
+                        "schema": {
+                            "$ref": "#/definitions/Account"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listBrands": {
+            "post": {
+                "operationId": "ListBrands",
+                "summary": "List brands",
+                "description": "Retrieve all brands available to the current account.",
+                "x-ms-visibility": "important",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "List of brands",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Brand"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/getBrand": {
+            "post": {
+                "operationId": "GetBrand",
+                "summary": "Get brand",
+                "description": "Retrieve a single brand by its ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the brand to retrieve.",
+                                    "x-ms-summary": "Brand ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Brand details",
+                        "schema": {
+                            "$ref": "#/definitions/Brand"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listBrandLibraries": {
+            "post": {
+                "operationId": "ListBrandLibraries",
+                "summary": "List brand libraries",
+                "description": "Retrieve the libraries that belong to a brand.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the brand.",
+                                    "x-ms-summary": "Brand ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of libraries to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of libraries",
+                        "schema": {
+                            "$ref": "#/definitions/LibraryItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/getLibrary": {
+            "post": {
+                "operationId": "GetLibrary",
+                "summary": "Get library",
+                "description": "Retrieve a single library by its ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "brandId": {
+                                    "type": "string",
+                                    "description": "The brand that owns the library. Used only to populate the Library ID picker.",
+                                    "x-ms-summary": "Brand (for library picker)",
+                                    "x-ms-visibility": "advanced",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the library to retrieve.",
+                                    "x-ms-summary": "Library ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrandLibraries",
+                                        "parameters": {
+                                            "id": {
+                                                "parameter": "brandId"
+                                            }
+                                        },
+                                        "value-collection": "items",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Library details",
+                        "schema": {
+                            "$ref": "#/definitions/Library"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listLibraryAssets": {
+            "post": {
+                "operationId": "ListLibraryAssets",
+                "summary": "List library assets",
+                "description": "List or search the assets contained in a library.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "brandId": {
+                                    "type": "string",
+                                    "description": "The brand that owns the library. Used only to populate the Library ID picker.",
+                                    "x-ms-summary": "Brand (for library picker)",
+                                    "x-ms-visibility": "advanced",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the library.",
+                                    "x-ms-summary": "Library ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrandLibraries",
+                                        "parameters": {
+                                            "id": {
+                                                "parameter": "brandId"
+                                            }
+                                        },
+                                        "value-collection": "items",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of assets to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of assets",
+                        "schema": {
+                            "$ref": "#/definitions/AssetItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/searchLibraryAssets": {
+            "post": {
+                "operationId": "SearchLibraryAssets",
+                "summary": "Search library assets",
+                "description": "Search the assets in a library using a Frontify AssetQueryInput filter.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "brandId": {
+                                    "type": "string",
+                                    "description": "The brand that owns the library. Used only to populate the Library ID picker.",
+                                    "x-ms-summary": "Brand (for library picker)",
+                                    "x-ms-visibility": "advanced",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the library to search.",
+                                    "x-ms-summary": "Library ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrandLibraries",
+                                        "parameters": {
+                                            "id": {
+                                                "parameter": "brandId"
+                                            }
+                                        },
+                                        "value-collection": "items",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "query": {
+                                    "type": "object",
+                                    "description": "A Frontify AssetQueryInput object (for example { \"term\": \"logo\" }).",
+                                    "x-ms-summary": "Query"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of assets to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of matching assets",
+                        "schema": {
+                            "$ref": "#/definitions/AssetItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listLibraryCollections": {
+            "post": {
+                "operationId": "ListLibraryCollections",
+                "summary": "List library collections",
+                "description": "List the collections within a library.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "brandId": {
+                                    "type": "string",
+                                    "description": "The brand that owns the library. Used only to populate the Library ID picker.",
+                                    "x-ms-summary": "Brand (for library picker)",
+                                    "x-ms-visibility": "advanced",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the library.",
+                                    "x-ms-summary": "Library ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrandLibraries",
+                                        "parameters": {
+                                            "id": {
+                                                "parameter": "brandId"
+                                            }
+                                        },
+                                        "value-collection": "items",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of collections to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of collections",
+                        "schema": {
+                            "$ref": "#/definitions/CollectionItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listLibraryMetadataProperties": {
+            "post": {
+                "operationId": "ListLibraryMetadataProperties",
+                "summary": "List library metadata properties",
+                "description": "List the custom metadata properties defined on a library.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "brandId": {
+                                    "type": "string",
+                                    "description": "The brand that owns the library. Used only to populate the Library ID picker.",
+                                    "x-ms-summary": "Brand (for library picker)",
+                                    "x-ms-visibility": "advanced",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the library.",
+                                    "x-ms-summary": "Library ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrandLibraries",
+                                        "parameters": {
+                                            "id": {
+                                                "parameter": "brandId"
+                                            }
+                                        },
+                                        "value-collection": "items",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of custom metadata properties",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/CustomMetadataProperty"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listAssetComments": {
+            "post": {
+                "operationId": "ListAssetComments",
+                "summary": "List asset comments",
+                "description": "List the comments on an asset.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of comments to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of comments",
+                        "schema": {
+                            "$ref": "#/definitions/AssetCommentItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listRelatedAssets": {
+            "post": {
+                "operationId": "ListRelatedAssets",
+                "summary": "List related assets",
+                "description": "List the assets related to an asset.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of related assets to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of related assets",
+                        "schema": {
+                            "$ref": "#/definitions/AssetItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "operationId": "InvokeMCP",
+                "summary": "Invoke Frontify MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Frontify tools (search, get, list, upload, tag) over MCP.",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC response",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/getAssetDownload": {
+            "post": {
+                "operationId": "GetAssetDownload",
+                "summary": "Get asset download",
+                "description": "Get an asset's download URL, preview URL, and file details by ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset.",
+                                    "x-ms-summary": "Asset ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Asset download details",
+                        "schema": {
+                            "$ref": "#/definitions/AssetDownload"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/replaceAsset": {
+            "post": {
+                "operationId": "ReplaceAsset",
+                "summary": "Replace asset",
+                "description": "Replace an existing asset's file: uploads a new file and links it to the asset. Requires the basic:write scope. The file is provided as base64 content.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "assetId",
+                                "filename",
+                                "content"
+                            ],
+                            "properties": {
+                                "assetId": {
+                                    "type": "string",
+                                    "description": "The ID of the asset to replace.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "filename": {
+                                    "type": "string",
+                                    "description": "The new file name including extension.",
+                                    "x-ms-summary": "File name"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The new file contents as a base64-encoded string.",
+                                    "x-ms-summary": "File content"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The replaced asset reference",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "assetId": {
+                                    "type": "string",
+                                    "description": "The ID of the replaced asset.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "fileId": {
+                                    "type": "string",
+                                    "description": "The signed file ID that was uploaded.",
+                                    "x-ms-summary": "File ID"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listAssetRevisions": {
+            "post": {
+                "operationId": "ListAssetRevisions",
+                "summary": "List asset revisions",
+                "description": "List an asset's revisions, newest first.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of revisions to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of revisions",
+                        "schema": {
+                            "$ref": "#/definitions/AssetRevisionItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/browseLibrary": {
+            "post": {
+                "operationId": "BrowseLibrary",
+                "summary": "Browse library",
+                "description": "Browse a library's root folders and assets.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "brandId": {
+                                    "type": "string",
+                                    "description": "The brand that owns the library. Used only to populate the Library ID picker.",
+                                    "x-ms-summary": "Brand (for library picker)",
+                                    "x-ms-visibility": "advanced",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrands",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the library.",
+                                    "x-ms-summary": "Library ID",
+                                    "x-ms-dynamic-values": {
+                                        "operationId": "ListBrandLibraries",
+                                        "parameters": {
+                                            "id": {
+                                                "parameter": "brandId"
+                                            }
+                                        },
+                                        "value-collection": "items",
+                                        "value-path": "id",
+                                        "value-title": "name"
+                                    }
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of items to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folders and assets at the library root",
+                        "schema": {
+                            "$ref": "#/definitions/BrowseResult"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listAccountUsers": {
+            "post": {
+                "operationId": "ListAccountUsers",
+                "summary": "List account users",
+                "description": "List the users in the account.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of users to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of users",
+                        "schema": {
+                            "$ref": "#/definitions/UserItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/listAccountUserGroups": {
+            "post": {
+                "operationId": "ListAccountUserGroups",
+                "summary": "List account user groups",
+                "description": "List the user groups in the account.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 25,
+                                    "description": "Maximum number of groups to return.",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "page": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "default": 1,
+                                    "description": "Page number to return.",
+                                    "x-ms-summary": "Page"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged list of user groups",
+                        "schema": {
+                            "$ref": "#/definitions/GroupItems"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/addCollectionAssets": {
+            "post": {
+                "operationId": "AddCollectionAssets",
+                "summary": "Add collection assets",
+                "description": "Add assets to a collection. The assets must be in the same library as the collection. Requires the basic:write scope.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "collectionId",
+                                "assetIds"
+                            ],
+                            "properties": {
+                                "collectionId": {
+                                    "type": "string",
+                                    "description": "The ID of the collection.",
+                                    "x-ms-summary": "Collection ID"
+                                },
+                                "assetIds": {
+                                    "type": "array",
+                                    "description": "The IDs of the assets to add.",
+                                    "x-ms-summary": "Asset IDs",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated collection",
+                        "schema": {
+                            "$ref": "#/definitions/Collection"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/addCustomMetadata": {
+            "post": {
+                "operationId": "AddCustomMetadata",
+                "summary": "Add custom metadata",
+                "description": "Add custom metadata values to one or more assets or workspace projects. Requires the basic:write scope.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentIds",
+                                "customMetadata"
+                            ],
+                            "properties": {
+                                "parentIds": {
+                                    "type": "array",
+                                    "description": "The parent IDs (assets or workspace projects) to add metadata to.",
+                                    "x-ms-summary": "Parent IDs",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "customMetadata": {
+                                    "type": "array",
+                                    "description": "The metadata property and values to add (Frontify CustomMetadataInput objects).",
+                                    "x-ms-summary": "Custom metadata",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "propertyId": {
+                                                "type": "string",
+                                                "description": "The custom metadata property ID.",
+                                                "x-ms-summary": "Property ID"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The parent IDs that were updated",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "parentIds": {
+                                    "type": "array",
+                                    "description": "The updated parent IDs.",
+                                    "x-ms-summary": "Parent IDs",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/getAsset": {
+            "post": {
+                "operationId": "GetAsset",
+                "summary": "Get asset",
+                "description": "Retrieve a single asset by its ID.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset to retrieve.",
+                                    "x-ms-summary": "Asset ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Asset details",
+                        "schema": {
+                            "$ref": "#/definitions/Asset"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/uploadAsset": {
+            "post": {
+                "operationId": "UploadAsset",
+                "summary": "Upload asset",
+                "description": "Upload a file and create an asset from it in one step: reserves a file ID, uploads the bytes to the presigned URLs, then creates the asset. Requires the basic:write scope. The file is provided as base64 content.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filename",
+                                "content",
+                                "title"
+                            ],
+                            "properties": {
+                                "filename": {
+                                    "type": "string",
+                                    "description": "The file name including extension (for example logo.png).",
+                                    "x-ms-summary": "File name"
+                                },
+                                "content": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The file contents as a base64-encoded string.",
+                                    "x-ms-summary": "File content"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "The title (display name) of the new asset.",
+                                    "x-ms-summary": "Title"
+                                },
+                                "parentId": {
+                                    "type": "string",
+                                    "description": "The library, workspace project, or folder ID to place the asset in.",
+                                    "x-ms-summary": "Parent ID"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "An optional asset description.",
+                                    "x-ms-summary": "Description"
+                                },
+                                "externalId": {
+                                    "type": "string",
+                                    "description": "An optional external ID for the asset.",
+                                    "x-ms-summary": "External ID"
+                                },
+                                "author": {
+                                    "type": "string",
+                                    "description": "An optional author (for example a photographer name).",
+                                    "x-ms-summary": "Author"
+                                },
+                                "tags": {
+                                    "type": "array",
+                                    "description": "Optional tags to create with the asset.",
+                                    "x-ms-summary": "Tags",
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "description": "The tag value.",
+                                                "x-ms-summary": "Value"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created asset reference",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "assetId": {
+                                    "type": "string",
+                                    "description": "The ID of the newly created asset.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "fileId": {
+                                    "type": "string",
+                                    "description": "The signed file ID that was uploaded.",
+                                    "x-ms-summary": "File ID"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "The title of the created asset.",
+                                    "x-ms-summary": "Title"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/getCurrentUser": {
+            "post": {
+                "operationId": "GetCurrentUser",
+                "summary": "Get current user",
+                "description": "Retrieve the user the API token belongs to.",
+                "x-ms-visibility": "advanced",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Current user",
+                        "schema": {
+                            "$ref": "#/definitions/User"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/updateAsset": {
+            "post": {
+                "operationId": "UpdateAsset",
+                "summary": "Update asset",
+                "description": "Update an existing asset. Requires the basic:write scope and EDIT permission on the asset.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id",
+                                "data"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset to update.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "data": {
+                                    "type": "object",
+                                    "description": "The fields to update (a Frontify UpdateAssetDataInput object).",
+                                    "x-ms-summary": "Data",
+                                    "properties": {
+                                        "title": {
+                                            "type": "string",
+                                            "description": "New asset title.",
+                                            "x-ms-summary": "Title"
+                                        },
+                                        "description": {
+                                            "type": "string",
+                                            "description": "New asset description.",
+                                            "x-ms-summary": "Description"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated asset",
+                        "schema": {
+                            "$ref": "#/definitions/Asset"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/addAssetTags": {
+            "post": {
+                "operationId": "AddAssetTags",
+                "summary": "Add asset tags",
+                "description": "Add one or more tags to an asset. Requires the basic:write scope and EDIT permission on the asset.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id",
+                                "tags"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset to tag.",
+                                    "x-ms-summary": "Asset ID"
+                                },
+                                "tags": {
+                                    "type": "array",
+                                    "description": "The tags to add.",
+                                    "x-ms-summary": "Tags",
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "description": "The tag value.",
+                                                "x-ms-summary": "Value"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The tagged asset",
+                        "schema": {
+                            "$ref": "#/definitions/Asset"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/deleteAsset": {
+            "post": {
+                "operationId": "DeleteAsset",
+                "summary": "Delete asset",
+                "description": "Delete an asset by its ID.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "id"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the asset to delete.",
+                                    "x-ms-summary": "Asset ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The deleted asset",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "The ID of the deleted asset.",
+                                    "x-ms-summary": "Asset ID"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/runQuery": {
+            "post": {
+                "operationId": "RunQuery",
+                "summary": "Run query",
+                "description": "Run any Frontify GraphQL query or mutation. Provide the GraphQL document and optional variables; the raw data object is returned.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "query"
+                            ],
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "The GraphQL query or mutation document.",
+                                    "x-ms-summary": "Query"
+                                },
+                                "variables": {
+                                    "type": "object",
+                                    "description": "Variables referenced by the query document.",
+                                    "x-ms-summary": "Variables"
+                                },
+                                "operationName": {
+                                    "type": "string",
+                                    "description": "The operation name to run when the document defines several.",
+                                    "x-ms-summary": "Operation name"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The GraphQL data object",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "default": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Account": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The account ID.",
+                    "x-ms-summary": "Account ID"
+                }
+            }
+        },
+        "Brand": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The brand ID.",
+                    "x-ms-summary": "Brand ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The brand name.",
+                    "x-ms-summary": "Name"
+                },
+                "slug": {
+                    "type": "string",
+                    "description": "The brand slug.",
+                    "x-ms-summary": "Slug"
+                },
+                "avatar": {
+                    "type": "string",
+                    "description": "URL of the brand avatar.",
+                    "x-ms-summary": "Avatar"
+                }
+            }
+        },
+        "Library": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The library ID.",
+                    "x-ms-summary": "Library ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The library name.",
+                    "x-ms-summary": "Name"
+                }
+            }
+        },
+        "LibraryItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of libraries available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The libraries on this page.",
+                    "items": {
+                        "$ref": "#/definitions/Library"
+                    }
+                }
+            }
+        },
+        "Asset": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The asset ID.",
+                    "x-ms-summary": "Asset ID"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "The asset title.",
+                    "x-ms-summary": "Title"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The asset description.",
+                    "x-ms-summary": "Description"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "The asset conversion status (for example FINISHED).",
+                    "x-ms-summary": "Status"
+                },
+                "externalId": {
+                    "type": "string",
+                    "description": "The external ID of the asset.",
+                    "x-ms-summary": "External ID"
+                },
+                "author": {
+                    "type": "string",
+                    "description": "The author of the asset (for example a photographer name).",
+                    "x-ms-summary": "Author"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "When the asset was created.",
+                    "x-ms-summary": "Created at"
+                },
+                "modifiedAt": {
+                    "type": "string",
+                    "description": "When the asset was last modified.",
+                    "x-ms-summary": "Modified at"
+                },
+                "creator": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The user ID.",
+                    "x-ms-summary": "User ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The user name.",
+                    "x-ms-summary": "Name"
+                }
+            }
+        },
+        "AssetItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of assets available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The assets on this page.",
+                    "items": {
+                        "$ref": "#/definitions/Asset"
+                    }
+                }
+            }
+        },
+        "Collection": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The collection ID.",
+                    "x-ms-summary": "Collection ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The collection name.",
+                    "x-ms-summary": "Name"
+                }
+            }
+        },
+        "CollectionItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of collections available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The collections on this page.",
+                    "items": {
+                        "$ref": "#/definitions/Collection"
+                    }
+                }
+            }
+        },
+        "CustomMetadataProperty": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The property ID.",
+                    "x-ms-summary": "Property ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The property name.",
+                    "x-ms-summary": "Name"
+                },
+                "helpText": {
+                    "type": "string",
+                    "description": "The property help text.",
+                    "x-ms-summary": "Help text"
+                },
+                "isRequired": {
+                    "type": "boolean",
+                    "description": "Whether the property must be defined.",
+                    "x-ms-summary": "Is required"
+                }
+            }
+        },
+        "AssetComment": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The comment ID.",
+                    "x-ms-summary": "Comment ID"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The comment content.",
+                    "x-ms-summary": "Content"
+                },
+                "isResolved": {
+                    "type": "boolean",
+                    "description": "Whether the comment is resolved.",
+                    "x-ms-summary": "Is resolved"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "When the comment was created.",
+                    "x-ms-summary": "Created at"
+                },
+                "creator": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "AssetCommentItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of comments available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The comments on this page.",
+                    "items": {
+                        "$ref": "#/definitions/AssetComment"
+                    }
+                }
+            }
+        },
+        "AssetDownload": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The asset ID.",
+                    "x-ms-summary": "Asset ID"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "The asset title.",
+                    "x-ms-summary": "Title"
+                },
+                "assetType": {
+                    "type": "string",
+                    "description": "The concrete asset type (Image, Document, File, Video, or Audio).",
+                    "x-ms-summary": "Asset type"
+                },
+                "downloadUrl": {
+                    "type": "string",
+                    "description": "Signed URL to download the original file. Null if download-protected.",
+                    "x-ms-summary": "Download URL"
+                },
+                "previewUrl": {
+                    "type": "string",
+                    "description": "Preview URL.",
+                    "x-ms-summary": "Preview URL"
+                },
+                "filename": {
+                    "type": "string",
+                    "description": "Original file name.",
+                    "x-ms-summary": "File name"
+                },
+                "extension": {
+                    "type": "string",
+                    "description": "File extension.",
+                    "x-ms-summary": "Extension"
+                },
+                "size": {
+                    "type": "string",
+                    "description": "File size in bytes.",
+                    "x-ms-summary": "Size"
+                },
+                "width": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Width in pixels.",
+                    "x-ms-summary": "Width"
+                },
+                "height": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Height in pixels.",
+                    "x-ms-summary": "Height"
+                },
+                "pageCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of pages (documents only).",
+                    "x-ms-summary": "Page count"
+                }
+            }
+        },
+        "UserItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of users available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The users on this page.",
+                    "items": {
+                        "$ref": "#/definitions/User"
+                    }
+                }
+            }
+        },
+        "Group": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The group ID.",
+                    "x-ms-summary": "Group ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The group name.",
+                    "x-ms-summary": "Name"
+                }
+            }
+        },
+        "GroupItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of groups available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The groups on this page.",
+                    "items": {
+                        "$ref": "#/definitions/Group"
+                    }
+                }
+            }
+        },
+        "Folder": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The folder ID.",
+                    "x-ms-summary": "Folder ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The folder name.",
+                    "x-ms-summary": "Name"
+                }
+            }
+        },
+        "FolderItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of folders available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The folders on this page.",
+                    "items": {
+                        "$ref": "#/definitions/Folder"
+                    }
+                }
+            }
+        },
+        "BrowseResult": {
+            "type": "object",
+            "properties": {
+                "folders": {
+                    "$ref": "#/definitions/FolderItems"
+                },
+                "assets": {
+                    "$ref": "#/definitions/AssetItems"
+                }
+            }
+        },
+        "AssetRevision": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The revision ID.",
+                    "x-ms-summary": "Revision ID"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "description": "When the revision was created.",
+                    "x-ms-summary": "Created at"
+                },
+                "creator": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "AssetRevisionItems": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total number of revisions available.",
+                    "x-ms-summary": "Total"
+                },
+                "items": {
+                    "type": "array",
+                    "description": "The revisions on this page.",
+                    "items": {
+                        "$ref": "#/definitions/AssetRevision"
+                    }
+                }
+            }
+        },
+        "Error": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "object",
+                    "description": "Error details.",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "A short error code.",
+                            "x-ms-summary": "Code"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "A human-readable error message.",
+                            "x-ms-summary": "Message"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "api_key": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "Your Frontify API token. Create one in your Frontify instance under Settings > API tokens. Enter just the token value; the connector adds the 'Bearer ' prefix automatically."
+        }
+    },
+    "security": [
+        {
+            "api_key": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.frontify.com"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.frontify.com/legal/privacy-notice"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Content and Files;Marketing"
+        }
+    ]
+}
