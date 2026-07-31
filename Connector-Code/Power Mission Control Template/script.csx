@@ -44,15 +44,31 @@ public class Script : ScriptBase
             Title = "Power Mission Control Server",
             Description = "Power Platform custom connector with progressive API discovery via Model Context Protocol"
         },
-        ProtocolVersion = "2025-11-25",
+
+        // Preferred revision. Legacy clients (Copilot Studio) that open with
+        // initialize are detected and served under legacy semantics automatically.
+        ProtocolVersion = "2026-07-28",
+        SupportedProtocolVersions = new List<string> { "2026-07-28", "2025-11-25", "2025-06-18" },
+
         Capabilities = new McpCapabilities
         {
             Tools = true,
             Resources = true,
             Prompts = true,
-            Logging = true,
             Completions = true
-        }
+            // Logging is deprecated as of 2026-07-28; leave off for new servers.
+        },
+
+        // Cache hints attached to list and read results (2026-07-28 CacheableResult).
+        // The three mission control tools are stable, so the list TTL can be generous.
+        ListCacheTtlMs = 900000,      // 15 minutes
+        ListCacheScope = "public",
+        ResourceCacheTtlMs = 60000,   // 1 minute
+        ResourceCacheScope = "private",
+        DiscoverCacheTtlMs = 3600000, // 1 hour
+
+        Instructions = "Call scan_{service} first to find the operation you need, then launch_{service} to execute it. " +
+            "Use sequence_{service} when several operations must run together."
     };
 
     // ── Mission Control Configuration ─────────────────────────────────────
@@ -168,7 +184,10 @@ public class Script : ScriptBase
 
         // 5. Handle the request
         var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var result = await handler.HandleAsync(body, this.CancellationToken).ConfigureAwait(false);
+        var result = await handler.HandleAsync(
+            body,
+            McpTransportHeaders.FromRequest(this.Context.Request),
+            this.CancellationToken).ConfigureAwait(false);
 
         var duration = DateTime.UtcNow - startTime;
         this.Context.Logger.LogInformation($"[{correlationId}] Completed in {duration.TotalMilliseconds}ms");
@@ -348,38 +367,264 @@ public class Script : ScriptBase
 // ╔══════════════════════════════════════════════════════════════════════════════╗
 // ║  SECTION 2: MCP FRAMEWORK + ORCHESTRATION ENGINE                           ║
 // ║                                                                            ║
-// ║  Built-in McpRequestHandler (MCP 2025-11-25) plus mission control classes:  ║
-// ║  MissionControlOptions, CapabilityIndex, ApiProxy, McpChainClient,         ║
-// ║  DiscoveryEngine, MissionControl.                                          ║
+// ║  Built-in McpRequestHandler (MCP 2026-07-28, dual-era) plus the mission     ║
+// ║  control classes: MissionControlOptions, CapabilityIndex, ApiProxy,        ║
+// ║  McpChainClient, DiscoveryEngine, MissionControl.                          ║
+// ║                                                                            ║
+// ║  2026-07-28 removed the initialize handshake and made MCP stateless: every ║
+// ║  request carries its own protocol version, identity, and capabilities in   ║
+// ║  _meta. Power Platform connectors are stateless by construction, so the    ║
+// ║  runtime and the protocol now agree rather than fight.                     ║
+// ║                                                                            ║
+// ║  The handler serves BOTH eras from one endpoint. Era is chosen per         ║
+// ║  request; Copilot Studio is a legacy client and is answered exactly as it  ║
+// ║  was before this revision.                                                 ║
+// ║                                                                            ║
+// ║  McpChainClient is a dual-era MCP CLIENT: this connector also calls out    ║
+// ║  to an external MCP server in McpChain discovery mode.                     ║
 // ║                                                                            ║
 // ║  Do not modify unless extending the framework itself.                      ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
+// ── Protocol Constants ───────────────────────────────────────────────────────
+
+/// <summary>Reserved _meta keys, extension identifiers, and URI schemes defined by MCP.</summary>
+public static class McpKeys
+{
+    public const string ProtocolVersion = "io.modelcontextprotocol/protocolVersion";
+    public const string ClientInfo = "io.modelcontextprotocol/clientInfo";
+    public const string ClientCapabilities = "io.modelcontextprotocol/clientCapabilities";
+    public const string ServerInfo = "io.modelcontextprotocol/serverInfo";
+    public const string LogLevel = "io.modelcontextprotocol/logLevel";
+    public const string SubscriptionId = "io.modelcontextprotocol/subscriptionId";
+
+    // Official extensions, advertised through capabilities.extensions.
+    public const string ExtensionTasks = "io.modelcontextprotocol/tasks";
+    public const string ExtensionUi = "io.modelcontextprotocol/ui";
+
+    // Agent Skills over MCP.
+    public const string SkillScheme = "skill://";
+    public const string SkillIndexUri = "skill://index.json";
+}
+
 // ── Configuration Types ──────────────────────────────────────────────────────
 
+/// <summary>Server identity reported by server/discover and in each result's _meta.</summary>
 public class McpServerInfo
 {
     public string Name { get; set; } = "mcp-server";
     public string Version { get; set; } = "1.0.0";
     public string Title { get; set; }
     public string Description { get; set; }
+
+    /// <summary>Optional icons array, per the icons field in the MCP base spec.</summary>
+    public JArray Icons { get; set; }
 }
 
+/// <summary>Capabilities advertised by server/discover and initialize.</summary>
 public class McpCapabilities
 {
     public bool Tools { get; set; } = true;
     public bool Resources { get; set; }
     public bool Prompts { get; set; }
-    public bool Logging { get; set; }
     public bool Completions { get; set; }
+
+    /// <summary>Deprecated in 2026-07-28. Advertised to legacy clients only.</summary>
+    public bool Logging { get; set; }
+
+    /// <summary>
+    /// Optional extension map keyed by extension identifier, for example
+    /// { "io.modelcontextprotocol/ui": { "mimeTypes": [ "text/html;profile=mcp-app" ] } }.
+    /// </summary>
+    public JObject Extensions { get; set; }
 }
 
+/// <summary>Top-level configuration for the MCP handler.</summary>
 public class McpServerOptions
 {
     public McpServerInfo ServerInfo { get; set; } = new McpServerInfo();
-    public string ProtocolVersion { get; set; } = "2025-11-25";
+
+    /// <summary>Preferred revision. Listed first by server/discover.</summary>
+    public string ProtocolVersion { get; set; } = "2026-07-28";
+
+    /// <summary>Every revision this server accepts. Must contain ProtocolVersion.</summary>
+    public List<string> SupportedProtocolVersions { get; set; } =
+        new List<string> { "2026-07-28", "2025-11-25", "2025-06-18" };
+
     public McpCapabilities Capabilities { get; set; } = new McpCapabilities();
+
+    /// <summary>Natural-language guidance for the model, returned by server/discover.</summary>
     public string Instructions { get; set; }
+
+    // ── Cache hints (2026-07-28 CacheableResult) ──────────────────────────
+
+    /// <summary>Freshness hint in milliseconds for tools/prompts/resources list results.</summary>
+    public int ListCacheTtlMs { get; set; } = 300000;
+
+    /// <summary>"public" when list results are identical for every caller, otherwise "private".</summary>
+    public string ListCacheScope { get; set; } = "public";
+
+    public int ResourceCacheTtlMs { get; set; } = 60000;
+
+    /// <summary>"private" by default: resource content commonly varies by authenticated user.</summary>
+    public string ResourceCacheScope { get; set; } = "private";
+
+    public int DiscoverCacheTtlMs { get; set; } = 3600000;
+
+    /// <summary>
+    /// Compare the Mcp-Method and Mcp-Name headers against the request body and reject a
+    /// mismatch with HeaderMismatch. Absent headers are ignored, because the Power Platform
+    /// gateway makes no guarantee that it forwards them.
+    /// </summary>
+    public bool ValidateRequestHeaders { get; set; } = true;
+}
+
+// ── Transport Headers ────────────────────────────────────────────────────────
+
+/// <summary>
+/// The Streamable HTTP headers the framework cares about. Captured in the connector
+/// entry point and handed to HandleAsync so the framework never touches ScriptBase.
+/// </summary>
+public class McpTransportHeaders
+{
+    public string ProtocolVersion { get; set; }
+    public string Method { get; set; }
+    public string Name { get; set; }
+
+    public static McpTransportHeaders FromRequest(HttpRequestMessage request)
+    {
+        var headers = new McpTransportHeaders();
+        if (request == null) return headers;
+
+        headers.ProtocolVersion = FirstOrNull(request, "MCP-Protocol-Version");
+        headers.Method = FirstOrNull(request, "Mcp-Method");
+        headers.Name = FirstOrNull(request, "Mcp-Name");
+        return headers;
+    }
+
+    private static string FirstOrNull(HttpRequestMessage request, string headerName)
+    {
+        IEnumerable<string> values;
+        if (!request.Headers.TryGetValues(headerName, out values)) return null;
+        foreach (var value in values) return value;
+        return null;
+    }
+}
+
+// ── Request Context ──────────────────────────────────────────────────────────
+
+/// <summary>
+/// Everything the framework knows about one request. This replaces the connection
+/// state that 2026-07-28 removed: era, negotiated version, client identity, and the
+/// answers a client attaches when it retries a multi round-trip request.
+/// </summary>
+public class McpRequestContext
+{
+    public JToken Id { get; set; }
+    public string Method { get; set; }
+
+    /// <summary>True when the caller speaks 2026-07-28 or later.</summary>
+    public bool IsModern { get; set; }
+
+    public string ProtocolVersion { get; set; }
+    public JObject ClientInfo { get; set; }
+    public JObject ClientCapabilities { get; set; }
+    public string LogLevel { get; set; }
+
+    /// <summary>Answers supplied on an MRTR retry, keyed by input request name.</summary>
+    public JObject InputResponses { get; set; }
+
+    /// <summary>Opaque state handed back with a previous input_required result.</summary>
+    public string RequestState { get; set; }
+
+    /// <summary>True when the client declared the given extension identifier.</summary>
+    public bool SupportsExtension(string extensionId)
+    {
+        var extensions = ClientCapabilities?["extensions"] as JObject;
+        return extensions != null && extensions[extensionId] != null;
+    }
+}
+
+// ── Agent Skills ─────────────────────────────────────────────────────────────
+
+/// <summary>One resource file bundled with a skill.</summary>
+internal class McpSkillResource
+{
+    public string Path { get; set; }
+    public string Description { get; set; }
+    public string MimeType { get; set; }
+    public Func<string> Content { get; set; }
+}
+
+/// <summary>Fluent collector for a skill's sibling resource files.</summary>
+public class McpSkillResourceBuilder
+{
+    internal readonly List<McpSkillResource> Resources = new List<McpSkillResource>();
+
+    /// <summary>
+    /// Add a file served alongside SKILL.md. Use the relative path the skill body
+    /// references, for example "references/policy.md" or "assets/template.md".
+    /// </summary>
+    public McpSkillResourceBuilder Resource(string path, string description, Func<string> content, string mimeType = "text/markdown")
+    {
+        Resources.Add(new McpSkillResource
+        {
+            Path = path,
+            Description = description,
+            MimeType = mimeType,
+            Content = content
+        });
+        return this;
+    }
+}
+
+internal class McpSkillDefinition
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string Instructions { get; set; }
+    public string License { get; set; }
+    public string Compatibility { get; set; }
+    public JObject Metadata { get; set; }
+    public List<McpSkillResource> Resources { get; set; } = new List<McpSkillResource>();
+
+    public string SkillUri { get { return McpKeys.SkillScheme + Name + "/SKILL.md"; } }
+
+    public string ResourceUri(string path) { return McpKeys.SkillScheme + Name + "/" + path; }
+
+    /// <summary>Render SKILL.md: YAML frontmatter followed by the markdown body.</summary>
+    public string RenderSkillMarkdown()
+    {
+        var sb = new StringBuilder();
+        sb.Append("---\n");
+        sb.Append("name: ").Append(Name).Append('\n');
+        sb.Append("description: ").Append(EscapeYaml(Description)).Append('\n');
+
+        if (!string.IsNullOrWhiteSpace(License))
+            sb.Append("license: ").Append(EscapeYaml(License)).Append('\n');
+
+        if (!string.IsNullOrWhiteSpace(Compatibility))
+            sb.Append("compatibility: ").Append(EscapeYaml(Compatibility)).Append('\n');
+
+        if (Metadata != null && Metadata.Count > 0)
+        {
+            sb.Append("metadata:\n");
+            foreach (var prop in Metadata.Properties())
+                sb.Append("  ").Append(prop.Name).Append(": ").Append(EscapeYaml(prop.Value?.ToString())).Append('\n');
+        }
+
+        sb.Append("---\n\n");
+        sb.Append(Instructions ?? string.Empty);
+        return sb.ToString();
+    }
+
+    /// <summary>Quote any scalar that would otherwise break the frontmatter block.</summary>
+    private static string EscapeYaml(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "\"\"";
+        var flattened = value.Replace("\r", " ").Replace("\n", " ").Trim();
+        return "\"" + flattened.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+    }
 }
 
 // ── Mission Control Configuration ────────────────────────────────────────────
@@ -1076,14 +1321,31 @@ public class ApiProxy
 
 // ── MCP Chain Client ─────────────────────────────────────────────────────────
 
+/// <summary>One upstream MCP response, with enough detail to detect the server's era.</summary>
+public class McpUpstreamResponse
+{
+    public int StatusCode { get; set; }
+    public bool IsSuccess { get; set; }
+    public JObject Body { get; set; }
+}
+
 public class McpChainClient
 {
     private static readonly Dictionary<string, CacheEntry> _chainCache =
         new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
 
+    // Era is a property of the endpoint, not the request, so the probe runs once.
+    private static readonly Dictionary<string, bool> _endpointIsLegacy =
+        new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// Discover capabilities by chaining to an external MCP server.
-    /// Handles initialize handshake, tools/call, and result caching.
+    ///
+    /// This is a DUAL-ERA CLIENT. 2026-07-28 removed the initialize handshake, so a
+    /// modern upstream would reject one. It tries the modern path first — a single
+    /// tools/call carrying per-request _meta — and falls back to the legacy
+    /// initialize handshake only when the response looks like a legacy server.
+    /// The era is remembered per endpoint so the probe cost is paid once.
     /// </summary>
     public async Task<JObject> DiscoverAsync(
         ScriptBase context,
@@ -1107,52 +1369,12 @@ public class McpChainClient
             var toolName = options.McpChainToolName;
             var prefix = options.McpChainQueryPrefix ?? "";
 
-            // Step 1: Initialize handshake
-            var initRequest = new JObject
-            {
-                ["jsonrpc"] = "2.0",
-                ["id"] = 1,
-                ["method"] = "initialize",
-                ["params"] = new JObject
-                {
-                    ["protocolVersion"] = "2025-11-25",
-                    ["capabilities"] = new JObject(),
-                    ["clientInfo"] = new JObject
-                    {
-                        ["name"] = "power-mission-control",
-                        ["version"] = "3.0.0"
-                    }
-                }
-            };
-
-            await SendMcpRequestAsync(context, endpoint, initRequest).ConfigureAwait(false);
-
-            // Step 2: Send initialized notification
-            var notifRequest = new JObject
-            {
-                ["jsonrpc"] = "2.0",
-                ["method"] = "notifications/initialized"
-            };
-            await SendMcpRequestAsync(context, endpoint, notifRequest).ConfigureAwait(false);
-
-            // Step 3: Call tool
             var enhancedQuery = string.IsNullOrWhiteSpace(prefix)
                 ? query
                 : $"{prefix} {category ?? ""} API {query}".Trim();
 
-            var toolRequest = new JObject
-            {
-                ["jsonrpc"] = "2.0",
-                ["id"] = 2,
-                ["method"] = "tools/call",
-                ["params"] = new JObject
-                {
-                    ["name"] = toolName,
-                    ["arguments"] = new JObject { ["query"] = enhancedQuery }
-                }
-            };
-
-            var toolResponse = await SendMcpRequestAsync(context, endpoint, toolRequest).ConfigureAwait(false);
+            var toolResponse = await CallUpstreamToolAsync(context, endpoint, toolName, enhancedQuery)
+                .ConfigureAwait(false);
 
             // Parse results and extract operations
             var operations = ExtractOperationsFromMcpResponse(toolResponse);
@@ -1187,7 +1409,116 @@ public class McpChainClient
         }
     }
 
-    private async Task<JObject> SendMcpRequestAsync(ScriptBase context, string endpoint, JObject request)
+    /// <summary>
+    /// Call a tool on the upstream server, negotiating the protocol era.
+    ///
+    /// Modern first: one tools/call with _meta, no handshake. If that comes back looking
+    /// like a legacy server, run the initialize handshake and retry. The decision is a
+    /// property of the endpoint rather than the request, so it is cached.
+    /// </summary>
+    private async Task<JObject> CallUpstreamToolAsync(
+        ScriptBase context, string endpoint, string toolName, string query)
+    {
+        var arguments = new JObject { ["query"] = query };
+
+        bool knownLegacy;
+        if (!_endpointIsLegacy.TryGetValue(endpoint, out knownLegacy))
+        {
+            var modernResult = await SendMcpRequestAsync(
+                context, endpoint, BuildToolCall(toolName, arguments, modern: true)).ConfigureAwait(false);
+
+            if (!LooksLegacy(modernResult))
+            {
+                _endpointIsLegacy[endpoint] = false;
+                return modernResult.Body;
+            }
+
+            _endpointIsLegacy[endpoint] = true;
+        }
+        else if (!knownLegacy)
+        {
+            var modernResult = await SendMcpRequestAsync(
+                context, endpoint, BuildToolCall(toolName, arguments, modern: true)).ConfigureAwait(false);
+            return modernResult.Body;
+        }
+
+        // Legacy path: handshake, acknowledge, then call.
+        var initRequest = new JObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = 1,
+            ["method"] = "initialize",
+            ["params"] = new JObject
+            {
+                ["protocolVersion"] = "2025-11-25",
+                ["capabilities"] = new JObject(),
+                ["clientInfo"] = new JObject
+                {
+                    ["name"] = "power-mission-control",
+                    ["version"] = "1.0.0"
+                }
+            }
+        };
+        await SendMcpRequestAsync(context, endpoint, initRequest).ConfigureAwait(false);
+
+        await SendMcpRequestAsync(context, endpoint,
+            new JObject { ["jsonrpc"] = "2.0", ["method"] = "notifications/initialized" }).ConfigureAwait(false);
+
+        var legacyResult = await SendMcpRequestAsync(
+            context, endpoint, BuildToolCall(toolName, arguments, modern: false)).ConfigureAwait(false);
+
+        return legacyResult.Body;
+    }
+
+    private static JObject BuildToolCall(string toolName, JObject arguments, bool modern)
+    {
+        var parameters = new JObject
+        {
+            ["name"] = toolName,
+            ["arguments"] = arguments
+        };
+
+        if (modern)
+        {
+            parameters["_meta"] = new JObject
+            {
+                [McpKeys.ProtocolVersion] = "2026-07-28",
+                [McpKeys.ClientCapabilities] = new JObject(),
+                [McpKeys.ClientInfo] = new JObject
+                {
+                    ["name"] = "power-mission-control",
+                    ["version"] = "1.0.0"
+                }
+            };
+        }
+
+        return new JObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["id"] = 2,
+            ["method"] = "tools/call",
+            ["params"] = parameters
+        };
+    }
+
+    /// <summary>
+    /// Decide whether a failed modern call came from a legacy server. A recognized modern
+    /// JSON-RPC error means the server is modern and simply refused this request, so we
+    /// must not fall back. Anything else on a 4xx points at a legacy server.
+    /// </summary>
+    private static bool LooksLegacy(McpUpstreamResponse response)
+    {
+        if (response.IsSuccess) return false;
+
+        var code = response.Body?["error"]?["code"]?.Value<int>();
+
+        // -32022 UnsupportedProtocolVersion or -32020 HeaderMismatch: definitely modern.
+        if (code == -32022 || code == -32020 || code == -32021) return false;
+
+        return response.StatusCode >= 400 && response.StatusCode < 500;
+    }
+
+    private async Task<McpUpstreamResponse> SendMcpRequestAsync(ScriptBase context, string endpoint, JObject request)
     {
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
@@ -1195,11 +1526,32 @@ public class McpChainClient
         };
         httpRequest.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
+        // 2026-07-28 requires these on Streamable HTTP so gateways can route on headers.
+        var method = request.Value<string>("method");
+        if (!string.IsNullOrWhiteSpace(method))
+            httpRequest.Headers.TryAddWithoutValidation("Mcp-Method", method);
+
+        var targetName = (request["params"] as JObject)?.Value<string>("name");
+        if (!string.IsNullOrWhiteSpace(targetName))
+            httpRequest.Headers.TryAddWithoutValidation("Mcp-Name", targetName);
+
+        var metaVersion = (request["params"] as JObject)?["_meta"]?[McpKeys.ProtocolVersion]?.ToString();
+        if (!string.IsNullOrWhiteSpace(metaVersion))
+            httpRequest.Headers.TryAddWithoutValidation("MCP-Protocol-Version", metaVersion);
+
         var response = await context.Context.SendAsync(httpRequest, context.CancellationToken).ConfigureAwait(false);
         var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-        try { return JObject.Parse(content); }
-        catch { return new JObject { ["text"] = content }; }
+        JObject body;
+        try { body = JObject.Parse(content); }
+        catch { body = new JObject { ["text"] = content }; }
+
+        return new McpUpstreamResponse
+        {
+            StatusCode = (int)response.StatusCode,
+            IsSuccess = response.IsSuccessStatusCode && body["error"] == null,
+            Body = body
+        };
     }
 
     /// <summary>
@@ -1532,14 +1884,24 @@ public static class MissionControl
 
 // ── Error Handling ───────────────────────────────────────────────────────────
 
+/// <summary>JSON-RPC 2.0 and MCP error codes.</summary>
 public enum McpErrorCode
 {
-    RequestTimeout = -32000,
+    // JSON-RPC 2.0.
     ParseError = -32700,
     InvalidRequest = -32600,
     MethodNotFound = -32601,
     InvalidParams = -32602,
-    InternalError = -32603
+    InternalError = -32603,
+
+    // Legacy implementation-defined range (-32000 to -32019). 2026-07-28 forbids
+    // allocating new codes here; this one predates the policy.
+    RequestTimeout = -32000,
+
+    // Reserved for the MCP specification (-32020 to -32099).
+    HeaderMismatch = -32020,
+    MissingRequiredClientCapability = -32021,
+    UnsupportedProtocolVersion = -32022
 }
 
 public class McpException : Exception
@@ -1550,6 +1912,16 @@ public class McpException : Exception
 
 // ── Schema Builder (Fluent API) ──────────────────────────────────────────────
 
+/// <summary>
+/// Fluent builder for the JSON Schema objects used in tool inputSchema and outputSchema.
+///
+/// Deliberately narrower than JSON Schema 2020-12 permits. Copilot Studio drops any tool
+/// whose schema contains a reference type, and truncates schemas that use multi-type
+/// arrays, so this builder never emits $ref, $defs, or "type": [...]. Nested objects are
+/// inlined instead. If you hand-write a schema, keep to the same rules — and if you add
+/// numeric bounds, note that Copilot Studio expects the draft-04 boolean form of
+/// exclusiveMinimum, not the 2020-12 numeric form.
+/// </summary>
 public class McpSchemaBuilder
 {
     private readonly JObject _properties = new JObject();
@@ -1614,7 +1986,11 @@ public class McpSchemaBuilder
     public JObject Build()
     {
         var schema = new JObject { ["type"] = "object", ["properties"] = _properties };
+
+        // Recommended empty-schema form for a tool that takes no parameters.
+        if (_properties.Count == 0) schema["additionalProperties"] = false;
         if (_required.Count > 0) schema["required"] = _required;
+
         return schema;
     }
 }
@@ -1672,10 +2048,17 @@ internal class McpPromptDefinition
 public class McpRequestHandler
 {
     private readonly McpServerOptions _options;
+
+    // Dictionaries give O(1) dispatch. The parallel lists preserve registration order,
+    // which 2026-07-28 asks for so clients can cache list results reliably.
     private readonly Dictionary<string, McpToolDefinition> _tools;
+    private readonly List<McpToolDefinition> _toolOrder;
     private readonly Dictionary<string, McpResourceDefinition> _resources;
+    private readonly List<McpResourceDefinition> _resourceOrder;
     private readonly List<McpResourceTemplateDefinition> _resourceTemplates;
     private readonly Dictionary<string, McpPromptDefinition> _prompts;
+    private readonly List<McpPromptDefinition> _promptOrder;
+    private readonly List<McpSkillDefinition> _skills;
 
     public Action<string, object> OnLog { get; set; }
 
@@ -1683,40 +2066,50 @@ public class McpRequestHandler
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _tools = new Dictionary<string, McpToolDefinition>(StringComparer.OrdinalIgnoreCase);
+        _toolOrder = new List<McpToolDefinition>();
         _resources = new Dictionary<string, McpResourceDefinition>(StringComparer.OrdinalIgnoreCase);
+        _resourceOrder = new List<McpResourceDefinition>();
         _resourceTemplates = new List<McpResourceTemplateDefinition>();
         _prompts = new Dictionary<string, McpPromptDefinition>(StringComparer.OrdinalIgnoreCase);
+        _promptOrder = new List<McpPromptDefinition>();
+        _skills = new List<McpSkillDefinition>();
     }
 
     // ── Tool Registration ────────────────────────────────────────────────
 
     public McpRequestHandler AddTool(
         string name, string description,
-        Action<McpSchemaBuilder> schemaConfig,
+        Action<McpSchemaBuilder> schema,
         Func<JObject, CancellationToken, Task<JObject>> handler,
-        Action<JObject> annotationsConfig = null,
+        Action<JObject> annotations = null,
         string title = null,
         Action<McpSchemaBuilder> outputSchemaConfig = null)
     {
         var builder = new McpSchemaBuilder();
-        schemaConfig?.Invoke(builder);
+        schema?.Invoke(builder);
 
-        JObject annotations = null;
-        if (annotationsConfig != null) { annotations = new JObject(); annotationsConfig(annotations); }
+        JObject annotationsObject = null;
+        if (annotations != null) { annotationsObject = new JObject(); annotations(annotationsObject); }
 
         JObject outputSchema = null;
         if (outputSchemaConfig != null) { var ob = new McpSchemaBuilder(); outputSchemaConfig(ob); outputSchema = ob.Build(); }
 
-        _tools[name] = new McpToolDefinition
+        var definition = new McpToolDefinition
         {
             Name = name,
             Title = title,
             Description = description,
             InputSchema = builder.Build(),
             OutputSchema = outputSchema,
-            Annotations = annotations,
+            Annotations = annotationsObject,
             Handler = async (args, ct) => await handler(args, ct).ConfigureAwait(false)
         };
+
+        McpToolDefinition previousTool;
+        if (_tools.TryGetValue(name, out previousTool)) _toolOrder.Remove(previousTool);
+
+        _tools[name] = definition;
+        _toolOrder.Add(definition);
         return this;
     }
 
@@ -1731,11 +2124,17 @@ public class McpRequestHandler
         JObject annotations = null;
         if (annotationsConfig != null) { annotations = new JObject(); annotationsConfig(annotations); }
 
-        _resources[uri] = new McpResourceDefinition
+        var definition = new McpResourceDefinition
         {
             Uri = uri, Name = name, Description = description,
             MimeType = mimeType, Annotations = annotations, Handler = handler
         };
+
+        McpResourceDefinition previousResource;
+        if (_resources.TryGetValue(uri, out previousResource)) _resourceOrder.Remove(previousResource);
+
+        _resources[uri] = definition;
+        _resourceOrder.Add(definition);
         return this;
     }
 
@@ -1756,6 +2155,143 @@ public class McpRequestHandler
         return this;
     }
 
+    // ── Skill Registration ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Publish an Agent Skill over MCP. The skill is exposed as ordinary MCP resources
+    /// under the skill:// scheme, plus a generated skill://index.json discovery document
+    /// that Agent Framework and Microsoft Foundry Toolbox read. Only the skill-md
+    /// distribution type is produced.
+    ///
+    /// In mission control mode a skill is the natural place to document how the model
+    /// should drive scan, launch, and sequence for a given business task.
+    /// </summary>
+    public McpRequestHandler AddSkill(
+        string name,
+        string description,
+        string instructions,
+        Action<McpSkillResourceBuilder> resources = null,
+        string license = null,
+        string compatibility = null,
+        JObject metadata = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Skill name is required.");
+        if (name.Length > 64)
+            throw new ArgumentException($"Skill name '{name}' exceeds 64 characters.");
+        if (!Regex.IsMatch(name, "^[a-z0-9]+(-[a-z0-9]+)*$"))
+            throw new ArgumentException($"Skill name '{name}' must use lowercase letters, digits, and single hyphens, with no leading or trailing hyphen.");
+        if (string.IsNullOrWhiteSpace(description))
+            throw new ArgumentException($"Skill '{name}' requires a description.");
+        if (description.Length > 1024)
+            throw new ArgumentException($"Skill '{name}' description exceeds 1024 characters.");
+        if (!string.IsNullOrEmpty(compatibility) && compatibility.Length > 500)
+            throw new ArgumentException($"Skill '{name}' compatibility exceeds 500 characters.");
+
+        var resourceBuilder = new McpSkillResourceBuilder();
+        resources?.Invoke(resourceBuilder);
+
+        var skill = new McpSkillDefinition
+        {
+            Name = name,
+            Description = description,
+            Instructions = instructions,
+            License = license,
+            Compatibility = compatibility,
+            Metadata = metadata,
+            Resources = resourceBuilder.Resources
+        };
+
+        _skills.RemoveAll(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
+        _skills.Add(skill);
+
+        // The index handler runs at request time, so it always sees every skill
+        // registered so far regardless of registration order.
+        if (!_resources.ContainsKey(McpKeys.SkillIndexUri))
+        {
+            AddResource(McpKeys.SkillIndexUri, "Agent Skills index",
+                "Discovery document listing the Agent Skills this server publishes.",
+                handler: (ct) => Task.FromResult(BuildSkillIndexContents()));
+        }
+
+        AddResource(skill.SkillUri, name, description,
+            handler: (ct) => Task.FromResult(new JArray
+            {
+                new JObject
+                {
+                    ["uri"] = skill.SkillUri,
+                    ["mimeType"] = "text/markdown",
+                    ["text"] = skill.RenderSkillMarkdown()
+                }
+            }),
+            mimeType: "text/markdown");
+
+        foreach (var resource in skill.Resources)
+        {
+            var uri = skill.ResourceUri(resource.Path);
+            var captured = resource;
+
+            AddResource(uri, resource.Path, resource.Description ?? resource.Path,
+                handler: (ct) => Task.FromResult(new JArray
+                {
+                    new JObject
+                    {
+                        ["uri"] = uri,
+                        ["mimeType"] = captured.MimeType,
+                        ["text"] = captured.Content != null ? captured.Content() : string.Empty
+                    }
+                }),
+                mimeType: resource.MimeType);
+        }
+
+        return this;
+    }
+
+    /// <summary>Build the skill://index.json contents from every registered skill.</summary>
+    private JArray BuildSkillIndexContents()
+    {
+        var entries = new JArray();
+
+        foreach (var skill in _skills)
+        {
+            var entry = new JObject
+            {
+                ["type"] = "skill-md",
+                ["name"] = skill.Name,
+                ["description"] = skill.Description,
+                ["uri"] = skill.SkillUri
+            };
+
+            if (skill.Resources.Count > 0)
+            {
+                var resourceArray = new JArray();
+                foreach (var resource in skill.Resources)
+                {
+                    resourceArray.Add(new JObject
+                    {
+                        ["path"] = resource.Path,
+                        ["uri"] = skill.ResourceUri(resource.Path),
+                        ["description"] = resource.Description,
+                        ["mimeType"] = resource.MimeType
+                    });
+                }
+                entry["resources"] = resourceArray;
+            }
+
+            entries.Add(entry);
+        }
+
+        return new JArray
+        {
+            new JObject
+            {
+                ["uri"] = McpKeys.SkillIndexUri,
+                ["mimeType"] = "application/json",
+                ["text"] = new JObject { ["skills"] = entries }.ToString(Newtonsoft.Json.Formatting.Indented)
+            }
+        };
+    }
+
     // ── Prompt Registration ──────────────────────────────────────────────
 
     public McpRequestHandler AddPrompt(
@@ -1774,7 +2310,16 @@ public class McpRequestHandler
 
     // ── Main Handler ─────────────────────────────────────────────────────
 
-    public async Task<string> HandleAsync(string body, CancellationToken cancellationToken)
+    public Task<string> HandleAsync(string body, CancellationToken cancellationToken)
+    {
+        return HandleAsync(body, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Process a request, using the Streamable HTTP headers to detect the protocol era
+    /// and to check Mcp-Method / Mcp-Name against the body.
+    /// </summary>
+    public async Task<string> HandleAsync(string body, McpTransportHeaders headers, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(body))
             return SerializeError(null, McpErrorCode.InvalidRequest, "Empty request body");
@@ -1783,82 +2328,272 @@ public class McpRequestHandler
         try { request = JObject.Parse(body); }
         catch (JsonException) { return SerializeError(null, McpErrorCode.ParseError, "Invalid JSON"); }
 
-        var method = request.Value<string>("method") ?? "";
-        var id = request["id"];
+        var ctx = BuildContext(request, headers);
 
-        Log("McpRequestReceived", new { Method = method, HasId = id != null });
+        Log("McpRequestReceived", new
+        {
+            Method = ctx.Method,
+            HasId = ctx.Id != null,
+            Era = ctx.IsModern ? "modern" : "legacy",
+            ProtocolVersion = ctx.ProtocolVersion
+        });
+
+        // 2026-07-28 negotiates per request rather than once per session.
+        if (ctx.IsModern && !IsSupportedVersion(ctx.ProtocolVersion))
+        {
+            Log("McpUnsupportedProtocolVersion", new { Requested = ctx.ProtocolVersion });
+            return SerializeError(ctx.Id, McpErrorCode.UnsupportedProtocolVersion,
+                "Unsupported protocol version",
+                new JObject
+                {
+                    ["supported"] = new JArray(_options.SupportedProtocolVersions),
+                    ["requested"] = ctx.ProtocolVersion
+                });
+        }
+
+        var headerError = ValidateHeaders(ctx, request, headers);
+        if (headerError != null) return headerError;
 
         try
         {
-            switch (method)
+            switch (ctx.Method)
             {
-                case "initialize": return HandleInitialize(id, request);
+                // Discovery — servers MUST implement this in 2026-07-28.
+                case "server/discover": return HandleDiscover(ctx);
+
+                // The legacy handshake. A client that opens this way is asking for legacy
+                // semantics even if it also sent a version marker, so this never 404s.
+                case "initialize": return HandleInitialize(ctx, request);
 
                 case "initialized":
                 case "notifications/initialized":
+                    return SerializeSuccess(ctx, new JObject());
+
+                // Valid in both eras. Copilot Studio expects a JSON-RPC body for every
+                // request including notifications, so this always answers.
                 case "notifications/cancelled":
+                    return SerializeSuccess(ctx, new JObject());
+
+                // Removed in 2026-07-28: ping and logging/setLevel are gone, and resource
+                // subscriptions moved to the subscriptions/listen stream, which a
+                // request/response connector cannot hold open.
                 case "notifications/roots/list_changed":
-                    return SerializeSuccess(id, new JObject());
-
-                case "ping": return SerializeSuccess(id, new JObject());
-
-                case "tools/list": return HandleToolsList(id);
-                case "tools/call": return await HandleToolsCallAsync(id, request, cancellationToken).ConfigureAwait(false);
-
-                case "resources/list": return HandleResourcesList(id);
-                case "resources/templates/list": return HandleResourceTemplatesList(id);
-                case "resources/read": return await HandleResourcesReadAsync(id, request, cancellationToken).ConfigureAwait(false);
+                case "ping":
+                case "logging/setLevel":
                 case "resources/subscribe":
-                case "resources/unsubscribe": return SerializeSuccess(id, new JObject());
+                case "resources/unsubscribe":
+                    return ctx.IsModern
+                        ? MethodRemoved(ctx, ctx.Method)
+                        : SerializeSuccess(ctx, new JObject());
 
-                case "prompts/list": return HandlePromptsList(id);
-                case "prompts/get": return await HandlePromptsGetAsync(id, request, cancellationToken).ConfigureAwait(false);
+                case "tools/list": return HandleToolsList(ctx);
+                case "tools/call": return await HandleToolsCallAsync(ctx, request, cancellationToken).ConfigureAwait(false);
+
+                case "resources/list": return HandleResourcesList(ctx);
+                case "resources/templates/list": return HandleResourceTemplatesList(ctx);
+                case "resources/read": return await HandleResourcesReadAsync(ctx, request, cancellationToken).ConfigureAwait(false);
+
+                case "prompts/list": return HandlePromptsList(ctx);
+                case "prompts/get": return await HandlePromptsGetAsync(ctx, request, cancellationToken).ConfigureAwait(false);
 
                 case "completion/complete":
-                    return SerializeSuccess(id, new JObject
+                    return SerializeSuccess(ctx, new JObject
                     {
                         ["completion"] = new JObject { ["values"] = new JArray(), ["total"] = 0, ["hasMore"] = false }
                     });
 
-                case "logging/setLevel": return SerializeSuccess(id, new JObject());
-
                 default:
-                    Log("McpMethodNotFound", new { Method = method });
-                    return SerializeError(id, McpErrorCode.MethodNotFound, "Method not found", method);
+                    Log("McpMethodNotFound", new { Method = ctx.Method });
+                    return SerializeError(ctx.Id, McpErrorCode.MethodNotFound, "Method not found", ctx.Method);
             }
         }
-        catch (McpException ex) { return SerializeError(id, ex.Code, ex.Message); }
-        catch (Exception ex) { return SerializeError(id, McpErrorCode.InternalError, ex.Message); }
+        catch (McpException ex) { return SerializeError(ctx.Id, ex.Code, ex.Message); }
+        catch (Exception ex) { return SerializeError(ctx.Id, McpErrorCode.InternalError, ex.Message); }
+    }
+
+    // ── Era Detection ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Decide which protocol era this request belongs to and capture its metadata.
+    ///
+    /// The spec picks the era from how the client opens the conversation, so an
+    /// initialize-style request is always legacy no matter what else it carries — a client
+    /// mid-upgrade might send MCP-Protocol-Version while still using the handshake, and
+    /// rejecting its initialize would break the connection for no benefit.
+    ///
+    /// Otherwise a request is modern when it carries a protocol version in _meta or in the
+    /// MCP-Protocol-Version header, or when it calls server/discover. Everything else,
+    /// Copilot Studio included, is served under legacy semantics.
+    /// </summary>
+    private McpRequestContext BuildContext(JObject request, McpTransportHeaders headers)
+    {
+        var paramsObj = request["params"] as JObject;
+        var meta = paramsObj?["_meta"] as JObject;
+        var method = request.Value<string>("method") ?? string.Empty;
+
+        var metaVersion = meta?[McpKeys.ProtocolVersion]?.ToString();
+        var version = !string.IsNullOrWhiteSpace(metaVersion) ? metaVersion : headers?.ProtocolVersion;
+
+        var opensLegacy = method == "initialize"
+            || method == "initialized"
+            || method == "notifications/initialized";
+
+        var isModern = !opensLegacy
+            && (!string.IsNullOrWhiteSpace(version) || method == "server/discover");
+
+        return new McpRequestContext
+        {
+            Id = request["id"],
+            Method = method,
+            IsModern = isModern,
+            ProtocolVersion = !string.IsNullOrWhiteSpace(version) ? version : _options.ProtocolVersion,
+            ClientInfo = meta?[McpKeys.ClientInfo] as JObject,
+            ClientCapabilities = meta?[McpKeys.ClientCapabilities] as JObject,
+            LogLevel = meta?[McpKeys.LogLevel]?.ToString(),
+            InputResponses = paramsObj?["inputResponses"] as JObject,
+            RequestState = paramsObj?["requestState"]?.ToString()
+        };
+    }
+
+    private bool IsSupportedVersion(string version)
+    {
+        if (string.IsNullOrWhiteSpace(version)) return true;
+
+        var supported = _options.SupportedProtocolVersions;
+        if (supported == null || supported.Count == 0)
+            return string.Equals(version, _options.ProtocolVersion, StringComparison.Ordinal);
+
+        foreach (var candidate in supported)
+            if (string.Equals(candidate, version, StringComparison.Ordinal)) return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// 2026-07-28 requires Mcp-Method and Mcp-Name on Streamable HTTP so gateways can route
+    /// without parsing the body. A header that disagrees with the body is a HeaderMismatch.
+    /// An absent header is ignored: the Power Platform gateway makes no guarantee that it
+    /// forwards custom headers, and failing closed would break every deployment.
+    /// </summary>
+    private string ValidateHeaders(McpRequestContext ctx, JObject request, McpTransportHeaders headers)
+    {
+        if (!ctx.IsModern || !_options.ValidateRequestHeaders || headers == null) return null;
+
+        if (!string.IsNullOrWhiteSpace(headers.Method) &&
+            !string.Equals(headers.Method, ctx.Method, StringComparison.Ordinal))
+        {
+            Log("McpHeaderMismatch", new { Header = headers.Method, Body = ctx.Method });
+            return SerializeError(ctx.Id, McpErrorCode.HeaderMismatch,
+                "Mcp-Method header does not match the request method",
+                new JObject { ["header"] = headers.Method, ["body"] = ctx.Method });
+        }
+
+        if (!string.IsNullOrWhiteSpace(headers.Name))
+        {
+            var bodyName = (request["params"] as JObject)?.Value<string>("name");
+            if (!string.IsNullOrWhiteSpace(bodyName) &&
+                !string.Equals(headers.Name, bodyName, StringComparison.Ordinal))
+            {
+                Log("McpHeaderMismatch", new { Header = headers.Name, Body = bodyName });
+                return SerializeError(ctx.Id, McpErrorCode.HeaderMismatch,
+                    "Mcp-Name header does not match the request target",
+                    new JObject { ["header"] = headers.Name, ["body"] = bodyName });
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Report a method that 2026-07-28 removed, rather than a bare not-found.</summary>
+    private string MethodRemoved(McpRequestContext ctx, string method)
+    {
+        Log("McpMethodRemoved", new { Method = method, ProtocolVersion = ctx.ProtocolVersion });
+        return SerializeError(ctx.Id, McpErrorCode.MethodNotFound,
+            $"'{method}' was removed in MCP 2026-07-28", method);
     }
 
     // ── Protocol Handlers ────────────────────────────────────────────────
 
-    private string HandleInitialize(JToken id, JObject request)
+    /// <summary>
+    /// server/discover — mandatory in 2026-07-28. Reports supported versions,
+    /// capabilities, and identity in a single round trip.
+    /// </summary>
+    private string HandleDiscover(McpRequestContext ctx)
     {
-        var clientProtocolVersion = request["params"]?["protocolVersion"]?.ToString() ?? _options.ProtocolVersion;
+        var result = new JObject
+        {
+            ["supportedVersions"] = new JArray(_options.SupportedProtocolVersions),
+            ["capabilities"] = BuildCapabilities(isModern: true)
+        };
 
-        var capabilities = new JObject();
-        if (_options.Capabilities.Tools) capabilities["tools"] = new JObject { ["listChanged"] = false };
-        if (_options.Capabilities.Resources) capabilities["resources"] = new JObject { ["subscribe"] = false, ["listChanged"] = false };
-        if (_options.Capabilities.Prompts) capabilities["prompts"] = new JObject { ["listChanged"] = false };
-        if (_options.Capabilities.Logging) capabilities["logging"] = new JObject();
-        if (_options.Capabilities.Completions) capabilities["completions"] = new JObject();
+        if (!string.IsNullOrWhiteSpace(_options.Instructions))
+            result["instructions"] = _options.Instructions;
 
-        var serverInfo = new JObject { ["name"] = _options.ServerInfo.Name, ["version"] = _options.ServerInfo.Version };
-        if (!string.IsNullOrWhiteSpace(_options.ServerInfo.Title)) serverInfo["title"] = _options.ServerInfo.Title;
-        if (!string.IsNullOrWhiteSpace(_options.ServerInfo.Description)) serverInfo["description"] = _options.ServerInfo.Description;
-
-        var result = new JObject { ["protocolVersion"] = clientProtocolVersion, ["capabilities"] = capabilities, ["serverInfo"] = serverInfo };
-        if (!string.IsNullOrWhiteSpace(_options.Instructions)) result["instructions"] = _options.Instructions;
-
-        Log("McpInitialized", new { Server = _options.ServerInfo.Name, Version = _options.ServerInfo.Version });
-        return SerializeSuccess(id, result);
+        Log("McpDiscovered", new { Server = _options.ServerInfo.Name, Versions = _options.SupportedProtocolVersions.Count });
+        return SerializeSuccess(ctx, result, McpCacheKind.Discover);
     }
 
-    private string HandleToolsList(JToken id)
+    private JObject BuildCapabilities(bool isModern)
+    {
+        var capabilities = new JObject();
+
+        if (_options.Capabilities.Tools) capabilities["tools"] = new JObject { ["listChanged"] = false };
+
+        if (_options.Capabilities.Resources)
+        {
+            // subscribe is meaningless in the modern era without a subscriptions/listen stream.
+            capabilities["resources"] = isModern
+                ? new JObject { ["listChanged"] = false }
+                : new JObject { ["subscribe"] = false, ["listChanged"] = false };
+        }
+
+        if (_options.Capabilities.Prompts) capabilities["prompts"] = new JObject { ["listChanged"] = false };
+        if (_options.Capabilities.Completions) capabilities["completions"] = new JObject();
+
+        // Logging is deprecated in 2026-07-28, so it is offered to legacy clients only.
+        if (_options.Capabilities.Logging && !isModern) capabilities["logging"] = new JObject();
+
+        if (_options.Capabilities.Extensions != null && _options.Capabilities.Extensions.Count > 0)
+            capabilities["extensions"] = _options.Capabilities.Extensions;
+
+        return capabilities;
+    }
+
+    private JObject BuildServerInfo(bool includeDetail)
+    {
+        var serverInfo = new JObject { ["name"] = _options.ServerInfo.Name, ["version"] = _options.ServerInfo.Version };
+        if (!includeDetail) return serverInfo;
+
+        if (!string.IsNullOrWhiteSpace(_options.ServerInfo.Title)) serverInfo["title"] = _options.ServerInfo.Title;
+        if (!string.IsNullOrWhiteSpace(_options.ServerInfo.Description)) serverInfo["description"] = _options.ServerInfo.Description;
+        if (_options.ServerInfo.Icons != null && _options.ServerInfo.Icons.Count > 0) serverInfo["icons"] = _options.ServerInfo.Icons;
+
+        return serverInfo;
+    }
+
+    /// <summary>The legacy handshake, for clients on 2025-11-25 and earlier.</summary>
+    private string HandleInitialize(McpRequestContext ctx, JObject request)
+    {
+        var clientProtocolVersion = request["params"]?["protocolVersion"]?.ToString();
+        var negotiated = !string.IsNullOrWhiteSpace(clientProtocolVersion) ? clientProtocolVersion : "2025-11-25";
+
+        var result = new JObject
+        {
+            ["protocolVersion"] = negotiated,
+            ["capabilities"] = BuildCapabilities(isModern: false),
+            ["serverInfo"] = BuildServerInfo(includeDetail: true)
+        };
+
+        if (!string.IsNullOrWhiteSpace(_options.Instructions)) result["instructions"] = _options.Instructions;
+
+        Log("McpInitialized", new { Server = _options.ServerInfo.Name, Version = _options.ServerInfo.Version, ProtocolVersion = negotiated });
+        return SerializeSuccess(ctx, result);
+    }
+
+    private string HandleToolsList(McpRequestContext ctx)
     {
         var toolsArray = new JArray();
-        foreach (var tool in _tools.Values)
+        foreach (var tool in _toolOrder)
         {
             var toolObj = new JObject { ["name"] = tool.Name, ["description"] = tool.Description, ["inputSchema"] = tool.InputSchema };
             if (!string.IsNullOrWhiteSpace(tool.Title)) toolObj["title"] = tool.Title;
@@ -1866,14 +2601,14 @@ public class McpRequestHandler
             if (tool.Annotations != null && tool.Annotations.Count > 0) toolObj["annotations"] = tool.Annotations;
             toolsArray.Add(toolObj);
         }
-        Log("McpToolsListed", new { Count = _tools.Count });
-        return SerializeSuccess(id, new JObject { ["tools"] = toolsArray });
+        Log("McpToolsListed", new { Count = _toolOrder.Count });
+        return SerializeSuccess(ctx, new JObject { ["tools"] = toolsArray }, McpCacheKind.List);
     }
 
-    private string HandleResourcesList(JToken id)
+    private string HandleResourcesList(McpRequestContext ctx)
     {
         var arr = new JArray();
-        foreach (var r in _resources.Values)
+        foreach (var r in _resourceOrder)
         {
             var o = new JObject { ["uri"] = r.Uri, ["name"] = r.Name };
             if (!string.IsNullOrWhiteSpace(r.Description)) o["description"] = r.Description;
@@ -1881,10 +2616,11 @@ public class McpRequestHandler
             if (r.Annotations != null && r.Annotations.Count > 0) o["annotations"] = r.Annotations;
             arr.Add(o);
         }
-        return SerializeSuccess(id, new JObject { ["resources"] = arr });
+        Log("McpResourcesListed", new { Count = _resourceOrder.Count });
+        return SerializeSuccess(ctx, new JObject { ["resources"] = arr }, McpCacheKind.List);
     }
 
-    private string HandleResourceTemplatesList(JToken id)
+    private string HandleResourceTemplatesList(McpRequestContext ctx)
     {
         var arr = new JArray();
         foreach (var t in _resourceTemplates)
@@ -1895,23 +2631,29 @@ public class McpRequestHandler
             if (t.Annotations != null && t.Annotations.Count > 0) o["annotations"] = t.Annotations;
             arr.Add(o);
         }
-        return SerializeSuccess(id, new JObject { ["resourceTemplates"] = arr });
+        Log("McpResourceTemplatesListed", new { Count = _resourceTemplates.Count });
+        return SerializeSuccess(ctx, new JObject { ["resourceTemplates"] = arr }, McpCacheKind.List);
     }
 
-    private async Task<string> HandleResourcesReadAsync(JToken id, JObject request, CancellationToken ct)
+    private async Task<string> HandleResourcesReadAsync(McpRequestContext ctx, JObject request, CancellationToken ct)
     {
         var uri = (request["params"] as JObject)?.Value<string>("uri");
         if (string.IsNullOrWhiteSpace(uri))
-            return SerializeError(id, McpErrorCode.InvalidParams, "Resource URI is required");
+            return SerializeError(ctx.Id, McpErrorCode.InvalidParams, "Resource URI is required");
 
         if (_resources.TryGetValue(uri, out var resource))
         {
             try
             {
                 var contents = await resource.Handler(ct).ConfigureAwait(false);
-                return SerializeSuccess(id, new JObject { ["contents"] = contents });
+                Log("McpResourceReadCompleted", new { Uri = uri });
+                return SerializeSuccess(ctx, new JObject { ["contents"] = contents }, McpCacheKind.Resource);
             }
-            catch (Exception ex) { return SerializeError(id, McpErrorCode.InternalError, ex.Message); }
+            catch (Exception ex)
+            {
+                Log("McpResourceReadError", new { Uri = uri, Error = ex.Message });
+                return SerializeError(ctx.Id, McpErrorCode.InternalError, ex.Message);
+            }
         }
 
         foreach (var tmpl in _resourceTemplates)
@@ -1921,13 +2663,19 @@ public class McpRequestHandler
                 try
                 {
                     var contents = await tmpl.Handler(uri, ct).ConfigureAwait(false);
-                    return SerializeSuccess(id, new JObject { ["contents"] = contents });
+                    Log("McpResourceReadCompleted", new { Uri = uri });
+                    return SerializeSuccess(ctx, new JObject { ["contents"] = contents }, McpCacheKind.Resource);
                 }
-                catch (Exception ex) { return SerializeError(id, McpErrorCode.InternalError, ex.Message); }
+                catch (Exception ex)
+                {
+                    Log("McpResourceReadError", new { Uri = uri, Error = ex.Message });
+                    return SerializeError(ctx.Id, McpErrorCode.InternalError, ex.Message);
+                }
             }
         }
 
-        return SerializeError(id, McpErrorCode.InvalidParams, $"Resource not found: {uri}");
+        // 2026-07-28 moved resource-not-found from -32002 to -32602 (Invalid Params).
+        return SerializeError(ctx.Id, McpErrorCode.InvalidParams, $"Resource not found: {uri}");
     }
 
     private static bool MatchesUriTemplate(string template, string uri)
@@ -1957,10 +2705,10 @@ public class McpRequestHandler
         return result;
     }
 
-    private string HandlePromptsList(JToken id)
+    private string HandlePromptsList(McpRequestContext ctx)
     {
         var arr = new JArray();
-        foreach (var p in _prompts.Values)
+        foreach (var p in _promptOrder)
         {
             var o = new JObject { ["name"] = p.Name };
             if (!string.IsNullOrWhiteSpace(p.Description)) o["description"] = p.Description;
@@ -1978,53 +2726,60 @@ public class McpRequestHandler
             }
             arr.Add(o);
         }
-        return SerializeSuccess(id, new JObject { ["prompts"] = arr });
+        Log("McpPromptsListed", new { Count = _promptOrder.Count });
+        return SerializeSuccess(ctx, new JObject { ["prompts"] = arr }, McpCacheKind.List);
     }
 
-    private async Task<string> HandlePromptsGetAsync(JToken id, JObject request, CancellationToken ct)
+    private async Task<string> HandlePromptsGetAsync(McpRequestContext ctx, JObject request, CancellationToken ct)
     {
         var paramsObj = request["params"] as JObject;
         var name = paramsObj?.Value<string>("name");
         var arguments = paramsObj?["arguments"] as JObject ?? new JObject();
 
         if (string.IsNullOrWhiteSpace(name))
-            return SerializeError(id, McpErrorCode.InvalidParams, "Prompt name is required");
+            return SerializeError(ctx.Id, McpErrorCode.InvalidParams, "Prompt name is required");
         if (!_prompts.TryGetValue(name, out var prompt))
-            return SerializeError(id, McpErrorCode.InvalidParams, $"Prompt not found: {name}");
+            return SerializeError(ctx.Id, McpErrorCode.InvalidParams, $"Prompt not found: {name}");
 
         try
         {
             var messages = await prompt.Handler(arguments, ct).ConfigureAwait(false);
             var result = new JObject { ["messages"] = messages };
             if (!string.IsNullOrWhiteSpace(prompt.Description)) result["description"] = prompt.Description;
-            return SerializeSuccess(id, result);
+            return SerializeSuccess(ctx, result);
         }
-        catch (Exception ex) { return SerializeError(id, McpErrorCode.InternalError, ex.Message); }
+        catch (Exception ex) { return SerializeError(ctx.Id, McpErrorCode.InternalError, ex.Message); }
     }
 
-    private async Task<string> HandleToolsCallAsync(JToken id, JObject request, CancellationToken ct)
+    private async Task<string> HandleToolsCallAsync(McpRequestContext ctx, JObject request, CancellationToken ct)
     {
         var paramsObj = request["params"] as JObject;
         var toolName = paramsObj?.Value<string>("name");
         var arguments = paramsObj?["arguments"] as JObject ?? new JObject();
 
         if (string.IsNullOrWhiteSpace(toolName))
-            return SerializeError(id, McpErrorCode.InvalidParams, "Tool name is required");
+            return SerializeError(ctx.Id, McpErrorCode.InvalidParams, "Tool name is required");
         if (!_tools.TryGetValue(toolName, out var tool))
-            return SerializeError(id, McpErrorCode.InvalidParams, $"Unknown tool: {toolName}");
+            return SerializeError(ctx.Id, McpErrorCode.InvalidParams, $"Unknown tool: {toolName}");
 
-        Log("McpToolCallStarted", new { Tool = toolName });
+        Log("McpToolCallStarted", new { Tool = toolName, IsRetry = ctx.InputResponses != null });
 
         try
         {
             var result = await tool.Handler(arguments, ct).ConfigureAwait(false);
+
+            // Multi round-trip request: the tool needs more input before it can finish.
+            if (result is JObject marker && marker.Value<bool?>("__mcpInputRequired") == true)
+                return SerializeInputRequired(ctx, toolName, marker);
 
             JObject callResult;
             if (result is JObject jobj && jobj["content"] is JArray contentArray
                 && contentArray.Count > 0 && contentArray[0]?["type"] != null)
             {
                 callResult = new JObject { ["content"] = contentArray, ["isError"] = jobj.Value<bool?>("isError") ?? false };
-                if (jobj["structuredContent"] is JObject structured) callResult["structuredContent"] = structured;
+
+                // structuredContent may be any JSON value as of 2026-07-28.
+                if (jobj["structuredContent"] != null) callResult["structuredContent"] = jobj["structuredContent"];
             }
             else
             {
@@ -2041,24 +2796,56 @@ public class McpRequestHandler
             }
 
             Log("McpToolCallCompleted", new { Tool = toolName });
-            return SerializeSuccess(id, callResult);
+            return SerializeSuccess(ctx, callResult);
         }
         catch (ArgumentException ex)
         {
-            return SerializeSuccess(id, new JObject
+            return SerializeSuccess(ctx, new JObject
             { ["content"] = new JArray { new JObject { ["type"] = "text", ["text"] = $"Invalid arguments: {ex.Message}" } }, ["isError"] = true });
         }
         catch (McpException ex)
         {
-            return SerializeSuccess(id, new JObject
+            return SerializeSuccess(ctx, new JObject
             { ["content"] = new JArray { new JObject { ["type"] = "text", ["text"] = $"Tool error: {ex.Message}" } }, ["isError"] = true });
         }
         catch (Exception ex)
         {
             Log("McpToolCallError", new { Tool = toolName, Error = ex.Message });
-            return SerializeSuccess(id, new JObject
+            return SerializeSuccess(ctx, new JObject
             { ["content"] = new JArray { new JObject { ["type"] = "text", ["text"] = $"Tool execution failed: {ex.Message}" } }, ["isError"] = true });
         }
+    }
+
+    /// <summary>
+    /// Emit an input_required result. Legacy clients cannot interpret resultType, so they
+    /// receive a tool error naming what the tool still needs rather than a silent failure.
+    /// </summary>
+    private string SerializeInputRequired(McpRequestContext ctx, string toolName, JObject marker)
+    {
+        var inputRequests = marker["inputRequests"] as JObject ?? new JObject();
+
+        if (!ctx.IsModern)
+        {
+            var needed = string.Join(", ", inputRequests.Properties().Select(p => p.Name));
+            Log("McpInputRequiredUnsupported", new { Tool = toolName, Needed = needed });
+
+            return SerializeSuccess(ctx, new JObject
+            {
+                ["content"] = new JArray
+                {
+                    TextContent($"'{toolName}' needs additional input ({needed}). That requires an MCP client on 2026-07-28 or later; supply the values as tool arguments instead.")
+                },
+                ["isError"] = true
+            });
+        }
+
+        var result = new JObject { ["inputRequests"] = inputRequests };
+
+        var requestState = marker.Value<string>("requestState");
+        if (!string.IsNullOrWhiteSpace(requestState)) result["requestState"] = requestState;
+
+        Log("McpInputRequired", new { Tool = toolName, Count = inputRequests.Count });
+        return SerializeSuccess(ctx, result, McpCacheKind.None, "input_required");
     }
 
     // ── Content Helpers ──────────────────────────────────────────────────
@@ -2069,27 +2856,135 @@ public class McpRequestHandler
     public static JObject ResourceContent(string uri, string text, string mimeType = "text/plain") =>
         new JObject { ["type"] = "resource", ["resource"] = new JObject { ["uri"] = uri, ["text"] = text, ["mimeType"] = mimeType } };
 
-    public static JObject ToolResult(JArray content, JObject structuredContent = null, bool isError = false)
+    /// <summary>
+    /// Create a resource link. Points the client at a resource it can fetch itself,
+    /// instead of embedding the bytes in the tool result.
+    /// </summary>
+    public static JObject ResourceLinkContent(string uri, string name, string description = null, string mimeType = null)
+    {
+        var link = new JObject { ["type"] = "resource_link", ["uri"] = uri, ["name"] = name };
+        if (!string.IsNullOrWhiteSpace(description)) link["description"] = description;
+        if (!string.IsNullOrWhiteSpace(mimeType)) link["mimeType"] = mimeType;
+        return link;
+    }
+
+    public static JObject ToolResult(JArray content, JToken structuredContent = null, bool isError = false)
     {
         var result = new JObject { ["content"] = content, ["isError"] = isError };
         if (structuredContent != null) result["structuredContent"] = structuredContent;
         return result;
     }
 
+    // ── Multi Round-Trip Requests ────────────────────────────────────────
+
+    /// <summary>
+    /// Ask the client for more input before the tool can finish. Return this from a tool
+    /// handler; the client answers by retrying the same tools/call with inputResponses
+    /// attached, which arrive on McpRequestContext.InputResponses.
+    ///
+    /// This is how a stateless server performs elicitation as of 2026-07-28. Because the
+    /// server holds no state between the two calls, encode anything you need to resume in
+    /// requestState and read it back off the retry. In mission control mode this is the
+    /// natural way to confirm a destructive launch before it executes.
+    /// </summary>
+    public static JObject InputRequired(JObject inputRequests, string requestState = null)
+    {
+        var result = new JObject
+        {
+            ["__mcpInputRequired"] = true,
+            ["inputRequests"] = inputRequests ?? new JObject()
+        };
+        if (!string.IsNullOrWhiteSpace(requestState)) result["requestState"] = requestState;
+        return result;
+    }
+
+    /// <summary>Build a single elicitation entry for an InputRequired result.</summary>
+    public static JObject ElicitationRequest(string message, Action<McpSchemaBuilder> schemaConfig, string mode = "form")
+    {
+        var builder = new McpSchemaBuilder();
+        schemaConfig?.Invoke(builder);
+
+        return new JObject
+        {
+            ["method"] = "elicitation/create",
+            ["params"] = new JObject
+            {
+                ["mode"] = mode,
+                ["message"] = message,
+                ["requestedSchema"] = builder.Build()
+            }
+        };
+    }
+
     // ── JSON-RPC Serialization ───────────────────────────────────────────
 
-    private string SerializeSuccess(JToken id, JObject result) =>
-        new JObject { ["jsonrpc"] = "2.0", ["id"] = id, ["result"] = result }.ToString(Newtonsoft.Json.Formatting.None);
+    private string SerializeSuccess(McpRequestContext ctx, JObject result) =>
+        SerializeSuccess(ctx, result, McpCacheKind.None, "complete");
 
-    private string SerializeError(JToken id, McpErrorCode code, string message, string data = null) =>
-        SerializeError(id, (int)code, message, data);
+    private string SerializeSuccess(McpRequestContext ctx, JObject result, McpCacheKind cache) =>
+        SerializeSuccess(ctx, result, cache, "complete");
 
-    private string SerializeError(JToken id, int code, string message, string data = null)
+    /// <summary>
+    /// Envelope a successful result. Modern callers additionally get resultType, server
+    /// identity in _meta, and cache hints. Legacy callers get exactly the shape they got
+    /// before 2026-07-28, which is what keeps Copilot Studio working unchanged.
+    /// </summary>
+    private string SerializeSuccess(McpRequestContext ctx, JObject result, McpCacheKind cache, string resultType)
     {
-        var error = new JObject { ["code"] = code, ["message"] = message };
-        if (!string.IsNullOrWhiteSpace(data)) error["data"] = data;
+        result = result ?? new JObject();
+
+        if (ctx != null && ctx.IsModern)
+        {
+            result["resultType"] = resultType;
+
+            var meta = result["_meta"] as JObject ?? new JObject();
+            meta[McpKeys.ServerInfo] = BuildServerInfo(includeDetail: false);
+            result["_meta"] = meta;
+
+            // Only complete results are cacheable; input_required is interim.
+            if (resultType == "complete") ApplyCacheHints(result, cache);
+        }
+
+        return new JObject { ["jsonrpc"] = "2.0", ["id"] = ctx?.Id, ["result"] = result }
+            .ToString(Newtonsoft.Json.Formatting.None);
+    }
+
+    private void ApplyCacheHints(JObject result, McpCacheKind cache)
+    {
+        switch (cache)
+        {
+            case McpCacheKind.List:
+                result["ttlMs"] = Math.Max(0, _options.ListCacheTtlMs);
+                result["cacheScope"] = _options.ListCacheScope ?? "public";
+                break;
+
+            case McpCacheKind.Resource:
+                result["ttlMs"] = Math.Max(0, _options.ResourceCacheTtlMs);
+                result["cacheScope"] = _options.ResourceCacheScope ?? "private";
+                break;
+
+            case McpCacheKind.Discover:
+                result["ttlMs"] = Math.Max(0, _options.DiscoverCacheTtlMs);
+                result["cacheScope"] = _options.ListCacheScope ?? "public";
+                break;
+        }
+    }
+
+    private string SerializeError(JToken id, McpErrorCode code, string message, JToken data = null)
+    {
+        var error = new JObject { ["code"] = (int)code, ["message"] = message };
+        if (data != null && data.Type != JTokenType.Null) error["data"] = data;
         return new JObject { ["jsonrpc"] = "2.0", ["id"] = id, ["error"] = error }.ToString(Newtonsoft.Json.Formatting.None);
     }
 
     private void Log(string eventName, object data) => OnLog?.Invoke(eventName, data);
+}
+
+/// <summary>Which cache hints a result should carry, per the 2026-07-28 CacheableResult rules.</summary>
+public enum McpCacheKind
+{
+    None,
+    List,
+    Resource,
+    Discover
 }

@@ -64,6 +64,8 @@ Produce a JSON array where each element has these fields:
 - For simple GET endpoints with no params, you may omit this field
 - Escape quotes properly for embedding as a string literal
 
+**Never use `$ref` or `$defs`.** Inline every nested object instead. Copilot Studio silently drops any tool whose schema contains a reference type — the tool simply never appears, with no error anywhere. For the same reason, never write a multi-type array such as `"type": ["string", "null"]` (it truncates the schema), and if you need numeric bounds use the draft-04 boolean form of `exclusiveMinimum` rather than the JSON Schema 2020-12 numeric form.
+
 ## Quality Checklist
 
 For each entry, verify:
