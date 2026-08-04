@@ -1,0 +1,13 @@
+<Project>
+
+  <!-- This folder is OneDrive-synced. OneDrive ignores .gitignore and thrashes
+       continuously on bin/ and obj/, so build output goes outside the sync root.
+       The condition is a guard, not a container opt-out: .NET maps LOCALAPPDATA to
+       ~/.local/share on Linux, so this stays active inside the image too. Harmless
+       there, because `dotnet publish -o` sets the output path that actually ships. -->
+  <PropertyGroup Condition="'$(LOCALAPPDATA)' != ''">
+    <BaseOutputPath>$(LOCALAPPDATA)\GraphMissionControl\build\$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\GraphMissionControl\build\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+</Project>

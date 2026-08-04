@@ -1,0 +1,489 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Graph Mission Control",
+        "description": "Microsoft Graph through progressive discovery. Three operations - scan, launch, and sequence - reach any Microsoft Graph v1.0 endpoint without registering hundreds of typed actions. Dual-mode: an MCP endpoint for Copilot Studio and typed actions for Power Automate, both backed by the same 82-operation capability index.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com",
+            "url": "https://github.com/troystaylor"
+        }
+    },
+    "host": "graph.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Graph Mission Control MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Exposes scan_graph, launch_graph, and sequence_graph over JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/scan": {
+            "post": {
+                "summary": "Scan for Graph operations",
+                "description": "Find Microsoft Graph operations matching an intent. Call this before Launch to get the correct endpoint, method, and parameters.",
+                "operationId": "ScanGraph",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "query"
+                            ],
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "Plain-language description of what you want to do, for example 'find unread mail' or 'create a calendar event'",
+                                    "title": "Query",
+                                    "x-ms-summary": "Query"
+                                },
+                                "domain": {
+                                    "type": "string",
+                                    "description": "Restrict the scan to one area of Graph",
+                                    "title": "Domain",
+                                    "x-ms-summary": "Domain",
+                                    "enum": [
+                                        "mail",
+                                        "calendar",
+                                        "files",
+                                        "people",
+                                        "insights",
+                                        "teams",
+                                        "sites",
+                                        "groups",
+                                        "tasks",
+                                        "search"
+                                    ]
+                                },
+                                "include_schema": {
+                                    "type": "boolean",
+                                    "description": "Include the full input schema for each matched operation. Costs more tokens.",
+                                    "title": "Include schema",
+                                    "x-ms-summary": "Include schema",
+                                    "default": false
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching operations",
+                        "schema": {
+                            "$ref": "#/definitions/ScanResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Scan failed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/launch": {
+            "post": {
+                "summary": "Launch a Graph operation",
+                "description": "Execute a single Microsoft Graph v1.0 call. Use Scan first to find the endpoint. Replace any {id} placeholders with real values.",
+                "operationId": "LaunchGraph",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "endpoint",
+                                "method"
+                            ],
+                            "properties": {
+                                "endpoint": {
+                                    "type": "string",
+                                    "description": "Graph v1.0 relative path, for example /me/messages or /me/events/AAMkAD...",
+                                    "title": "Endpoint",
+                                    "x-ms-summary": "Endpoint"
+                                },
+                                "method": {
+                                    "type": "string",
+                                    "description": "HTTP method for the call",
+                                    "title": "Method",
+                                    "x-ms-summary": "Method",
+                                    "default": "GET",
+                                    "enum": [
+                                        "GET",
+                                        "POST",
+                                        "PATCH",
+                                        "PUT",
+                                        "DELETE"
+                                    ]
+                                },
+                                "body": {
+                                    "type": "object",
+                                    "description": "Request body for POST, PATCH, and PUT. Shape depends on the endpoint - use Scan with Include schema to see it.",
+                                    "title": "Body",
+                                    "x-ms-summary": "Body",
+                                    "properties": {}
+                                },
+                                "query_params": {
+                                    "type": "object",
+                                    "description": "OData query parameters such as $select, $filter, $top, $orderby",
+                                    "title": "Query parameters",
+                                    "x-ms-summary": "Query parameters",
+                                    "properties": {}
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Graph response",
+                        "schema": {
+                            "$ref": "#/definitions/LaunchResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Call failed",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/sequence": {
+            "post": {
+                "summary": "Sequence multiple Graph operations",
+                "description": "Run up to 20 Microsoft Graph calls in a single round trip via the native Graph $batch endpoint. Individual requests can fail without failing the whole sequence.",
+                "operationId": "SequenceGraph",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "requests"
+                            ],
+                            "properties": {
+                                "requests": {
+                                    "type": "array",
+                                    "description": "Graph calls to run together. Maximum 20.",
+                                    "title": "Requests",
+                                    "x-ms-summary": "Requests",
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "endpoint",
+                                            "method"
+                                        ],
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Identifier echoed back on the matching response",
+                                                "x-ms-summary": "Request ID"
+                                            },
+                                            "endpoint": {
+                                                "type": "string",
+                                                "description": "Graph v1.0 relative path",
+                                                "x-ms-summary": "Endpoint"
+                                            },
+                                            "method": {
+                                                "type": "string",
+                                                "description": "HTTP method",
+                                                "x-ms-summary": "Method",
+                                                "enum": [
+                                                    "GET",
+                                                    "POST",
+                                                    "PATCH",
+                                                    "PUT",
+                                                    "DELETE"
+                                                ]
+                                            },
+                                            "body": {
+                                                "type": "object",
+                                                "description": "Request body for POST, PATCH, and PUT",
+                                                "x-ms-summary": "Body",
+                                                "properties": {}
+                                            },
+                                            "query_params": {
+                                                "type": "object",
+                                                "description": "OData query parameters",
+                                                "x-ms-summary": "Query parameters",
+                                                "properties": {}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Per-request results",
+                        "schema": {
+                            "$ref": "#/definitions/SequenceResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Sequence rejected",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResult"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ScanResult": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the scan completed",
+                    "x-ms-summary": "Success"
+                },
+                "operationCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of operations returned",
+                    "x-ms-summary": "Operation count"
+                },
+                "totalCapabilities": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Total operations in the capability index",
+                    "x-ms-summary": "Total capabilities"
+                },
+                "cached": {
+                    "type": "boolean",
+                    "description": "Whether the result came from cache",
+                    "x-ms-summary": "Cached"
+                },
+                "operations": {
+                    "type": "array",
+                    "description": "Matching Graph operations, best match first",
+                    "x-ms-summary": "Operations",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "cid": {
+                                "type": "string",
+                                "description": "Capability identifier",
+                                "x-ms-summary": "Capability ID"
+                            },
+                            "endpoint": {
+                                "type": "string",
+                                "description": "Graph relative path, may contain {id} placeholders",
+                                "x-ms-summary": "Endpoint"
+                            },
+                            "method": {
+                                "type": "string",
+                                "description": "HTTP method",
+                                "x-ms-summary": "Method"
+                            },
+                            "outcome": {
+                                "type": "string",
+                                "description": "What this operation achieves",
+                                "x-ms-summary": "Outcome"
+                            },
+                            "domain": {
+                                "type": "string",
+                                "description": "Area of Graph this belongs to",
+                                "x-ms-summary": "Domain"
+                            },
+                            "requiredParams": {
+                                "type": "array",
+                                "description": "Parameters that must be supplied",
+                                "x-ms-summary": "Required parameters",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "optionalParams": {
+                                "type": "array",
+                                "description": "Parameters that may be supplied",
+                                "x-ms-summary": "Optional parameters",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "inputSchema": {
+                                "type": "object",
+                                "description": "JSON Schema for this operation's inputs. Present only when Include schema was set.",
+                                "x-ms-summary": "Input schema",
+                                "properties": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "LaunchResult": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Whether the Graph call succeeded",
+                    "x-ms-summary": "Success"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "The Microsoft Graph response. Its shape depends on the endpoint called - a collection returns a value array, a single entity returns the entity itself.",
+                    "x-ms-summary": "Data",
+                    "properties": {}
+                },
+                "nextLink": {
+                    "type": "string",
+                    "description": "Present when more results exist. Pass it back as the endpoint to page forward.",
+                    "x-ms-summary": "Next link"
+                }
+            }
+        },
+        "SequenceResult": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "True only when every request in the sequence succeeded",
+                    "x-ms-summary": "Success"
+                },
+                "successCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of requests that succeeded",
+                    "x-ms-summary": "Success count"
+                },
+                "errorCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of requests that failed",
+                    "x-ms-summary": "Error count"
+                },
+                "responses": {
+                    "type": "array",
+                    "description": "One entry per request, matched by ID",
+                    "x-ms-summary": "Responses",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Identifier from the matching request",
+                                "x-ms-summary": "Request ID"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "HTTP status code returned by Graph",
+                                "x-ms-summary": "Status"
+                            },
+                            "success": {
+                                "type": "boolean",
+                                "description": "Whether this individual request succeeded",
+                                "x-ms-summary": "Success"
+                            },
+                            "data": {
+                                "type": "object",
+                                "description": "Graph response body for this request",
+                                "x-ms-summary": "Data",
+                                "properties": {}
+                            },
+                            "error": {
+                                "type": "object",
+                                "description": "Graph error body for this request, when it failed",
+                                "x-ms-summary": "Error",
+                                "properties": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ErrorResult": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "Always false",
+                    "x-ms-summary": "Success"
+                },
+                "error": {
+                    "type": "string",
+                    "description": "Machine-readable error code",
+                    "x-ms-summary": "Error code"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Technical error detail",
+                    "x-ms-summary": "Message"
+                },
+                "friendlyMessage": {
+                    "type": "string",
+                    "description": "Plain-language explanation suitable for showing a user",
+                    "x-ms-summary": "Friendly message"
+                },
+                "suggestion": {
+                    "type": "string",
+                    "description": "Recommended next step to resolve the error",
+                    "x-ms-summary": "Suggestion"
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/graph/overview"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
