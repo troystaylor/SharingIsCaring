@@ -3,7 +3,7 @@
     "info": {
         "title": "Power Platform Admin",
         "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, and application packages via the Power Platform Admin API.",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "contact": {
             "name": "Troy Taylor",
             "email": "troy@troystaylor.com"
@@ -251,6 +251,153 @@
                                     "type": "object",
                                     "description": "Settings that were updated",
                                     "x-ms-summary": "Updated Settings"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenantpool": {
+            "get": {
+                "summary": "Get Draw From Tenant Pool",
+                "description": "Check whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. An environment with no allocation document draws from the pool by default. Uses an unsupported licensing allocations endpoint that may change without notice.",
+                "operationId": "GetTenantPoolDraw",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tenant pool draw state",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "True when the environment draws Copilot Studio capacity from the tenant pool",
+                                    "x-ms-summary": "Draws From Tenant Pool"
+                                },
+                                "source": {
+                                    "type": "string",
+                                    "description": "Where the state came from: allocationDocument when a document exists, default when none does",
+                                    "x-ms-summary": "Source"
+                                },
+                                "entitlements": {
+                                    "type": "object",
+                                    "description": "TenantPool rule state per entitlement",
+                                    "x-ms-summary": "Entitlements",
+                                    "properties": {
+                                        "MCSMessages": {
+                                            "type": "boolean",
+                                            "description": "Copilot Studio messages capacity draws from the tenant pool",
+                                            "x-ms-summary": "MCS Messages"
+                                        },
+                                        "MCSSessions": {
+                                            "type": "boolean",
+                                            "description": "Copilot Studio sessions capacity draws from the tenant pool",
+                                            "x-ms-summary": "MCS Sessions"
+                                        }
+                                    }
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Human-readable summary of the state",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/tenantpool/update": {
+            "post": {
+                "summary": "Set Draw From Tenant Pool",
+                "description": "Enable or disable whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. Reads the current allocation document first and changes only the TenantPool enforcement rule, preserving other allocation and enforcement data. Uses an unsupported licensing allocations endpoint that may change without notice.",
+                "operationId": "SetTenantPoolDraw",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "True to draw from the tenant pool, false to stop drawing from it",
+                                    "x-ms-summary": "Draw From Tenant Pool"
+                                }
+                            },
+                            "required": [
+                                "enabled"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Update result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Operation status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "The value that was applied",
+                                    "x-ms-summary": "Draws From Tenant Pool"
+                                },
+                                "entitlements": {
+                                    "type": "array",
+                                    "description": "Entitlements the TenantPool rule was applied to",
+                                    "x-ms-summary": "Entitlements",
+                                    "items": {
+                                        "type": "string"
+                                    }
                                 },
                                 "message": {
                                     "type": "string",

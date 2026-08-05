@@ -4,12 +4,12 @@ MCP server for cross-environment Power Platform administration through natural l
 
 ## Overview
 
-This connector exposes 12 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
+This connector exposes 14 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
 | Environment Management | 5 | List environments, get details, read/update PPAC settings, compare settings across environments |
-| Governance & Security | 4 | Copilot governance, security recommendations, cross-tenant connection audit |
+| Governance & Security | 6 | Copilot governance, Copilot Studio tenant pool draw, security recommendations, cross-tenant connection audit |
 | Resource Inventory | 2 | List connectors and Power Apps per environment |
 | Application Lifecycle | 1 | Install Microsoft application packages |
 
@@ -22,6 +22,8 @@ This connector exposes 12 admin tools across 4 categories through a single MCP e
    - `CopilotGovernance.Features.Read`
    - `CopilotGovernance.Settings.Read`
    - `CopilotGovernance.Settings.Write`
+   - `Licensing.Allocations.Read`
+   - `Licensing.Allocations.ReadWrite`
    - `Security.Recommendations.Read`
    - `Analytics.AdvisorRecommendations.Read`
    - `Governance.CrossTenantConnectionReports.Read`
@@ -32,6 +34,8 @@ This connector exposes 12 admin tools across 4 categories through a single MCP e
 
 2. **Power Platform admin role** (System Administrator, Power Platform Administrator, or Dynamics 365 Administrator)
 
+   The tenant pool tools additionally require the caller to hold **Power Platform Administrator** or **Global Administrator** — the same tenant admin roles that gate licensing and capacity settings in PPAC. The `Licensing.Allocations.*` scopes are documented against the supported Currency Allocation API; the unsupported allocations route shares that namespace and resource type, so grant both and verify with a read before relying on the write.
+
 3. **Copilot Studio** license for MCP integration
 
 ## Setup
@@ -40,7 +44,7 @@ This connector exposes 12 admin tools across 4 categories through a single MCP e
 2. Update `apiProperties.json` with your app's `clientId`.
 3. Import the connector into Power Platform:
    ```
-   paconn create --api-def apiDefinition.swagger.json --api-prop apiProperties.json --script script.csx
+   pac connector create --api-definition-file apiDefinition.swagger.json --api-properties-file apiProperties.json --script-file script.csx
    ```
 4. Create a connection using OAuth and sign in with an admin account.
 5. Add the connector as an action in your Copilot Studio agent.
@@ -63,8 +67,14 @@ This connector exposes 12 admin tools across 4 categories through a single MCP e
 |------|-------------|
 | `admin_get_copilot_governance` | Get Copilot governance features and settings (tenant or environment scope) |
 | `admin_update_copilot_governance` | Update Copilot governance settings |
+| `admin_get_tenant_pool_draw` | Check whether an environment draws Copilot Studio message and session capacity from the tenant pool |
+| `admin_set_tenant_pool_draw` | Enable or disable drawing Copilot Studio capacity from the tenant pool |
 | `admin_get_security_recommendations` | Get security recommendations from Power Platform Advisor |
 | `admin_get_cross_tenant_connections` | Cross-tenant connection reports for compliance auditing |
+
+> **Draw from Tenant Pool is unsupported.** The two `*_tenant_pool_draw` tools call `licensing/allocations`, which is not part of the published Power Platform REST reference and may change or stop working without notice. Treat it as a temporary mitigation for bulk changes that PPAC only exposes one environment at a time.
+>
+> `admin_set_tenant_pool_draw` reads the current allocation document and rewrites only the `TenantPool` enforcement rule. The underlying `PUT` replaces the entire document and the service offers no ETag, so concurrent edits from PPAC or another caller can still be lost.
 
 ### Resource Inventory
 
@@ -88,6 +98,8 @@ Is IP-based SAS restriction enabled on all my environments?
 Compare EnableIpBasedStorageAccessSignatureRule across all environments
 Enable SAS IP restrictions on environment [ID]
 What Copilot governance settings are configured for my tenant?
+Does my sandbox environment draw Copilot Studio capacity from the tenant pool?
+Stop the sandbox environments from drawing from the Copilot Studio tenant pool
 Show me security recommendations for my environments
 Are there any cross-tenant connections I should review?
 What connectors are available in my dev environment?
@@ -111,6 +123,8 @@ Install the Customer Service package in my sandbox environment
                             └──────────────────────────┘
 ```
 
+The tenant pool tools target a different, tenant-routed host derived from the `tid` claim of the access token: the tenant GUID lowercased and stripped of dashes, split into the first 30 hex characters and the last 2, as `{prefix}.{suffix}.tenant.api.powerplatform.com`. No extra connection parameter is needed because the tenant is read from the token itself.
+
 This connector is part of the Dataverse connector family:
 
 | Connector | Target API | Purpose |
@@ -133,3 +147,6 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=your-k
 - [Power Platform API Reference](https://learn.microsoft.com/power-platform/admin/programmability-and-extensibility/powerplatform-api-reference)
 - [Permissions Reference](https://learn.microsoft.com/power-platform/admin/programmability-permission-reference)
 - [Environment Management Settings Tutorial](https://learn.microsoft.com/power-platform/admin/programmability-tutorial-environmentmanagement-settings)
+- [Tenant settings — required admin roles](https://learn.microsoft.com/power-platform/admin/tenant-settings)
+- [Currency Allocation — the supported licensing allocation API](https://learn.microsoft.com/rest/api/power-platform/licensing/currency-allocation)
+- [FAQ for Copilot Studio billing and licensing](https://learn.microsoft.com/microsoft-copilot-studio/faq-billing-licensing)

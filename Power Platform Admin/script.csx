@@ -13,16 +13,23 @@ public class Script : ScriptBase
 {
     // MCP Server metadata
     private const string SERVER_NAME = "power-platform-admin-mcp";
-    private const string SERVER_VERSION = "1.0.0";
+    private const string SERVER_VERSION = "1.1.0";
 
     // Power Platform Admin API
     private const string ADMIN_API_BASE = "https://api.powerplatform.com";
     private const string ENV_API_VERSION = "2024-10-01";
     private const string SETTINGS_API_VERSION = "2022-03-01-preview";
 
+    // Licensing allocations API (unsupported endpoint, tenant-routed host)
+    private const string TENANT_HOST_SUFFIX = ".tenant.api.powerplatform.com";
+    private const string LICENSING_API_VERSION = "1";
+    private static readonly string[] TENANT_POOL_ENTITLEMENTS = { "MCSMessages", "MCSSessions" };
+
     // Application Insights
     private const string APP_INSIGHTS_CONNECTION_STRING = "[INSERT_YOUR_APP_INSIGHTS_CONNECTION_STRING]";
     private const string APP_INSIGHTS_ENDPOINT = "https://dc.applicationinsights.azure.com/v2/track";
+
+    private string _tenantId;
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
@@ -40,6 +47,10 @@ public class Script : ScriptBase
                     return await HandleTypedGetSettings().ConfigureAwait(false);
                 case "UpdateSettings":
                     return await HandleTypedUpdateSettings().ConfigureAwait(false);
+                case "GetTenantPoolDraw":
+                    return await HandleTypedGetTenantPoolDraw().ConfigureAwait(false);
+                case "SetTenantPoolDraw":
+                    return await HandleTypedSetTenantPoolDraw().ConfigureAwait(false);
                 case "GetEnvironmentDropdown":
                     return await HandleTypedGetEnvironmentDropdown().ConfigureAwait(false);
                 default:
@@ -289,6 +300,47 @@ public class Script : ScriptBase
             },
             new JObject
             {
+                ["name"] = "admin_get_tenant_pool_draw",
+                ["description"] = "Check whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. An environment with no allocation document draws from the pool by default. Read-only. Note: this uses an unsupported licensing allocations endpoint that may change without notice.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The environment ID (GUID). Use admin_list_environments to find this."
+                        }
+                    },
+                    ["required"] = new JArray { "environmentId" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_set_tenant_pool_draw",
+                ["description"] = "Enable or disable whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. Reads the current allocation document first and changes only the TenantPool enforcement rule, preserving all other allocation and enforcement data. This is a destructive operation — confirm with the user before executing. Note: this uses an unsupported licensing allocations endpoint that may change without notice.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The environment ID (GUID)."
+                        },
+                        ["enabled"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "true to draw from the tenant pool, false to stop drawing from it."
+                        }
+                    },
+                    ["required"] = new JArray { "environmentId", "enabled" }
+                }
+            },
+            new JObject
+            {
                 ["name"] = "admin_get_security_recommendations",
                 ["description"] = "Get security recommendations from Power Platform Advisor. Returns actionable recommendations for improving the security posture of your Power Platform tenant and environments.",
                 ["inputSchema"] = new JObject
@@ -431,6 +483,12 @@ public class Script : ScriptBase
                     break;
                 case "admin_update_copilot_governance":
                     result = await HandleUpdateCopilotGovernance(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_get_tenant_pool_draw":
+                    result = await HandleGetTenantPoolDraw(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_set_tenant_pool_draw":
+                    result = await HandleSetTenantPoolDraw(arguments).ConfigureAwait(false);
                     break;
                 case "admin_get_security_recommendations":
                     result = await HandleGetSecurityRecommendations(arguments).ConfigureAwait(false);
@@ -734,6 +792,124 @@ public class Script : ScriptBase
         };
     }
 
+    private async Task<JToken> HandleGetTenantPoolDraw(JObject arguments)
+    {
+        var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
+
+        var document = await FetchAllocationDocument(envId).ConfigureAwait(false);
+
+        var entitlements = new JObject();
+        var allEnabled = true;
+        foreach (var entitlementId in TENANT_POOL_ENTITLEMENTS)
+        {
+            var ruleEnabled = ReadTenantPoolEnabled(document, entitlementId);
+            entitlements[entitlementId] = ruleEnabled;
+            if (!ruleEnabled) allEnabled = false;
+        }
+
+        string message;
+        if (document == null)
+            message = "No allocation document exists for this environment, so it draws from the tenant pool by default.";
+        else if (allEnabled)
+            message = "This environment draws Copilot Studio message and session capacity from the tenant pool.";
+        else
+            message = "This environment does not draw Copilot Studio message and session capacity from the tenant pool.";
+
+        return new JObject
+        {
+            ["environmentId"] = envId,
+            ["enabled"] = allEnabled,
+            ["source"] = document == null ? "default" : "allocationDocument",
+            ["entitlements"] = entitlements,
+            ["message"] = message
+        };
+    }
+
+    private async Task<JToken> HandleSetTenantPoolDraw(JObject arguments)
+    {
+        var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
+
+        var enabledToken = arguments["enabled"];
+        if (enabledToken == null || enabledToken.Type == JTokenType.Null)
+            throw new ArgumentException("enabled is required and must be true or false.");
+        var enabled = enabledToken.Value<bool>();
+
+        var tenantId = ResolveTenantId();
+
+        // Read-modify-write: the PUT replaces the whole document, so a blind write
+        // would drop any other allocation or enforcement data on this environment.
+        var document = await FetchAllocationDocument(envId).ConfigureAwait(false);
+        var entitlements = document == null ? null : document["allocatedEntitlements"] as JArray;
+        if (entitlements == null) entitlements = new JArray();
+
+        foreach (var entitlementId in TENANT_POOL_ENTITLEMENTS)
+        {
+            var entitlement = FindEntitlement(entitlements, entitlementId);
+            if (entitlement == null)
+            {
+                entitlement = new JObject
+                {
+                    ["allocation"] = new JObject
+                    {
+                        ["quantity"] = 0.0,
+                        ["autoAllocated"] = 0.0,
+                        ["unit"] = "NotSpecified"
+                    },
+                    ["entitlementId"] = entitlementId,
+                    ["enforcementRules"] = new JArray()
+                };
+                entitlements.Add(entitlement);
+            }
+
+            var rules = entitlement["enforcementRules"] as JArray;
+            if (rules == null)
+            {
+                rules = new JArray();
+                entitlement["enforcementRules"] = rules;
+            }
+
+            var rule = FindTenantPoolRule(entitlement);
+            if (rule == null)
+                rules.Add(new JObject { ["ruleType"] = "TenantPool", ["enabled"] = enabled });
+            else
+                rule["enabled"] = enabled;
+        }
+
+        var payload = new JObject
+        {
+            ["scope"] = new JObject
+            {
+                ["tenantId"] = tenantId,
+                ["environmentId"] = envId
+            },
+            ["allocatedEntitlements"] = entitlements
+        };
+
+        var result = await CallLicensingApi(
+            HttpMethod.Put,
+            $"/licensing/allocations?api-version={LICENSING_API_VERSION}",
+            payload.ToString(Newtonsoft.Json.Formatting.None)
+        ).ConfigureAwait(false);
+
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(
+                $"Licensing allocations API returned {(int)result.Status} {result.Status}: {TruncateForError(result.Body)}");
+
+        var affected = new JArray();
+        foreach (var entitlementId in TENANT_POOL_ENTITLEMENTS) affected.Add(entitlementId);
+
+        return new JObject
+        {
+            ["status"] = "success",
+            ["environmentId"] = envId,
+            ["enabled"] = enabled,
+            ["entitlements"] = affected,
+            ["message"] = enabled
+                ? "This environment now draws Copilot Studio message and session capacity from the tenant pool."
+                : "This environment no longer draws Copilot Studio message and session capacity from the tenant pool."
+        };
+    }
+
     private async Task<JToken> HandleGetSecurityRecommendations(JObject arguments)
     {
         var envId = arguments["environmentId"]?.ToString();
@@ -865,6 +1041,187 @@ public class Script : ScriptBase
         return responseBody;
     }
 
+    // ─── Licensing Allocations (unsupported endpoint) ───────────────────
+
+    private class ApiResult
+    {
+        public HttpStatusCode Status;
+        public string Body;
+        public bool IsSuccess { get { return (int)Status >= 200 && (int)Status < 300; } }
+    }
+
+    private static string RequireEnvironmentGuid(string environmentId)
+    {
+        Guid parsed;
+        if (string.IsNullOrEmpty(environmentId) || !Guid.TryParse(environmentId, out parsed))
+            throw new ArgumentException("environmentId is required and must be a GUID.");
+        return parsed.ToString();
+    }
+
+    private string ResolveTenantId()
+    {
+        if (!string.IsNullOrEmpty(_tenantId)) return _tenantId;
+
+        var auth = this.Context.Request.Headers.Authorization;
+        if (auth == null || string.IsNullOrEmpty(auth.Parameter))
+            throw new InvalidOperationException("Authorization header is missing; cannot resolve the tenant.");
+
+        var segments = auth.Parameter.Split('.');
+        if (segments.Length < 2)
+            throw new InvalidOperationException("Access token is not a JWT; cannot resolve the tenant.");
+
+        var payload = segments[1].Replace('-', '+').Replace('_', '/');
+        if (payload.Length % 4 == 2) payload += "==";
+        else if (payload.Length % 4 == 3) payload += "=";
+
+        var claims = JObject.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(payload)));
+        var tid = claims["tid"]?.ToString();
+        if (string.IsNullOrEmpty(tid))
+            throw new InvalidOperationException("Access token has no 'tid' claim; cannot resolve the tenant.");
+
+        _tenantId = tid;
+        return _tenantId;
+    }
+
+    // Licensing is served from a tenant-routed host: first 30 hex, dot, last 2 hex.
+    private string ResolveTenantHost()
+    {
+        var dashless = ResolveTenantId().Replace("-", "").ToLowerInvariant();
+        if (dashless.Length != 32)
+            throw new InvalidOperationException("Tenant id is not 32 hex characters; cannot build the licensing host.");
+
+        return $"{dashless.Substring(0, 30)}.{dashless.Substring(30)}{TENANT_HOST_SUFFIX}";
+    }
+
+    private async Task<ApiResult> CallLicensingApi(HttpMethod method, string path, string body = null)
+    {
+        var request = new HttpRequestMessage(method, $"https://{ResolveTenantHost()}{path}");
+
+        if (this.Context.Request.Headers.Authorization != null)
+        {
+            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
+        }
+
+        request.Headers.Add("Accept", "application/json");
+
+        if (body != null)
+        {
+            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+        }
+
+        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
+        var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            this.Context.Logger.LogError($"Licensing allocations API error {response.StatusCode}: {responseBody}");
+        }
+
+        return new ApiResult { Status = response.StatusCode, Body = responseBody };
+    }
+
+    private async Task<JObject> FetchAllocationDocument(string environmentId)
+    {
+        var filter = $"environmentId eq '{environmentId}' and EntitlementId in ({string.Join(",", TENANT_POOL_ENTITLEMENTS)})";
+        var result = await CallLicensingApi(
+            HttpMethod.Get,
+            $"/licensing/allocationsV2?$filter={Uri.EscapeDataString(filter)}&api-version={LICENSING_API_VERSION}"
+        ).ConfigureAwait(false);
+
+        // A missing document is the implicit "draws from the pool" default, not a failure.
+        // RouteNotFound shares the 404 status, so discriminate on the body code.
+        if (result.Status == HttpStatusCode.NotFound &&
+            result.Body != null &&
+            result.Body.IndexOf("AllocationDocumentDoesNotExist", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return null;
+        }
+
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(
+                $"Licensing allocations API returned {(int)result.Status} {result.Status}: {TruncateForError(result.Body)}");
+
+        return ExtractAllocationDocument(result.Body);
+    }
+
+    private JObject ExtractAllocationDocument(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+
+        var parsed = JToken.Parse(body) as JObject;
+        if (parsed == null) return null;
+
+        if (parsed["allocatedEntitlements"] as JArray != null) return parsed;
+
+        var value = parsed["value"];
+
+        var valueObject = value as JObject;
+        if (valueObject != null && valueObject["allocatedEntitlements"] as JArray != null) return valueObject;
+
+        var valueArray = value as JArray;
+        if (valueArray != null)
+        {
+            foreach (var item in valueArray)
+            {
+                var candidate = item as JObject;
+                if (candidate != null && candidate["allocatedEntitlements"] as JArray != null) return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    // An absent entitlement or TenantPool rule means the environment draws from the pool.
+    private bool ReadTenantPoolEnabled(JObject document, string entitlementId)
+    {
+        var entitlements = document == null ? null : document["allocatedEntitlements"] as JArray;
+        var entitlement = FindEntitlement(entitlements, entitlementId);
+        if (entitlement == null) return true;
+
+        var rule = FindTenantPoolRule(entitlement);
+        if (rule == null) return true;
+
+        var enabled = rule["enabled"];
+        if (enabled == null || enabled.Type == JTokenType.Null) return true;
+
+        return enabled.Value<bool>();
+    }
+
+    private JObject FindEntitlement(JArray entitlements, string entitlementId)
+    {
+        if (entitlements == null) return null;
+
+        foreach (var item in entitlements)
+        {
+            var entitlement = item as JObject;
+            if (entitlement != null &&
+                string.Equals(entitlement["entitlementId"]?.ToString(), entitlementId, StringComparison.OrdinalIgnoreCase))
+            {
+                return entitlement;
+            }
+        }
+
+        return null;
+    }
+
+    private JObject FindTenantPoolRule(JObject entitlement)
+    {
+        var rules = entitlement["enforcementRules"] as JArray;
+        if (rules == null) return null;
+
+        foreach (var item in rules)
+        {
+            var rule = item as JObject;
+            if (rule != null &&
+                string.Equals(rule["ruleType"]?.ToString(), "TenantPool", StringComparison.OrdinalIgnoreCase))
+            {
+                return rule;
+            }
+        }
+
+        return null;
+    }
+
     // ─── Typed Operations (Power Automate) ────────────────────────────
 
     private async Task<HttpResponseMessage> HandleTypedListEnvironments()
@@ -911,6 +1268,34 @@ public class Script : ScriptBase
 
         var args = new JObject { ["environmentId"] = envId, ["settings"] = settings };
         var result = await HandleUpdateSetting(args).ConfigureAwait(false);
+        return CreateTypedResponse(result);
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedGetTenantPoolDraw()
+    {
+        var envId = GetQueryParam("environmentId");
+        if (string.IsNullOrEmpty(envId))
+            return CreateTypedErrorResponse("environmentId query parameter is required.", 400);
+
+        var result = await HandleGetTenantPoolDraw(new JObject { ["environmentId"] = envId }).ConfigureAwait(false);
+        return CreateTypedResponse(result);
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedSetTenantPoolDraw()
+    {
+        var envId = GetQueryParam("environmentId");
+        if (string.IsNullOrEmpty(envId))
+            return CreateTypedErrorResponse("environmentId query parameter is required.", 400);
+
+        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var bodyObj = string.IsNullOrWhiteSpace(body) ? new JObject() : JObject.Parse(body);
+
+        var enabled = bodyObj["enabled"];
+        if (enabled == null || enabled.Type == JTokenType.Null)
+            return CreateTypedErrorResponse("Request body must contain a boolean 'enabled' property.", 400);
+
+        var args = new JObject { ["environmentId"] = envId, ["enabled"] = enabled };
+        var result = await HandleSetTenantPoolDraw(args).ConfigureAwait(false);
         return CreateTypedResponse(result);
     }
 
