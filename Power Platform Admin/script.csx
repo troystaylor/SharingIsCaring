@@ -13,12 +13,22 @@ public class Script : ScriptBase
 {
     // MCP Server metadata
     private const string SERVER_NAME = "power-platform-admin-mcp";
-    private const string SERVER_VERSION = "1.1.0";
+    private const string SERVER_VERSION = "1.2.0";
 
     // Power Platform Admin API
     private const string ADMIN_API_BASE = "https://api.powerplatform.com";
     private const string ENV_API_VERSION = "2024-10-01";
     private const string SETTINGS_API_VERSION = "2022-03-01-preview";
+
+    // Resource query (agent inventory)
+    private const string RESOURCEQUERY_API_VERSION = "2022-03-01-preview";
+    private const string AGENT_RESOURCE_TYPE = "'microsoft.copilotstudio/agents'";
+    private const int AGENT_PAGE_SIZE = 1000;
+    private const int AGENT_MAX_PAGES = 10;
+    private const int EDITOR_BREADTH_THRESHOLD = 10;
+
+    // Entra Agent IDs became mandatory for newly created agents in July 2026, so a gap after this date is a stronger signal.
+    private static readonly DateTimeOffset ENTRA_AGENT_ID_MANDATE = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
 
     // Licensing allocations API (unsupported endpoint, tenant-routed host)
     private const string TENANT_HOST_SUFFIX = ".tenant.api.powerplatform.com";
@@ -51,6 +61,8 @@ public class Script : ScriptBase
                     return await HandleTypedGetTenantPoolDraw().ConfigureAwait(false);
                 case "SetTenantPoolDraw":
                     return await HandleTypedSetTenantPoolDraw().ConfigureAwait(false);
+                case "ListAgents":
+                    return await HandleTypedListAgents().ConfigureAwait(false);
                 case "GetEnvironmentDropdown":
                     return await HandleTypedGetEnvironmentDropdown().ConfigureAwait(false);
                 default:
@@ -413,6 +425,24 @@ public class Script : ScriptBase
                     ["required"] = new JArray { "environmentId" }
                 }
             },
+            new JObject
+            {
+                ["name"] = "admin_list_agents",
+                ["description"] = "Inventory Copilot Studio and Agent Builder agents, enriched with environment, environment group, sharing, identity, and provenance detail. Each agent carries a computed riskLevel (None/Low/Medium/High) with the riskSignals that produced it. Omit environmentId to inventory the whole tenant. Note that isCLIAgent is 'true', 'false', or 'unknown' — 'unknown' means the platform did not report the field and must not be read as 'false'.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Optional. Restrict the inventory to a single environment. Omit to inventory every environment in the tenant."
+                        }
+                    },
+                    ["required"] = new JArray()
+                }
+            },
 
             // Category 4: Application Lifecycle
             new JObject
@@ -503,6 +533,9 @@ public class Script : ScriptBase
                     break;
                 case "admin_list_apps":
                     result = await HandleListApps(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_list_agents":
+                    result = await HandleListAgents(arguments).ConfigureAwait(false);
                     break;
 
                 // Category 4: Application Lifecycle
@@ -977,6 +1010,336 @@ public class Script : ScriptBase
         return JToken.Parse(response);
     }
 
+    private async Task<JToken> HandleListAgents(JObject arguments)
+    {
+        var environmentId = NormalizeEnvironmentFilter(arguments["environmentId"]?.ToString());
+
+        var agents = new JArray();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var skip = 0;
+        var truncated = false;
+        var pages = 0;
+
+        while (true)
+        {
+            var body = BuildAgentQuery(environmentId, skip).ToString(Newtonsoft.Json.Formatting.None);
+
+            var response = await CallAdminApi(
+                HttpMethod.Post,
+                $"/resourcequery/resources/query?api-version={RESOURCEQUERY_API_VERSION}",
+                body
+            ).ConfigureAwait(false);
+
+            var page = JObject.Parse(response);
+            var rows = page["data"] as JArray ?? new JArray();
+
+            foreach (var row in rows)
+            {
+                var resourceName = row["name"]?.ToString();
+                if (!string.IsNullOrEmpty(resourceName) && !seen.Add(resourceName)) continue;
+
+                agents.Add(ProjectAgent(row));
+            }
+
+            pages++;
+
+            if (rows.Count < AGENT_PAGE_SIZE) break;
+
+            if (pages >= AGENT_MAX_PAGES)
+            {
+                truncated = true;
+                break;
+            }
+
+            skip += AGENT_PAGE_SIZE;
+        }
+
+        return new JObject
+        {
+            ["agentCount"] = agents.Count,
+            ["truncated"] = truncated,
+            ["environmentId"] = string.IsNullOrEmpty(environmentId) ? (JToken)JValue.CreateNull() : environmentId,
+            ["agents"] = agents
+        };
+    }
+
+    // Verified against the live API: SkipToken does not advance between calls, so Skip is the only working pager.
+    // Every clause must serialize "$type" first — it is a polymorphic discriminator and the service rejects the document otherwise.
+    private JObject BuildAgentQuery(string environmentId, int skip)
+    {
+        var clauses = new JArray
+        {
+            new JObject
+            {
+                ["$type"] = "where",
+                ["FieldName"] = "type",
+                ["Operator"] = "in~",
+                ["Values"] = new JArray { AGENT_RESOURCE_TYPE }
+            },
+            new JObject
+            {
+                ["$type"] = "extend",
+                ["FieldName"] = "joinKey",
+                ["Expression"] = "tolower(tostring(properties.environmentId))"
+            }
+        };
+
+        if (!string.IsNullOrEmpty(environmentId))
+        {
+            clauses.Add(new JObject
+            {
+                ["$type"] = "where",
+                ["FieldName"] = "joinKey",
+                ["Operator"] = "==",
+                ["Values"] = new JArray { $"'{environmentId}'" }
+            });
+        }
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "project",
+            ["FieldList"] = new JArray { "joinKey", "name", "type", "properties" }
+        });
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "join",
+            ["JoinKind"] = "leftouter",
+            ["RightTable"] = new JObject
+            {
+                ["TableName"] = "PowerPlatformResources",
+                ["Clauses"] = new JArray
+                {
+                    new JObject
+                    {
+                        ["$type"] = "where",
+                        ["FieldName"] = "type",
+                        ["Operator"] = "==",
+                        ["Values"] = new JArray { "'microsoft.powerplatform/environments'" }
+                    },
+                    new JObject
+                    {
+                        ["$type"] = "project",
+                        ["FieldList"] = new JArray
+                        {
+                            "joinKey = tolower(name)",
+                            "environmentName = properties.displayName",
+                            "environmentRegion = location",
+                            "environmentType = properties.environmentType",
+                            "isManagedEnvironment = properties.isManaged",
+                            "environmentGroupId = tolower(properties.environmentGroupId)"
+                        }
+                    }
+                }
+            },
+            ["LeftColumnName"] = "joinKey",
+            ["RightColumnName"] = "joinKey"
+        });
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "join",
+            ["JoinKind"] = "leftouter",
+            ["RightTable"] = new JObject
+            {
+                ["TableName"] = "PowerPlatformResources",
+                ["Clauses"] = new JArray
+                {
+                    new JObject
+                    {
+                        ["$type"] = "where",
+                        ["FieldName"] = "type",
+                        ["Operator"] = "==",
+                        ["Values"] = new JArray { "'microsoft.powerplatform/environmentgroups'" }
+                    },
+                    new JObject
+                    {
+                        ["$type"] = "project",
+                        ["FieldList"] = new JArray
+                        {
+                            "environmentGroupId = tolower(name)",
+                            "environmentGroupName = properties.displayName"
+                        }
+                    }
+                }
+            },
+            ["LeftColumnName"] = "environmentGroupId",
+            ["RightColumnName"] = "environmentGroupId"
+        });
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "orderby",
+            ["FieldNamesAscDesc"] = new JObject
+            {
+                ["tostring(properties.createdAt)"] = "desc",
+                // createdAt ties are common; without a unique tiebreaker the skip window shifts and drops rows.
+                ["name"] = "asc"
+            }
+        });
+
+        return new JObject
+        {
+            ["Options"] = new JObject
+            {
+                ["Top"] = AGENT_PAGE_SIZE,
+                ["Skip"] = skip,
+                ["SkipToken"] = string.Empty
+            },
+            ["TableName"] = "PowerPlatformResources",
+            ["Clauses"] = clauses
+        };
+    }
+
+    private static JObject ProjectAgent(JToken row)
+    {
+        var props = row["properties"];
+        var viewers = props?["sharedWithViewers"];
+        var editors = props?["sharedWithEditors"];
+
+        var agent = new JObject
+        {
+            ["displayName"] = Val(props?["displayName"]),
+            ["name"] = Val(row["name"]),
+            ["schemaName"] = Val(props?["schemaName"]),
+            ["entraAgentId"] = Val(props?["entraAgentId"]),
+            ["entraAgentBlueprintId"] = Val(props?["entraAgentBlueprintId"]),
+            ["entraAppId"] = Val(props?["entraAppId"]),
+            ["environmentId"] = Val(props?["environmentId"]),
+            ["environmentName"] = Val(row["environmentName"]),
+            ["environmentRegion"] = Val(row["environmentRegion"]),
+            ["environmentType"] = Val(row["environmentType"]),
+            ["environmentIsManaged"] = Val(row["isManagedEnvironment"]),
+            ["environmentGroupId"] = Val(row["environmentGroupId"]),
+            ["environmentGroupName"] = Val(row["environmentGroupName"]),
+            ["createdAt"] = Val(props?["createdAt"]),
+            ["createdBy"] = Val(props?["createdBy"]),
+            ["createdIn"] = Val(props?["createdIn"]),
+            ["lastPublishedAt"] = Val(props?["lastPublishedAt"]),
+            ["ownerId"] = Val(props?["ownerId"]),
+            ["authentication"] = Val(props?["authentication"]),
+            ["orchestration"] = Val(props?["orchestration"]),
+            ["model"] = Val(props?["model"]),
+            ["isManaged"] = Val(props?["isManaged"]),
+            ["isQuarantined"] = Val(props?["isQuarantined"]),
+            ["isCLIAgent"] = TriState(props, "isCLIAgent"),
+            ["sharedWithViewersUserCount"] = Val(viewers?["userCount"]),
+            ["sharedWithViewersGroupCount"] = Val(viewers?["groupCount"]),
+            ["sharedWithViewersEntireTenant"] = Val(viewers?["entireTenant"]),
+            ["sharedWithEditorsUserCount"] = Val(editors?["userCount"]),
+            ["sharedWithEditorsGroupCount"] = Val(editors?["groupCount"]),
+            ["channels"] = props?["channels"] as JArray ?? new JArray()
+        };
+
+        ApplyRisk(agent);
+        return agent;
+    }
+
+    // Absent is reported as "unknown" so a missing field is never mistaken for false.
+    private static string TriState(JToken parent, string propertyName)
+    {
+        var token = parent?[propertyName];
+        if (token == null || token.Type == JTokenType.Null) return "unknown";
+        if (token.Type == JTokenType.Boolean) return token.Value<bool>() ? "true" : "false";
+
+        bool parsed;
+        return bool.TryParse(token.ToString(), out parsed) ? (parsed ? "true" : "false") : "unknown";
+    }
+
+    private static void ApplyRisk(JObject agent)
+    {
+        var signals = new JArray();
+        var score = 0;
+
+        var cliAuthored = string.Equals(agent["isCLIAgent"]?.ToString(), "true", StringComparison.Ordinal);
+        var tenantWide = IsTrue(agent["sharedWithViewersEntireTenant"]);
+        var quarantined = IsTrue(agent["isQuarantined"]);
+        var managedEnvironment = IsTrue(agent["environmentIsManaged"]);
+        var hasEntraIdentity = !string.IsNullOrEmpty(agent["entraAgentId"]?.ToString());
+        var published = !string.IsNullOrEmpty(agent["lastPublishedAt"]?.ToString());
+        var editorUsers = ToInt(agent["sharedWithEditorsUserCount"]);
+
+        var environmentType = agent["environmentType"]?.ToString();
+        var defaultEnvironment = string.Equals(environmentType, "Default", StringComparison.OrdinalIgnoreCase);
+        var nonProduction = string.Equals(environmentType, "Developer", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(environmentType, "Trial", StringComparison.OrdinalIgnoreCase);
+
+        if (quarantined) { score += 3; signals.Add("quarantined"); }
+        if (tenantWide) { score += 2; signals.Add("sharedWithEntireTenant"); }
+        if (editorUsers >= EDITOR_BREADTH_THRESHOLD) { score += 2; signals.Add("broadEditorAccess"); }
+        if (cliAuthored && tenantWide) { score += 2; signals.Add("cliAuthoredAndTenantWide"); }
+
+        if (!hasEntraIdentity)
+        {
+            if (CreatedAfterEntraMandate(agent)) { score += 2; signals.Add("missingEntraAgentIdPostMandate"); }
+            else { score += 1; signals.Add("noEntraAgentId"); }
+        }
+
+        if (cliAuthored) { score += 1; signals.Add("createdOutsideMakerPortal"); }
+
+        // The default environment is never a Managed Environment, so scoring it as "unmanaged" would fire on nearly every agent.
+        if (defaultEnvironment) { score += 1; signals.Add("defaultEnvironment"); }
+        else if (!managedEnvironment) { score += 1; signals.Add("unmanagedEnvironment"); }
+
+        if (nonProduction && tenantWide) { score += 1; signals.Add("tenantWideInNonProductionEnvironment"); }
+
+        if (!published) { score -= 1; signals.Add("neverPublished"); }
+
+        if (score < 0) score = 0;
+
+        agent["riskScore"] = score;
+        agent["riskSignals"] = signals;
+        agent["riskLevel"] = score >= 5 ? "High" : score >= 3 ? "Medium" : score >= 1 ? "Low" : "None";
+    }
+
+    private static bool CreatedAfterEntraMandate(JObject agent)
+    {
+        DateTimeOffset createdAt;
+        return DateTimeOffset.TryParse(
+            agent["createdAt"]?.ToString(),
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+            out createdAt) && createdAt >= ENTRA_AGENT_ID_MANDATE;
+    }
+
+    private static int ToInt(JToken token)
+    {
+        if (token == null || token.Type == JTokenType.Null) return 0;
+        if (token.Type == JTokenType.Integer) return token.Value<int>();
+
+        int parsed;
+        return int.TryParse(token.ToString(), out parsed) ? parsed : 0;
+    }
+
+    private static bool IsTrue(JToken token)
+    {
+        if (token == null || token.Type == JTokenType.Null) return false;
+        if (token.Type == JTokenType.Boolean) return token.Value<bool>();
+
+        bool parsed;
+        return bool.TryParse(token.ToString(), out parsed) && parsed;
+    }
+
+    private static JToken Val(JToken token)
+    {
+        return token ?? JValue.CreateNull();
+    }
+
+    // The value is embedded in the resource-query clause document, so restrict it to id-safe characters.
+    private static string NormalizeEnvironmentFilter(string environmentId)
+    {
+        if (string.IsNullOrWhiteSpace(environmentId)) return null;
+
+        var trimmed = environmentId.Trim();
+        foreach (var character in trimmed)
+        {
+            if (!char.IsLetterOrDigit(character) && character != '-')
+                throw new ArgumentException("environmentId may contain only letters, digits, and hyphens.");
+        }
+
+        return trimmed.ToLowerInvariant();
+    }
+
     // ─── Category 4: Application Lifecycle ──────────────────────────────
 
     private async Task<JToken> HandleInstallPackage(JObject arguments)
@@ -1299,6 +1662,24 @@ public class Script : ScriptBase
         return CreateTypedResponse(result);
     }
 
+    private async Task<HttpResponseMessage> HandleTypedListAgents()
+    {
+        var args = new JObject();
+
+        var envId = GetQueryParam("environmentId");
+        if (!string.IsNullOrWhiteSpace(envId)) args["environmentId"] = envId;
+
+        try
+        {
+            var result = await HandleListAgents(args).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
+    }
+
     private async Task<HttpResponseMessage> HandleTypedGetEnvironmentDropdown()
     {
         var response = await CallAdminApi(
@@ -1456,3 +1837,6 @@ public class Script : ScriptBase
         return text.Substring(0, maxLength) + "... (truncated)";
     }
 }
+
+
+

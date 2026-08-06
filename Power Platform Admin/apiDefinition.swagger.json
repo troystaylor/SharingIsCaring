@@ -2,8 +2,8 @@
     "swagger": "2.0",
     "info": {
         "title": "Power Platform Admin",
-        "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, and application packages via the Power Platform Admin API.",
-        "version": "1.1.0",
+        "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, agent inventory, and application packages via the Power Platform Admin API.",
+        "version": "1.2.0",
         "contact": {
             "name": "Troy Taylor",
             "email": "troy@troystaylor.com"
@@ -403,6 +403,240 @@
                                     "type": "string",
                                     "description": "Result message",
                                     "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/agents": {
+            "get": {
+                "summary": "List Agents",
+                "description": "Inventory Copilot Studio and Agent Builder agents, enriched with environment, environment group, sharing, identity, and provenance detail. Each agent carries a computed risk level derived from creation provenance, sharing scope, and environment posture. Leave the environment blank to inventory the whole tenant. Uses the resource query endpoint, which returns undocumented resource properties that may change without notice.",
+                "operationId": "ListAgents",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Restrict the inventory to a single environment. Leave blank to inventory every environment in the tenant.",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Agent inventory",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "agentCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of agents returned",
+                                    "x-ms-summary": "Agent Count"
+                                },
+                                "truncated": {
+                                    "type": "boolean",
+                                    "description": "True when the page limit was reached before the tenant was fully enumerated. Narrow the scope with an environment to get a complete result.",
+                                    "x-ms-summary": "Truncated"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "The environment the inventory was scoped to, or null for the whole tenant",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "agents": {
+                                    "type": "array",
+                                    "description": "Array of agents",
+                                    "x-ms-summary": "Agents",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Display name of the agent",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Resource name of the agent",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "schemaName": {
+                                                "type": "string",
+                                                "description": "Unique system name used to reference the agent",
+                                                "x-ms-summary": "Schema Name"
+                                            },
+                                            "entraAgentId": {
+                                                "type": "string",
+                                                "description": "Microsoft Entra Agent ID",
+                                                "x-ms-summary": "Entra Agent ID"
+                                            },
+                                            "entraAgentBlueprintId": {
+                                                "type": "string",
+                                                "description": "Entra agent identity blueprint the agent identity descends from",
+                                                "x-ms-summary": "Entra Agent Blueprint ID"
+                                            },
+                                            "entraAppId": {
+                                                "type": "string",
+                                                "description": "Entra application ID associated with the agent",
+                                                "x-ms-summary": "Entra App ID"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment the agent lives in",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "environmentName": {
+                                                "type": "string",
+                                                "description": "Environment display name",
+                                                "x-ms-summary": "Environment Name"
+                                            },
+                                            "environmentRegion": {
+                                                "type": "string",
+                                                "description": "Azure region of the environment",
+                                                "x-ms-summary": "Environment Region"
+                                            },
+                                            "environmentType": {
+                                                "type": "string",
+                                                "description": "Environment type (Production, Sandbox, Developer, Trial, Default)",
+                                                "x-ms-summary": "Environment Type"
+                                            },
+                                            "environmentIsManaged": {
+                                                "type": "boolean",
+                                                "description": "Whether the environment is a Managed Environment",
+                                                "x-ms-summary": "Environment Is Managed"
+                                            },
+                                            "environmentGroupId": {
+                                                "type": "string",
+                                                "description": "Environment group the environment belongs to",
+                                                "x-ms-summary": "Environment Group ID"
+                                            },
+                                            "environmentGroupName": {
+                                                "type": "string",
+                                                "description": "Environment group display name",
+                                                "x-ms-summary": "Environment Group Name"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "description": "When the agent was created",
+                                                "x-ms-summary": "Created At"
+                                            },
+                                            "createdBy": {
+                                                "type": "string",
+                                                "description": "Object ID of the user who created the agent",
+                                                "x-ms-summary": "Created By"
+                                            },
+                                            "createdIn": {
+                                                "type": "string",
+                                                "description": "Surface the agent was created in (for example, Copilot Studio)",
+                                                "x-ms-summary": "Created In"
+                                            },
+                                            "lastPublishedAt": {
+                                                "type": "string",
+                                                "description": "When the agent was last published. Blank means never published.",
+                                                "x-ms-summary": "Last Published At"
+                                            },
+                                            "ownerId": {
+                                                "type": "string",
+                                                "description": "Object ID of the current owner",
+                                                "x-ms-summary": "Owner ID"
+                                            },
+                                            "authentication": {
+                                                "type": "string",
+                                                "description": "Authentication mode configured for the agent",
+                                                "x-ms-summary": "Authentication"
+                                            },
+                                            "orchestration": {
+                                                "type": "string",
+                                                "description": "Orchestration mode (for example, Generative)",
+                                                "x-ms-summary": "Orchestration"
+                                            },
+                                            "model": {
+                                                "type": "string",
+                                                "description": "Primary AI model backing the agent",
+                                                "x-ms-summary": "Model"
+                                            },
+                                            "isManaged": {
+                                                "type": "boolean",
+                                                "description": "Whether the agent is in a managed solution",
+                                                "x-ms-summary": "Is Managed"
+                                            },
+                                            "isQuarantined": {
+                                                "type": "boolean",
+                                                "description": "Whether the agent is quarantined",
+                                                "x-ms-summary": "Is Quarantined"
+                                            },
+                                            "isCLIAgent": {
+                                                "type": "string",
+                                                "description": "Whether the agent was authored through a CLI or code-first path: true, false, or unknown. Unknown means the platform did not report the field and must not be read as false. This is an undocumented property that may change without notice.",
+                                                "x-ms-summary": "Is CLI Agent"
+                                            },
+                                            "sharedWithViewersUserCount": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Number of users the agent is shared with as viewers",
+                                                "x-ms-summary": "Shared With Viewers User Count"
+                                            },
+                                            "sharedWithViewersGroupCount": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Number of groups the agent is shared with as viewers",
+                                                "x-ms-summary": "Shared With Viewers Group Count"
+                                            },
+                                            "sharedWithViewersEntireTenant": {
+                                                "type": "boolean",
+                                                "description": "Whether the agent is shared with everyone in the tenant",
+                                                "x-ms-summary": "Shared With Entire Tenant"
+                                            },
+                                            "sharedWithEditorsUserCount": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Number of users the agent is shared with as editors",
+                                                "x-ms-summary": "Shared With Editors User Count"
+                                            },
+                                            "sharedWithEditorsGroupCount": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Number of groups the agent is shared with as editors",
+                                                "x-ms-summary": "Shared With Editors Group Count"
+                                            },
+                                            "channels": {
+                                                "type": "array",
+                                                "description": "Channels the agent is published to",
+                                                "x-ms-summary": "Channels",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "riskLevel": {
+                                                "type": "string",
+                                                "description": "Computed governance risk: None, Low, Medium, or High",
+                                                "x-ms-summary": "Risk Level"
+                                            },
+                                            "riskScore": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Additive score behind the risk level",
+                                                "x-ms-summary": "Risk Score"
+                                            },
+                                            "riskSignals": {
+                                                "type": "array",
+                                                "description": "Named signals that produced the risk score",
+                                                "x-ms-summary": "Risk Signals",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

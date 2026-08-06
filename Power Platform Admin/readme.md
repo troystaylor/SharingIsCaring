@@ -4,13 +4,13 @@ MCP server for cross-environment Power Platform administration through natural l
 
 ## Overview
 
-This connector exposes 14 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
+This connector exposes 15 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
 | Environment Management | 5 | List environments, get details, read/update PPAC settings, compare settings across environments |
 | Governance & Security | 6 | Copilot governance, Copilot Studio tenant pool draw, security recommendations, cross-tenant connection audit |
-| Resource Inventory | 2 | List connectors and Power Apps per environment |
+| Resource Inventory | 3 | List connectors and Power Apps per environment, inventory agents across the tenant |
 | Application Lifecycle | 1 | Install Microsoft application packages |
 
 ## Prerequisites
@@ -32,6 +32,8 @@ This connector exposes 14 admin tools across 4 categories through a single MCP e
    - `AppManagement.ApplicationPackages.Install`
    - `AppManagement.ApplicationPackages.Read`
 
+   `admin_list_agents` needs no additional permission — the `resourcequery` endpoint it calls was verified to work with the delegated scopes above plus a Power Platform admin role. There is no documented `resourcequery` scope to grant.
+
 2. **Power Platform admin role** (System Administrator, Power Platform Administrator, or Dynamics 365 Administrator)
 
    The tenant pool tools additionally require the caller to hold **Power Platform Administrator** or **Global Administrator** — the same tenant admin roles that gate licensing and capacity settings in PPAC. The `Licensing.Allocations.*` scopes are documented against the supported Currency Allocation API; the unsupported allocations route shares that namespace and resource type, so grant both and verify with a read before relying on the write.
@@ -49,7 +51,9 @@ This connector exposes 14 admin tools across 4 categories through a single MCP e
 4. Create a connection using OAuth and sign in with an admin account.
 5. Add the connector as an action in your Copilot Studio agent.
 
-## Tools
+## Tools (Copilot Studio)
+
+These are exposed through the single `/mcp` endpoint for agent use. If you are building a flow rather than an agent, see **Power Automate Operations** below instead.
 
 ### Environment Management
 
@@ -82,12 +86,50 @@ This connector exposes 14 admin tools across 4 categories through a single MCP e
 |------|-------------|
 | `admin_list_connectors` | List connectors in an environment (certified, custom, virtual, MCP) |
 | `admin_list_apps` | List Power Apps in an environment with owner and sharing status |
+| `admin_list_agents` | Inventory Copilot Studio and Agent Builder agents with environment, sharing, identity, and provenance detail, plus a computed risk level |
+
+> **Agent inventory reads undocumented properties.** `admin_list_agents` calls `resourcequery`, which returns the resource provider's raw property bag. Fields such as `isCLIAgent` are not in the published reference and may change shape or disappear without notice. Use them for reporting and triage, not as a hard enforcement gate.
+>
+> `isCLIAgent` is returned as `"true"`, `"false"`, or `"unknown"` rather than a boolean. `"unknown"` means the platform did not report the field at all, which is not the same as `false` — an undocumented field may simply be absent on older agents.
+>
+> `riskLevel` (None/Low/Medium/High) is computed from an additive `riskScore`, and every agent carries the `riskSignals` that produced it so the judgment stays auditable. Signals are `quarantined` (+3), `sharedWithEntireTenant` (+2), `broadEditorAccess` (+2, 10 or more editor users — editors can rewrite instructions and tools, so breadth here matters more than viewer sharing), `cliAuthoredAndTenantWide` (+2), `missingEntraAgentIdPostMandate` (+2, no Entra Agent ID on an agent created after the July 2026 mandate), `noEntraAgentId` (+1, same gap on an older agent), `createdOutsideMakerPortal` (+1), `defaultEnvironment` (+1), `unmanagedEnvironment` (+1, non-default environments only), `tenantWideInNonProductionEnvironment` (+1), and `neverPublished` (−1, mitigating — an unpublished agent has no runtime exposure). Score floors at 0.
+>
+> The default environment is scored as `defaultEnvironment` rather than `unmanagedEnvironment` because it can never be a Managed Environment — treating it as unmanaged would fire on nearly every agent in most tenants and flatten the risk distribution.
+>
+> Omitting `environmentId` inventories the whole tenant. The connector pages internally with `Skip` offsets and stops after 10 pages (10,000 agents), setting `truncated: true` rather than silently returning a partial estate. Scope to an environment if you hit that ceiling.
+>
+> **Paging notes (verified against the live API).** `SkipToken` is returned but does **not** advance between calls — requesting the next page with the token alone replays the same rows. `Skip` is the only working pager. Because `orderby createdAt` alone is not a total order (ties are common; agents provisioned by a template share a timestamp to the second), the sort carries `name` as a unique tiebreaker — without it the skip window shifts between requests and silently drops rows. Results are also de-duplicated by resource name as a safety net.
 
 ### Application Lifecycle
 
 | Tool | Description |
 |------|-------------|
 | `admin_install_package` | Install a Microsoft application package in an environment |
+
+## Power Automate Operations
+
+The connector is dual-mode. The same capabilities are also exposed as typed REST operations with full request and response schemas, so they appear as ordinary actions in the Power Automate and Logic Apps designers with IntelliSense and dynamic dropdowns — no MCP knowledge required.
+
+| Action | Method | Inputs |
+|--------|--------|--------|
+| **List Environments** | GET | none |
+| **Get Environment** | GET | `environmentId` (required) |
+| **Get Settings** | GET | `environmentId` (required), `select` (optional, advanced) |
+| **Update Settings** | POST | `environmentId` (required), body `{ "settings": { "Name": value } }` |
+| **Get Draw From Tenant Pool** | GET | `environmentId` (required) |
+| **Set Draw From Tenant Pool** | POST | `environmentId` (required), body `{ "enabled": true }` |
+| **List Agents** | GET | `environmentId` (optional — leave blank to inventory the whole tenant) |
+
+Every `environmentId` field renders as a picker of environment display names, populated at design time by an internal `Get Environment List` operation, so you never have to paste a GUID.
+
+`Invoke Power Platform Admin MCP` also appears in the action list. Ignore it in a flow — it is the JSON-RPC endpoint for Copilot Studio and expects an MCP protocol body, not flow inputs.
+
+### Notes for flow authors
+
+- **List Agents returns one object, not a paged list.** The shape is `agentCount`, `truncated`, `environmentId`, and an `agents` array — apply-to-each over `agents`. Check `truncated` before treating the result as a complete inventory; `true` means the page ceiling was reached and agents are missing.
+- **`isCLIAgent` is a string, not a boolean.** Compare against `'true'`, `'false'`, or `'unknown'`. A condition that tests it as a boolean will silently never match, and `'unknown'` must not be treated as `'false'`.
+- **`riskSignals` and `channels` are string arrays.** Flatten with `join(item()?['riskSignals'], ', ')` for a table or email body.
+- **Update Settings and Set Draw From Tenant Pool are writes.** The latter rewrites an entire allocation document and the service offers no ETag, so a concurrent edit from PPAC can be lost. Read first, and avoid running it on a fan-out loop.
 
 ## Example Prompts
 
@@ -104,6 +146,11 @@ Show me security recommendations for my environments
 Are there any cross-tenant connections I should review?
 What connectors are available in my dev environment?
 List all Power Apps in my production environment
+Inventory every Copilot Studio agent in my tenant
+Which agents were created outside the maker portal?
+Show me agents with a Medium or High risk level and explain why
+Which agents are missing a Microsoft Entra Agent ID?
+List the agents in my default environment and who can edit them
 Install the Customer Service package in my sandbox environment
 ```
 
@@ -111,8 +158,8 @@ Install the Customer Service package in my sandbox environment
 
 ```
 ┌─────────────────────┐     ┌──────────────────────────┐
-│   Copilot Studio     │────▶│  Dataverse Admin (MCP)   │
-│   Agent              │◀────│  script.csx              │
+│   Copilot Studio     │────▶│  Power Platform Admin    │
+│   Agent              │◀────│  (MCP) script.csx        │
 └─────────────────────┘     └──────────┬───────────────┘
                                        │
                                        ▼
@@ -129,7 +176,7 @@ This connector is part of the Dataverse connector family:
 
 | Connector | Target API | Purpose |
 |-----------|-----------|---------|
-| **Dataverse Admin** (this) | `api.powerplatform.com` | Cross-environment platform administration |
+| **Power Platform Admin** (this) | `api.powerplatform.com` | Cross-environment platform administration |
 | Dataverse Power Agent | `org.crm.dynamics.com` | Data operations (CRUD, bulk, relationships) |
 | Dataverse Power Orchestration Tools | `org.crm.dynamics.com` | Dynamic tool discovery with orchestration |
 | Dataverse Custom API | `org.crm.dynamics.com` | Custom API lifecycle management |
