@@ -1,0 +1,6175 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Intune",
+    "description": "Dual-purpose Microsoft Intune connector. Use the MCP endpoint to give an AI agent 105 Intune tools, or call the named actions directly from Power Automate and Logic Apps. Uses Microsoft Graph v1.0 whenever available and beta only for APIs that have not been promoted.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/v1.0",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/deviceManagement/managedDevices": {
+      "get": {
+        "summary": "List managed devices",
+        "description": "List Intune managed devices with OData filtering, selection, sorting, and paging.",
+        "operationId": "ListManagedDevices",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}": {
+      "get": {
+        "summary": "Get managed device",
+        "description": "Get one managed device including hardware, OS, ownership, and enrollment detail.",
+        "operationId": "GetManagedDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete managed device",
+        "description": "Delete the Intune device record. This does not wipe or retire the physical device.",
+        "operationId": "DeleteManagedDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/detectedApps": {
+      "get": {
+        "summary": "List detected apps on device",
+        "description": "List applications Intune detected installed on a device.",
+        "operationId": "ListDetectedApps",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/deviceCompliancePolicyStates": {
+      "get": {
+        "summary": "Get device compliance states",
+        "description": "List compliance policy states for a device.",
+        "operationId": "GetDeviceCompliancePolicyStates",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/deviceConfigurationStates": {
+      "get": {
+        "summary": "Get device configuration states",
+        "description": "List configuration profile states for a device.",
+        "operationId": "GetDeviceConfigurationStates",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/getNonCompliantSettings": {
+      "get": {
+        "summary": "Get noncompliant settings",
+        "description": "List the exact settings causing a device to be noncompliant.",
+        "operationId": "GetNonCompliantSettings",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/getSyncStatus": {
+      "get": {
+        "summary": "Get device sync status",
+        "description": "Get device check-in and synchronization status.",
+        "operationId": "GetDeviceSyncStatus",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDeviceEncryptionStates": {
+      "get": {
+        "summary": "List device encryption states",
+        "description": "List BitLocker and FileVault encryption state across devices.",
+        "operationId": "ListManagedDeviceEncryptionStates",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceCategories": {
+      "get": {
+        "summary": "List device categories",
+        "description": "List Intune device categories.",
+        "operationId": "ListDeviceCategories",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/comanagedDevices": {
+      "get": {
+        "summary": "List co-managed devices",
+        "description": "List devices co-managed by Intune and Configuration Manager.",
+        "operationId": "ListComanagedDevices",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/syncDevice": {
+      "post": {
+        "summary": "Sync device",
+        "description": "Force a device to check in and pull pending policy and app assignments.",
+        "operationId": "SyncDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/retire": {
+      "post": {
+        "summary": "Retire device",
+        "description": "Remove company data and unenroll the device, leaving personal data intact.",
+        "operationId": "RetireDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/wipe": {
+      "post": {
+        "summary": "Wipe device",
+        "description": "Factory reset the device, erasing all data. Destructive and irreversible.",
+        "operationId": "WipeDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/rebootNow": {
+      "post": {
+        "summary": "Reboot device",
+        "description": "Restart the device remotely.",
+        "operationId": "RebootDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/shutDown": {
+      "post": {
+        "summary": "Shut down device",
+        "description": "Power off the device remotely.",
+        "operationId": "ShutDownDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/remoteLock": {
+      "post": {
+        "summary": "Remote lock device",
+        "description": "Lock the device so it requires its passcode to unlock.",
+        "operationId": "RemoteLockDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/resetPasscode": {
+      "post": {
+        "summary": "Reset passcode",
+        "description": "Reset the device passcode.",
+        "operationId": "ResetPasscode",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/locateDevice": {
+      "post": {
+        "summary": "Locate device",
+        "description": "Request the current location of a supervised device.",
+        "operationId": "LocateDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/enableLostMode": {
+      "post": {
+        "summary": "Enable lost mode",
+        "description": "Put a supervised Apple device into Lost Mode with a recovery message.",
+        "operationId": "EnableLostMode",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/disableLostMode": {
+      "post": {
+        "summary": "Disable lost mode",
+        "description": "Take a supervised Apple device out of Lost Mode.",
+        "operationId": "DisableLostMode",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/rotateBitLockerKeys": {
+      "post": {
+        "summary": "Rotate BitLocker keys",
+        "description": "Rotate BitLocker recovery keys on a Windows device.",
+        "operationId": "RotateBitLockerKeys",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/rotateFileVaultKey": {
+      "post": {
+        "summary": "Rotate FileVault key",
+        "description": "Rotate the FileVault recovery key on a macOS device.",
+        "operationId": "RotateFileVaultKey",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/rotateLocalAdminPassword": {
+      "post": {
+        "summary": "Rotate local admin password",
+        "description": "Rotate the Windows LAPS local administrator password.",
+        "operationId": "RotateLocalAdminPassword",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/windowsDefenderScan": {
+      "post": {
+        "summary": "Run Defender scan",
+        "description": "Run a Microsoft Defender antivirus scan on a Windows device.",
+        "operationId": "WindowsDefenderScan",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/windowsDefenderUpdateSignatures": {
+      "post": {
+        "summary": "Update Defender signatures",
+        "description": "Force a Defender signature definition update.",
+        "operationId": "WindowsDefenderUpdateSignatures",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/sendCustomNotificationToCompanyPortal": {
+      "post": {
+        "summary": "Send custom notification",
+        "description": "Send a push notification to the Company Portal app on the device.",
+        "operationId": "SendCustomNotification",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/createDeviceLogCollectionRequest": {
+      "post": {
+        "summary": "Collect device logs",
+        "description": "Request diagnostic log collection from a Windows device.",
+        "operationId": "CreateDeviceLogCollectionRequest",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/initiateOnDemandProactiveRemediation": {
+      "post": {
+        "summary": "Run remediation on demand",
+        "description": "Run a proactive remediation script on the device immediately.",
+        "operationId": "InitiateOnDemandProactiveRemediation",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/executeAction": {
+      "post": {
+        "summary": "Run bulk device action",
+        "description": "Run one remote action against many devices in a single request.",
+        "operationId": "BulkDeviceAction",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/remoteActionAudits": {
+      "get": {
+        "summary": "List remote action audits",
+        "description": "List the audit trail of remote actions performed on devices.",
+        "operationId": "ListRemoteActionAudits",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/logCollectionRequests": {
+      "get": {
+        "summary": "List log collection requests",
+        "description": "List diagnostic log collection requests for a device.",
+        "operationId": "ListLogCollectionRequests",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/retrieveDeviceLocalAdminAccountDetail": {
+      "get": {
+        "summary": "Get LAPS password",
+        "description": "Retrieve the Windows LAPS local administrator password for a device.",
+        "operationId": "GetLocalAdminPassword",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDevices/{managedDeviceId}/getFileVaultKey": {
+      "get": {
+        "summary": "Get FileVault key",
+        "description": "Retrieve the FileVault personal recovery key for a macOS device.",
+        "operationId": "GetFileVaultKey",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "managedDeviceId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The managedDevice id"
+          }
+        ]
+      }
+    },
+    "/informationProtection/bitlocker/recoveryKeys": {
+      "get": {
+        "summary": "List BitLocker recovery keys",
+        "description": "List BitLocker recovery keys stored in Microsoft Entra ID.",
+        "operationId": "ListBitLockerRecoveryKeys",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/informationProtection/bitlocker/recoveryKeys/{bitlockerRecoveryKeyId}": {
+      "get": {
+        "summary": "Get BitLocker recovery key",
+        "description": "Retrieve a BitLocker recovery key value.",
+        "operationId": "GetBitLockerRecoveryKey",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "bitlockerRecoveryKeyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The bitlockerRecoveryKey id"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Include 'key' to return the key value"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/troubleshootingEvents": {
+      "get": {
+        "summary": "List troubleshooting events",
+        "description": "List Intune troubleshooting events for enrollment and policy failures.",
+        "operationId": "ListTroubleshootingEvents",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/autopilotEvents": {
+      "get": {
+        "summary": "List Autopilot events",
+        "description": "List Windows Autopilot deployment events and their outcomes.",
+        "operationId": "ListAutopilotEvents",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceCompliancePolicies": {
+      "get": {
+        "summary": "List compliance policies",
+        "description": "List Intune device compliance policies.",
+        "operationId": "ListCompliancePolicies",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create compliance policy",
+        "description": "Create a device compliance policy.",
+        "operationId": "CreateCompliancePolicy",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceCompliancePolicies/{deviceCompliancePolicyId}": {
+      "get": {
+        "summary": "Get compliance policy",
+        "description": "Get one compliance policy with its rules.",
+        "operationId": "GetCompliancePolicy",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceCompliancePolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceCompliancePolicy id"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Update compliance policy",
+        "description": "Update a device compliance policy.",
+        "operationId": "UpdateCompliancePolicy",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceCompliancePolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceCompliancePolicy id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete compliance policy",
+        "description": "Delete a device compliance policy.",
+        "operationId": "DeleteCompliancePolicy",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceCompliancePolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceCompliancePolicy id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceCompliancePolicies/{deviceCompliancePolicyId}/assign": {
+      "post": {
+        "summary": "Assign compliance policy",
+        "description": "Assign a compliance policy to Entra groups.",
+        "operationId": "AssignCompliancePolicy",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceCompliancePolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceCompliancePolicy id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceCompliancePolicies/{deviceCompliancePolicyId}/deviceStatuses": {
+      "get": {
+        "summary": "Get compliance policy device statuses",
+        "description": "Get per-device status for a compliance policy.",
+        "operationId": "GetCompliancePolicyDeviceStatuses",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceCompliancePolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceCompliancePolicy id"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceConfigurations": {
+      "get": {
+        "summary": "List device configurations",
+        "description": "List classic device configuration profiles.",
+        "operationId": "ListDeviceConfigurations",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create device configuration",
+        "description": "Create a classic device configuration profile.",
+        "operationId": "CreateDeviceConfiguration",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceConfigurations/{deviceConfigurationId}": {
+      "get": {
+        "summary": "Get device configuration",
+        "description": "Get one classic device configuration profile.",
+        "operationId": "GetDeviceConfiguration",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceConfigurationId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceConfiguration id"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Update device configuration",
+        "description": "Update a classic device configuration profile.",
+        "operationId": "UpdateDeviceConfiguration",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceConfigurationId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceConfiguration id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete device configuration",
+        "description": "Delete a classic device configuration profile.",
+        "operationId": "DeleteDeviceConfiguration",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceConfigurationId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceConfiguration id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceConfigurations/{deviceConfigurationId}/assign": {
+      "post": {
+        "summary": "Assign device configuration",
+        "description": "Assign a configuration profile to Entra groups.",
+        "operationId": "AssignDeviceConfiguration",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceConfigurationId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceConfiguration id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/configurationPolicies": {
+      "get": {
+        "summary": "List configuration policies",
+        "description": "List settings catalog configuration policies.",
+        "operationId": "ListConfigurationPolicies",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create configuration policy",
+        "description": "Create a settings catalog configuration policy.",
+        "operationId": "CreateConfigurationPolicy",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/configurationPolicies/{configurationPolicyId}/settings": {
+      "get": {
+        "summary": "Get configuration policy settings",
+        "description": "Get the individual settings inside a settings catalog policy.",
+        "operationId": "GetConfigurationPolicySettings",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "configurationPolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceManagementConfigurationPolicy id"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/configurationPolicies/{configurationPolicyId}/assign": {
+      "post": {
+        "summary": "Assign configuration policy",
+        "description": "Assign a settings catalog policy to Entra groups.",
+        "operationId": "AssignConfigurationPolicy",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "configurationPolicyId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceManagementConfigurationPolicy id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/mobileApps": {
+      "get": {
+        "summary": "List applications",
+        "description": "List applications published in Intune.",
+        "operationId": "ListMobileApps",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create application",
+        "description": "Create an application in Intune.",
+        "operationId": "CreateMobileApp",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/mobileApps/{mobileAppId}": {
+      "get": {
+        "summary": "Get application",
+        "description": "Get one application with its package metadata.",
+        "operationId": "GetMobileApp",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mobileAppId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The mobileApp id"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          }
+        ]
+      },
+      "patch": {
+        "summary": "Update application",
+        "description": "Update an application's metadata or rules.",
+        "operationId": "UpdateMobileApp",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mobileAppId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The mobileApp id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete application",
+        "description": "Delete an application from Intune.",
+        "operationId": "DeleteMobileApp",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mobileAppId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The mobileApp id"
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/mobileApps/{mobileAppId}/assign": {
+      "post": {
+        "summary": "Assign application",
+        "description": "Assign an application to Entra groups with an install intent.",
+        "operationId": "AssignMobileApp",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mobileAppId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The mobileApp id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/mobileApps/{mobileAppId}/installSummary": {
+      "get": {
+        "summary": "Get app install summary",
+        "description": "Get tenant-wide install status counts for an application.",
+        "operationId": "GetAppInstallSummary",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mobileAppId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The mobileApp id"
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/mobileApps/{mobileAppId}/deviceStatuses": {
+      "get": {
+        "summary": "Get app device statuses",
+        "description": "Get per-device install status for an application.",
+        "operationId": "GetAppDeviceStatuses",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "mobileAppId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The mobileApp id"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/mobileAppCategories": {
+      "get": {
+        "summary": "List app categories",
+        "description": "List application categories.",
+        "operationId": "ListMobileAppCategories",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceAppManagement/managedAppPolicies": {
+      "get": {
+        "summary": "List app protection policies",
+        "description": "List Intune app protection (MAM) policies.",
+        "operationId": "ListManagedAppPolicies",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsAutopilotDeviceIdentities": {
+      "get": {
+        "summary": "List Autopilot devices",
+        "description": "List Windows Autopilot device identities.",
+        "operationId": "ListAutopilotDevices",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsAutopilotDeviceIdentities/{windowsAutopilotDeviceIdentityId}": {
+      "get": {
+        "summary": "Get Autopilot device",
+        "description": "Get one Autopilot device identity.",
+        "operationId": "GetAutopilotDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "windowsAutopilotDeviceIdentityId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The windowsAutopilotDeviceIdentity id"
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete Autopilot device",
+        "description": "Deregister a device from Windows Autopilot.",
+        "operationId": "DeleteAutopilotDevice",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "windowsAutopilotDeviceIdentityId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The windowsAutopilotDeviceIdentity id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsAutopilotDeviceIdentities/{windowsAutopilotDeviceIdentityId}/assignUserToDevice": {
+      "post": {
+        "summary": "Assign Autopilot user",
+        "description": "Assign the user pre-provisioned on an Autopilot device.",
+        "operationId": "AssignAutopilotUser",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "windowsAutopilotDeviceIdentityId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The windowsAutopilotDeviceIdentity id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsAutopilotDeviceIdentities/{windowsAutopilotDeviceIdentityId}/unassignUserFromDevice": {
+      "post": {
+        "summary": "Unassign Autopilot user",
+        "description": "Remove the assigned user from an Autopilot device.",
+        "operationId": "UnassignAutopilotUser",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "windowsAutopilotDeviceIdentityId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The windowsAutopilotDeviceIdentity id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsAutopilotDeploymentProfiles": {
+      "get": {
+        "summary": "List Autopilot profiles",
+        "description": "List Windows Autopilot deployment profiles.",
+        "operationId": "ListAutopilotProfiles",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsAutopilotDeploymentProfiles/{windowsAutopilotDeploymentProfileId}/assign": {
+      "post": {
+        "summary": "Assign Autopilot profile",
+        "description": "Assign an Autopilot deployment profile to Entra groups.",
+        "operationId": "AssignAutopilotProfile",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "windowsAutopilotDeploymentProfileId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The windowsAutopilotDeploymentProfile id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceEnrollmentConfigurations": {
+      "get": {
+        "summary": "List enrollment configurations",
+        "description": "List device enrollment configurations and restrictions.",
+        "operationId": "ListEnrollmentConfigurations",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceManagementScripts": {
+      "get": {
+        "summary": "List PowerShell scripts",
+        "description": "List Windows PowerShell scripts deployed through Intune.",
+        "operationId": "ListDeviceManagementScripts",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceManagementScripts/{deviceManagementScriptId}": {
+      "get": {
+        "summary": "Get PowerShell script",
+        "description": "Get one PowerShell script including its content.",
+        "operationId": "GetDeviceManagementScript",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceManagementScriptId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceManagementScript id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceManagementScripts/{deviceManagementScriptId}/assign": {
+      "post": {
+        "summary": "Assign PowerShell script",
+        "description": "Assign a PowerShell script to Entra groups.",
+        "operationId": "AssignDeviceManagementScript",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceManagementScriptId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceManagementScript id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceManagementScripts/{deviceManagementScriptId}/deviceRunStates": {
+      "get": {
+        "summary": "Get script run states",
+        "description": "Get per-device execution results for a script.",
+        "operationId": "GetScriptDeviceRunStates",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceManagementScriptId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceManagementScript id"
+          },
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceShellScripts": {
+      "get": {
+        "summary": "List shell scripts",
+        "description": "List macOS shell scripts deployed through Intune.",
+        "operationId": "ListDeviceShellScripts",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceHealthScripts": {
+      "get": {
+        "summary": "List remediations",
+        "description": "List proactive remediation scripts.",
+        "operationId": "ListDeviceHealthScripts",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/deviceHealthScripts/{deviceHealthScriptId}/getRemediationSummary": {
+      "get": {
+        "summary": "Get remediation summary",
+        "description": "Get aggregate detection and remediation results.",
+        "operationId": "GetRemediationSummary",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "deviceHealthScriptId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The deviceHealthScript id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsFeatureUpdateProfiles": {
+      "get": {
+        "summary": "List feature update profiles",
+        "description": "List Windows feature update profiles.",
+        "operationId": "ListFeatureUpdateProfiles",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsQualityUpdatePolicies": {
+      "get": {
+        "summary": "List quality update policies",
+        "description": "List Windows quality update policies.",
+        "operationId": "ListQualityUpdatePolicies",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/windowsDriverUpdateProfiles": {
+      "get": {
+        "summary": "List driver update profiles",
+        "description": "List Windows driver update profiles.",
+        "operationId": "ListDriverUpdateProfiles",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/elevationRequests": {
+      "get": {
+        "summary": "List elevation requests",
+        "description": "List Endpoint Privilege Management elevation requests.",
+        "operationId": "ListElevationRequests",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/elevationRequests/{elevationRequestId}/approve": {
+      "post": {
+        "summary": "Approve elevation request",
+        "description": "Approve an elevation request.",
+        "operationId": "ApproveElevationRequest",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "elevationRequestId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The elevation request id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/elevationRequests/{elevationRequestId}/deny": {
+      "post": {
+        "summary": "Deny elevation request",
+        "description": "Deny an elevation request.",
+        "operationId": "DenyElevationRequest",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "elevationRequestId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The elevation request id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/operationApprovalRequests": {
+      "get": {
+        "summary": "List approval requests",
+        "description": "List Intune operation approval requests.",
+        "operationId": "ListOperationApprovalRequests",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/operationApprovalRequests/{operationApprovalRequestId}/approve": {
+      "post": {
+        "summary": "Approve operation request",
+        "description": "Approve a held privileged operation.",
+        "operationId": "ApproveOperationRequest",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "operationApprovalRequestId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The operationApprovalRequest id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/operationApprovalRequests/{operationApprovalRequestId}/reject": {
+      "post": {
+        "summary": "Reject operation request",
+        "description": "Reject a held privileged operation.",
+        "operationId": "RejectOperationRequest",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "operationApprovalRequestId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The operationApprovalRequest id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/virtualEndpoint/cloudPCs": {
+      "get": {
+        "summary": "List Cloud PCs",
+        "description": "List Windows 365 Cloud PCs.",
+        "operationId": "ListCloudPCs",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/virtualEndpoint/cloudPCs/{cloudPCId}/reprovision": {
+      "post": {
+        "summary": "Reprovision Cloud PC",
+        "description": "Rebuild a Cloud PC from its provisioning policy.",
+        "operationId": "ReprovisionCloudPC",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cloudPCId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The cloudPC id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/virtualEndpoint/cloudPCs/{cloudPCId}/resize": {
+      "post": {
+        "summary": "Resize Cloud PC",
+        "description": "Resize a Cloud PC to a different service plan.",
+        "operationId": "ResizeCloudPC",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cloudPCId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The cloudPC id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/virtualEndpoint/cloudPCs/{cloudPCId}/restore": {
+      "post": {
+        "summary": "Restore Cloud PC",
+        "description": "Restore a Cloud PC to an earlier snapshot.",
+        "operationId": "RestoreCloudPC",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cloudPCId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The cloudPC id"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/assignmentFilters": {
+      "get": {
+        "summary": "List assignment filters",
+        "description": "List Intune assignment filters.",
+        "operationId": "ListAssignmentFilters",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/assignmentFilters/{assignmentFilterId}": {
+      "get": {
+        "summary": "Get assignment filter",
+        "description": "Get one assignment filter and its payloads.",
+        "operationId": "GetAssignmentFilter",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "assignmentFilterId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The assignmentFilter id"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/assignmentFilters/validateFilter": {
+      "post": {
+        "summary": "Validate assignment filter",
+        "description": "Validate an assignment filter rule expression.",
+        "operationId": "ValidateAssignmentFilter",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/roleDefinitions": {
+      "get": {
+        "summary": "List role definitions",
+        "description": "List Intune RBAC role definitions.",
+        "operationId": "ListRoleDefinitions",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/roleAssignments": {
+      "get": {
+        "summary": "List role assignments",
+        "description": "List Intune RBAC role assignments.",
+        "operationId": "ListRoleAssignments",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/getEffectivePermissions": {
+      "get": {
+        "summary": "Get effective permissions",
+        "description": "Get the effective Intune permissions of the signed-in administrator.",
+        "operationId": "GetEffectivePermissions",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        }
+      }
+    },
+    "/deviceManagement/roleScopeTags": {
+      "get": {
+        "summary": "List scope tags",
+        "description": "List Intune RBAC scope tags.",
+        "operationId": "ListRoleScopeTags",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/applePushNotificationCertificate": {
+      "get": {
+        "summary": "Get Apple MDM push certificate",
+        "description": "Get the Apple MDM Push Certificate and its expiry.",
+        "operationId": "GetApplePushNotificationCertificate",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        }
+      }
+    },
+    "/deviceAppManagement/vppTokens": {
+      "get": {
+        "summary": "List VPP tokens",
+        "description": "List Apple Volume Purchase Program tokens and their expiry.",
+        "operationId": "ListVppTokens",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/depOnboardingSettings": {
+      "get": {
+        "summary": "List DEP tokens",
+        "description": "List Apple Automated Device Enrollment tokens and their expiry.",
+        "operationId": "ListDepOnboardingSettings",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/reports/{reportName}": {
+      "post": {
+        "summary": "Run Intune report",
+        "description": "Run an Intune report synchronously and return its rows.",
+        "operationId": "RunIntuneReport",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "reportName",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "Report function name, for example getDeviceNonComplianceReport"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/reports/exportJobs": {
+      "post": {
+        "summary": "Export Intune report",
+        "description": "Start an asynchronous export of an Intune report.",
+        "operationId": "CreateReportExportJob",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/reports/exportJobs/{exportJobId}": {
+      "get": {
+        "summary": "Get report export status",
+        "description": "Check an export job and get its download URL.",
+        "operationId": "GetReportExportJob",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "exportJobId",
+            "in": "path",
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "required": true,
+            "description": "The exportJob id"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/reports/getReportFilters": {
+      "post": {
+        "summary": "Get report filters",
+        "description": "Get the filter columns available for a report.",
+        "operationId": "GetReportFilters",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": false,
+            "description": "JSON request body",
+            "schema": {
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    "/deviceManagement/auditEvents": {
+      "get": {
+        "summary": "List audit events",
+        "description": "List Intune administrative audit events.",
+        "operationId": "ListAuditEvents",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/monitoring/alertRecords": {
+      "get": {
+        "summary": "List alert records",
+        "description": "List Intune monitoring alert records.",
+        "operationId": "ListAlertRecords",
+        "x-ms-graph-version": "beta",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/userExperienceAnalyticsOverview": {
+      "get": {
+        "summary": "Get Endpoint Analytics overview",
+        "description": "Get the tenant Endpoint Analytics score overview.",
+        "operationId": "GetUxAnalyticsOverview",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        }
+      }
+    },
+    "/deviceManagement/userExperienceAnalyticsDeviceScores": {
+      "get": {
+        "summary": "List device experience scores",
+        "description": "List per-device Endpoint Analytics scores.",
+        "operationId": "ListUxAnalyticsDeviceScores",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "OData filter expression"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          },
+          {
+            "name": "$expand",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Navigation properties to expand"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Sort expression"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum items to return"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Items to skip for paging"
+          }
+        ]
+      }
+    },
+    "/deviceManagement/managedDeviceOverview": {
+      "get": {
+        "summary": "Get managed device overview",
+        "description": "Get tenant-wide managed device counts by platform and enrollment type.",
+        "operationId": "GetManagedDeviceOverview",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        }
+      }
+    },
+    "/deviceManagement/softwareUpdateStatusSummary": {
+      "get": {
+        "summary": "Get update status summary",
+        "description": "Get the tenant software update compliance summary.",
+        "operationId": "GetSoftwareUpdateStatusSummary",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        }
+      }
+    },
+    "/deviceManagement": {
+      "get": {
+        "summary": "Get Intune service configuration",
+        "description": "Get the Intune tenant service configuration singleton.",
+        "operationId": "GetDeviceManagement",
+        "x-ms-graph-version": "v1.0",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - insufficient Intune permissions"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "429": {
+            "description": "Throttled by Microsoft Graph"
+          }
+        },
+        "parameters": [
+          {
+            "name": "$select",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Comma-separated fields to return"
+          }
+        ]
+      }
+    },
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Intune MCP",
+        "description": "Model Context Protocol endpoint. Accepts JSON-RPC 2.0 requests and exposes 105 Intune tools, plus resources and prompts, to MCP clients such as Copilot Studio.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC 2.0 response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://graph.microsoft.com/.default": "Access Microsoft Intune through Microsoft Graph"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "https://graph.microsoft.com/.default"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/intune/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "IT Operations;AI"
+    }
+  ]
+}
