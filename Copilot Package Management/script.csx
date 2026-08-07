@@ -22,7 +22,18 @@ public class Script : ScriptBase
 {
     private const string APP_INSIGHTS_CONNECTION_STRING = "";
     private const string GraphBaseUrl = "https://graph.microsoft.com";
+
+    // List and get are GA on v1.0; block/unblock/reassign/update are beta-only.
+    private const string ReadPackagesBasePath = "/v1.0/copilot/admin/catalog/packages";
     private const string PackagesBasePath = "/beta/copilot/admin/catalog/packages";
+    private const string AgentRegistrationsBasePath = "/beta/copilot/agentRegistrations";
+    private const string ReportsBasePath = "/v1.0/copilot/reports";
+    private const string LimitedModePath = "/v1.0/copilot/admin/settings/limitedMode";
+
+    private const int MaxPages = 50;
+
+    private static readonly string[] ReportPeriods = { "D7", "D28", "D30", "D90", "D180", "ALL" };
+    private static readonly string[] ReportVersions = { "v1", "v2" };
 
     // ── Server Configuration ─────────────────────────────────────────────
 
@@ -85,11 +96,13 @@ public class Script : ScriptBase
     {
         // ── List Packages ────────────────────────────────────────────────
 
-        handler.AddTool("list_packages", "List all Copilot agents and apps in the tenant catalog. Optionally filter by supported host (Copilot, Outlook, Teams, M365), element type (Bots, DeclarativeAgent, CustomEngineAgent), or last modified date.",
+        handler.AddTool("list_packages", "List all Copilot agents and apps in the tenant catalog, following pagination automatically. Optionally filter by supported host (Copilot, Outlook, Teams, M365), element type (Bots, DeclarativeAgent, CustomEngineAgent), platform (Copilot Studio, Microsoft 365 Copilot Agent Builder), publisher type, or last modified date.",
             schema: s => s
                 .String("supportedHost", "Filter by host: Copilot, Outlook, Teams, or M365")
                 .String("elementType", "Filter by element type: Bots, DeclarativeAgent, CustomEngineAgent, OfficeAddIns")
-                .String("lastModifiedAfter", "Filter packages modified after this ISO 8601 date (e.g. 2026-01-01T00:00:00Z)"),
+                .String("platform", "Filter by platform: 'Copilot Studio' or 'Microsoft 365 Copilot Agent Builder'")
+                .String("lastModifiedAfter", "Filter packages modified after this ISO 8601 date (e.g. 2026-01-01T00:00:00Z)")
+                .String("publisherType", "Comma-separated package types to keep, applied after retrieval because type is not filterable server-side: microsoft (built by Microsoft), external (built by partners), shared (shared in your organization), custom (built by your organization). Omit to return all."),
             handler: async (args, ct) =>
             {
                 var filters = new List<string>();
@@ -102,15 +115,35 @@ public class Script : ScriptBase
                 if (elementType != null)
                     filters.Add($"elementTypes/any(h:h eq '{elementType}')");
 
+                var platform = GetArgument(args, "platform");
+                if (platform != null)
+                    filters.Add($"platform eq '{platform}'");
+
                 var modifiedAfter = GetArgument(args, "lastModifiedAfter");
                 if (modifiedAfter != null)
                     filters.Add($"lastModifiedDateTime gt {modifiedAfter}");
 
-                var path = PackagesBasePath;
+                var path = ReadPackagesBasePath;
                 if (filters.Count > 0)
                     path += "?$filter=" + Uri.EscapeDataString(string.Join(" and ", filters));
 
-                return await SendGraphRequestAsync("GET", path);
+                var packages = await GetAllPagesAsync(path);
+
+                var publisherType = GetArgument(args, "publisherType");
+                if (!string.IsNullOrWhiteSpace(publisherType))
+                {
+                    var wanted = publisherType.Split(',')
+                        .Select(t => t.Trim())
+                        .Where(t => t.Length > 0)
+                        .ToList();
+
+                    var kept = packages.Where(p =>
+                        wanted.Any(w => string.Equals(p["type"]?.ToString(), w, StringComparison.OrdinalIgnoreCase)));
+
+                    packages = new JArray(kept);
+                }
+
+                return new JObject { ["count"] = packages.Count, ["value"] = packages };
             },
             annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
 
@@ -122,7 +155,7 @@ public class Script : ScriptBase
             handler: async (args, ct) =>
             {
                 var packageId = RequireArgument(args, "packageId");
-                return await SendGraphRequestAsync("GET", $"{PackagesBasePath}/{packageId}");
+                return await SendGraphRequestAsync("GET", $"{ReadPackagesBasePath}/{packageId}");
             },
             annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
 
@@ -206,14 +239,205 @@ public class Script : ScriptBase
                 return await SendGraphRequestAsync("PATCH", $"{PackagesBasePath}/{packageId}", body);
             },
             annotations: a => { a["readOnlyHint"] = false; a["idempotentHint"] = true; });
+
+        // ── Create Agent Registration ────────────────────────────────────
+
+        handler.AddTool("create_agent_registration", "Register an agent in the Agent 365 registry so administrators can discover and govern it. Supply an agent card manifest describing the agent's provider, capabilities, and skills.",
+            schema: s => s
+                .String("displayName", "Display name for the agent instance", required: true)
+                .String("createdBy", "Identifier of the user or app creating the registration", required: true)
+                .String("sourceCreatedDateTime", "ISO 8601 date the agent was created in the source system", required: true)
+                .String("sourceLastModifiedDateTime", "ISO 8601 date the agent was last modified in the source system", required: true)
+                .String("description", "Overview of the agent's purpose and capabilities")
+                .Array("ownerIds", "Owner object IDs for the agent. Either this or managedByAppId is required.",
+                    new JObject { ["type"] = "string" })
+                .String("managedByAppId", "Application identifier managing this agent. Alternative to ownerIds.")
+                .String("sourceAgentId", "Original agent identifier from the source system")
+                .String("originatingStore", "Name of the store or system where the agent originated")
+                .String("agentIdentityId", "Microsoft Entra agent identity identifier")
+                .String("agentIdentityBlueprintId", "Agent identity blueprint identifier")
+                .Object("agentCard", "Agent card manifest following the public manifest specification", nested => nested
+                    .String("name", "Agent name")
+                    .String("version", "Agent card version")
+                    .String("description", "Agent description")
+                    .String("provider", "Organization providing the agent")),
+            handler: async (args, ct) =>
+            {
+                var body = BuildAgentRegistrationBody(args, requireCreateFields: true);
+                return await SendGraphRequestAsync("POST", AgentRegistrationsBasePath, body);
+            },
+            annotations: a => { a["readOnlyHint"] = false; });
+
+        // ── Get Agent Registration ───────────────────────────────────────
+
+        handler.AddTool("get_agent_registration", "Get the properties of a specific agent registration, including its agent card, owners, and Entra agent identity references.",
+            schema: s => s
+                .String("registrationId", "The unique identifier of the agent registration", required: true),
+            handler: async (args, ct) =>
+            {
+                var registrationId = RequireArgument(args, "registrationId");
+                return await SendGraphRequestAsync("GET", $"{AgentRegistrationsBasePath}/{registrationId}");
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        // ── Update Agent Registration ────────────────────────────────────
+
+        handler.AddTool("update_agent_registration", "Update an existing agent registration. Only the supplied properties are changed.",
+            schema: s => s
+                .String("registrationId", "The unique identifier of the agent registration", required: true)
+                .String("displayName", "New display name for the agent instance")
+                .String("description", "New description for the agent")
+                .Array("ownerIds", "Replacement list of owner object IDs", new JObject { ["type"] = "string" })
+                .String("managedByAppId", "Application identifier managing this agent")
+                .String("sourceAgentId", "Original agent identifier from the source system")
+                .String("originatingStore", "Name of the store or system where the agent originated")
+                .String("agentIdentityId", "Microsoft Entra agent identity identifier")
+                .String("agentIdentityBlueprintId", "Agent identity blueprint identifier")
+                .String("sourceLastModifiedDateTime", "ISO 8601 date the agent was last modified in the source system"),
+            handler: async (args, ct) =>
+            {
+                var registrationId = RequireArgument(args, "registrationId");
+                var body = BuildAgentRegistrationBody(args, requireCreateFields: false);
+                return await SendGraphRequestAsync("PATCH", $"{AgentRegistrationsBasePath}/{registrationId}", body);
+            },
+            annotations: a => { a["readOnlyHint"] = false; a["idempotentHint"] = true; });
+
+        // ── Delete Agent Registration ────────────────────────────────────
+
+        handler.AddTool("delete_agent_registration", "Delete an agent registration that is no longer needed. This removes the agent from the Agent 365 registry.",
+            schema: s => s
+                .String("registrationId", "The unique identifier of the agent registration", required: true),
+            handler: async (args, ct) =>
+            {
+                var registrationId = RequireArgument(args, "registrationId");
+                return await SendGraphRequestAsync("DELETE", $"{AgentRegistrationsBasePath}/{registrationId}");
+            },
+            annotations: a => { a["readOnlyHint"] = false; a["destructiveHint"] = true; a["idempotentHint"] = true; });
+
+        // ── Usage Reports ────────────────────────────────────────────────
+
+        handler.AddTool("get_copilot_user_count_summary", "Get the aggregated number of active and enabled Microsoft 365 Copilot users for a time period, broken down by app.",
+            schema: s => s
+                .String("period", "Aggregation window: D7, D28, D30, D90, D180, or ALL. D30 is v1 only; D28 is v2 only.", enumValues: ReportPeriods)
+                .String("version", "Report version: v1 or v2. v2 adds prompt counts and Copilot Chat breakdowns.", enumValues: ReportVersions),
+            handler: async (args, ct) => await GetReportAsync("getMicrosoft365CopilotUserCountSummary", args),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        handler.AddTool("get_copilot_user_count_trend", "Get the daily trend in active and enabled Microsoft 365 Copilot users for a time period.",
+            schema: s => s
+                .String("period", "Aggregation window: D7, D28, D30, D90, D180, or ALL", enumValues: ReportPeriods)
+                .String("version", "Report version: v1 or v2", enumValues: ReportVersions),
+            handler: async (args, ct) => await GetReportAsync("getMicrosoft365CopilotUserCountTrend", args),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        handler.AddTool("get_copilot_usage_user_detail", "Get per-user Microsoft 365 Copilot activity. Use version v2 to include Copilot Agent Last Activity Date, the only per-user agent usage signal in Graph.",
+            schema: s => s
+                .String("period", "Aggregation window: D7, D28, D30, D90, D180, or ALL", enumValues: ReportPeriods)
+                .String("version", "Report version: v1 or v2. Use v2 for agent activity.", enumValues: ReportVersions),
+            handler: async (args, ct) => await GetReportAsync("getMicrosoft365CopilotUsageUserDetail", args),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        // ── Limited Mode Setting ─────────────────────────────────────────
+
+        handler.AddTool("get_limited_mode", "Read whether Microsoft 365 Copilot in Teams meetings is restricted from responding to sentiment-related prompts.",
+            schema: s => { },
+            handler: async (args, ct) => await SendGraphRequestAsync("GET", LimitedModePath),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        handler.AddTool("update_limited_mode", "Enable or disable limited mode for Microsoft 365 Copilot in Teams meetings, scoped to a Microsoft Entra group.",
+            schema: s => s
+                .Boolean("isEnabledForGroup", "True to stop Copilot responding to prompts inferring emotions, behavior, or judgments", required: true)
+                .String("groupId", "Microsoft Entra group the setting applies to. Required when enabling."),
+            handler: async (args, ct) =>
+            {
+                var body = new JObject { ["isEnabledForGroup"] = args["isEnabledForGroup"] };
+
+                var groupId = GetArgument(args, "groupId");
+                if (groupId != null)
+                    body["groupId"] = groupId;
+
+                return await SendGraphRequestAsync("PATCH", LimitedModePath, body);
+            },
+            annotations: a => { a["readOnlyHint"] = false; a["idempotentHint"] = true; });
+    }
+
+
+    // ── Agent Registration Helper ────────────────────────────────────────
+
+    private static JObject BuildAgentRegistrationBody(JObject args, bool requireCreateFields)
+    {
+        var fields = new[]
+        {
+            "displayName", "description", "createdBy", "sourceCreatedDateTime", "sourceLastModifiedDateTime",
+            "managedByAppId", "sourceAgentId", "originatingStore", "agentIdentityId", "agentIdentityBlueprintId"
+        };
+
+        var body = new JObject();
+
+        foreach (var field in fields)
+        {
+            var value = GetArgument(args, field);
+            if (value != null)
+                body[field] = value;
+        }
+
+        if (args["ownerIds"] != null)
+            body["ownerIds"] = args["ownerIds"];
+
+        if (args["agentCard"] != null)
+            body["agentCard"] = args["agentCard"];
+
+        if (requireCreateFields)
+        {
+            foreach (var required in new[] { "displayName", "createdBy", "sourceCreatedDateTime", "sourceLastModifiedDateTime" })
+                RequireArgument(args, required);
+
+            if (body["ownerIds"] == null && body["managedByAppId"] == null)
+                throw new ArgumentException("Either 'ownerIds' or 'managedByAppId' is required");
+        }
+
+        return body;
+    }
+
+
+    // ── Reports Helper ───────────────────────────────────────────────────
+
+    private async Task<JObject> GetReportAsync(string function, JObject args)
+    {
+        var period = GetArgument(args, "period") ?? "D7";
+        var version = GetArgument(args, "version") ?? "v1";
+
+        var path = $"{ReportsBasePath}/{function}(period='{period}',version='{version}')?$format=application/json";
+        return await SendGraphRequestAsync("GET", path);
     }
 
 
     // ── Graph API Helper ─────────────────────────────────────────────────
 
+    private async Task<JArray> GetAllPagesAsync(string path)
+    {
+        var results = new JArray();
+        var next = path;
+
+        for (var page = 0; page < MaxPages && !string.IsNullOrEmpty(next); page++)
+        {
+            var response = await SendGraphRequestAsync("GET", next);
+
+            var values = response["value"] as JArray;
+            if (values != null)
+                foreach (var item in values)
+                    results.Add(item);
+
+            next = response["@odata.nextLink"]?.ToString();
+        }
+
+        return results;
+    }
+
     private async Task<JObject> SendGraphRequestAsync(string method, string path, JObject body = null)
     {
-        var url = GraphBaseUrl + path;
+        // @odata.nextLink comes back absolute; everything else is a relative path.
+        var url = path.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? path : GraphBaseUrl + path;
         var request = new HttpRequestMessage(new HttpMethod(method), url);
 
         if (this.Context.Request.Headers.Authorization != null)
@@ -243,7 +467,15 @@ public class Script : ScriptBase
         if (string.IsNullOrWhiteSpace(content) || response.StatusCode == HttpStatusCode.NoContent)
             return new JObject { ["status"] = "success" };
 
-        return JObject.Parse(content);
+        // Usage reports can come back as raw CSV rather than JSON.
+        try
+        {
+            return JObject.Parse(content);
+        }
+        catch (JsonReaderException)
+        {
+            return new JObject { ["contentType"] = "text/csv", ["content"] = content };
+        }
     }
 
 

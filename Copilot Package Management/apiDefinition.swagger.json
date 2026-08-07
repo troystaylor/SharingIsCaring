@@ -2,8 +2,8 @@
     "swagger": "2.0",
     "info": {
         "title": "Copilot Package Management",
-        "description": "Manage Microsoft 365 Copilot agents and apps using the Package Management API. List, inspect, block, unblock, update, and reassign ownership of packages in your tenant catalog. Requires a Microsoft Agent 365 license.",
-        "version": "1.0.0",
+        "description": "Manage Microsoft 365 Copilot agents and apps. List, inspect, block, unblock, update, and reassign ownership of packages in your tenant catalog; register agents in the Agent 365 registry; pull Copilot usage reports; and control the Teams meeting limited mode setting. Requires a Microsoft Agent 365 license for package operations.",
+        "version": "1.1.0",
         "contact": {
             "name": "Troy Taylor",
             "email": "troy@troystaylor.com"
@@ -34,11 +34,11 @@
                 }
             }
         },
-        "/beta/copilot/admin/catalog/packages": {
+        "/v1.0/copilot/admin/catalog/packages": {
             "get": {
                 "operationId": "ListPackages",
                 "summary": "List packages",
-                "description": "Retrieve a list of all Copilot agents and apps available in the tenant catalog. Supports filtering by supported host, element type, and last modified date.",
+                "description": "Retrieve a list of all Copilot agents and apps available in the tenant catalog. Supports filtering by supported host, element type, platform, and last modified date.",
                 "x-ms-visibility": "important",
                 "parameters": [
                     {
@@ -46,8 +46,16 @@
                         "in": "query",
                         "type": "string",
                         "required": false,
-                        "description": "OData filter expression. Filter by supportedHosts (Copilot, Outlook, Teams, M365), elementTypes (Bots, DeclarativeAgent, CustomEngineAgent), or lastModifiedDateTime.",
+                        "description": "OData filter expression. Filter by supportedHosts (Copilot, Outlook, Teams, M365), elementTypes (Bots, DeclarativeAgent, CustomEngineAgent), platform (Copilot Studio, Microsoft 365 Copilot Agent Builder), or lastModifiedDateTime.",
                         "x-ms-summary": "Filter"
+                    },
+                    {
+                        "name": "$skiptoken",
+                        "in": "query",
+                        "type": "string",
+                        "required": false,
+                        "description": "Continuation token from the Next Link of a previous response. Use to retrieve the next page of results.",
+                        "x-ms-summary": "Skip Token"
                     }
                 ],
                 "responses": {
@@ -61,6 +69,11 @@
                                     "items": {
                                         "$ref": "#/definitions/CopilotPackage"
                                     }
+                                },
+                                "@odata.nextLink": {
+                                    "type": "string",
+                                    "description": "URL for the next page of results. Present only when more results exist.",
+                                    "x-ms-summary": "Next Link"
                                 }
                             }
                         }
@@ -68,7 +81,7 @@
                 }
             }
         },
-        "/beta/copilot/admin/catalog/packages/{id}": {
+        "/v1.0/copilot/admin/catalog/packages/{id}": {
             "get": {
                 "operationId": "GetPackageDetails",
                 "summary": "Get package details",
@@ -93,7 +106,9 @@
                         }
                     }
                 }
-            },
+            }
+        },
+        "/beta/copilot/admin/catalog/packages/{id}": {
             "patch": {
                 "operationId": "UpdatePackage",
                 "summary": "Update package",
@@ -228,6 +243,277 @@
                     }
                 }
             }
+        },
+        "/beta/copilot/agentRegistrations": {
+            "post": {
+                "operationId": "CreateAgentRegistration",
+                "summary": "Create agent registration",
+                "description": "Register an agent in the Agent 365 registry with metadata and an agent card manifest so administrators can discover and govern it.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AgentRegistration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Agent registration created successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/AgentRegistration"
+                        }
+                    }
+                }
+            }
+        },
+        "/beta/copilot/agentRegistrations/{id}": {
+            "get": {
+                "operationId": "GetAgentRegistration",
+                "summary": "Get agent registration",
+                "description": "Retrieve the properties of a specific agent registration, including its agent card, owners, and identity references.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the agent registration.",
+                        "x-ms-summary": "Registration ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing the agent registration.",
+                        "schema": {
+                            "$ref": "#/definitions/AgentRegistration"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateAgentRegistration",
+                "summary": "Update agent registration",
+                "description": "Update properties of an existing agent registration, such as display name, description, owners, or agent card.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the agent registration.",
+                        "x-ms-summary": "Registration ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AgentRegistration"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Agent registration updated successfully."
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteAgentRegistration",
+                "summary": "Delete agent registration",
+                "description": "Delete an agent registration that is no longer needed.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The unique identifier of the agent registration.",
+                        "x-ms-summary": "Registration ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Agent registration deleted successfully."
+                    }
+                }
+            }
+        },
+        "/v1.0/copilot/reports/getMicrosoft365CopilotUserCountSummary(period='{period}',version='{version}')": {
+            "get": {
+                "operationId": "GetCopilotUserCountSummary",
+                "summary": "Get Copilot user count summary",
+                "description": "Get the aggregated number of active and enabled Microsoft 365 Copilot users for a time period.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/ReportPeriod"
+                    },
+                    {
+                        "$ref": "#/parameters/ReportVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/ReportFormat"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Report content. JSON when $format is application/json, otherwise CSV text.",
+                        "schema": {
+                            "type": "string",
+                            "description": "Report content.",
+                            "x-ms-summary": "Report"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/copilot/reports/getMicrosoft365CopilotUserCountTrend(period='{period}',version='{version}')": {
+            "get": {
+                "operationId": "GetCopilotUserCountTrend",
+                "summary": "Get Copilot user count trend",
+                "description": "Get the daily trend in active and enabled Microsoft 365 Copilot users for a time period.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/ReportPeriod"
+                    },
+                    {
+                        "$ref": "#/parameters/ReportVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/ReportFormat"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Report content. JSON when $format is application/json, otherwise CSV text.",
+                        "schema": {
+                            "type": "string",
+                            "description": "Report content.",
+                            "x-ms-summary": "Report"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/copilot/reports/getMicrosoft365CopilotUsageUserDetail(period='{period}',version='{version}')": {
+            "get": {
+                "operationId": "GetCopilotUsageUserDetail",
+                "summary": "Get Copilot usage by user",
+                "description": "Get the most recent per-user activity data for Microsoft 365 Copilot apps. Report version v2 includes Copilot Agent Last Activity Date.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/ReportPeriod"
+                    },
+                    {
+                        "$ref": "#/parameters/ReportVersion"
+                    },
+                    {
+                        "$ref": "#/parameters/ReportFormat"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Report content. JSON when $format is application/json, otherwise CSV text.",
+                        "schema": {
+                            "type": "string",
+                            "description": "Report content.",
+                            "x-ms-summary": "Report"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/copilot/admin/settings/limitedMode": {
+            "get": {
+                "operationId": "GetLimitedMode",
+                "summary": "Get limited mode setting",
+                "description": "Read the setting that controls whether Microsoft 365 Copilot in Teams meetings responds to sentiment-related prompts.",
+                "responses": {
+                    "200": {
+                        "description": "Successful response containing the limited mode setting.",
+                        "schema": {
+                            "$ref": "#/definitions/CopilotAdminLimitedMode"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "operationId": "UpdateLimitedMode",
+                "summary": "Update limited mode setting",
+                "description": "Enable or disable limited mode for Microsoft 365 Copilot in Teams meetings, optionally scoped to a Microsoft Entra group.",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CopilotAdminLimitedMode"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Setting updated successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/CopilotAdminLimitedMode"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {
+        "ReportPeriod": {
+            "name": "period",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "default": "D7",
+            "enum": [
+                "D7",
+                "D28",
+                "D30",
+                "D90",
+                "D180",
+                "ALL"
+            ],
+            "description": "Number of previous days to aggregate. Version v1 supports D7, D30, D90, D180, ALL. Version v2 supports D7, D28, D90, D180, ALL.",
+            "x-ms-summary": "Period",
+            "x-ms-url-encoding": "single"
+        },
+        "ReportVersion": {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "default": "v1",
+            "enum": [
+                "v1",
+                "v2"
+            ],
+            "description": "Report version. Use v2 for prompt counts and Copilot Agent last activity.",
+            "x-ms-summary": "Report Version",
+            "x-ms-url-encoding": "single"
+        },
+        "ReportFormat": {
+            "name": "$format",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "default": "application/json",
+            "description": "Response format. Omit to receive the raw CSV report.",
+            "x-ms-summary": "Format"
         }
     },
     "definitions": {
@@ -433,6 +719,16 @@
                     "description": "Sensitivity classification level.",
                     "x-ms-summary": "Sensitivity"
                 },
+                "ownerId": {
+                    "type": "string",
+                    "description": "Object ID of the user who owns the package.",
+                    "x-ms-summary": "Owner ID"
+                },
+                "createdDateTime": {
+                    "type": "string",
+                    "description": "Date and time the package was created.",
+                    "x-ms-summary": "Created"
+                },
                 "categories": {
                     "type": "array",
                     "description": "Category tags classifying the package.",
@@ -453,6 +749,14 @@
                     "type": "array",
                     "description": "Users and groups that have acquired this package.",
                     "x-ms-summary": "Acquire Users and Groups",
+                    "items": {
+                        "$ref": "#/definitions/PackageAccessEntity"
+                    }
+                },
+                "sharedWithUsersAndGroups": {
+                    "type": "array",
+                    "description": "Users and groups the package has been shared with by its owner.",
+                    "x-ms-summary": "Shared With Users and Groups",
                     "items": {
                         "$ref": "#/definitions/PackageAccessEntity"
                     }
@@ -491,6 +795,184 @@
                     "x-ms-summary": "OData Type"
                 }
             }
+        },
+        "AgentRegistration": {
+            "type": "object",
+            "required": [
+                "displayName"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique identifier for the agent registration.",
+                    "x-ms-summary": "ID",
+                    "x-ms-visibility": "advanced"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Display name for the agent instance.",
+                    "x-ms-summary": "Display Name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Overview of the agent's purpose and capabilities.",
+                    "x-ms-summary": "Description"
+                },
+                "ownerIds": {
+                    "type": "array",
+                    "description": "Owner identifiers for the agent. Either owners or Managed By App ID is required.",
+                    "x-ms-summary": "Owner IDs",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "createdBy": {
+                    "type": "string",
+                    "description": "Identifier of the user or app that created the registration. Required on create.",
+                    "x-ms-summary": "Created By"
+                },
+                "sourceCreatedDateTime": {
+                    "type": "string",
+                    "description": "When the agent instance was created in the source system. Required on create.",
+                    "x-ms-summary": "Source Created"
+                },
+                "sourceLastModifiedDateTime": {
+                    "type": "string",
+                    "description": "When the agent instance was last modified in the source system. Required on create.",
+                    "x-ms-summary": "Source Last Modified"
+                },
+                "lastPublishedBy": {
+                    "type": "string",
+                    "description": "Identifier of the last person to publish the agent.",
+                    "x-ms-summary": "Last Published By",
+                    "x-ms-visibility": "advanced"
+                },
+                "managedByAppId": {
+                    "type": "string",
+                    "description": "Application identifier managing this agent.",
+                    "x-ms-summary": "Managed By App ID"
+                },
+                "sourceAgentId": {
+                    "type": "string",
+                    "description": "Original agent identifier from the source system.",
+                    "x-ms-summary": "Source Agent ID"
+                },
+                "originatingStore": {
+                    "type": "string",
+                    "description": "Name of the store or system where the agent originated.",
+                    "x-ms-summary": "Originating Store"
+                },
+                "agentIdentityId": {
+                    "type": "string",
+                    "description": "Microsoft Entra agent identity identifier.",
+                    "x-ms-summary": "Agent Identity ID"
+                },
+                "agentIdentityBlueprintId": {
+                    "type": "string",
+                    "description": "Agent identity blueprint identifier.",
+                    "x-ms-summary": "Agent Identity Blueprint ID"
+                },
+                "agentCard": {
+                    "type": "object",
+                    "description": "Agent card manifest describing the agent's provider, capabilities, and skills.",
+                    "x-ms-summary": "Agent Card",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Agent name in the card manifest.",
+                            "x-ms-summary": "Name"
+                        },
+                        "version": {
+                            "type": "string",
+                            "description": "Agent card version.",
+                            "x-ms-summary": "Version"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Agent description in the card manifest.",
+                            "x-ms-summary": "Description"
+                        },
+                        "provider": {
+                            "type": "string",
+                            "description": "Organization providing the agent.",
+                            "x-ms-summary": "Provider"
+                        },
+                        "capabilities": {
+                            "type": "object",
+                            "description": "Transport capabilities the agent supports.",
+                            "x-ms-summary": "Capabilities",
+                            "properties": {
+                                "streaming": {
+                                    "type": "boolean",
+                                    "description": "Whether the agent supports streaming responses.",
+                                    "x-ms-summary": "Streaming"
+                                },
+                                "pushNotifications": {
+                                    "type": "boolean",
+                                    "description": "Whether the agent supports push notifications.",
+                                    "x-ms-summary": "Push Notifications"
+                                }
+                            }
+                        },
+                        "defaultInputModes": {
+                            "type": "array",
+                            "description": "Input modes the agent accepts by default.",
+                            "x-ms-summary": "Default Input Modes",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "defaultOutputModes": {
+                            "type": "array",
+                            "description": "Output modes the agent produces by default.",
+                            "x-ms-summary": "Default Output Modes",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "skills": {
+                            "type": "array",
+                            "description": "Skills the agent exposes.",
+                            "x-ms-summary": "Skills",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Skill identifier.",
+                                        "x-ms-summary": "Skill ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Skill display name.",
+                                        "x-ms-summary": "Skill Name"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "What the skill does.",
+                                        "x-ms-summary": "Skill Description"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "CopilotAdminLimitedMode": {
+            "type": "object",
+            "properties": {
+                "isEnabledForGroup": {
+                    "type": "boolean",
+                    "description": "When true, Copilot in Teams meetings does not respond to prompts inferring emotions, behavior, or judgments.",
+                    "x-ms-summary": "Is Enabled For Group"
+                },
+                "groupId": {
+                    "type": "string",
+                    "description": "Microsoft Entra group the setting applies to. Required when Is Enabled For Group is true.",
+                    "x-ms-summary": "Group ID"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -501,6 +983,9 @@
             "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
             "scopes": {
                 "CopilotPackages.ReadWrite.All": "Read and update all packages information",
+                "AgentRegistration.ReadWrite.All": "Read and write agent registrations",
+                "Reports.Read.All": "Read all usage reports",
+                "CopilotSettings-LimitedMode.ReadWrite": "Read and write the Copilot limited mode setting",
                 "offline_access": "Maintain access"
             }
         }
@@ -509,6 +994,9 @@
         {
             "oauth2-auth": [
                 "CopilotPackages.ReadWrite.All",
+                "AgentRegistration.ReadWrite.All",
+                "Reports.Read.All",
+                "CopilotSettings-LimitedMode.ReadWrite",
                 "offline_access"
             ]
         }
