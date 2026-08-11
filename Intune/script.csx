@@ -16,7 +16,7 @@ using Newtonsoft.Json.Linq;
 // ║  Microsoft Intune — dual-purpose Power Platform custom connector.          ║
 // ║                                                                            ║
 // ║   1. MCP server  — POST /mcp (InvokeMCP) speaks JSON-RPC 2.0 and exposes   ║
-// ║      105 Intune tools to Copilot Studio, Agent Framework, and any MCP      ║
+// ║      120 Intune tools to Copilot Studio, Agent Framework, and any MCP      ║
 // ║      client. Dual-era: MCP 2026-07-28 and the legacy initialize handshake. ║
 // ║   2. REST actions — every other operationId is a plain Microsoft Graph     ║
 // ║      call forwarded verbatim, for Power Automate and Logic Apps.           ║
@@ -60,6 +60,10 @@ public class Script : ScriptBase
         "ListAutopilotEvents",
         "ListConfigurationPolicies",
         "CreateConfigurationPolicy",
+        "GetConfigurationPolicy",
+        "UpdateConfigurationPolicy",
+        "DeleteConfigurationPolicy",
+        "ListConfigurationPolicyAssignments",
         "GetConfigurationPolicySettings",
         "AssignConfigurationPolicy",
         "GetAppInstallSummary",
@@ -114,6 +118,10 @@ public class Script : ScriptBase
         "GET /deviceManagement/autopilotEvents",
         "GET /deviceManagement/configurationPolicies",
         "POST /deviceManagement/configurationPolicies",
+        "GET /deviceManagement/configurationPolicies/{configurationPolicyId}",
+        "PATCH /deviceManagement/configurationPolicies/{configurationPolicyId}",
+        "DELETE /deviceManagement/configurationPolicies/{configurationPolicyId}",
+        "GET /deviceManagement/configurationPolicies/{configurationPolicyId}/assignments",
         "GET /deviceManagement/configurationPolicies/{configurationPolicyId}/settings",
         "POST /deviceManagement/configurationPolicies/{configurationPolicyId}/assign",
         "GET /deviceAppManagement/mobileApps/{mobileAppId}/installSummary",
@@ -135,6 +143,7 @@ public class Script : ScriptBase
         "GET /deviceManagement/deviceCustomAttributeShellScripts/{deviceCustomAttributeShellScriptId}/{resultType}",
         "GET /deviceManagement/deviceHealthScripts",
         "GET /deviceManagement/deviceHealthScripts/{deviceHealthScriptId}/{resultType}",
+        "GET /deviceManagement/managedDevices/{managedDeviceId}/deviceHealthScriptStates",
         "GET /deviceManagement/windowsFeatureUpdateProfiles",
         "GET /deviceManagement/windowsQualityUpdatePolicies",
         "GET /deviceManagement/windowsQualityUpdateProfiles",
@@ -289,7 +298,7 @@ public class Script : ScriptBase
         RegisterTroubleshootingTools(handler);   //  3
         RegisterSecretsTools(handler);           //  3
         RegisterComplianceTools(handler);        //  7
-        RegisterConfigurationTools(handler);     // 10
+        RegisterConfigurationTools(handler);       // 14
         RegisterAppTools(handler);               //  8
         RegisterEnrollmentTools(handler);        //  7
         RegisterScriptTools(handler);            //  6
@@ -302,8 +311,9 @@ public class Script : ScriptBase
         RegisterReportingTools(handler);         //  4
         RegisterMonitoringTools(handler);        //  3
         RegisterUniversalTools(handler);         //  4
+        RegisterAgentTools(handler);             // 11
                                                  // ---
-                                                 // 105
+                                                 // 120
 
         RegisterResources(handler);
         RegisterPrompts(handler);
@@ -892,7 +902,7 @@ public class Script : ScriptBase
             annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
     }
 
-    // ── H. Device Configuration (10) ─────────────────────────────────────
+    // ── H. Device Configuration (14) ─────────────────────────────────────
 
     private void RegisterConfigurationTools(McpRequestHandler h)
     {
@@ -986,6 +996,18 @@ public class Script : ScriptBase
             handler: async (args, ct) => await GraphGetAsync("/deviceManagement/configurationPolicies" + BuildQuery(args), ct),
             annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
 
+        h.AddTool("get_configuration_policy",
+            "Get one settings-catalog configuration policy with its metadata and, optionally, its assignments.",
+            schema: s => s
+                .String("policy_id", "The deviceManagementConfigurationPolicy id", required: true)
+                .String("expand", "Navigation properties to expand, for example \"assignments\""),
+            handler: async (args, ct) =>
+            {
+                var id = RequireArgument(args, "policy_id");
+                return await GraphGetAsync($"/deviceManagement/configurationPolicies/{Esc(id)}" + BuildQuery(args), ct);
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
         h.AddTool("get_configuration_policy_settings",
             "Get the individual settings inside a settings-catalog policy, each with its setting definition id and configured value. Use this to audit exactly what a modern policy configures.",
             schema: s => s
@@ -1021,6 +1043,44 @@ public class Script : ScriptBase
                 return await GraphSendAsync(HttpMethod.Post, "/deviceManagement/configurationPolicies", body, ct);
             },
             annotations: a => { a["readOnlyHint"] = false; a["idempotentHint"] = false; });
+
+        h.AddTool("update_configuration_policy",
+            "Update a settings-catalog configuration policy. Supply only the properties to change, including settings when replacing the configured setting set.",
+            schema: s => s
+                .String("policy_id", "The deviceManagementConfigurationPolicy id", required: true)
+                .String("updates_json", "JSON object of properties to change", required: true),
+            handler: async (args, ct) =>
+            {
+                var id = RequireArgument(args, "policy_id");
+                var body = ParseJsonArgument(args, "updates_json") ?? new JObject();
+                return await GraphSendAsync(new HttpMethod("PATCH"),
+                    $"/deviceManagement/configurationPolicies/{Esc(id)}", body, ct);
+            },
+            annotations: a => { a["readOnlyHint"] = false; a["idempotentHint"] = true; });
+
+        h.AddTool("delete_configuration_policy",
+            "Delete a settings-catalog configuration policy. Its settings will no longer be enforced on assigned devices.",
+            schema: s => s.String("policy_id", "The deviceManagementConfigurationPolicy id", required: true),
+            handler: async (args, ct) =>
+            {
+                var id = RequireArgument(args, "policy_id");
+                return await GraphSendAsync(HttpMethod.Delete,
+                    $"/deviceManagement/configurationPolicies/{Esc(id)}", null, ct);
+            },
+            annotations: a => { a["readOnlyHint"] = false; a["destructiveHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("list_configuration_policy_assignments",
+            "List the Entra group, all-user, and all-device assignments for a settings-catalog configuration policy.",
+            schema: s => s
+                .String("policy_id", "The deviceManagementConfigurationPolicy id", required: true)
+                .Integer("top", "Maximum assignments to return (default 100)", defaultValue: 100),
+            handler: async (args, ct) =>
+            {
+                var id = RequireArgument(args, "policy_id");
+                return await GraphGetAsync(
+                    $"/deviceManagement/configurationPolicies/{Esc(id)}/assignments" + BuildQuery(args, 100), ct);
+            },
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
 
         h.AddTool("assign_configuration_policy",
             "Assign a settings-catalog configuration policy to Entra groups. This replaces the complete set of existing assignments on the policy.",
@@ -1993,6 +2053,115 @@ public class Script : ScriptBase
             annotations: a => { a["readOnlyHint"] = false; a["openWorldHint"] = true; });
     }
 
+    // ── U. Agent Workflows (11) ──────────────────────────────────────────
+
+    private void RegisterAgentTools(McpRequestHandler h)
+    {
+        h.AddTool("inventory_all_policies",
+            "Build a normalized inventory of the primary Intune policy families used for quarterly reviews: compliance, classic configuration, Settings Catalog, app protection, and Windows Update policies.",
+            schema: s => s
+                .Integer("top_per_family", "Maximum policies returned per family (default 100)", defaultValue: 100)
+                .Boolean("include_assignments", "Expand policy assignments where the endpoint supports it"),
+            handler: async (args, ct) => await BuildPolicyInventoryAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("analyze_policy_hygiene",
+            "Analyze compliance, classic configuration, and Settings Catalog policies for technical-debt indicators: missing or weak descriptions, no assignments, test-like names, and stale modification dates.",
+            schema: s => s
+                .Integer("top_per_family", "Maximum policies analyzed per family (default 100)", defaultValue: 100)
+                .Integer("minimum_description_length", "Descriptions shorter than this are weak (default 20)", defaultValue: 20)
+                .Integer("stale_after_days", "Policies unchanged for at least this many days are flagged (default 180)", defaultValue: 180)
+                .String("test_terms", "Comma-separated terms identifying test-like policies (default test,pilot,lab,poc)", defaultValue: "test,pilot,lab,poc"),
+            handler: async (args, ct) => await AnalyzePolicyHygieneAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("list_setting_definitions",
+            "List Intune Settings Catalog definitions available to policy authors. Persist the returned ids externally to detect newly introduced or retired settings over time.",
+            schema: s => s
+                .String("filter", "OData $filter over configuration settings")
+                .String("select", "Comma-separated fields to return")
+                .Integer("top", "Maximum definitions to return (default 500)", defaultValue: 500),
+            handler: async (args, ct) =>
+                await GraphGetAsync("/deviceManagement/configurationSettings" + BuildQuery(args, 500), ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("compare_setting_catalog",
+            "Compare a previously stored set of Settings Catalog definition ids with the current catalog. Returns newly added and no-longer-returned ids; save snapshots outside the connector for scheduled alerts.",
+            schema: s => s
+                .Array("previous_definition_ids", "Definition ids from the previous snapshot",
+                    new JObject { ["type"] = "string" }, required: true)
+                .Integer("top", "Maximum current definitions to load (default 1000)", defaultValue: 1000),
+            handler: async (args, ct) => await CompareSettingCatalogAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("assess_policy_rollout",
+            "Assess one policy's current assignments and device rollout state. Supports compliance policies, classic device configurations, and Settings Catalog policies.",
+            schema: s => s
+                .String("policy_type", "Policy family", required: true,
+                    enumValues: new[] { "compliance", "device_configuration", "settings_catalog" })
+                .String("policy_id", "Policy id", required: true)
+                .Integer("top", "Maximum status rows to return (default 100)", defaultValue: 100),
+            handler: async (args, ct) => await AssessPolicyRolloutAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("assess_policy_change_risk",
+            "Assess the technical rollout risk of enabling or configuring Settings Catalog features. Uses Microsoft's setting riskLevel metadata, dependencies and applicability, assignment blast radius, and optional existing-policy rollout evidence. Returns transparent scoring factors and deployment controls.",
+            schema: s => s
+                .Array("setting_definition_ids", "Settings Catalog definition ids being introduced or changed",
+                    new JObject { ["type"] = "string" }, required: true)
+                .String("assignment_scope", "Intended deployment scope", required: true,
+                    enumValues: new[] { "pilot", "selected_groups", "all_users", "all_devices" })
+                .String("change_type", "Nature of the proposed change",
+                    enumValues: new[] { "enable", "disable", "configure" })
+                .String("existing_policy_id", "Optional Settings Catalog policy id whose assignments and rollout health provide additional evidence")
+                .String("change_summary", "Human-readable description of the proposed change"),
+            handler: async (args, ct) => await AssessPolicyChangeRiskAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("run_device_hygiene_check",
+            "Run a consolidated read-only hygiene check for one managed device: storage pressure, stale check-in, compliance, configuration failures, noncompliant settings, encryption, jailbreak/root status, and OS minimum.",
+            schema: s => s
+                .String("device_id", "The managedDevice id", required: true)
+                .Integer("low_disk_percent", "Flag when free storage is below this percentage (default 10)", defaultValue: 10)
+                .Integer("stale_after_days", "Flag when the last Intune check-in is older than this many days (default 7)", defaultValue: 7)
+                .String("minimum_os_version", "Optional minimum acceptable OS version for the device platform"),
+            handler: async (args, ct) => await RunDeviceHygieneAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("get_device_update_failures",
+            "Return Windows Update, quality update, and driver update alert report rows associated with one managed device.",
+            schema: s => s
+                .String("device_id", "The managedDevice id", required: true)
+                .Integer("top", "Maximum rows per report (default 100)", defaultValue: 100),
+            handler: async (args, ct) => await GetDeviceUpdateFailuresAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("get_device_policy_failures",
+            "Return compliance states, exact noncompliant settings, and normalized failed or conflicting classic, Settings Catalog, ADMX, and endpoint-security policies for one managed device.",
+            schema: s => s
+                .String("device_id", "The managedDevice id", required: true)
+                .Integer("top", "Maximum policy states per family (default 100)", defaultValue: 100),
+            handler: async (args, ct) => await GetDevicePolicyFailuresAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("get_device_app_and_script_failures",
+            "Return failed applications, platform-script failures, proactive-remediation detection and remediation failures, and recent troubleshooting events associated with one managed device.",
+            schema: s => s
+                .String("device_id", "The managedDevice id", required: true)
+                .Integer("top", "Maximum rows per report or state collection (default 100)", defaultValue: 100)
+                .Integer("max_scripts_per_family", "Maximum PowerShell, shell, and custom-attribute scripts inspected per family (default 25)", defaultValue: 25),
+            handler: async (args, ct) => await GetDeviceAppAndScriptFailuresAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+
+        h.AddTool("get_device_security_health",
+            "Return encryption state and Defender, firewall, and active-malware report rows associated with one managed device.",
+            schema: s => s
+                .String("device_id", "The managedDevice id", required: true)
+                .Integer("top", "Maximum rows per report (default 100)", defaultValue: 100),
+            handler: async (args, ct) => await GetDeviceSecurityHealthAsync(args, ct),
+            annotations: a => { a["readOnlyHint"] = true; a["idempotentHint"] = true; });
+    }
+
     // ── Resources ────────────────────────────────────────────────────────
 
     private void RegisterResources(McpRequestHandler handler)
@@ -2162,6 +2331,846 @@ public class Script : ScriptBase
                     }
                 };
             });
+    }
+
+    private async Task<JObject> BuildPolicyInventoryAsync(JObject args, CancellationToken ct)
+    {
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top_per_family") ?? 100, 500));
+        var expand = args.Value<bool?>("include_assignments") == true ? "&$expand=assignments" : string.Empty;
+        var query = $"?$top={top}{expand}";
+        var inventory = new JObject
+        {
+            ["compliancePolicies"] = await GraphGetAsync("/deviceManagement/deviceCompliancePolicies" + query, ct),
+            ["deviceConfigurations"] = await GraphGetAsync("/deviceManagement/deviceConfigurations" + query, ct),
+            ["settingsCatalogPolicies"] = await GraphGetAsync("/deviceManagement/configurationPolicies" + query, ct),
+            ["appProtectionPolicies"] = await GraphGetAsync("/deviceAppManagement/managedAppPolicies?$top=" + top, ct),
+            ["featureUpdateProfiles"] = await GraphGetAsync("/deviceManagement/windowsFeatureUpdateProfiles?$top=" + top, ct),
+            ["qualityUpdatePolicies"] = await GraphGetAsync("/deviceManagement/windowsQualityUpdatePolicies?$top=" + top, ct),
+            ["driverUpdateProfiles"] = await GraphGetAsync("/deviceManagement/windowsDriverUpdateProfiles?$top=" + top, ct)
+        };
+
+        var total = 0;
+        foreach (var property in inventory.Properties())
+            total += GetGraphValues(property.Value as JObject).Count;
+
+        inventory["totalReturned"] = total;
+        inventory["snapshotTimeUtc"] = DateTime.UtcNow.ToString("O");
+        inventory["note"] = "Persist this result externally when historical quarterly comparison is required.";
+        return inventory;
+    }
+
+    private async Task<JObject> AnalyzePolicyHygieneAsync(JObject args, CancellationToken ct)
+    {
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top_per_family") ?? 100, 500));
+        var minimumDescriptionLength = Math.Max(1, args.Value<int?>("minimum_description_length") ?? 20);
+        var staleAfterDays = Math.Max(1, args.Value<int?>("stale_after_days") ?? 180);
+        var testTerms = SplitList(GetArgument(args, "test_terms", "test,pilot,lab,poc"));
+        var query = $"?$top={top}&$expand=assignments";
+
+        var families = new JObject
+        {
+            ["compliance"] = await GraphGetAsync("/deviceManagement/deviceCompliancePolicies" + query, ct),
+            ["deviceConfiguration"] = await GraphGetAsync("/deviceManagement/deviceConfigurations" + query, ct),
+            ["settingsCatalog"] = await GraphGetAsync("/deviceManagement/configurationPolicies" + query, ct)
+        };
+
+        var findings = new JArray();
+        foreach (var family in families.Properties())
+        {
+            foreach (var policy in GetGraphValues(family.Value as JObject).OfType<JObject>())
+            {
+                AddPolicyHygieneFindings(
+                    findings, family.Name, policy, minimumDescriptionLength, staleAfterDays, testTerms);
+            }
+        }
+
+        return new JObject
+        {
+            ["analyzedAtUtc"] = DateTime.UtcNow.ToString("O"),
+            ["findingCount"] = findings.Count,
+            ["findings"] = findings,
+            ["criteria"] = new JObject
+            {
+                ["minimumDescriptionLength"] = minimumDescriptionLength,
+                ["staleAfterDays"] = staleAfterDays,
+                ["testTerms"] = new JArray(testTerms)
+            },
+            ["note"] = "Test-like names are indicators only. Confirm the customer's naming and assignment conventions before treating a policy as a test policy."
+        };
+    }
+
+    private static void AddPolicyHygieneFindings(
+        JArray findings,
+        string family,
+        JObject policy,
+        int minimumDescriptionLength,
+        int staleAfterDays,
+        string[] testTerms)
+    {
+        var id = policy.Value<string>("id") ?? string.Empty;
+        var name = policy.Value<string>("displayName") ?? policy.Value<string>("name") ?? id;
+        var description = policy.Value<string>("description") ?? string.Empty;
+        if (description.Trim().Length < minimumDescriptionLength)
+        {
+            findings.Add(NewPolicyFinding(
+                family, id, name, "weak_description",
+                description.Length == 0 ? "Policy has no description." : "Policy description is shorter than the configured minimum."));
+        }
+
+        if (policy["assignments"] is JArray assignments && assignments.Count == 0)
+            findings.Add(NewPolicyFinding(family, id, name, "unassigned", "Policy has no assignments."));
+
+        if (testTerms.Any(term =>
+            !string.IsNullOrWhiteSpace(term)
+            && name.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0))
+        {
+            findings.Add(NewPolicyFinding(
+                family, id, name, "test_like_name", "Policy name matches a configured test-policy term."));
+        }
+
+        var modifiedText = policy.Value<string>("lastModifiedDateTime");
+        if (DateTimeOffset.TryParse(modifiedText, out var modified)
+            && modified <= DateTimeOffset.UtcNow.AddDays(-staleAfterDays))
+        {
+            findings.Add(NewPolicyFinding(
+                family, id, name, "stale",
+                $"Policy was last modified at {modified.UtcDateTime:O}."));
+        }
+    }
+
+    private static JObject NewPolicyFinding(
+        string family, string id, string name, string category, string detail)
+    {
+        return new JObject
+        {
+            ["policyFamily"] = family,
+            ["policyId"] = id,
+            ["policyName"] = name,
+            ["category"] = category,
+            ["detail"] = detail
+        };
+    }
+
+    private async Task<JObject> CompareSettingCatalogAsync(JObject args, CancellationToken ct)
+    {
+        var previous = new HashSet<string>(
+            RequireArray(args, "previous_definition_ids")
+                .Values<string>()
+                .Where(value => !string.IsNullOrWhiteSpace(value)),
+            StringComparer.OrdinalIgnoreCase);
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top") ?? 1000, 5000));
+        var currentResponse = await GraphGetAsync(
+            "/deviceManagement/configurationSettings?$top=" + top, ct).ConfigureAwait(false);
+        var currentItems = GetGraphValues(currentResponse).OfType<JObject>().ToList();
+        var current = new HashSet<string>(
+            currentItems.Select(GetSettingDefinitionId).Where(value => !string.IsNullOrWhiteSpace(value)),
+            StringComparer.OrdinalIgnoreCase);
+
+        var addedIds = current.Except(previous, StringComparer.OrdinalIgnoreCase).OrderBy(value => value).ToList();
+        var removedIds = previous.Except(current, StringComparer.OrdinalIgnoreCase).OrderBy(value => value).ToList();
+        var addedDefinitions = new JArray(
+            currentItems
+                .Where(item => addedIds.Contains(GetSettingDefinitionId(item), StringComparer.OrdinalIgnoreCase))
+                .Select(item => item.DeepClone()));
+
+        return new JObject
+        {
+            ["comparedAtUtc"] = DateTime.UtcNow.ToString("O"),
+            ["currentCount"] = current.Count,
+            ["previousCount"] = previous.Count,
+            ["addedCount"] = addedIds.Count,
+            ["addedDefinitionIds"] = new JArray(addedIds),
+            ["addedDefinitions"] = addedDefinitions,
+            ["removedCount"] = removedIds.Count,
+            ["removedDefinitionIds"] = new JArray(removedIds),
+            ["isComplete"] = currentResponse["@odata.nextLink"] == null,
+            ["nextLink"] = currentResponse["@odata.nextLink"]
+        };
+    }
+
+    private static string GetSettingDefinitionId(JObject setting)
+    {
+        return setting?.Value<string>("id")
+            ?? setting?.Value<string>("settingDefinitionId")
+            ?? string.Empty;
+    }
+
+    private async Task<JObject> AssessPolicyRolloutAsync(JObject args, CancellationToken ct)
+    {
+        var type = RequireArgument(args, "policy_type").ToLowerInvariant();
+        var id = RequireArgument(args, "policy_id");
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top") ?? 100, 500));
+        string basePath;
+        if (type == "compliance")
+            basePath = "/deviceManagement/deviceCompliancePolicies";
+        else if (type == "device_configuration")
+            basePath = "/deviceManagement/deviceConfigurations";
+        else if (type == "settings_catalog")
+            basePath = "/deviceManagement/configurationPolicies";
+        else
+            throw new ArgumentException("'policy_type' must be compliance, device_configuration, or settings_catalog.");
+
+        var policyPath = $"{basePath}/{Esc(id)}";
+        var result = new JObject
+        {
+            ["policyType"] = type,
+            ["policy"] = await GraphGetAsync(policyPath, ct),
+            ["assignments"] = await GraphGetAsync(policyPath + "/assignments?$top=" + top, ct)
+        };
+
+        if (type == "settings_catalog")
+        {
+            result["deviceStatuses"] = await RunReportAsync(
+                "getConfigurationPolicyDevicesReport",
+                $"(PolicyId eq '{id.Replace("'", "''")}')",
+                null,
+                top,
+                ct);
+        }
+        else
+        {
+            result["deviceStatusOverview"] = await GraphGetAsync(policyPath + "/deviceStatusOverview", ct);
+            result["deviceStatuses"] = await GraphGetAsync(policyPath + "/deviceStatuses?$top=" + top, ct);
+        }
+
+        return result;
+    }
+
+    private async Task<JObject> AssessPolicyChangeRiskAsync(JObject args, CancellationToken ct)
+    {
+        var requestedIds = RequireArray(args, "setting_definition_ids")
+            .Values<string>()
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (requestedIds.Count > 50)
+            throw new ArgumentException("A maximum of 50 setting definition ids may be assessed at once.");
+
+        var assignmentScope = RequireArgument(args, "assignment_scope").ToLowerInvariant();
+        var definitions = await GetSettingDefinitionsByIdAsync(requestedIds, ct).ConfigureAwait(false);
+        var definitionsById = definitions
+            .Where(definition => !string.IsNullOrWhiteSpace(GetSettingDefinitionId(definition)))
+            .GroupBy(GetSettingDefinitionId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        var evidence = new JArray();
+        var factors = new JArray();
+        var recommendations = new JArray();
+        var score = 0;
+        var dependencyCount = 0;
+        var highRiskCount = 0;
+        var mediumRiskCount = 0;
+        var unknownCount = 0;
+
+        foreach (var id in requestedIds)
+        {
+            if (!definitionsById.TryGetValue(id, out var definition))
+            {
+                unknownCount++;
+                score += 15;
+                evidence.Add(new JObject
+                {
+                    ["id"] = id,
+                    ["riskLevel"] = "unknown",
+                    ["found"] = false
+                });
+                continue;
+            }
+
+            var riskLevel = (definition.Value<string>("riskLevel") ?? "unknown").ToLowerInvariant();
+            if (riskLevel == "high")
+            {
+                highRiskCount++;
+                score += 25;
+            }
+            else if (riskLevel == "medium")
+            {
+                mediumRiskCount++;
+                score += 12;
+            }
+            else if (riskLevel == "low")
+            {
+                score += 4;
+            }
+            else
+            {
+                unknownCount++;
+                score += 10;
+            }
+
+            var settingDependencies = CountNamedArrays(
+                definition, "dependencies", "dependentOn", "referredSettingInformationList");
+            dependencyCount += settingDependencies;
+            evidence.Add(new JObject
+            {
+                ["id"] = id,
+                ["found"] = true,
+                ["displayName"] = definition["displayName"],
+                ["description"] = definition["description"],
+                ["helpText"] = definition["helpText"],
+                ["riskLevel"] = riskLevel,
+                ["version"] = definition["version"],
+                ["applicability"] = definition["applicability"],
+                ["dependencyCount"] = settingDependencies
+            });
+        }
+
+        var scopePoints = assignmentScope == "pilot"
+            ? 0
+            : assignmentScope == "selected_groups"
+                ? 10
+                : 25;
+        score += scopePoints;
+        if (dependencyCount > 0) score += Math.Min(10, dependencyCount * 2);
+        score = Math.Min(100, score);
+
+        factors.Add(new JObject
+        {
+            ["factor"] = "microsoft_setting_risk",
+            ["highRiskSettings"] = highRiskCount,
+            ["mediumRiskSettings"] = mediumRiskCount,
+            ["unknownSettings"] = unknownCount
+        });
+        factors.Add(new JObject
+        {
+            ["factor"] = "assignment_blast_radius",
+            ["scope"] = assignmentScope,
+            ["scoreContribution"] = scopePoints
+        });
+        factors.Add(new JObject
+        {
+            ["factor"] = "setting_dependencies",
+            ["dependencyCount"] = dependencyCount
+        });
+
+        if (assignmentScope != "pilot")
+            recommendations.Add("Validate the change with a representative pilot group before broad assignment.");
+        if (highRiskCount > 0)
+            recommendations.Add("Require peer review and an explicit rollback plan for Microsoft-classified high-risk settings.");
+        if (unknownCount > 0)
+            recommendations.Add("Do not approve settings whose definitions or Microsoft risk classifications could not be resolved.");
+        if (dependencyCount > 0)
+            recommendations.Add("Review dependent and referred settings together; testing only the requested setting may miss coupled behavior.");
+        recommendations.Add("Capture the pre-change policy export, success criteria, monitoring window, and rollback trigger.");
+        recommendations.Add("Ground the final recommendation in current Microsoft Learn documentation and the customer's security and support standards.");
+
+        JToken rolloutEvidence = null;
+        var existingPolicyId = GetArgument(args, "existing_policy_id");
+        if (!string.IsNullOrWhiteSpace(existingPolicyId))
+        {
+            rolloutEvidence = await AssessPolicyRolloutAsync(
+                new JObject
+                {
+                    ["policy_type"] = "settings_catalog",
+                    ["policy_id"] = existingPolicyId,
+                    ["top"] = 100
+                },
+                ct).ConfigureAwait(false);
+        }
+
+        var riskRating = score >= 75 ? "critical" : score >= 50 ? "high" : score >= 25 ? "medium" : "low";
+        return new JObject
+        {
+            ["assessedAtUtc"] = DateTime.UtcNow.ToString("O"),
+            ["changeType"] = GetArgument(args, "change_type", "configure"),
+            ["changeSummary"] = GetArgument(args, "change_summary"),
+            ["assignmentScope"] = assignmentScope,
+            ["riskScore"] = score,
+            ["riskRating"] = riskRating,
+            ["settingEvidence"] = evidence,
+            ["factors"] = factors,
+            ["existingPolicyRollout"] = rolloutEvidence,
+            ["recommendedControls"] = recommendations,
+            ["methodology"] = "Technical rollout risk based on Microsoft Graph setting riskLevel metadata, definition availability, setting dependencies, and assignment blast radius. This is not a security guarantee or substitute for customer change approval."
+        };
+    }
+
+    private async Task<List<JObject>> GetSettingDefinitionsByIdAsync(
+        IList<string> ids, CancellationToken ct)
+    {
+        var results = new List<JObject>();
+        for (var offset = 0; offset < ids.Count; offset += 10)
+        {
+            var chunk = ids.Skip(offset).Take(10).ToList();
+            var filter = string.Join(
+                " or ",
+                chunk.Select(id => $"id eq '{id.Replace("'", "''")}'"));
+            var response = await GraphGetAsync(
+                "/deviceManagement/configurationSettings?$filter=" + Uri.EscapeDataString(filter) + "&$top=10",
+                ct).ConfigureAwait(false);
+            results.AddRange(GetGraphValues(response).OfType<JObject>());
+        }
+        return results;
+    }
+
+    private static int CountNamedArrays(JToken token, params string[] names)
+    {
+        if (token == null) return 0;
+        var count = 0;
+        if (token is JObject obj)
+        {
+            foreach (var property in obj.Properties())
+            {
+                if (names.Contains(property.Name, StringComparer.OrdinalIgnoreCase)
+                    && property.Value is JArray array)
+                {
+                    count += array.Count;
+                }
+                count += CountNamedArrays(property.Value, names);
+            }
+        }
+        else if (token is JArray items)
+        {
+            foreach (var item in items)
+                count += CountNamedArrays(item, names);
+        }
+        return count;
+    }
+
+    private async Task<JObject> RunDeviceHygieneAsync(JObject args, CancellationToken ct)
+    {
+        var id = RequireArgument(args, "device_id");
+        var lowDiskPercent = Math.Max(1, Math.Min(args.Value<int?>("low_disk_percent") ?? 10, 99));
+        var staleAfterDays = Math.Max(1, args.Value<int?>("stale_after_days") ?? 7);
+        var minimumOsVersion = GetArgument(args, "minimum_os_version");
+        var device = await GraphGetAsync($"/deviceManagement/managedDevices/{Esc(id)}", ct).ConfigureAwait(false);
+        var policyFailures = await GetDevicePolicyFailuresAsync(args, ct).ConfigureAwait(false);
+        var findings = new JArray();
+
+        var totalStorage = device.Value<long?>("totalStorageSpaceInBytes") ?? 0;
+        var freeStorage = device.Value<long?>("freeStorageSpaceInBytes") ?? 0;
+        if (totalStorage > 0)
+        {
+            var freePercent = freeStorage * 100.0 / totalStorage;
+            if (freePercent < lowDiskPercent)
+            {
+                findings.Add(new JObject
+                {
+                    ["category"] = "low_disk_space",
+                    ["severity"] = "warning",
+                    ["detail"] = $"Free storage is {freePercent:F1}%, below the {lowDiskPercent}% threshold."
+                });
+            }
+        }
+
+        var syncText = device.Value<string>("lastSyncDateTime");
+        if (DateTimeOffset.TryParse(syncText, out var lastSync)
+            && lastSync <= DateTimeOffset.UtcNow.AddDays(-staleAfterDays))
+        {
+            findings.Add(new JObject
+            {
+                ["category"] = "stale_check_in",
+                ["severity"] = "warning",
+                ["detail"] = $"Last Intune check-in was {lastSync.UtcDateTime:O}."
+            });
+        }
+
+        var complianceState = device.Value<string>("complianceState");
+        if (!string.IsNullOrWhiteSpace(complianceState)
+            && !string.Equals(complianceState, "compliant", StringComparison.OrdinalIgnoreCase))
+        {
+            findings.Add(new JObject
+            {
+                ["category"] = "noncompliant",
+                ["severity"] = "high",
+                ["detail"] = $"Device compliance state is {complianceState}."
+            });
+        }
+
+        if (device.Value<bool?>("isEncrypted") == false)
+        {
+            findings.Add(new JObject
+            {
+                ["category"] = "not_encrypted",
+                ["severity"] = "high",
+                ["detail"] = "Intune reports that the device is not encrypted."
+            });
+        }
+
+        var jailBroken = device.Value<string>("jailBroken");
+        if (!string.IsNullOrWhiteSpace(jailBroken)
+            && !string.Equals(jailBroken, "false", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(jailBroken, "unknown", StringComparison.OrdinalIgnoreCase))
+        {
+            findings.Add(new JObject
+            {
+                ["category"] = "jailbroken_or_rooted",
+                ["severity"] = "critical",
+                ["detail"] = $"Device jailbreak/root state is {jailBroken}."
+            });
+        }
+
+        var osVersion = device.Value<string>("osVersion");
+        if (!string.IsNullOrWhiteSpace(minimumOsVersion)
+            && Version.TryParse(osVersion, out var actualVersion)
+            && Version.TryParse(minimumOsVersion, out var requiredVersion)
+            && actualVersion.CompareTo(requiredVersion) < 0)
+        {
+            findings.Add(new JObject
+            {
+                ["category"] = "unsupported_os",
+                ["severity"] = "high",
+                ["detail"] = $"OS version {osVersion} is below the configured minimum {minimumOsVersion}."
+            });
+        }
+
+        return new JObject
+        {
+            ["checkedAtUtc"] = DateTime.UtcNow.ToString("O"),
+            ["device"] = device,
+            ["findingCount"] = findings.Count,
+            ["findings"] = findings,
+            ["policyHealth"] = policyFailures,
+            ["thresholds"] = new JObject
+            {
+                ["lowDiskPercent"] = lowDiskPercent,
+                ["staleAfterDays"] = staleAfterDays,
+                ["minimumOsVersion"] = minimumOsVersion
+            }
+        };
+    }
+
+    private async Task<JObject> GetDevicePolicyFailuresAsync(JObject args, CancellationToken ct)
+    {
+        var id = RequireArgument(args, "device_id");
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top") ?? 100, 500));
+        var reportBody = new JObject
+        {
+            ["select"] = new JArray(
+                "IntuneDeviceId",
+                "PolicyBaseTypeName",
+                "PolicyId",
+                "PolicyStatus",
+                "UPN",
+                "UserId",
+                "PspdpuLastModifiedTimeUtc",
+                "PolicyName",
+                "UnifiedPolicyType"),
+            ["filter"] =
+                "((PolicyBaseTypeName eq 'Microsoft.Management.Services.Api.DeviceConfiguration') or " +
+                "(PolicyBaseTypeName eq 'DeviceManagementConfigurationPolicy') or " +
+                "(PolicyBaseTypeName eq 'DeviceConfigurationAdmxPolicy') or " +
+                "(PolicyBaseTypeName eq 'Microsoft.Management.Services.Api.DeviceManagementIntent')) and " +
+                $"(IntuneDeviceId eq '{id.Replace("'", "''")}')",
+            ["orderBy"] = new JArray("PolicyName"),
+            ["skip"] = 0,
+            ["top"] = top
+        };
+        var configurationReport = await GraphSendAsync(
+            HttpMethod.Post,
+            "/deviceManagement/reports/getConfigurationPoliciesReportForDevice",
+            reportBody,
+            ct).ConfigureAwait(false);
+        var configurationRows = ObjectifyReport(configurationReport);
+        foreach (var row in configurationRows.OfType<JObject>())
+            row["normalizedStatus"] = NormalizeConfigurationPolicyStatus(row["PolicyStatus"]);
+        var failedConfigurationRows = new JArray(
+            configurationRows
+                .OfType<JObject>()
+                .Where(row => IsFailedConfigurationPolicyStatus(row["PolicyStatus"]))
+                .Select(row => row.DeepClone()));
+
+        return new JObject
+        {
+            ["deviceId"] = id,
+            ["compliancePolicyStates"] = await GraphGetAsync(
+                $"/deviceManagement/managedDevices/{Esc(id)}/deviceCompliancePolicyStates?$top={top}", ct),
+            ["classicConfigurationPolicyStates"] = await GraphGetAsync(
+                $"/deviceManagement/managedDevices/{Esc(id)}/deviceConfigurationStates?$top={top}", ct),
+            ["noncompliantSettings"] = await GraphGetAsync(
+                $"/deviceManagement/managedDevices/{Esc(id)}/getNonCompliantSettings", ct),
+            ["configurationPolicyCount"] = configurationRows.Count,
+            ["configurationPolicies"] = configurationRows,
+            ["failedConfigurationPolicyCount"] = failedConfigurationRows.Count,
+            ["failedConfigurationPolicies"] = failedConfigurationRows
+        };
+    }
+
+    private async Task<JObject> GetDeviceUpdateFailuresAsync(JObject args, CancellationToken ct)
+    {
+        var device = await GetDeviceForReportsAsync(args, ct).ConfigureAwait(false);
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top") ?? 100, 500));
+        var search = device.Value<string>("deviceName") ?? device.Value<string>("serialNumber");
+        return new JObject
+        {
+            ["device"] = device,
+            ["windowsUpdateAlerts"] = await RunReportAsync(
+                "getWindowsUpdateAlertsPerPolicyPerDeviceReport", null, search, top, ct),
+            ["qualityUpdateAlerts"] = await RunReportAsync(
+                "getWindowsQualityUpdateAlertsPerPolicyPerDeviceReport", null, search, top, ct),
+            ["driverUpdateAlerts"] = await RunReportAsync(
+                "getWindowsDriverUpdateAlertsPerPolicyPerDeviceReport", null, search, top, ct)
+        };
+    }
+
+    private async Task<JObject> GetDeviceAppAndScriptFailuresAsync(JObject args, CancellationToken ct)
+    {
+        var device = await GetDeviceForReportsAsync(args, ct).ConfigureAwait(false);
+        var id = RequireArgument(args, "device_id");
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top") ?? 100, 500));
+        var maxScripts = Math.Max(1, Math.Min(args.Value<int?>("max_scripts_per_family") ?? 25, 100));
+        var search = device.Value<string>("deviceName") ?? device.Value<string>("serialNumber");
+        var userId = device.Value<string>("userId");
+        var troubleshootingPath = string.IsNullOrWhiteSpace(userId)
+            ? "/deviceManagement/troubleshootingEvents?$top=" + top
+            : $"/users/{Esc(userId)}/deviceManagementTroubleshootingEvents?$top={top}";
+        var remediationStates = await GraphGetAsync(
+            $"/deviceManagement/managedDevices/{Esc(id)}/deviceHealthScriptStates?$top={top}",
+            ct).ConfigureAwait(false);
+        var healthScripts = await GraphGetAsync(
+            $"/deviceManagement/deviceHealthScripts?$select=id,displayName&$top={maxScripts}",
+            ct).ConfigureAwait(false);
+        var healthScriptNames = GetGraphValues(healthScripts)
+            .OfType<JObject>()
+            .Where(script => !string.IsNullOrWhiteSpace(script.Value<string>("id")))
+            .GroupBy(script => script.Value<string>("id"), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Value<string>("displayName") ?? group.Key,
+                StringComparer.OrdinalIgnoreCase);
+        var remediationFailures = new JArray();
+        foreach (var state in GetGraphValues(remediationStates).OfType<JObject>())
+        {
+            var detectionState = state.Value<string>("detectionState");
+            var remediationState = state.Value<string>("remediationState");
+            if (!IsFailureState(detectionState) && !IsFailureState(remediationState))
+                continue;
+
+            var normalized = (JObject)state.DeepClone();
+            var policyId = state.Value<string>("policyId");
+            if (!string.IsNullOrWhiteSpace(policyId)
+                && healthScriptNames.TryGetValue(policyId, out var policyName))
+            {
+                normalized["policyName"] = policyName;
+            }
+            remediationFailures.Add(normalized);
+        }
+        var platformScriptFailures = await GetPlatformScriptFailuresAsync(
+            id, maxScripts, ct).ConfigureAwait(false);
+
+        return new JObject
+        {
+            ["device"] = device,
+            ["failedApplications"] = await RunReportAsync(
+                "getFailedMobileAppsReport", null, search, top, ct),
+            ["platformScriptFailureCount"] = platformScriptFailures.Count,
+            ["platformScriptFailures"] = platformScriptFailures,
+            ["remediationFailureCount"] = remediationFailures.Count,
+            ["remediationFailures"] = remediationFailures,
+            ["remediationStates"] = remediationStates,
+            ["troubleshootingEvents"] = await GraphGetAsync(troubleshootingPath, ct),
+            ["note"] = "Platform script states are correlated by managedDevice id. Remediation failures include detection and remediation script errors with captured output from Intune."
+        };
+    }
+
+    private async Task<JArray> GetPlatformScriptFailuresAsync(
+        string deviceId, int maxScriptsPerFamily, CancellationToken ct)
+    {
+        var families = new JArray
+        {
+            new JObject
+            {
+                ["name"] = "powershell",
+                ["collection"] = "/deviceManagement/deviceManagementScripts"
+            },
+            new JObject
+            {
+                ["name"] = "shell",
+                ["collection"] = "/deviceManagement/deviceShellScripts"
+            },
+            new JObject
+            {
+                ["name"] = "customAttribute",
+                ["collection"] = "/deviceManagement/deviceCustomAttributeShellScripts"
+            }
+        };
+        var requests = new List<JObject>();
+        var metadataByRequestId = new Dictionary<string, JObject>(StringComparer.Ordinal);
+        var requestIndex = 1;
+        foreach (var family in families.OfType<JObject>())
+        {
+            var collection = family.Value<string>("collection");
+            var scripts = await GraphGetAsync(
+                $"{collection}?$select=id,displayName&$top={maxScriptsPerFamily}",
+                ct).ConfigureAwait(false);
+            foreach (var script in GetGraphValues(scripts).OfType<JObject>())
+            {
+                var scriptId = script.Value<string>("id");
+                if (string.IsNullOrWhiteSpace(scriptId)) continue;
+
+                var requestId = requestIndex.ToString();
+                var filter = Uri.EscapeDataString(
+                    $"managedDevice/id eq '{deviceId.Replace("'", "''")}'");
+                requests.Add(new JObject
+                {
+                    ["id"] = requestId,
+                    ["method"] = "GET",
+                    ["url"] =
+                        $"{collection}/{Esc(scriptId)}/deviceRunStates?$filter={filter}&$expand=managedDevice&$top=10"
+                });
+                metadataByRequestId[requestId] = new JObject
+                {
+                    ["scriptFamily"] = family["name"],
+                    ["scriptId"] = scriptId,
+                    ["scriptName"] = script.Value<string>("displayName") ?? scriptId
+                };
+                requestIndex++;
+            }
+        }
+
+        var failures = new JArray();
+        for (var offset = 0; offset < requests.Count; offset += 20)
+        {
+            var requestChunk = new JArray(
+                requests.Skip(offset).Take(20).Select(request => request.DeepClone()));
+            var batchResult = await GraphSendAsync(
+                HttpMethod.Post,
+                "/$batch",
+                new JObject { ["requests"] = requestChunk },
+                ct,
+                "beta").ConfigureAwait(false);
+            if (!(batchResult["responses"] is JArray responses))
+                throw new InvalidOperationException("Microsoft Graph returned a script-state batch without a responses array.");
+
+            foreach (var response in responses.OfType<JObject>())
+            {
+                var status = response.Value<int?>("status") ?? 0;
+                var requestId = response.Value<string>("id");
+                if (status < 200 || status >= 300)
+                {
+                    throw new Exception(
+                        $"Graph beta script-state batch request {requestId} failed ({status}): " +
+                        response["body"]?.ToString(Newtonsoft.Json.Formatting.None));
+                }
+                if (string.IsNullOrWhiteSpace(requestId)
+                    || !metadataByRequestId.TryGetValue(requestId, out var metadata)
+                    || !(response["body"] is JObject body))
+                {
+                    continue;
+                }
+
+                foreach (var state in GetGraphValues(body).OfType<JObject>())
+                {
+                    if (!IsFailureState(state.Value<string>("runState"))) continue;
+                    var failure = (JObject)state.DeepClone();
+                    foreach (var property in metadata.Properties())
+                        failure[property.Name] = property.Value.DeepClone();
+                    failures.Add(failure);
+                }
+            }
+        }
+        return failures;
+    }
+
+    private static bool IsFailureState(string state)
+    {
+        return string.Equals(state, "fail", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(state, "failed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(state, "error", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(state, "scriptError", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(state, "remediationFailed", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static JArray ObjectifyReport(JObject report)
+    {
+        var schema = GetPropertyValueIgnoreCase(report, "schema") as JArray;
+        var values = GetPropertyValueIgnoreCase(report, "values") as JArray;
+        var rows = new JArray();
+        if (schema == null || values == null) return rows;
+
+        var columns = schema
+            .Select(item => item is JObject column
+                ? GetPropertyValueIgnoreCase(column, "column")?.ToString()
+                    ?? GetPropertyValueIgnoreCase(column, "name")?.ToString()
+                : item?.ToString())
+            .ToList();
+        foreach (var valueRow in values.OfType<JArray>())
+        {
+            var row = new JObject();
+            for (var index = 0; index < columns.Count && index < valueRow.Count; index++)
+            {
+                var columnName = columns[index];
+                if (!string.IsNullOrWhiteSpace(columnName))
+                    row[columnName] = valueRow[index].DeepClone();
+            }
+            rows.Add(row);
+        }
+        return rows;
+    }
+
+    private static JToken GetPropertyValueIgnoreCase(JObject obj, string name)
+    {
+        return obj?.Properties()
+            .FirstOrDefault(property =>
+                string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+            ?.Value;
+    }
+
+    private static string NormalizeConfigurationPolicyStatus(JToken status)
+    {
+        var value = status?.ToString();
+        if (value == "1") return "notApplicable";
+        if (value == "2" || value == "3") return "succeeded";
+        if (value == "4" || value == "5") return "error";
+        if (value == "6") return "conflict";
+        return value ?? "unknown";
+    }
+
+    private static bool IsFailedConfigurationPolicyStatus(JToken status)
+    {
+        var normalized = NormalizeConfigurationPolicyStatus(status);
+        return string.Equals(normalized, "error", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "conflict", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "failed", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<JObject> GetDeviceSecurityHealthAsync(JObject args, CancellationToken ct)
+    {
+        var device = await GetDeviceForReportsAsync(args, ct).ConfigureAwait(false);
+        var top = Math.Max(1, Math.Min(args.Value<int?>("top") ?? 100, 500));
+        var search = device.Value<string>("deviceName") ?? device.Value<string>("serialNumber");
+        return new JObject
+        {
+            ["device"] = device,
+            ["encryptionState"] = await RunReportAsync(
+                "getEncryptionReportForDevices", null, search, top, ct),
+            ["defenderHealth"] = await RunReportAsync(
+                "getUnhealthyDefenderAgentsReport", null, search, top, ct),
+            ["firewallHealth"] = await RunReportAsync(
+                "getUnhealthyFirewallReport", null, search, top, ct),
+            ["activeMalware"] = await RunReportAsync(
+                "getActiveMalwareReport", null, search, top, ct)
+        };
+    }
+
+    private async Task<JObject> GetDeviceForReportsAsync(JObject args, CancellationToken ct)
+    {
+        var id = RequireArgument(args, "device_id");
+        return await GraphGetAsync(
+            $"/deviceManagement/managedDevices/{Esc(id)}?$select=id,deviceName,serialNumber,userId,userPrincipalName,operatingSystem,osVersion",
+            ct).ConfigureAwait(false);
+    }
+
+    private async Task<JObject> RunReportAsync(
+        string reportName,
+        string filter,
+        string search,
+        int top,
+        CancellationToken ct)
+    {
+        var body = new JObject
+        {
+            ["skip"] = 0,
+            ["top"] = top
+        };
+        if (!string.IsNullOrWhiteSpace(filter)) body["filter"] = filter;
+        if (!string.IsNullOrWhiteSpace(search)) body["search"] = search;
+        return await GraphSendAsync(
+            HttpMethod.Post, $"/deviceManagement/reports/{reportName}", body, ct).ConfigureAwait(false);
+    }
+
+    private static JArray GetGraphValues(JObject response)
+    {
+        return response?["value"] as JArray ?? new JArray();
     }
 
 

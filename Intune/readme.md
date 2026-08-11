@@ -4,8 +4,8 @@ A dual-purpose Power Platform custom MCP connector for Microsoft Intune. It uses
 
 One connector, two ways to use it:
 
-1. **MCP server** — the `InvokeMCP` operation speaks JSON-RPC 2.0 and exposes **105 Intune tools**, 3 resources, and 3 prompts to any Model Context Protocol client, including Copilot Studio, Microsoft Foundry, and Agent Framework.
-2. **REST actions** — **114 named operations** call Microsoft Graph directly for use in Power Automate flows and Logic Apps.
+1. **MCP server** — the `InvokeMCP` operation speaks JSON-RPC 2.0 and exposes **120 Intune tools**, 3 resources, and 3 prompts to any Model Context Protocol client, including Copilot Studio, Microsoft Foundry, and Agent Framework.
+2. **REST actions** — **118 named operations** call Microsoft Graph directly for use in Power Automate flows and Logic Apps.
 
 Both share one connection and one set of delegated Graph permissions.
 
@@ -22,7 +22,7 @@ Intune is large. Parsed from the live Graph beta metadata document, the Intune s
 | Bound actions and functions | 724 |
 | **Total operations** | **~1,654** |
 
-Naming all of them would produce an unusable connector. Instead this connector names the highest-value ~105 operations and reaches the remaining ~1,550 through three universal tools — `intune_find_endpoint`, `intune_describe_entity`, and `intune_graph_request` — plus a `$batch` tool. Coverage is complete; the surface stays navigable.
+Naming all of them would produce an unusable connector. Instead this connector names the highest-value 120 tools and reaches the remaining surface through `intune_find_endpoint`, `intune_describe_entity`, `intune_graph_request`, and `intune_graph_batch`. Coverage is complete; the surface stays navigable.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ Point any MCP client at the `InvokeMCP` operation. The connector declares `x-ms-
 
 The server is **dual-era**: it answers the MCP `2026-07-28` stateless protocol and the older `initialize` handshake from the same endpoint, choosing per request. Clients that use the legacy handshake are served without modern-only response fields.
 
-### Tool catalog (105)
+### Tool catalog (120)
 
 | Group | Count | Tools |
 |---|---|---|
@@ -110,7 +110,7 @@ The server is **dual-era**: it answers the MCP `2026-07-28` stateless protocol a
 | Troubleshooting | 3 | `get_noncompliant_settings`, `list_troubleshooting_events`, `list_autopilot_events` |
 | Secrets and recovery | 3 | `get_local_admin_password`, `get_filevault_key`, `get_bitlocker_recovery_key` |
 | Compliance | 7 | `list_compliance_policies`, `get_compliance_policy`, `create_compliance_policy`, `update_compliance_policy`, `delete_compliance_policy`, `assign_compliance_policy`, `get_compliance_policy_statuses` |
-| Configuration | 10 | `list_device_configurations`, `get_device_configuration`, `create_device_configuration`, `update_device_configuration`, `delete_device_configuration`, `assign_device_configuration`, `list_configuration_policies`, `get_configuration_policy_settings`, `create_configuration_policy`, `assign_configuration_policy` |
+| Configuration | 14 | `list_device_configurations`, `get_device_configuration`, `create_device_configuration`, `update_device_configuration`, `delete_device_configuration`, `assign_device_configuration`, `list_configuration_policies`, `get_configuration_policy`, `get_configuration_policy_settings`, `create_configuration_policy`, `update_configuration_policy`, `delete_configuration_policy`, `list_configuration_policy_assignments`, `assign_configuration_policy` |
 | Applications | 8 | `list_mobile_apps`, `get_mobile_app`, `create_mobile_app`, `update_mobile_app`, `delete_mobile_app`, `assign_mobile_app`, `get_app_install_status`, `list_app_protection_policies` |
 | Enrollment and Autopilot | 7 | `list_autopilot_devices`, `get_autopilot_device`, `assign_autopilot_user`, `delete_autopilot_device`, `list_autopilot_profiles`, `assign_autopilot_profile`, `list_enrollment_configurations` |
 | Scripts and remediations | 6 | `list_device_scripts`, `get_device_script`, `assign_device_script`, `get_script_run_states`, `list_health_scripts`, `get_remediation_summary` |
@@ -123,6 +123,40 @@ The server is **dual-era**: it answers the MCP `2026-07-28` stateless protocol a
 | Reporting | 4 | `list_intune_reports`, `run_intune_report`, `export_intune_report`, `get_export_job_status` |
 | Monitoring | 3 | `list_audit_events`, `list_alert_records`, `get_ux_analytics_overview` |
 | Universal access | 4 | `intune_find_endpoint`, `intune_describe_entity`, `intune_graph_request`, `intune_graph_batch` |
+| Agent workflows | 11 | `inventory_all_policies`, `analyze_policy_hygiene`, `list_setting_definitions`, `compare_setting_catalog`, `assess_policy_rollout`, `assess_policy_change_risk`, `run_device_hygiene_check`, `get_device_update_failures`, `get_device_policy_failures`, `get_device_app_and_script_failures`, `get_device_security_health` |
+
+### Agent authorization phases
+
+**Phase 1 — authorized IT users**
+
+- Enable the complete read surface, policy create/update/delete/assignment tools, and approved device remediation actions.
+- Compliance policies, classic device configurations, and Settings Catalog policies all have complete named lifecycle and assignment coverage.
+- Require explicit user confirmation for destructive policy deletion, device deletion, retire, wipe, and other operations marked with `destructiveHint`.
+- Keep `intune_graph_request` and `intune_graph_batch` restricted to this phase because they support `POST`, `PATCH`, `PUT`, and `DELETE`.
+- Use `run_device_hygiene_check` and the focused failure tools before proposing a remediation action.
+
+**Phase 2 — end users**
+
+- Allow only tools marked `readOnlyHint: true`.
+- Exclude all create, update, delete, assignment, secret/recovery, approval, remote-action, Cloud PC mutation, `intune_graph_request`, and `intune_graph_batch` tools.
+- `intune_find_endpoint` and `intune_describe_entity` may remain available because they are read-only.
+- Use a separate connector connection with read-only Microsoft Graph delegated permissions. Tool allowlisting does not reduce the permissions carried by an OAuth token.
+
+### Targeted policy CRUD coverage
+
+| Policy family | Create | Read | Update | Delete | Assign |
+|---|---:|---:|---:|---:|---:|
+| Compliance policies | Yes | Yes | Yes | Yes | Yes |
+| Classic device configurations | Yes | Yes | Yes | Yes | Yes |
+| Settings Catalog policies | Yes | Yes | Yes | Yes | Yes |
+
+The phase-one device-remediation surface includes sync, restart/shutdown, lock, passcode reset, locate/lost mode, key rotation, Defender scan/signature update, notifications, retire, and wipe. These are action operations rather than CRUD on the physical device.
+
+### Completed agent diagnostics
+
+- **Policy change risk**: `assess_policy_change_risk` resolves Microsoft Settings Catalog definition metadata and produces a transparent technical rollout score from Microsoft's `riskLevel`, dependencies, unresolved definitions, and assignment blast radius. An existing Settings Catalog policy can be supplied to include current assignments and rollout evidence. The result includes required deployment controls and explicitly remains subject to customer change approval and current Microsoft Learn guidance.
+- **Failed configuration policies**: `get_device_policy_failures` uses `getConfigurationPoliciesReportForDevice` with the managed-device id and normalizes status codes across classic configuration, Settings Catalog, imported ADMX, and endpoint-security intent policies. Error and conflict rows are returned separately while compliance states and exact noncompliant settings remain included.
+- **Script and remediation failures**: `get_device_app_and_script_failures` correlates Windows PowerShell, macOS shell, and custom-attribute script device run states through batched Graph requests. It also reads the managed device's `deviceHealthScriptStates` relationship for detection failures, remediation failures, script errors, and captured output.
 
 ### Reporting is data-driven
 
@@ -161,7 +195,7 @@ Prompts: `diagnose_device`, `offboard_device`, `compliance_audit`
 
 ## Using it in Power Automate
 
-The Swagger definition exposes 114 named actions to the flow designer, including **List managed devices**, **Wipe device**, **Assign compliance policy**, and **Run Intune report**.
+The Swagger definition exposes 118 named actions to the flow designer, including **List managed devices**, **Wipe device**, **Assign compliance policy**, and **Run Intune report**.
 
 Typical flow: a recurrence trigger → **List managed devices** with `$filter` of `complianceState eq 'noncompliant'` → apply to each → **Send custom notification**.
 
@@ -174,7 +208,7 @@ Typical flow: a recurrence trigger → **List managed devices** with `$filter` o
 
 ## Implementation notes
 
-- **Stable-first routing**: the connector definition targets `https://graph.microsoft.com/v1.0`. An audit against Microsoft's official Graph v1.0 OpenAPI metadata classified the 114 named REST operations as 66 v1.0 and 48 beta-only operations. Each operation records that result in `x-ms-graph-version`.
+- **Stable-first routing**: the connector definition targets `https://graph.microsoft.com/v1.0`. An audit against Microsoft's official Graph v1.0 OpenAPI metadata and Microsoft Learn classified the 118 named REST operations as 66 v1.0 and 52 beta-only operations. Each operation records that result in `x-ms-graph-version`.
 - **MCP version selection** defaults to `auto`: known beta-only routes go directly to beta, all other routes try v1.0 first, and route-not-available responses retry against beta. Explicit `v1.0` and `beta` overrides remain available.
 - **Batch requests** are partitioned by API version and their responses are merged back into original request order.
 - **`Prefer: include-unknown-enum-members`** is sent on every request. Intune adds enum members frequently, and without this header Graph fails requests whose responses contain a newer enum value.
@@ -187,23 +221,23 @@ Typical flow: a recurrence trigger → **List managed devices** with `$filter` o
 
 | File | Purpose |
 |---|---|
-| `apiDefinition.swagger.json` | 115 operations — `InvokeMCP` plus 114 named REST actions |
-| `apiProperties.json` | Entra OAuth configuration and the 115 script operations |
-| `script.csx` | Connector logic: MCP server with 105 tools, plus REST passthrough |
+| `apiDefinition.swagger.json` | 119 operations — `InvokeMCP` plus 118 named REST actions |
+| `apiProperties.json` | Entra OAuth configuration and the 119 script operations |
+| `script.csx` | Connector logic: MCP server with 120 tools, plus REST passthrough |
 | `readme.md` | This file |
 
 ## Verification performed
 
-- `ppcv` validates the three deployable connector artifacts (`apiDefinition.swagger.json`, `apiProperties.json`, and `script.csx`) — 115 operations, 0 errors, 0 warnings.
+- `ppcv` validates the three deployable connector artifacts (`apiDefinition.swagger.json`, `apiProperties.json`, and `script.csx`) — 119 operations, 0 errors, 0 warnings.
 - `script.csx` reports no workspace diagnostics, and MCP tool handlers preserve their `JObject` result type end to end.
-- Structural checks confirm: 105 tools, 3 resources, and 3 prompts are registered; tool schemas contain no `$ref` or `$defs` constructs that Copilot Studio would silently drop.
+- Structural checks confirm: 120 tools, 3 resources, and 3 prompts are registered; tool schemas contain no `$ref` or `$defs` constructs that Copilot Studio would silently drop.
 - Legacy `initialize` response verified free of `resultType`, `ttlMs`, and `cacheScope`, which would break Copilot Studio.
 - Legacy `initialize` negotiates only configured legacy protocol versions and falls back to the preferred legacy version for unsupported requests.
 - Modern `server/discover` verified working.
 - Namespace guard verified to reject `/users`.
 - `apiDefinition.swagger.json` validates against the OpenAPI 2.0 schema.
 - Swagger operation IDs and `scriptOperations` verified to match exactly, both directions.
-- All 114 REST operations have version metadata: 66 v1.0 and 48 beta-only, matching Microsoft Graph's official v1.0 OpenAPI paths and methods.
+- All 118 REST operations have version metadata: 66 v1.0 and 52 beta-only, matching Microsoft Graph's official v1.0 OpenAPI metadata and Microsoft Learn.
 
 ## References
 
