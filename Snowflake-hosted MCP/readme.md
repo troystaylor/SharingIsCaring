@@ -6,17 +6,6 @@ Snowflake hosts the Model Context Protocol server, owns tool discovery, and exec
 
 ## Publisher: Troy Taylor
 
-## Why there is no script
-
-A Snowflake-managed MCP server is already a spec-compliant remote MCP server. Any transformation layer in the connector would:
-
-- Rewrite the negotiated `protocolVersion` and break the handshake (Snowflake supports revision `2025-11-25`)
-- Buffer `text/event-stream` responses, stalling streaming and risking the Power Platform request timeout
-- Shadow real Snowflake tool names with locally fabricated ones
-- Advertise prompts and resources that the server does not implement — **Snowflake currently supports tool capabilities only**
-
-Passthrough is the correct design here.
-
 ## Prerequisites
 
 - A Snowflake account with Cortex features enabled
