@@ -1,0 +1,77 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Snowflake-hosted MCP",
+        "version": "1.0.0",
+        "description": "Passthrough connector to a Snowflake-managed MCP server. Connects Copilot Studio agents to the Cortex Agent, Cortex Analyst, Cortex Search, SQL execution, and custom UDF/stored procedure tools that you expose through a Snowflake MCP server object. Tools are defined and executed by Snowflake — the connector is a passthrough. Update the host and basePath to target your account, database, schema, and MCP server.",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "YOUR-ORG-YOUR-ACCOUNT.snowflakecomputing.com",
+    "basePath": "/api/v2/databases/YOUR_DATABASE/schemas/YOUR_SCHEMA/mcp-servers/YOUR_MCP_SERVER",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json",
+        "text/event-stream"
+    ],
+    "paths": {
+        "/": {
+            "post": {
+                "summary": "Invoke Snowflake Hosted MCP",
+                "description": "Proxies Model Context Protocol requests to a Snowflake-managed MCP server. Snowflake owns tool discovery and execution, so the tools an agent sees are the ones declared in the MCP server specification. The Snowflake MCP server supports tool capabilities only — prompts and resources are not served.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://YOUR-ORG-YOUR-ACCOUNT.snowflakecomputing.com/oauth/authorize",
+            "tokenUrl": "https://YOUR-ORG-YOUR-ACCOUNT.snowflakecomputing.com/oauth/token-request",
+            "scopes": {
+                "session:role:all": "Use the connecting user's DEFAULT_ROLE as the session primary role",
+                "refresh_token": "Perform requests at any time"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "session:role:all",
+                "refresh_token"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.snowflake.com/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.snowflake.com/privacy-policy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Data"
+        }
+    ]
+}
