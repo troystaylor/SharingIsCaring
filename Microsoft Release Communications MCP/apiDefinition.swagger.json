@@ -186,6 +186,120 @@
         }
       }
     },
+    "/api/v2/M365/": {
+      "get": {
+        "summary": "When a Microsoft 365 roadmap item is published",
+        "description": "Polling trigger that fires when new posts appear on the Microsoft 365 Roadmap. Configure the trigger to filter on the created field so each poll returns only posts published since the previous run.",
+        "operationId": "OnNewM365RoadmapItem",
+        "x-ms-trigger": "batch",
+        "x-ms-trigger-hint": "To see it work, wait for new features to be published to the Microsoft 365 Roadmap. The underlying data refreshes daily.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "OData filter used to select new posts. Use a created comparison for trigger state, optionally combined with other criteria. Example: created gt 2026-08-01T00:00:00Z and products/any(p: p eq 'Microsoft Teams')",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "default": "created desc",
+            "description": "Sort expression. Keep the default so the newest post is first.",
+            "x-ms-summary": "Order By",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "Maximum number of posts to return per poll.",
+            "x-ms-summary": "Top",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Comma separated list of properties to return. Example: id,title,status,created",
+            "x-ms-summary": "Select",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Microsoft 365 roadmap posts published since the previous poll",
+            "schema": {
+              "$ref": "#/definitions/M365RoadmapResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/Azure/": {
+      "get": {
+        "summary": "When an Azure update is published",
+        "description": "Polling trigger that fires when new posts appear on Azure Updates. Configure the trigger to filter on the created field so each poll returns only posts published since the previous run.",
+        "operationId": "OnNewAzureUpdate",
+        "x-ms-trigger": "batch",
+        "x-ms-trigger-hint": "To see it work, wait for new posts to be published to Azure Updates. The underlying data refreshes daily.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "OData filter used to select new posts. Use a created comparison for trigger state, optionally combined with other criteria. Example: created gt 2026-08-01T00:00:00Z and tags/any(t: t eq 'Retirements')",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "default": "created desc",
+            "description": "Sort expression. Keep the default so the newest post is first.",
+            "x-ms-summary": "Order By",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "Maximum number of posts to return per poll.",
+            "x-ms-summary": "Top",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Comma separated list of properties to return. Example: id,title,status,created",
+            "x-ms-summary": "Select",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Azure update posts published since the previous poll",
+            "schema": {
+              "$ref": "#/definitions/AzureUpdateResponse"
+            }
+          }
+        }
+      }
+    },
     "/api/v2/M365/rss": {
       "get": {
         "summary": "Get Microsoft 365 roadmap RSS feed",

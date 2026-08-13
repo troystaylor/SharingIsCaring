@@ -11,6 +11,8 @@ It is a **hybrid connector**: the MCP endpoint serves Copilot Studio agents, and
 | Operation | Type | Purpose |
 | --- | --- | --- |
 | `InvokeMCP` | MCP | Streamable HTTP MCP endpoint for Copilot Studio agents |
+| `OnNewM365RoadmapItem` | Trigger | Polls for newly published Microsoft 365 Roadmap posts |
+| `OnNewAzureUpdate` | Trigger | Polls for newly published Azure Updates posts |
 | `ListM365RoadmapItems` | REST | OData query over Microsoft 365 Roadmap posts |
 | `ListAzureUpdates` | REST | OData query over Azure Updates posts |
 | `GetM365RoadmapFeed` | REST | Microsoft 365 Roadmap RSS 2.0 feed |
@@ -154,6 +156,8 @@ Use of the upstream server is subject to the [Microsoft API Terms of Use](https:
 
    A successful response reports `serverInfo.name` as `ReleaseCommunicationsApi`.
 
+6. If you plan to use the polling triggers, complete the [trigger configuration](#complete-the-trigger-configuration) step in the connector editor. Triggers will not fire until that state expression is set.
+
 ## Use in Power Automate and Power Apps
 
 Copilot Studio consumes the MCP operation; flows and apps use the REST operations, since neither can call MCP.
@@ -175,7 +179,45 @@ Practical tips:
 - Use **Select** (for example `id,title,status`) to keep flow payloads small; descriptions are full HTML and can be long.
 - Iterate the `value` array in an **Apply to each** action.
 
-For change detection, run a **Recurrence** trigger against either RSS feed operation, or query with a `created ge` filter using the timestamp of the previous run.
+For change detection, use the polling triggers below rather than a scheduled query.
+
+## Triggers
+
+Two polling triggers fire when new posts are published:
+
+| Trigger | Fires on |
+| --- | --- |
+| **When a Microsoft 365 roadmap item is published** | New Microsoft 365 Roadmap posts |
+| **When an Azure update is published** | New Azure Updates posts |
+
+Both are declared with `x-ms-trigger: batch`, so Power Automate starts one flow run per new post rather than one run per batch.
+
+### Complete the trigger configuration
+
+Following [Use a custom polling trigger](https://learn.microsoft.com/connectors/custom-connectors/create-polling-trigger), the state expression is set in the connector editor, not in the OpenAPI file. After importing the connector:
+
+1. Open the custom connector and go to **Definition**.
+2. Select the trigger, for example **When a Microsoft 365 roadmap item is published**.
+3. In **Trigger configuration**, set the query parameter to `$filter`.
+4. For the value to pass, use an expression that compares `created` to the newest item from the previous poll:
+
+   ```
+   created gt @{triggerBody().value[0].created}
+   ```
+
+5. Leave **Order By** at the default `created desc` so `value[0]` is always the newest post.
+6. Save and update the connector.
+
+The first poll establishes the baseline state and does not start a flow. Later polls return only posts created after the most recent one seen.
+
+### Notes on polling behavior
+
+- Pass the `created` value through unchanged. Timestamps carry seven fractional-second digits, for example `2026-08-12T22:47:48.9387028Z`. Wrapping the expression in `formatDateTime()` or otherwise truncating it makes the comparison match the newest post again, so that post re-fires on every poll.
+- If you set **Select**, include `created` in the list. The trigger expression reads `value[0].created`, and omitting it breaks the state comparison.
+- Roadmap and updates data refreshes daily, so a polling interval shorter than a few hours adds no value.
+- To scope a trigger, combine criteria in the same filter, for example `products/any(p: p eq 'Microsoft Teams')` for Teams-only roadmap posts or `tags/any(t: t eq 'Retirements')` for Azure retirements.
+- The `created` field is the publication timestamp. A post edited later keeps its original `created` value and won't re-fire; use `modified` in the filter instead if you want edits to trigger.
+- The RSS operations remain available if you prefer a **Recurrence** trigger with your own change tracking.
 
 ## Use in Copilot Studio
 
@@ -226,7 +268,8 @@ Telemetry failures are swallowed so they never affect a connector call.
 ## Notes
 
 - The MCP operation proxies the remote server; it does not implement tools locally.
-- The REST operations are passthrough. They are not listed in `scriptOperations`, so the script does not run for them. If you do add them, the script forwards any non-`InvokeMCP` operation unchanged, so behavior stays the same.
+- The REST and trigger operations are passthrough. They are not listed in `scriptOperations`, so the script does not run for them. If you do add them, the script forwards any non-`InvokeMCP` operation unchanged, so behavior stays the same.
+- The triggers are declared on the trailing slash paths `/api/v2/M365/` and `/api/v2/Azure/`. These resolve to the same endpoints as the list actions, and the distinct paths keep the OpenAPI document valid, since Swagger 2.0 allows only one operation per method per path.
 - Underlying roadmap and update data refreshes daily and contains only publicly available information.
 - The upstream MCP endpoint rejects browser `GET` requests with `405 Method Not Allowed`; it is `POST`-only for MCP clients.
 - No secrets are stored in this connector.
