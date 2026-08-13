@@ -1,0 +1,522 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Microsoft Release Communications MCP",
+    "description": "Connector for Microsoft Release Communications (MRC). Exposes the MRC MCP Server for Copilot Studio agents plus the underlying OData and RSS endpoints for Power Automate and Power Apps. Covers Microsoft 365 Roadmap and Azure Updates. No authentication is required.",
+    "version": "1.1.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "www.microsoft.com",
+  "basePath": "/releasecommunications",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "Invoke Microsoft Release Communications MCP",
+        "description": "Model Context Protocol endpoint that proxies JSON-RPC requests to the Microsoft Release Communications MCP Server for Microsoft 365 Roadmap and Azure Updates data.",
+        "operationId": "InvokeMCP",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/api/v2/M365": {
+      "get": {
+        "summary": "List Microsoft 365 roadmap items",
+        "description": "Queries Microsoft 365 Roadmap posts using OData. Returns full untruncated descriptions and supports page sizes larger than the 50 item limit of the MCP tools.",
+        "operationId": "ListM365RoadmapItems",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "OData filter expression. Example: products/any(p: p eq 'Microsoft Teams') and status eq 'Launched'",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Free text search across post titles.",
+            "x-ms-summary": "Search"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Sort expression. Example: created desc",
+            "x-ms-summary": "Order By"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Comma separated list of properties to return. Example: id,title,status",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "Maximum number of items to return.",
+            "x-ms-summary": "Top"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of items to skip for pagination.",
+            "x-ms-summary": "Skip"
+          },
+          {
+            "name": "$count",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "description": "When true, includes the total matching item count in the response.",
+            "x-ms-summary": "Include Count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching Microsoft 365 roadmap items",
+            "schema": {
+              "$ref": "#/definitions/M365RoadmapResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/Azure": {
+      "get": {
+        "summary": "List Azure updates",
+        "description": "Queries Azure Updates posts using OData. Returns full untruncated descriptions and supports page sizes larger than the 50 item limit of the MCP tools.",
+        "operationId": "ListAzureUpdates",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "$filter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "OData filter expression. Example: tags/any(t: t eq 'Retirements') and availabilities/any(a: a/ring eq 'Retirement' and a/year eq 2026)",
+            "x-ms-summary": "Filter"
+          },
+          {
+            "name": "$search",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Free text search across post titles.",
+            "x-ms-summary": "Search"
+          },
+          {
+            "name": "$orderby",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Sort expression. Example: created desc",
+            "x-ms-summary": "Order By"
+          },
+          {
+            "name": "$select",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Comma separated list of properties to return. Example: id,title,status",
+            "x-ms-summary": "Select"
+          },
+          {
+            "name": "$top",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "Maximum number of items to return.",
+            "x-ms-summary": "Top"
+          },
+          {
+            "name": "$skip",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of items to skip for pagination.",
+            "x-ms-summary": "Skip"
+          },
+          {
+            "name": "$count",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "description": "When true, includes the total matching item count in the response.",
+            "x-ms-summary": "Include Count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching Azure update items",
+            "schema": {
+              "$ref": "#/definitions/AzureUpdateResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/M365/rss": {
+      "get": {
+        "summary": "Get Microsoft 365 roadmap RSS feed",
+        "description": "Returns the Microsoft 365 Roadmap RSS 2.0 feed. Useful for scheduled flows that watch for newly published roadmap posts.",
+        "operationId": "GetM365RoadmapFeed",
+        "produces": [
+          "application/rss+xml"
+        ],
+        "responses": {
+          "200": {
+            "description": "RSS 2.0 feed document",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/Azure/rss": {
+      "get": {
+        "summary": "Get Azure updates RSS feed",
+        "description": "Returns the Azure Updates RSS 2.0 feed. Useful for scheduled flows that watch for newly published Azure update posts.",
+        "operationId": "GetAzureUpdatesFeed",
+        "produces": [
+          "application/rss+xml"
+        ],
+        "responses": {
+          "200": {
+            "description": "RSS 2.0 feed document",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Availability": {
+      "type": "object",
+      "description": "A release milestone for a post.",
+      "properties": {
+        "ring": {
+          "type": "string",
+          "description": "Release ring, such as General Availability, Preview, or Retirement.",
+          "x-ms-summary": "Ring"
+        },
+        "year": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Four digit year of the milestone.",
+          "x-ms-summary": "Year"
+        },
+        "month": {
+          "type": "string",
+          "description": "Month name of the milestone, such as February.",
+          "x-ms-summary": "Month"
+        }
+      }
+    },
+    "M365RoadmapItem": {
+      "type": "object",
+      "description": "A Microsoft 365 Roadmap post.",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Feature ID of the roadmap post.",
+          "x-ms-summary": "Feature ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the roadmap post.",
+          "x-ms-summary": "Title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description of the feature as HTML.",
+          "x-ms-summary": "Description"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status such as Launched, Rolling out, or In development.",
+          "x-ms-summary": "Status"
+        },
+        "products": {
+          "type": "array",
+          "description": "Products the feature applies to.",
+          "x-ms-summary": "Products",
+          "items": {
+            "type": "string"
+          }
+        },
+        "platforms": {
+          "type": "array",
+          "description": "Platforms the feature applies to, such as Web, Desktop, iOS, or Android.",
+          "x-ms-summary": "Platforms",
+          "items": {
+            "type": "string"
+          }
+        },
+        "releaseRings": {
+          "type": "array",
+          "description": "Release rings, such as General Availability or Targeted Release.",
+          "x-ms-summary": "Release Rings",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cloudInstances": {
+          "type": "array",
+          "description": "Cloud instances, such as Worldwide (Standard Multi-Tenant), GCC, GCC High, or DoD.",
+          "x-ms-summary": "Cloud Instances",
+          "items": {
+            "type": "string"
+          }
+        },
+        "moreInfoUrls": {
+          "type": "array",
+          "description": "Additional reference links for the feature.",
+          "x-ms-summary": "More Info URLs",
+          "items": {
+            "type": "string"
+          }
+        },
+        "availabilities": {
+          "type": "array",
+          "description": "Release milestones for the feature.",
+          "x-ms-summary": "Availabilities",
+          "items": {
+            "$ref": "#/definitions/Availability"
+          }
+        },
+        "generalAvailabilityDate": {
+          "type": "string",
+          "description": "General availability month in YYYY-MM format.",
+          "x-ms-summary": "General Availability Date"
+        },
+        "previewAvailabilityDate": {
+          "type": "string",
+          "description": "Preview availability month in YYYY-MM format.",
+          "x-ms-summary": "Preview Availability Date"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the post was published to the roadmap.",
+          "x-ms-summary": "Created"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the post was last updated.",
+          "x-ms-summary": "Modified"
+        },
+        "locale": {
+          "type": "string",
+          "description": "Locale of the post.",
+          "x-ms-summary": "Locale"
+        }
+      }
+    },
+    "AzureUpdateItem": {
+      "type": "object",
+      "description": "An Azure Updates post.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the Azure update post.",
+          "x-ms-summary": "Update ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the update post.",
+          "x-ms-summary": "Title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description of the update as HTML.",
+          "x-ms-summary": "Description"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status such as Launched, In preview, or In development.",
+          "x-ms-summary": "Status"
+        },
+        "products": {
+          "type": "array",
+          "description": "Azure products the update applies to.",
+          "x-ms-summary": "Products",
+          "items": {
+            "type": "string"
+          }
+        },
+        "productCategories": {
+          "type": "array",
+          "description": "Product categories, such as Compute, Databases, or Networking.",
+          "x-ms-summary": "Product Categories",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags, such as Features, Retirements, Security, or Services.",
+          "x-ms-summary": "Tags",
+          "items": {
+            "type": "string"
+          }
+        },
+        "availabilities": {
+          "type": "array",
+          "description": "Release milestones for the update, including retirement timing.",
+          "x-ms-summary": "Availabilities",
+          "items": {
+            "$ref": "#/definitions/Availability"
+          }
+        },
+        "generalAvailabilityDate": {
+          "type": "string",
+          "description": "General availability month in YYYY-MM format.",
+          "x-ms-summary": "General Availability Date"
+        },
+        "previewAvailabilityDate": {
+          "type": "string",
+          "description": "Public preview month in YYYY-MM format.",
+          "x-ms-summary": "Preview Availability Date"
+        },
+        "privatePreviewAvailabilityDate": {
+          "type": "string",
+          "description": "Private preview month in YYYY-MM format.",
+          "x-ms-summary": "Private Preview Availability Date"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the post was published to Azure Updates.",
+          "x-ms-summary": "Created"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the post was last updated.",
+          "x-ms-summary": "Modified"
+        },
+        "locale": {
+          "type": "string",
+          "description": "Locale of the post.",
+          "x-ms-summary": "Locale"
+        }
+      }
+    },
+    "M365RoadmapResponse": {
+      "type": "object",
+      "description": "OData response containing Microsoft 365 roadmap items.",
+      "properties": {
+        "@odata.context": {
+          "type": "string",
+          "description": "OData metadata context URL.",
+          "x-ms-summary": "OData Context",
+          "x-ms-visibility": "advanced"
+        },
+        "@odata.count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Total number of matching items. Returned when Include Count is true.",
+          "x-ms-summary": "Total Count"
+        },
+        "value": {
+          "type": "array",
+          "description": "Matching Microsoft 365 roadmap items.",
+          "x-ms-summary": "Items",
+          "items": {
+            "$ref": "#/definitions/M365RoadmapItem"
+          }
+        }
+      }
+    },
+    "AzureUpdateResponse": {
+      "type": "object",
+      "description": "OData response containing Azure update items.",
+      "properties": {
+        "@odata.context": {
+          "type": "string",
+          "description": "OData metadata context URL.",
+          "x-ms-summary": "OData Context",
+          "x-ms-visibility": "advanced"
+        },
+        "@odata.count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Total number of matching items. Returned when Include Count is true.",
+          "x-ms-summary": "Total Count"
+        },
+        "value": {
+          "type": "array",
+          "description": "Matching Azure update items.",
+          "x-ms-summary": "Items",
+          "items": {
+            "$ref": "#/definitions/AzureUpdateItem"
+          }
+        }
+      }
+    }
+  },
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {},
+  "security": [],
+  "tags": [
+    {
+      "name": "mcp",
+      "description": "Model Context Protocol operations"
+    },
+    {
+      "name": "odata",
+      "description": "Release Communications OData operations"
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Categories",
+      "propertyValue": "IT Operations;Productivity"
+    },
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://www.microsoft.com/microsoft-365/roadmap"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    }
+  ]
+}
