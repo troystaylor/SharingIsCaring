@@ -4,12 +4,12 @@ MCP server for cross-environment Power Platform administration through natural l
 
 ## Overview
 
-This connector exposes 15 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
+This connector exposes 17 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
 | Environment Management | 5 | List environments, get details, read/update PPAC settings, compare settings across environments |
-| Governance & Security | 6 | Copilot governance, Copilot Studio tenant pool draw, security recommendations, cross-tenant connection audit |
+| Governance & Security | 8 | Copilot governance, Copilot Studio tenant pool draw, resource thresholds, security recommendations, cross-tenant connection audit |
 | Resource Inventory | 3 | List connectors and Power Apps per environment, inventory agents across the tenant |
 | Application Lifecycle | 1 | Install Microsoft application packages |
 
@@ -37,6 +37,8 @@ This connector exposes 15 admin tools across 4 categories through a single MCP e
 2. **Power Platform admin role** (System Administrator, Power Platform Administrator, or Dynamics 365 Administrator)
 
    The tenant pool tools additionally require the caller to hold **Power Platform Administrator** or **Global Administrator** — the same tenant admin roles that gate licensing and capacity settings in PPAC. The `Licensing.Allocations.*` scopes are documented against the supported Currency Allocation API; the unsupported allocations route shares that namespace and resource type, so grant both and verify with a read before relying on the write.
+
+   The resource threshold tools call the supported `licensing/entitlements/.../resourceThresholds` and `licensing/.../threshold` routes. No threshold-specific scope is published, so the same `Licensing.Allocations.*` scopes plus a tenant admin role are what to grant; verify with `admin_list_resource_thresholds` before relying on the write.
 
 3. **Copilot Studio** license for MCP integration
 
@@ -73,12 +75,18 @@ These are exposed through the single `/mcp` endpoint for agent use. If you are b
 | `admin_update_copilot_governance` | Update Copilot governance settings |
 | `admin_get_tenant_pool_draw` | Check whether an environment draws Copilot Studio message and session capacity from the tenant pool |
 | `admin_set_tenant_pool_draw` | Enable or disable drawing Copilot Studio capacity from the tenant pool |
+| `admin_list_resource_thresholds` | List the resource thresholds configured for a licensing entitlement, with limits, consumption, and stop flags |
+| `admin_upsert_resource_threshold` | Create or update the consumption threshold for an environment resource on an entitlement |
 | `admin_get_security_recommendations` | Get security recommendations from Power Platform Advisor |
 | `admin_get_cross_tenant_connections` | Cross-tenant connection reports for compliance auditing |
 
 > **Draw from Tenant Pool is unsupported.** The two `*_tenant_pool_draw` tools call `licensing/allocations`, which is not part of the published Power Platform REST reference and may change or stop working without notice. Treat it as a temporary mitigation for bulk changes that PPAC only exposes one environment at a time.
 >
 > `admin_set_tenant_pool_draw` reads the current allocation document and rewrites only the `TenantPool` enforcement rule. The underlying `PUT` replaces the entire document and the service offers no ETag, so concurrent edits from PPAC or another caller can still be lost.
+
+> **Resource thresholds are documented but replace-on-write.** `admin_upsert_resource_threshold` calls the published `licensing/.../threshold` `PUT`, which replaces the whole threshold document. The connector reads the current threshold for the environment and resource first and merges only the fields you supply, so an update that sets `limit` alone will not clear `notificationThreshold` or the stop flags. If the read fails — for example, when the caller can write but not read licensing data — the call degrades to a create and unspecified fields are left unset. There is no ETag, so a concurrent edit can still be lost.
+>
+> `entitlementId` is the licensing entitlement the resource consumes, such as `MCSMessages` or `MCSSessions`. Run `admin_list_resource_thresholds` first to discover the `resourceId` values that already have a threshold.
 
 ### Resource Inventory
 
@@ -118,6 +126,8 @@ The connector is dual-mode. The same capabilities are also exposed as typed REST
 | **Update Settings** | POST | `environmentId` (required), body `{ "settings": { "Name": value } }` |
 | **Get Draw From Tenant Pool** | GET | `environmentId` (required) |
 | **Set Draw From Tenant Pool** | POST | `environmentId` (required), body `{ "enabled": true }` |
+| **List Resource Thresholds** | GET | `entitlementId` (required), `environmentId` (optional filter) |
+| **Upsert Resource Threshold** | POST | `entitlementId`, `environmentId`, `resourceId` (all required), body with any of `limit`, `notificationThreshold`, `notifyIfOverCapacity`, `resourceConsumption`, `stopIfOverCapacity`, `stopResource` |
 | **List Agents** | GET | `environmentId` (optional — leave blank to inventory the whole tenant) |
 
 Every `environmentId` field renders as a picker of environment display names, populated at design time by an internal `Get Environment List` operation, so you never have to paste a GUID.
@@ -129,7 +139,8 @@ Every `environmentId` field renders as a picker of environment display names, po
 - **List Agents returns one object, not a paged list.** The shape is `agentCount`, `truncated`, `environmentId`, and an `agents` array — apply-to-each over `agents`. Check `truncated` before treating the result as a complete inventory; `true` means the page ceiling was reached and agents are missing.
 - **`isCLIAgent` is a string, not a boolean.** Compare against `'true'`, `'false'`, or `'unknown'`. A condition that tests it as a boolean will silently never match, and `'unknown'` must not be treated as `'false'`.
 - **`riskSignals` and `channels` are string arrays.** Flatten with `join(item()?['riskSignals'], ', ')` for a table or email body.
-- **Update Settings and Set Draw From Tenant Pool are writes.** The latter rewrites an entire allocation document and the service offers no ETag, so a concurrent edit from PPAC can be lost. Read first, and avoid running it on a fan-out loop.
+- **Update Settings, Set Draw From Tenant Pool, and Upsert Resource Threshold are writes.** Set Draw From Tenant Pool rewrites an entire allocation document and the service offers no ETag, so a concurrent edit from PPAC can be lost. Upsert Resource Threshold merges into the current threshold, but the underlying call is still a full replace with no ETag. Read first, and avoid running either on a fan-out loop.
+- **Upsert Resource Threshold only sends the body fields you supply.** Leave a property out of the body to keep its current value; sending `null` is treated the same as omitting it.
 
 ## Example Prompts
 
@@ -142,6 +153,9 @@ Enable SAS IP restrictions on environment [ID]
 What Copilot governance settings are configured for my tenant?
 Does my sandbox environment draw Copilot Studio capacity from the tenant pool?
 Stop the sandbox environments from drawing from the Copilot Studio tenant pool
+What resource thresholds are set on the MCSMessages entitlement?
+Cap Copilot Studio messages at 50,000 for this environment and notify me at 80%
+Stop the resource once it goes over its message limit
 Show me security recommendations for my environments
 Are there any cross-tenant connections I should review?
 What connectors are available in my dev environment?

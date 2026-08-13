@@ -3,7 +3,7 @@
     "info": {
         "title": "Power Platform Admin",
         "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, agent inventory, and application packages via the Power Platform Admin API.",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "contact": {
             "name": "Troy Taylor",
             "email": "troy@troystaylor.com"
@@ -397,6 +397,316 @@
                                     "x-ms-summary": "Entitlements",
                                     "items": {
                                         "type": "string"
+                                    }
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/resourcethresholds": {
+            "get": {
+                "summary": "List Resource Thresholds",
+                "description": "List every resource threshold configured for a licensing entitlement. A threshold caps how much of an entitlement an environment resource may consume and controls notification and stop behavior. Optionally filter to a single environment.",
+                "operationId": "ListResourceThresholds",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID to read thresholds for, for example MCSMessages or MCSSessions",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filter the result to a single environment. Leave blank to return thresholds for every environment.",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resource thresholds",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "entitlementId": {
+                                    "type": "string",
+                                    "description": "The entitlement the thresholds belong to",
+                                    "x-ms-summary": "Entitlement ID"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "The environment the result was filtered to, or null when unfiltered",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "thresholdCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of thresholds returned",
+                                    "x-ms-summary": "Threshold Count"
+                                },
+                                "thresholds": {
+                                    "type": "array",
+                                    "description": "Array of resource thresholds",
+                                    "x-ms-summary": "Thresholds",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "createdOn": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "description": "UTC date and time when the threshold was first created",
+                                                "x-ms-summary": "Created On"
+                                            },
+                                            "entitlementId": {
+                                                "type": "string",
+                                                "description": "Entitlement ID associated with the resource",
+                                                "x-ms-summary": "Entitlement ID"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment associated with the resource",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "resourceId": {
+                                                "type": "string",
+                                                "description": "Unique identifier for the resource",
+                                                "x-ms-summary": "Resource ID"
+                                            },
+                                            "limit": {
+                                                "type": "number",
+                                                "format": "double",
+                                                "description": "The limit set for resource consumption",
+                                                "x-ms-summary": "Limit"
+                                            },
+                                            "resourceConsumption": {
+                                                "type": "number",
+                                                "format": "double",
+                                                "description": "Current consumption of the resource",
+                                                "x-ms-summary": "Resource Consumption"
+                                            },
+                                            "notificationThreshold": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Percentage of the limit at which consumption notifications are sent",
+                                                "x-ms-summary": "Notification Threshold"
+                                            },
+                                            "notifyIfOverCapacity": {
+                                                "type": "boolean",
+                                                "description": "Whether to notify when consumption reaches the notification threshold",
+                                                "x-ms-summary": "Notify If Over Capacity"
+                                            },
+                                            "stopIfOverCapacity": {
+                                                "type": "boolean",
+                                                "description": "Whether to stop consuming capacity once the resource exceeds its limit",
+                                                "x-ms-summary": "Stop If Over Capacity"
+                                            },
+                                            "stopResource": {
+                                                "type": "boolean",
+                                                "description": "Whether the resource has been explicitly stopped. True means the resource is disabled.",
+                                                "x-ms-summary": "Stop Resource"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/resourcethresholds/upsert": {
+            "post": {
+                "summary": "Upsert Resource Threshold",
+                "description": "Create or update the resource threshold for an environment resource on a licensing entitlement. Reads the current threshold first and changes only the fields supplied, so unspecified fields keep their existing values.",
+                "operationId": "UpsertResourceThreshold",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID) that owns the resource",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID, for example MCSMessages or MCSSessions",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "resourceId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource ID the threshold applies to",
+                        "x-ms-summary": "Resource ID"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "limit": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "The limit set for resource consumption",
+                                    "x-ms-summary": "Limit"
+                                },
+                                "notificationThreshold": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Percentage of the limit (0-100) at which consumption notifications are sent",
+                                    "x-ms-summary": "Notification Threshold"
+                                },
+                                "notifyIfOverCapacity": {
+                                    "type": "boolean",
+                                    "description": "True to notify when consumption reaches the notification threshold",
+                                    "x-ms-summary": "Notify If Over Capacity"
+                                },
+                                "resourceConsumption": {
+                                    "type": "number",
+                                    "format": "double",
+                                    "description": "Current consumption of the resource",
+                                    "x-ms-summary": "Resource Consumption"
+                                },
+                                "stopIfOverCapacity": {
+                                    "type": "boolean",
+                                    "description": "True to stop consuming capacity once the resource exceeds its limit",
+                                    "x-ms-summary": "Stop If Over Capacity"
+                                },
+                                "stopResource": {
+                                    "type": "boolean",
+                                    "description": "True to explicitly stop the resource, putting it in a disabled state",
+                                    "x-ms-summary": "Stop Resource"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upsert result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Operation status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "entitlementId": {
+                                    "type": "string",
+                                    "description": "Entitlement ID",
+                                    "x-ms-summary": "Entitlement ID"
+                                },
+                                "resourceId": {
+                                    "type": "string",
+                                    "description": "Resource ID",
+                                    "x-ms-summary": "Resource ID"
+                                },
+                                "mergedWithExisting": {
+                                    "type": "boolean",
+                                    "description": "True when an existing threshold was found and the supplied fields were merged into it",
+                                    "x-ms-summary": "Merged With Existing"
+                                },
+                                "appliedFields": {
+                                    "type": "array",
+                                    "description": "Names of the fields that were set by this call",
+                                    "x-ms-summary": "Applied Fields",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "threshold": {
+                                    "type": "object",
+                                    "description": "The resulting resource threshold",
+                                    "x-ms-summary": "Threshold",
+                                    "properties": {
+                                        "createdOn": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "description": "UTC date and time when the threshold was first created",
+                                            "x-ms-summary": "Created On"
+                                        },
+                                        "entitlementId": {
+                                            "type": "string",
+                                            "description": "Entitlement ID associated with the resource",
+                                            "x-ms-summary": "Entitlement ID"
+                                        },
+                                        "environmentId": {
+                                            "type": "string",
+                                            "description": "Environment associated with the resource",
+                                            "x-ms-summary": "Environment ID"
+                                        },
+                                        "resourceId": {
+                                            "type": "string",
+                                            "description": "Unique identifier for the resource",
+                                            "x-ms-summary": "Resource ID"
+                                        },
+                                        "limit": {
+                                            "type": "number",
+                                            "format": "double",
+                                            "description": "The limit set for resource consumption",
+                                            "x-ms-summary": "Limit"
+                                        },
+                                        "resourceConsumption": {
+                                            "type": "number",
+                                            "format": "double",
+                                            "description": "Current consumption of the resource",
+                                            "x-ms-summary": "Resource Consumption"
+                                        },
+                                        "notificationThreshold": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Percentage of the limit at which consumption notifications are sent",
+                                            "x-ms-summary": "Notification Threshold"
+                                        },
+                                        "notifyIfOverCapacity": {
+                                            "type": "boolean",
+                                            "description": "Whether to notify when consumption reaches the notification threshold",
+                                            "x-ms-summary": "Notify If Over Capacity"
+                                        },
+                                        "stopIfOverCapacity": {
+                                            "type": "boolean",
+                                            "description": "Whether to stop consuming capacity once the resource exceeds its limit",
+                                            "x-ms-summary": "Stop If Over Capacity"
+                                        },
+                                        "stopResource": {
+                                            "type": "boolean",
+                                            "description": "Whether the resource has been explicitly stopped",
+                                            "x-ms-summary": "Stop Resource"
+                                        }
                                     }
                                 },
                                 "message": {

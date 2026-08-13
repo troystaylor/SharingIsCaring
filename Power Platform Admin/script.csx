@@ -13,7 +13,7 @@ public class Script : ScriptBase
 {
     // MCP Server metadata
     private const string SERVER_NAME = "power-platform-admin-mcp";
-    private const string SERVER_VERSION = "1.2.0";
+    private const string SERVER_VERSION = "1.3.0";
 
     // Power Platform Admin API
     private const string ADMIN_API_BASE = "https://api.powerplatform.com";
@@ -34,6 +34,14 @@ public class Script : ScriptBase
     private const string TENANT_HOST_SUFFIX = ".tenant.api.powerplatform.com";
     private const string LICENSING_API_VERSION = "1";
     private static readonly string[] TENANT_POOL_ENTITLEMENTS = { "MCSMessages", "MCSSessions" };
+
+    // Resource thresholds (supported licensing API on api.powerplatform.com)
+    private const string LICENSING_THRESHOLD_API_VERSION = "2024-10-01";
+    private static readonly string[] THRESHOLD_WRITABLE_FIELDS =
+    {
+        "limit", "notificationThreshold", "notifyIfOverCapacity",
+        "resourceConsumption", "stopIfOverCapacity", "stopResource"
+    };
 
     // Application Insights
     private const string APP_INSIGHTS_CONNECTION_STRING = "[INSERT_YOUR_APP_INSIGHTS_CONNECTION_STRING]";
@@ -61,6 +69,10 @@ public class Script : ScriptBase
                     return await HandleTypedGetTenantPoolDraw().ConfigureAwait(false);
                 case "SetTenantPoolDraw":
                     return await HandleTypedSetTenantPoolDraw().ConfigureAwait(false);
+                case "ListResourceThresholds":
+                    return await HandleTypedListResourceThresholds().ConfigureAwait(false);
+                case "UpsertResourceThreshold":
+                    return await HandleTypedUpsertResourceThreshold().ConfigureAwait(false);
                 case "ListAgents":
                     return await HandleTypedListAgents().ConfigureAwait(false);
                 case "GetEnvironmentDropdown":
@@ -353,6 +365,87 @@ public class Script : ScriptBase
             },
             new JObject
             {
+                ["name"] = "admin_list_resource_thresholds",
+                ["description"] = "List every resource threshold configured for a licensing entitlement, across all environments that have one. A threshold caps how much of an entitlement an environment resource may consume and controls notification and stop behavior. Returns the limit, current consumption, notification threshold percentage, and stop flags per resource. Read-only. Optionally pass environmentId to filter the result to a single environment.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["entitlementId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The entitlement ID to read thresholds for, for example MCSMessages or MCSSessions."
+                        },
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Optional. Filter the result to a single environment (GUID). Omit to return thresholds for every environment."
+                        }
+                    },
+                    ["required"] = new JArray { "entitlementId" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_upsert_resource_threshold",
+                ["description"] = "Create or update the resource threshold for an environment resource on a licensing entitlement. Sets the consumption limit, the notification threshold percentage, and whether to notify or stop when capacity is exceeded. Reads the current threshold first and changes only the fields supplied, so unspecified fields keep their existing values. This is a destructive operation — confirm with the user before executing.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The environment ID (GUID) that owns the resource."
+                        },
+                        ["entitlementId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The entitlement ID, for example MCSMessages or MCSSessions."
+                        },
+                        ["resourceId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The resource ID the threshold applies to. Use admin_list_resource_thresholds to find existing resource IDs."
+                        },
+                        ["limit"] = new JObject
+                        {
+                            ["type"] = "integer",
+                            ["description"] = "Optional. The limit set for resource consumption."
+                        },
+                        ["notificationThreshold"] = new JObject
+                        {
+                            ["type"] = "integer",
+                            ["description"] = "Optional. Percentage of the limit (0-100) at which consumption notifications are sent."
+                        },
+                        ["notifyIfOverCapacity"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Optional. true to notify when consumption reaches the notification threshold."
+                        },
+                        ["resourceConsumption"] = new JObject
+                        {
+                            ["type"] = "number",
+                            ["description"] = "Optional. Current consumption of the resource."
+                        },
+                        ["stopIfOverCapacity"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Optional. true to stop consuming capacity once the resource exceeds its limit."
+                        },
+                        ["stopResource"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Optional. true to explicitly stop the resource, putting it in a disabled state."
+                        }
+                    },
+                    ["required"] = new JArray { "environmentId", "entitlementId", "resourceId" }
+                }
+            },
+            new JObject
+            {
                 ["name"] = "admin_get_security_recommendations",
                 ["description"] = "Get security recommendations from Power Platform Advisor. Returns actionable recommendations for improving the security posture of your Power Platform tenant and environments.",
                 ["inputSchema"] = new JObject
@@ -519,6 +612,12 @@ public class Script : ScriptBase
                     break;
                 case "admin_set_tenant_pool_draw":
                     result = await HandleSetTenantPoolDraw(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_list_resource_thresholds":
+                    result = await HandleListResourceThresholds(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_upsert_resource_threshold":
+                    result = await HandleUpsertResourceThreshold(arguments).ConfigureAwait(false);
                     break;
                 case "admin_get_security_recommendations":
                     result = await HandleGetSecurityRecommendations(arguments).ConfigureAwait(false);
@@ -941,6 +1040,284 @@ public class Script : ScriptBase
                 ? "This environment now draws Copilot Studio message and session capacity from the tenant pool."
                 : "This environment no longer draws Copilot Studio message and session capacity from the tenant pool."
         };
+    }
+
+    // ─── Resource Thresholds ────────────────────────────────────────────
+
+    private async Task<JToken> HandleListResourceThresholds(JObject arguments)
+    {
+        var entitlementId = RequireEntitlementId(arguments["entitlementId"]?.ToString());
+        var environmentFilter = NormalizeEnvironmentFilter(arguments["environmentId"]?.ToString());
+
+        var thresholds = await FetchResourceThresholds(entitlementId).ConfigureAwait(false);
+
+        if (!string.IsNullOrEmpty(environmentFilter))
+        {
+            var filtered = new JArray();
+            foreach (var threshold in thresholds)
+            {
+                if (string.Equals(threshold["environmentId"]?.ToString(), environmentFilter, StringComparison.OrdinalIgnoreCase))
+                    filtered.Add(threshold);
+            }
+            thresholds = filtered;
+        }
+
+        return new JObject
+        {
+            ["entitlementId"] = entitlementId,
+            ["environmentId"] = string.IsNullOrEmpty(environmentFilter) ? (JToken)JValue.CreateNull() : environmentFilter,
+            ["thresholdCount"] = thresholds.Count,
+            ["thresholds"] = thresholds
+        };
+    }
+
+    private async Task<JToken> HandleUpsertResourceThreshold(JObject arguments)
+    {
+        var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
+        var entitlementId = RequireEntitlementId(arguments["entitlementId"]?.ToString());
+        var resourceId = arguments["resourceId"]?.ToString();
+        if (string.IsNullOrWhiteSpace(resourceId))
+            throw new ArgumentException("resourceId is required.");
+        resourceId = resourceId.Trim();
+
+        // The PUT replaces the whole threshold document, so seed the payload from the
+        // current values and overlay only what the caller supplied.
+        var existing = await TryFindResourceThreshold(entitlementId, envId, resourceId).ConfigureAwait(false);
+
+        var payload = new JObject();
+        if (existing != null)
+        {
+            foreach (var field in THRESHOLD_WRITABLE_FIELDS)
+            {
+                var current = existing[field];
+                if (current != null && current.Type != JTokenType.Null)
+                    payload[field] = NormalizeThresholdSeed(field, current);
+            }
+        }
+
+        var applied = new JArray();
+        foreach (var field in THRESHOLD_WRITABLE_FIELDS)
+        {
+            var supplied = arguments[field];
+            if (supplied == null || supplied.Type == JTokenType.Null) continue;
+
+            payload[field] = CoerceThresholdValue(field, supplied);
+            applied.Add(field);
+        }
+
+        if (applied.Count == 0)
+            throw new ArgumentException(
+                "Supply at least one threshold field to set: limit, notificationThreshold, notifyIfOverCapacity, resourceConsumption, stopIfOverCapacity, or stopResource.");
+
+        var response = await CallAdminApi(
+            HttpMethod.Put,
+            $"/licensing/environments/{envId}/entitlements/{Uri.EscapeDataString(entitlementId)}/resources/{Uri.EscapeDataString(resourceId)}/threshold?api-version={LICENSING_THRESHOLD_API_VERSION}",
+            payload.ToString(Newtonsoft.Json.Formatting.None)
+        ).ConfigureAwait(false);
+
+        var threshold = string.IsNullOrWhiteSpace(response) ? null : JToken.Parse(response);
+
+        return new JObject
+        {
+            ["status"] = "success",
+            ["environmentId"] = envId,
+            ["entitlementId"] = entitlementId,
+            ["resourceId"] = resourceId,
+            ["mergedWithExisting"] = existing != null,
+            ["appliedFields"] = applied,
+            ["threshold"] = threshold ?? payload,
+            ["message"] = existing != null
+                ? $"Updated the resource threshold for resource {resourceId} on entitlement {entitlementId}."
+                : $"Created a resource threshold for resource {resourceId} on entitlement {entitlementId}. No previous threshold was found, so unspecified fields were left unset."
+        };
+    }
+
+    private async Task<JArray> FetchResourceThresholds(string entitlementId)
+    {
+        var response = await CallAdminApi(
+            HttpMethod.Get,
+            $"/licensing/entitlements/{Uri.EscapeDataString(entitlementId)}/resourceThresholds?api-version={LICENSING_THRESHOLD_API_VERSION}"
+        ).ConfigureAwait(false);
+
+        if (string.IsNullOrWhiteSpace(response)) return new JArray();
+
+        var parsed = JToken.Parse(response);
+
+        var array = parsed as JArray;
+        if (array != null) return array;
+
+        var envelope = parsed as JObject;
+        if (envelope != null)
+        {
+            var value = envelope["value"] as JArray;
+            if (value != null) return value;
+        }
+
+        return new JArray();
+    }
+
+    private async Task<JObject> TryFindResourceThreshold(string entitlementId, string environmentId, string resourceId)
+    {
+        try
+        {
+            var thresholds = await FetchResourceThresholds(entitlementId).ConfigureAwait(false);
+
+            foreach (var item in thresholds)
+            {
+                var candidate = item as JObject;
+                if (candidate == null) continue;
+
+                if (string.Equals(candidate["environmentId"]?.ToString(), environmentId, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(candidate["resourceId"]?.ToString(), resourceId, StringComparison.OrdinalIgnoreCase))
+                    return candidate;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            // A caller that can write but not read must still be able to upsert,
+            // so a failed read degrades to a create rather than failing the call.
+            this.Context.Logger.LogInformation($"Could not read existing resource thresholds to merge: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string RequireEntitlementId(string entitlementId)
+    {
+        if (string.IsNullOrWhiteSpace(entitlementId))
+            throw new ArgumentException("entitlementId is required, for example MCSMessages or MCSSessions.");
+
+        var trimmed = entitlementId.Trim();
+        foreach (var character in trimmed)
+        {
+            if (!char.IsLetterOrDigit(character) && character != '-' && character != '_' && character != '.')
+                throw new ArgumentException("entitlementId may contain only letters, digits, hyphens, underscores, and periods.");
+        }
+
+        return trimmed;
+    }
+
+    // The read model returns limit and notificationThreshold as numbers with a decimal
+    // component, while the write model declares them as int32, so an echoed 1000.0 can
+    // fail model binding on the way back in.
+    private static JToken NormalizeThresholdSeed(string field, JToken value)
+    {
+        if (field == "limit" || field == "notificationThreshold")
+        {
+            double number;
+            if (TryReadDouble(value, out number) && number >= int.MinValue && number <= int.MaxValue)
+                return (int)Math.Round(number);
+        }
+
+        return value.DeepClone();
+    }
+
+    private static JToken CoerceThresholdValue(string field, JToken value)    {
+        switch (field)
+        {
+            case "limit":
+            case "notificationThreshold":
+            {
+                int number;
+                if (!TryReadInt(value, out number))
+                    throw new ArgumentException($"{field} must be a whole number.");
+                if (number < 0)
+                    throw new ArgumentException($"{field} must be zero or greater.");
+                if (field == "notificationThreshold" && number > 100)
+                    throw new ArgumentException("notificationThreshold is a percentage and must be between 0 and 100.");
+                return number;
+            }
+
+            case "resourceConsumption":
+            {
+                double number;
+                if (!TryReadDouble(value, out number))
+                    throw new ArgumentException("resourceConsumption must be a number.");
+                if (number < 0)
+                    throw new ArgumentException("resourceConsumption must be zero or greater.");
+                return number;
+            }
+
+            default:
+            {
+                bool flag;
+                if (!TryReadBool(value, out flag))
+                    throw new ArgumentException($"{field} must be true or false.");
+                return flag;
+            }
+        }
+    }
+
+    private static bool TryReadInt(JToken token, out int value)
+    {
+        value = 0;
+        if (token == null) return false;
+
+        if (token.Type == JTokenType.Integer)
+        {
+            value = token.Value<int>();
+            return true;
+        }
+
+        if (token.Type == JTokenType.Float)
+        {
+            var raw = token.Value<double>();
+            if (raw != Math.Floor(raw)) return false;
+            value = (int)raw;
+            return true;
+        }
+
+        if (token.Type == JTokenType.String)
+        {
+            return int.TryParse(
+                token.ToString().Trim(),
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out value);
+        }
+
+        return false;
+    }
+
+    private static bool TryReadDouble(JToken token, out double value)
+    {
+        value = 0;
+        if (token == null) return false;
+
+        if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
+        {
+            value = token.Value<double>();
+            return true;
+        }
+
+        if (token.Type == JTokenType.String)
+        {
+            return double.TryParse(
+                token.ToString().Trim(),
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out value);
+        }
+
+        return false;
+    }
+
+    private static bool TryReadBool(JToken token, out bool value)
+    {
+        value = false;
+        if (token == null) return false;
+
+        if (token.Type == JTokenType.Boolean)
+        {
+            value = token.Value<bool>();
+            return true;
+        }
+
+        if (token.Type == JTokenType.String)
+            return bool.TryParse(token.ToString().Trim(), out value);
+
+        return false;
     }
 
     private async Task<JToken> HandleGetSecurityRecommendations(JObject arguments)
@@ -1660,6 +2037,78 @@ public class Script : ScriptBase
         var args = new JObject { ["environmentId"] = envId, ["enabled"] = enabled };
         var result = await HandleSetTenantPoolDraw(args).ConfigureAwait(false);
         return CreateTypedResponse(result);
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedListResourceThresholds()
+    {
+        var entitlementId = GetQueryParam("entitlementId");
+        if (string.IsNullOrWhiteSpace(entitlementId))
+            return CreateTypedErrorResponse("entitlementId query parameter is required.", 400);
+
+        var args = new JObject { ["entitlementId"] = entitlementId };
+
+        var envId = GetQueryParam("environmentId");
+        if (!string.IsNullOrWhiteSpace(envId)) args["environmentId"] = envId;
+
+        try
+        {
+            var result = await HandleListResourceThresholds(args).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedUpsertResourceThreshold()
+    {
+        var envId = GetQueryParam("environmentId");
+        if (string.IsNullOrWhiteSpace(envId))
+            return CreateTypedErrorResponse("environmentId query parameter is required.", 400);
+
+        var entitlementId = GetQueryParam("entitlementId");
+        if (string.IsNullOrWhiteSpace(entitlementId))
+            return CreateTypedErrorResponse("entitlementId query parameter is required.", 400);
+
+        var resourceId = GetQueryParam("resourceId");
+        if (string.IsNullOrWhiteSpace(resourceId))
+            return CreateTypedErrorResponse("resourceId query parameter is required.", 400);
+
+        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        JObject bodyObj;
+        try
+        {
+            bodyObj = string.IsNullOrWhiteSpace(body) ? new JObject() : JObject.Parse(body);
+        }
+        catch (JsonException ex)
+        {
+            return CreateTypedErrorResponse($"Request body is not valid JSON: {ex.Message}", 400);
+        }
+
+        var args = new JObject
+        {
+            ["environmentId"] = envId,
+            ["entitlementId"] = entitlementId,
+            ["resourceId"] = resourceId
+        };
+
+        foreach (var field in THRESHOLD_WRITABLE_FIELDS)
+        {
+            var supplied = bodyObj[field];
+            if (supplied != null && supplied.Type != JTokenType.Null) args[field] = supplied;
+        }
+
+        try
+        {
+            var result = await HandleUpsertResourceThreshold(args).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
     }
 
     private async Task<HttpResponseMessage> HandleTypedListAgents()
