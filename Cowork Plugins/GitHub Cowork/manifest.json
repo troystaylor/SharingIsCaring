@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.30/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.30",
+  "version": "1.0.0",
+  "id": "7765fe96-b6c7-44f5-8edf-6412cd2d1236",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://github.com/troystaylor",
+    "privacyUrl": "https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement",
+    "termsOfUseUrl": "https://docs.github.com/site-policy/github-terms/github-terms-of-service"
+  },
+  "name": {
+    "short": "GitHub",
+    "full": "GitHub for Copilot Cowork"
+  },
+  "description": {
+    "short": "Triage issues, review pull requests, and report on engineering work in GitHub",
+    "full": "Extends Microsoft 365 Copilot Cowork with GitHub repository, issue, and pull request workflows through GitHub's official remote MCP server. Search code and repositories, triage and label issues, review and merge pull requests, draft release notes from merged work, produce engineering status reports across repositories, and delegate implementation tasks to the GitHub Copilot coding agent — all through natural conversation. Authentication uses your own GitHub identity, so Cowork only ever sees the repositories you already have access to."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#24292F",
+  "agentSkills": [
+    {
+      "folder": "./skills/explore-repositories"
+    },
+    {
+      "folder": "./skills/triage-issues"
+    },
+    {
+      "folder": "./skills/review-pull-requests"
+    },
+    {
+      "folder": "./skills/release-notes"
+    },
+    {
+      "folder": "./skills/engineering-report"
+    },
+    {
+      "folder": "./skills/delegate-to-copilot"
+    }
+  ],
+  "agentConnectors": [
+    {
+      "id": "github-mcp",
+      "displayName": "GitHub",
+      "description": "Search repositories and code, read and write issues, review and merge pull requests, and delegate work to the GitHub Copilot coding agent",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.githubcopilot.com/mcp/",
+          "mcpToolDescription": {
+            "file": "tools/github-tools.json"
+          },
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "{{OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ]
+}
