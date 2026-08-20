@@ -20,8 +20,16 @@ public class Script : ScriptBase
 
     // The environment picker is served from a different Power Platform API surface
     // than the Bots operations, so it is addressed absolutely rather than via basePath.
+    private const string PlatformApiBase = "https://api.powerplatform.com";
     private const string EnvironmentsUrl =
-        "https://api.powerplatform.com/environmentmanagement/environments?api-version=" + ApiVersion;
+        PlatformApiBase + "/environmentmanagement/environments?api-version=" + ApiVersion;
+
+    // Agent inventory (undocumented resource query API). Ported from the Power Platform
+    // Admin connector, where the quirks below were verified against the live service.
+    private const string ResourceQueryApiVersion = "2022-03-01-preview";
+    private const string AgentResourceType = "'microsoft.copilotstudio/agents'";
+    private const int AgentPageSize = 1000;
+    private const int AgentMaxPages = 10;
 
     // Optional hardcoded telemetry (Mission Control style)
     private const bool APP_INSIGHTS_ENABLED = false;
@@ -40,6 +48,16 @@ public class Script : ScriptBase
             if (this.Context.OperationId == "GetEnvironmentDropdown")
             {
                 return await HandleEnvironmentDropdownAsync().ConfigureAwait(false);
+            }
+
+            if (this.Context.OperationId == "GetAgentDropdown")
+            {
+                return await HandleAgentDropdownAsync().ConfigureAwait(false);
+            }
+
+            if (this.Context.OperationId == "ListAgents")
+            {
+                return await HandleListAgentsOperationAsync().ConfigureAwait(false);
             }
 
             // Standard REST operations pass through unchanged.
@@ -142,6 +160,492 @@ public class Script : ScriptBase
     {
         Guid parsed;
         return !string.IsNullOrWhiteSpace(value) && Guid.TryParse(value, out parsed);
+    }
+
+    // ─── Agent inventory (undocumented resourcequery API) ────────────────
+    //
+    // Ported from the Power Platform Admin connector. Two quirks were verified
+    // against the live service and must not be "cleaned up":
+    //   1. Every clause serializes "$type" first — it is a polymorphic discriminator
+    //      and the service rejects the document otherwise.
+    //   2. SkipToken does not advance between calls, so Skip offsets are the only
+    //      working pager. The orderby carries a unique tiebreaker because createdAt
+    //      ties shift the skip window and silently drop rows.
+
+    private JObject BuildAgentQuery(string environmentId, int skip)
+    {
+        var clauses = new JArray
+        {
+            new JObject
+            {
+                ["$type"] = "where",
+                ["FieldName"] = "type",
+                ["Operator"] = "in~",
+                ["Values"] = new JArray { AgentResourceType }
+            },
+            new JObject
+            {
+                ["$type"] = "extend",
+                ["FieldName"] = "joinKey",
+                ["Expression"] = "tolower(tostring(properties.environmentId))"
+            }
+        };
+
+        if (!string.IsNullOrEmpty(environmentId))
+        {
+            clauses.Add(new JObject
+            {
+                ["$type"] = "where",
+                ["FieldName"] = "joinKey",
+                ["Operator"] = "==",
+                ["Values"] = new JArray { $"'{environmentId.ToLowerInvariant()}'" }
+            });
+        }
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "project",
+            ["FieldList"] = new JArray { "joinKey", "name", "type", "properties" }
+        });
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "join",
+            ["JoinKind"] = "leftouter",
+            ["RightTable"] = new JObject
+            {
+                ["TableName"] = "PowerPlatformResources",
+                ["Clauses"] = new JArray
+                {
+                    new JObject
+                    {
+                        ["$type"] = "where",
+                        ["FieldName"] = "type",
+                        ["Operator"] = "==",
+                        ["Values"] = new JArray { "'microsoft.powerplatform/environments'" }
+                    },
+                    new JObject
+                    {
+                        ["$type"] = "project",
+                        ["FieldList"] = new JArray
+                        {
+                            "joinKey = tolower(name)",
+                            "environmentName = properties.displayName",
+                            "environmentRegion = location",
+                            "environmentType = properties.environmentType",
+                            "isManagedEnvironment = properties.isManaged"
+                        }
+                    }
+                }
+            },
+            ["LeftColumnName"] = "joinKey",
+            ["RightColumnName"] = "joinKey"
+        });
+
+        clauses.Add(new JObject
+        {
+            ["$type"] = "orderby",
+            ["FieldNamesAscDesc"] = new JObject
+            {
+                ["tostring(properties.createdAt)"] = "desc",
+                ["name"] = "asc"
+            }
+        });
+
+        return new JObject
+        {
+            ["Options"] = new JObject
+            {
+                ["Top"] = AgentPageSize,
+                ["Skip"] = skip,
+                ["SkipToken"] = string.Empty
+            },
+            ["TableName"] = "PowerPlatformResources",
+            ["Clauses"] = clauses
+        };
+    }
+
+    private async Task<JObject> FetchAgentsAsync(string environmentId)
+    {
+        var agents = new JArray();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var skip = 0;
+        var pages = 0;
+        var truncated = false;
+
+        while (true)
+        {
+            var body = BuildAgentQuery(environmentId, skip);
+            var response = await CallPlatformApiAsync(
+                HttpMethod.Post,
+                PlatformApiBase + "/resourcequery/resources/query?api-version=" + ResourceQueryApiVersion,
+                body).ConfigureAwait(false);
+
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(
+                    $"Agent inventory query returned {(int)response.StatusCode}: {Truncate(content)}");
+            }
+
+            var rows = JObject.Parse(content)["data"] as JArray ?? new JArray();
+
+            foreach (var row in rows)
+            {
+                var resourceName = row["name"]?.ToString();
+                if (!string.IsNullOrEmpty(resourceName) && !seen.Add(resourceName)) continue;
+                agents.Add(ProjectAgent(row));
+            }
+
+            pages++;
+            if (rows.Count < AgentPageSize) break;
+            if (pages >= AgentMaxPages) { truncated = true; break; }
+            skip += AgentPageSize;
+        }
+
+        return new JObject
+        {
+            ["agentCount"] = agents.Count,
+            ["truncated"] = truncated,
+            ["environmentId"] = string.IsNullOrEmpty(environmentId) ? (JToken)JValue.CreateNull() : environmentId,
+            ["agents"] = agents
+        };
+    }
+
+    private static JObject ProjectAgent(JToken row)
+    {
+        var props = row["properties"];
+        var viewers = props?["sharedWithViewers"];
+        var editors = props?["sharedWithEditors"];
+
+        var harness = TriState(props, "isCLIAgent");
+
+        return new JObject
+        {
+            ["displayName"] = Val(props?["displayName"]),
+            ["botId"] = Val(row["name"]),
+            ["schemaName"] = Val(props?["schemaName"]),
+            ["environmentId"] = Val(props?["environmentId"]),
+            ["environmentName"] = Val(row["environmentName"]),
+            ["environmentType"] = Val(row["environmentType"]),
+            ["environmentIsManaged"] = Val(row["isManagedEnvironment"]),
+            ["createdAt"] = Val(props?["createdAt"]),
+            ["createdBy"] = Val(props?["createdBy"]),
+            ["lastPublishedAt"] = Val(props?["lastPublishedAt"]),
+            ["ownerId"] = Val(props?["ownerId"]),
+            ["isQuarantined"] = Val(props?["isQuarantined"]),
+            ["isCLIAgent"] = harness,
+            ["harness"] = HarnessLabel(harness),
+            ["sharedWithViewersUserCount"] = Val(viewers?["userCount"]),
+            ["sharedWithViewersEntireTenant"] = Val(viewers?["entireTenant"]),
+            ["sharedWithEditorsUserCount"] = Val(editors?["userCount"]),
+            ["channels"] = props?["channels"] as JArray ?? new JArray()
+        };
+    }
+
+    /// <summary>
+    /// isCLIAgent only separates the GitHub Copilot harness from the other two.
+    /// "false" cannot distinguish Standard from Copilot Chat, so the label says so
+    /// rather than inventing a precision the field does not have.
+    /// </summary>
+    private static string HarnessLabel(string triState)
+    {
+        switch (triState)
+        {
+            case "true": return "GitHub Copilot";
+            case "false": return "Standard or Copilot Chat";
+            default: return "unknown";
+        }
+    }
+
+    // Absent is reported as "unknown" so a missing field is never mistaken for false.
+    private static string TriState(JToken parent, string propertyName)
+    {
+        var token = parent?[propertyName];
+        if (token == null || token.Type == JTokenType.Null) return "unknown";
+        if (token.Type == JTokenType.Boolean) return token.Value<bool>() ? "true" : "false";
+
+        bool parsed;
+        return bool.TryParse(token.ToString(), out parsed) ? (parsed ? "true" : "false") : "unknown";
+    }
+
+    private static JToken Val(JToken token)
+    {
+        return token == null || token.Type == JTokenType.Null ? JValue.CreateNull() : token;
+    }
+
+    private static bool IsTrue(JToken token)
+    {
+        if (token == null || token.Type == JTokenType.Null) return false;
+        if (token.Type == JTokenType.Boolean) return token.Value<bool>();
+
+        bool parsed;
+        return bool.TryParse(token.ToString(), out parsed) && parsed;
+    }
+
+    private static string Truncate(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        return value.Length <= 400 ? value : value.Substring(0, 400) + "...";
+    }
+
+    // ─── Containment ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Read-only. Returns the agents that match the containment criteria, with the
+    /// reasons each one qualified, so the decision is reviewable before anything acts.
+    /// Never returns agents whose harness is unknown unless explicitly asked, because
+    /// an absent isCLIAgent is not evidence of the expensive harness.
+    /// </summary>
+    private async Task<JObject> FindContainmentCandidatesAsync(JObject args)
+    {
+        var environmentId = args.Value<string>("environmentId");
+        var includeUnknownHarness = args["includeUnknownHarness"] != null
+            && ToBoolean(args["includeUnknownHarness"], "includeUnknownHarness");
+        var requireTenantWide = args["requireTenantWide"] == null
+            || ToBoolean(args["requireTenantWide"], "requireTenantWide");
+        var requireNeverPublished = args["requireNeverPublished"] != null
+            && ToBoolean(args["requireNeverPublished"], "requireNeverPublished");
+
+        var inventory = await FetchAgentsAsync(environmentId).ConfigureAwait(false);
+        var agents = (JArray)inventory["agents"];
+
+        var candidates = new JArray();
+        var skippedUnknownHarness = 0;
+        var alreadyQuarantined = 0;
+
+        foreach (var agent in agents)
+        {
+            var harness = agent["isCLIAgent"]?.ToString();
+
+            if (harness == "unknown")
+            {
+                skippedUnknownHarness++;
+                if (!includeUnknownHarness) continue;
+            }
+            else if (harness != "true")
+            {
+                continue;
+            }
+
+            if (IsTrue(agent["isQuarantined"]))
+            {
+                alreadyQuarantined++;
+                continue;
+            }
+
+            var tenantWide = IsTrue(agent["sharedWithViewersEntireTenant"]);
+            var neverPublished = string.IsNullOrEmpty(agent["lastPublishedAt"]?.ToString());
+
+            if (requireTenantWide && !tenantWide) continue;
+            if (requireNeverPublished && !neverPublished) continue;
+
+            var reasons = new JArray();
+            if (harness == "true") reasons.Add("githubCopilotHarness");
+            if (harness == "unknown") reasons.Add("harnessUnknown");
+            if (tenantWide) reasons.Add("sharedWithEntireTenant");
+            if (neverPublished) reasons.Add("neverPublished");
+
+            var candidate = (JObject)agent.DeepClone();
+            candidate["reasons"] = reasons;
+            candidates.Add(candidate);
+        }
+
+        return new JObject
+        {
+            ["candidateCount"] = candidates.Count,
+            ["scannedCount"] = agents.Count,
+            ["truncated"] = inventory["truncated"],
+            ["skippedUnknownHarness"] = skippedUnknownHarness,
+            ["skippedAlreadyQuarantined"] = alreadyQuarantined,
+            ["criteria"] = new JObject
+            {
+                ["environmentId"] = string.IsNullOrEmpty(environmentId) ? (JToken)JValue.CreateNull() : environmentId,
+                ["includeUnknownHarness"] = includeUnknownHarness,
+                ["requireTenantWide"] = requireTenantWide,
+                ["requireNeverPublished"] = requireNeverPublished
+            },
+            ["candidates"] = candidates
+        };
+    }
+
+    /// <summary>
+    /// Acts only on an explicit list of agents. Deliberately takes no filter, so a
+    /// caller cannot quarantine a population it has not first seen and named.
+    /// </summary>
+    private async Task<JObject> ContainAgentsAsync(JObject args)
+    {
+        if (!ToBoolean(args["confirm"], "confirm"))
+        {
+            throw new ArgumentException(
+                "Quarantining blocks end user access. Set confirm to true to proceed.");
+        }
+
+        var targets = args["agents"] as JArray;
+        if (targets == null || targets.Count == 0)
+        {
+            throw new ArgumentException(
+                "Provide an agents array of { environmentId, botId } pairs. " +
+                "Run find_containment_candidates first; this tool does not accept a filter.");
+        }
+
+        var results = new JArray();
+        var succeeded = 0;
+
+        foreach (var target in targets)
+        {
+            var envId = target["environmentId"]?.ToString();
+            var botId = target["botId"]?.ToString();
+
+            if (string.IsNullOrWhiteSpace(envId) || string.IsNullOrWhiteSpace(botId))
+            {
+                results.Add(new JObject
+                {
+                    ["environmentId"] = envId,
+                    ["botId"] = botId,
+                    ["succeeded"] = false,
+                    ["error"] = "Both environmentId and botId are required."
+                });
+                continue;
+            }
+
+            try
+            {
+                var endpoint = BotPath
+                    .Replace("{environmentId}", Uri.EscapeDataString(envId))
+                    .Replace("{botId}", Uri.EscapeDataString(botId))
+                    + "/api/botQuarantine/SetAsQuarantined?api-version=" + ApiVersion;
+
+                var response = await InvokeBackendAsync(HttpMethod.Post, endpoint, null).ConfigureAwait(false);
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                if (response.IsSuccessStatusCode) succeeded++;
+
+                results.Add(new JObject
+                {
+                    ["environmentId"] = envId,
+                    ["botId"] = botId,
+                    ["succeeded"] = response.IsSuccessStatusCode,
+                    ["status"] = (int)response.StatusCode,
+                    ["response"] = string.IsNullOrWhiteSpace(content) ? null : Truncate(content)
+                });
+            }
+            catch (Exception ex)
+            {
+                // One failure must not abandon the rest of the batch.
+                results.Add(new JObject
+                {
+                    ["environmentId"] = envId,
+                    ["botId"] = botId,
+                    ["succeeded"] = false,
+                    ["error"] = ex.Message
+                });
+            }
+        }
+
+        return new JObject
+        {
+            ["requested"] = targets.Count,
+            ["succeeded"] = succeeded,
+            ["failed"] = targets.Count - succeeded,
+            ["results"] = results
+        };
+    }
+
+    private async Task<HttpResponseMessage> CallPlatformApiAsync(HttpMethod method, string absoluteUrl, JObject body)
+    {
+        var outbound = new HttpRequestMessage(method, absoluteUrl);
+        outbound.Headers.Add("Accept", "application/json");
+
+        if (body != null)
+        {
+            outbound.Content = new StringContent(
+                body.ToString(Newtonsoft.Json.Formatting.None),
+                Encoding.UTF8,
+                "application/json");
+        }
+
+        if (this.Context.Request.Headers.Contains("Authorization"))
+        {
+            outbound.Headers.Add("Authorization", this.Context.Request.Headers.GetValues("Authorization"));
+        }
+
+        return await this.Context.SendAsync(outbound, this.CancellationToken).ConfigureAwait(false);
+    }
+
+    private string GetQueryParam(string name)
+    {
+        var query = this.Context.Request.RequestUri?.Query;
+        if (string.IsNullOrEmpty(query)) return null;
+
+        foreach (var pair in query.TrimStart('?').Split('&'))
+        {
+            if (pair.Length == 0) continue;
+            var parts = pair.Split(new[] { '=' }, 2);
+            if (string.Equals(Uri.UnescapeDataString(parts[0]), name, StringComparison.OrdinalIgnoreCase))
+            {
+                return parts.Length > 1 ? Uri.UnescapeDataString(parts[1]) : string.Empty;
+            }
+        }
+
+        return null;
+    }
+
+    private HttpResponseMessage JsonResponse(JToken payload, HttpStatusCode status = HttpStatusCode.OK)
+    {
+        return new HttpResponseMessage(status)
+        {
+            Content = new StringContent(
+                payload.ToString(Newtonsoft.Json.Formatting.None),
+                Encoding.UTF8,
+                "application/json")
+        };
+    }
+
+    private async Task<HttpResponseMessage> HandleListAgentsOperationAsync()
+    {
+        try
+        {
+            var result = await FetchAgentsAsync(GetQueryParam("environmentId")).ConfigureAwait(false);
+            return JsonResponse(result);
+        }
+        catch (Exception ex)
+        {
+            await LogExceptionToAppInsightsAsync(ex, "ListAgents").ConfigureAwait(false);
+            return JsonResponse(new JObject { ["error"] = ex.Message }, HttpStatusCode.BadRequest);
+        }
+    }
+
+    /// <summary>
+    /// Backs the agent dropdown, cascading from the selected environment.
+    /// </summary>
+    private async Task<HttpResponseMessage> HandleAgentDropdownAsync()
+    {
+        var dropdown = new JArray();
+
+        try
+        {
+            var inventory = await FetchAgentsAsync(GetQueryParam("environmentId")).ConfigureAwait(false);
+            foreach (var agent in (JArray)inventory["agents"])
+            {
+                var id = agent["botId"]?.ToString();
+                if (string.IsNullOrEmpty(id)) continue;
+
+                var label = agent["displayName"]?.ToString();
+                if (string.IsNullOrEmpty(label)) label = id;
+
+                // Surface the expensive harness in the picker itself.
+                if (agent["isCLIAgent"]?.ToString() == "true") label += "  (GitHub Copilot)";
+
+                dropdown.Add(new JObject { ["id"] = id, ["name"] = label });
+            }
+        }
+        catch
+        {
+            // A failed inventory yields an empty picker rather than a broken designer.
+        }
+
+        return JsonResponse(dropdown);
     }
 
     private async Task<HttpResponseMessage> HandleMcpRequestAsync()
@@ -309,7 +813,63 @@ public class Script : ScriptBase
                 "Permanently delete a Copilot Studio agent. This cannot be undone, so confirm must be set to true.",
                 AgentSchema(
                     new JObject { ["confirm"] = Prop("Must be true to acknowledge that deletion is permanent.", "boolean") },
-                    "confirm"))
+                    "confirm")),
+
+            // --- Inventory and containment ---
+            McpTool(
+                "list_agents",
+                "Inventory Copilot Studio agents with their harness. isCLIAgent is 'true' for the GitHub Copilot harness, 'false' for Standard or Copilot Chat, and 'unknown' when the platform did not report it. Omit environmentId to scan the whole tenant.",
+                new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = Prop("Optional environment ID. Omit to inventory the whole tenant.")
+                    }
+                }),
+
+            McpTool(
+                "find_containment_candidates",
+                "Read-only. Find GitHub Copilot harness agents that match containment criteria and return the reasons each qualified. Run this before contain_agents. Agents whose harness is unknown are excluded by default, because an absent field is not evidence of the expensive harness.",
+                new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = Prop("Optional environment ID. Omit to scan the whole tenant."),
+                        ["requireTenantWide"] = Prop("Only include agents shared with the entire tenant. Defaults to true.", "boolean"),
+                        ["requireNeverPublished"] = Prop("Only include agents that have never been published. Defaults to false.", "boolean"),
+                        ["includeUnknownHarness"] = Prop("Include agents whose harness the platform did not report. Defaults to false.", "boolean")
+                    }
+                }),
+
+            McpTool(
+                "contain_agents",
+                "Quarantine an explicit list of agents, blocking end user access while leaving them editable by makers and administrators. Takes no filter by design: run find_containment_candidates first and pass the agents you decided to contain. Requires confirm.",
+                new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["agents"] = new JObject
+                        {
+                            ["type"] = "array",
+                            ["description"] = "The specific agents to quarantine.",
+                            ["items"] = new JObject
+                            {
+                                ["type"] = "object",
+                                ["properties"] = new JObject
+                                {
+                                    ["environmentId"] = Prop("Environment ID"),
+                                    ["botId"] = Prop("Agent (bot) ID")
+                                },
+                                ["required"] = new JArray { "environmentId", "botId" }
+                            }
+                        },
+                        ["confirm"] = Prop("Must be true to acknowledge that this blocks end user access.", "boolean")
+                    },
+                    ["required"] = new JArray { "agents", "confirm" }
+                })
         };
 
         return CreateJsonRpcSuccessResponse(requestId, new JObject { ["tools"] = tools });
@@ -384,6 +944,26 @@ public class Script : ScriptBase
             if (string.Equals(toolName, "download_evaluation_snapshot", StringComparison.OrdinalIgnoreCase))
             {
                 return await HandleSnapshotDownloadAsync(args, requestId).ConfigureAwait(false);
+            }
+
+            // These tools compose several calls, so they return a built result
+            // rather than proxying one backend response.
+            switch ((toolName ?? string.Empty).ToLowerInvariant())
+            {
+                case "list_agents":
+                    return await CompositeResultAsync(
+                        requestId, toolName,
+                        FetchAgentsAsync(args.Value<string>("environmentId"))).ConfigureAwait(false);
+
+                case "find_containment_candidates":
+                    return await CompositeResultAsync(
+                        requestId, toolName,
+                        FindContainmentCandidatesAsync(args)).ConfigureAwait(false);
+
+                case "contain_agents":
+                    return await CompositeResultAsync(
+                        requestId, toolName,
+                        ContainAgentsAsync(args)).ConfigureAwait(false);
             }
 
             string endpoint;
@@ -557,6 +1137,40 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Wraps a composed (multi-call) tool result in the MCP content envelope.
+    /// Partial batch failures are reported inside the payload, so isError is reserved
+    /// for the case where nothing succeeded at all.
+    /// </summary>
+    private async Task<HttpResponseMessage> CompositeResultAsync(
+        JToken requestId, string toolName, Task<JObject> work)
+    {
+        var result = await work.ConfigureAwait(false);
+
+        var failedAll = result["requested"] != null
+            && result.Value<int>("requested") > 0
+            && result.Value<int>("succeeded") == 0;
+
+        await LogToAppInsightsAsync("MCP_ToolCall", new Dictionary<string, string>
+        {
+            { "tool", toolName ?? string.Empty },
+            { "status", failedAll ? "failed" : "ok" }
+        }).ConfigureAwait(false);
+
+        return CreateJsonRpcSuccessResponse(requestId, new JObject
+        {
+            ["content"] = new JArray
+            {
+                new JObject
+                {
+                    ["type"] = "text",
+                    ["text"] = result.ToString(Newtonsoft.Json.Formatting.Indented)
+                }
+            },
+            ["isError"] = failedAll
+        });
+    }
+
     private async Task<HttpResponseMessage> HandleSnapshotDownloadAsync(JObject args, JToken requestId)
     {
         var endpoint = BuildEndpoint(args,
@@ -713,22 +1327,7 @@ public class Script : ScriptBase
 
     private async Task<HttpResponseMessage> InvokeBackendAsync(HttpMethod method, string endpointWithQuery, JObject body)
     {
-        var outbound = new HttpRequestMessage(method, BackendBaseUrl + endpointWithQuery);
-
-        if (body != null)
-        {
-            outbound.Content = new StringContent(
-                body.ToString(Newtonsoft.Json.Formatting.None),
-                Encoding.UTF8,
-                "application/json");
-        }
-
-        if (this.Context.Request.Headers.Contains("Authorization"))
-        {
-            outbound.Headers.Add("Authorization", this.Context.Request.Headers.GetValues("Authorization"));
-        }
-
-        return await this.Context.SendAsync(outbound, this.CancellationToken).ConfigureAwait(false);
+        return await CallPlatformApiAsync(method, BackendBaseUrl + endpointWithQuery, body).ConfigureAwait(false);
     }
 
     private HttpResponseMessage CreateJsonRpcSuccessResponse(JToken id, JObject result)
