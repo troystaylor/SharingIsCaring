@@ -1,0 +1,1493 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Copilot Studio Bots",
+    "description": "Complete coverage of the Power Platform API Bots operations for Microsoft Copilot Studio. Manage maker evaluation test sets and runs, download evaluation snapshots, quarantine and release agents, control the admin connector consent bypass, reassign agent ownership, and delete agents. Includes MCP support for Copilot Studio agents.",
+    "version": "1.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "api.powerplatform.com",
+  "basePath": "/copilotstudio",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets": {
+      "get": {
+        "summary": "Get Agent Test Sets",
+        "description": "Retrieve all test sets defined for a specific agent in the environment.",
+        "operationId": "GetAgentTestSets",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test sets.",
+            "schema": {
+              "$ref": "#/definitions/TestSetListResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}": {
+      "get": {
+        "summary": "Get Agent Test Set Details",
+        "description": "Retrieve detailed information about a specific test set, including test cases and descriptions.",
+        "operationId": "GetAgentTestSetDetails",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testSetId",
+            "in": "path",
+            "description": "The unique identifier for the test set.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Set ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentTestSets",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                },
+                "botId": {
+                  "parameter": "botId"
+                },
+                "api-version": "2024-10-01"
+              },
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test set details.",
+            "schema": {
+              "$ref": "#/definitions/TestSetDetails"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Test set not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testsets/{testSetId}/run": {
+      "post": {
+        "summary": "Start Agent Evaluation",
+        "description": "Trigger an asynchronous evaluation run for a test set against the agent. Returns a run ID to track progress and retrieve results. By default, evaluates the draft (unpublished) version of the agent.",
+        "operationId": "StartAgentEvaluation",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testSetId",
+            "in": "path",
+            "description": "The unique identifier for the test set to evaluate.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Set ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentTestSets",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                },
+                "botId": {
+                  "parameter": "botId"
+                },
+                "api-version": "2024-10-01"
+              },
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "Evaluation run configuration.",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mcsConnectionId": {
+                  "type": "string",
+                  "description": "The Copilot Studio connection ID for authenticated evaluation. If empty, the evaluation runs anonymously without access to authenticated tools or knowledge sources.",
+                  "x-ms-summary": "Connection ID"
+                },
+                "RunOnPublishedBot": {
+                  "type": "boolean",
+                  "description": "When true, evaluates the published version of the agent. Defaults to false (evaluates draft version).",
+                  "default": false,
+                  "x-ms-summary": "Run On Published Agent"
+                },
+                "EvaluationRunName": {
+                  "type": "string",
+                  "description": "Optional name for this evaluation run. Useful for identifying runs in dashboards and reports.",
+                  "x-ms-summary": "Evaluation Run Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully started evaluation run.",
+            "schema": {
+              "$ref": "#/definitions/EvaluationRunResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Agent or test set not found."
+          },
+          "422": {
+            "description": "Another evaluation run is already in progress for this agent. Only one run at a time is allowed."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testruns": {
+      "get": {
+        "summary": "Get Agent Test Runs",
+        "description": "Retrieve a list of all evaluation runs for an agent, including current status and progress.",
+        "operationId": "GetAgentTestRuns",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test runs.",
+            "schema": {
+              "$ref": "#/definitions/TestRunListResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testruns/{testRunId}": {
+      "get": {
+        "summary": "Get Agent Test Run Details",
+        "description": "Retrieve detailed results for a specific evaluation run, including test case results and quality metrics (abstention, relevance, completeness).",
+        "operationId": "GetAgentTestRunDetails",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testRunId",
+            "in": "path",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Run ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentTestRuns",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                },
+                "botId": {
+                  "parameter": "botId"
+                },
+                "api-version": "2024-10-01"
+              },
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved test run details.",
+            "schema": {
+              "$ref": "#/definitions/EvaluationRunDetails"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Test run not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/makerevaluation/testruns/{testRunId}/snapshot": {
+      "get": {
+        "summary": "Download Agent Evaluation Snapshot",
+        "description": "Download the agent content snapshot captured for a specific evaluation run as a ZIP file. Use this to archive the exact agent configuration that produced a set of results.",
+        "operationId": "DownloadAgentEvaluationSnapshot",
+        "produces": [
+          "application/zip"
+        ],
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "testRunId",
+            "in": "path",
+            "description": "The unique identifier for the evaluation run.",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Test Run ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentTestRuns",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                },
+                "botId": {
+                  "parameter": "botId"
+                },
+                "api-version": "2024-10-01"
+              },
+              "value-collection": "value",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The agent content snapshot ZIP file.",
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "The agent content snapshot ZIP file.",
+              "x-ms-summary": "Snapshot File"
+            },
+            "headers": {
+              "Content-Disposition": {
+                "type": "string",
+                "description": "Contains the suggested file name for the downloaded snapshot."
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "404": {
+            "description": "Test run not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/botQuarantine": {
+      "get": {
+        "summary": "Get Agent Quarantine Status",
+        "description": "Retrieve the quarantine status of a Copilot Studio agent. A quarantined agent cannot be used by end users until it is released.",
+        "operationId": "GetAgentQuarantineStatus",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the quarantine status.",
+            "schema": {
+              "$ref": "#/definitions/BotQuarantineStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/botQuarantine/SetAsQuarantined": {
+      "post": {
+        "summary": "Quarantine Agent",
+        "description": "Set the quarantine status of a Copilot Studio agent to true. Quarantining blocks end user access to the agent while leaving it available to makers and administrators.",
+        "operationId": "QuarantineAgent",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent successfully quarantined.",
+            "schema": {
+              "$ref": "#/definitions/BotQuarantineStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/botQuarantine/SetAsUnquarantined": {
+      "post": {
+        "summary": "Release Agent From Quarantine",
+        "description": "Set the quarantine status of a Copilot Studio agent to false, restoring end user access to the agent.",
+        "operationId": "UnquarantineAgent",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent successfully released from quarantine.",
+            "schema": {
+              "$ref": "#/definitions/BotQuarantineStatus"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/connectorConsentBypass": {
+      "get": {
+        "summary": "Get Connector Consent Bypass",
+        "description": "Get the admin connector consent bypass setting for a Copilot Studio agent. When enabled, end users are not prompted to consent to the connections the agent uses.",
+        "operationId": "GetConnectorConsentBypass",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the connector consent bypass setting.",
+            "schema": {
+              "$ref": "#/definitions/ConnectorConsentBypassResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      },
+      "put": {
+        "summary": "Set Connector Consent Bypass",
+        "description": "Set the admin connector consent bypass setting for a Copilot Studio agent. Enabling the bypass suppresses the end user connection consent prompt, so review the agent's connections before turning it on.",
+        "operationId": "SetConnectorConsentBypass",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "The connector consent bypass setting to apply.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SetAdminConsentBypassRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connector consent bypass setting successfully updated.",
+            "schema": {
+              "$ref": "#/definitions/ConnectorConsentBypassResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request - The request body is missing or invalid."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/botAdminOperations": {
+      "delete": {
+        "summary": "Delete Agent",
+        "description": "Permanently delete a Copilot Studio agent. This is irreversible, so confirm the agent identifier before calling this operation.",
+        "operationId": "DeleteAgent",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot) to delete.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent successfully deleted."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/botAdminOperations/reassign": {
+      "post": {
+        "summary": "Reassign Agent Owner",
+        "description": "Reassign ownership of a Copilot Studio agent to a different Microsoft Entra user. Use this to recover agents whose owner has left the organization.",
+        "operationId": "ReassignAgent",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "description": "The new owner of the agent.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ReassignBotRequestBody"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Agent ownership successfully reassigned."
+          },
+          "400": {
+            "description": "Bad request - The new owner identifier is missing or invalid."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/metadata/environments": {
+      "get": {
+        "summary": "Get Environment List",
+        "description": "Internal operation that backs the environment dropdown. Returns environment IDs and display names.",
+        "operationId": "GetEnvironmentDropdown",
+        "x-ms-visibility": "internal",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Environment list for the dropdown.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Environment ID"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Environment display name"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/": {
+      "post": {
+        "summary": "Invoke Copilot Studio Bots MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration. Handles JSON-RPC 2.0 requests for all agent evaluation and administration tools.",
+        "operationId": "InvokeMCP",
+        "parameters": [],
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "MCP request processed successfully.",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Invalid MCP request format."
+          },
+          "500": {
+            "description": "MCP processing error."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "x-ms-docs-operation-type": "operation"
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://api.powerplatform.com/.default": "Access Power Platform APIs"
+      }
+    }
+  },
+  "definitions": {
+    "TestSetListResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "Array of test sets.",
+          "items": {
+            "$ref": "#/definitions/TestSetSummary"
+          }
+        }
+      }
+    },
+    "TestSetSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test set."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name of the test set."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the test set's purpose."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the test set (e.g., Active, Inactive).",
+          "enum": [
+            "Active",
+            "Inactive"
+          ]
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total number of test cases in this set."
+        },
+        "auditInfo": {
+          "$ref": "#/definitions/AuditInfo"
+        }
+      }
+    },
+    "TestSetDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test set."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name of the test set."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the test set."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the test set.",
+          "enum": [
+            "Active",
+            "Inactive"
+          ]
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total number of test cases in this set."
+        },
+        "testCases": {
+          "type": "array",
+          "description": "List of test cases in this set.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Test case identifier."
+              },
+              "input": {
+                "type": "string",
+                "description": "Input query or test case prompt."
+              },
+              "expectedOutput": {
+                "type": "string",
+                "description": "Expected output or desired behavior."
+              }
+            }
+          }
+        },
+        "auditInfo": {
+          "$ref": "#/definitions/AuditInfo"
+        }
+      }
+    },
+    "AuditInfo": {
+      "type": "object",
+      "properties": {
+        "createdBy": {
+          "type": "string",
+          "description": "User ID who created the test set."
+        },
+        "createdOn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the test set was created."
+        },
+        "modifiedBy": {
+          "type": "string",
+          "description": "User ID who last modified the test set."
+        },
+        "modifiedOn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the test set was last modified."
+        }
+      }
+    },
+    "EvaluationRunResponse": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string",
+          "description": "Unique identifier for this evaluation run. Use this ID to retrieve run details and results."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the evaluation run.",
+          "enum": [
+            "Pending",
+            "Running",
+            "Completed",
+            "Failed"
+          ]
+        },
+        "executionState": {
+          "type": "string",
+          "description": "Detailed execution status."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation started."
+        },
+        "lastUpdatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the run status was last updated."
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total number of test cases in the evaluation."
+        },
+        "testCasesProcessed": {
+          "type": "integer",
+          "description": "Number of test cases processed so far."
+        }
+      }
+    },
+    "EvaluationRunDetails": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the evaluation run."
+        },
+        "environmentId": {
+          "type": "string",
+          "description": "Environment identifier."
+        },
+        "cdsBotId": {
+          "type": "string",
+          "description": "Agent (bot) identifier."
+        },
+        "testSetId": {
+          "type": "string",
+          "description": "Test set identifier used for this run."
+        },
+        "state": {
+          "type": "string",
+          "description": "Current state of the run.",
+          "enum": [
+            "Pending",
+            "Running",
+            "Completed",
+            "Failed"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the evaluation."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation started."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the evaluation completed."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "User ID of the person who started the evaluation."
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "description": "Total test cases in the test set."
+        },
+        "mcsConnectionId": {
+          "type": "string",
+          "description": "Connection ID used for user profile in evaluation. Null if no authentication."
+        },
+        "testCaseResults": {
+          "type": "array",
+          "description": "Results for each test case in the evaluation.",
+          "items": {
+            "$ref": "#/definitions/TestCaseResult"
+          }
+        }
+      }
+    },
+    "TestCaseResult": {
+      "type": "object",
+      "properties": {
+        "testCaseId": {
+          "type": "string",
+          "description": "Identifier of the test case."
+        },
+        "state": {
+          "type": "string",
+          "description": "Completion status of the test case.",
+          "enum": [
+            "Passed",
+            "Failed",
+            "Error"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "Detailed status message."
+        },
+        "errorReason": {
+          "type": "string",
+          "description": "Error description if test case failed."
+        },
+        "aiResultReason": {
+          "type": "string",
+          "description": "AI-generated explanation of the test case result."
+        },
+        "metricsResults": {
+          "type": "array",
+          "description": "Quality metrics and test results.",
+          "items": {
+            "$ref": "#/definitions/MetricResult"
+          }
+        }
+      }
+    },
+    "MetricResult": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of test method (e.g., GeneralQuality, Hallucination)."
+        },
+        "result": {
+          "type": "object",
+          "description": "Test result details.",
+          "properties": {
+            "abstention": {
+              "type": "boolean",
+              "description": "Whether the agent abstained from answering."
+            },
+            "relevance": {
+              "type": "boolean",
+              "description": "Whether the answer was relevant to the query."
+            },
+            "completeness": {
+              "type": "boolean",
+              "description": "Whether the answer was complete."
+            },
+            "data": {
+              "type": "object",
+              "description": "Additional metric-specific data."
+            }
+          }
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the metric evaluation."
+        }
+      }
+    },
+    "TestRunListResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "Array of evaluation runs.",
+          "items": {
+            "$ref": "#/definitions/EvaluationRunDetails"
+          }
+        }
+      }
+    },
+    "BotQuarantineStatus": {
+      "type": "object",
+      "description": "The quarantine state of a Copilot Studio agent.",
+      "properties": {
+        "isBotQuarantined": {
+          "type": "boolean",
+          "description": "Indicates whether the agent is quarantined.",
+          "x-ms-summary": "Is Quarantined"
+        },
+        "lastUpdateTimeUtc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the quarantine status was last changed, in UTC.",
+          "x-ms-summary": "Last Update Time (UTC)"
+        }
+      }
+    },
+    "ConnectorConsentBypassResponse": {
+      "type": "object",
+      "description": "The admin connector consent bypass setting for a Copilot Studio agent.",
+      "properties": {
+        "adminConsentBypass": {
+          "type": "boolean",
+          "description": "Indicates whether admin connector consent bypass is enabled for the agent.",
+          "x-ms-summary": "Admin Consent Bypass"
+        }
+      }
+    },
+    "SetAdminConsentBypassRequest": {
+      "type": "object",
+      "description": "Request body for setting the admin connector consent bypass setting for a Copilot Studio agent.",
+      "required": [
+        "adminConsentBypass"
+      ],
+      "properties": {
+        "adminConsentBypass": {
+          "type": "boolean",
+          "description": "Set to true to suppress the end user connection consent prompt for this agent, or false to require consent.",
+          "x-ms-summary": "Admin Consent Bypass"
+        }
+      }
+    },
+    "ReassignBotRequestBody": {
+      "type": "object",
+      "description": "Request body for reassigning the owner of a Copilot Studio agent.",
+      "required": [
+        "NewOwnerAadUserId"
+      ],
+      "properties": {
+        "NewOwnerAadUserId": {
+          "type": "string",
+          "description": "The Microsoft Entra object ID of the user who becomes the new owner of the agent.",
+          "x-ms-summary": "New Owner Entra User ID"
+        }
+      }
+    }
+  },
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/bots"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "IT Operations;Productivity"
+    }
+  ]
+}
