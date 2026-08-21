@@ -51,13 +51,18 @@ Ask for the whole set together — the pieces are useless individually.
 
 ## Sensitive fields
 
-Name the requirement, state the retention rule, offer the exit.
+Lead with the hand-fill option, state the purpose, and be accurate about retention.
 
-> **Good:** "The payroll form requires your National Insurance number. I won't save
-> it — it'll be asked again on any future form. If you'd rather not share it here,
-> say skip and I'll leave it blank for you to complete yourself."
+> **Good:** "The payroll form needs your National Insurance number. My suggestion is
+> to leave it blank and write it in yourself before sending — that keeps it out of
+> this conversation entirely. If you'd rather I filled it in, say so. I won't add it
+> to your saved profile, though I can't speak for your organisation's Copilot
+> memory or chat history settings."
 >
 > **Bad:** "What's your NI number?" — no purpose, no retention statement, no exit.
+>
+> **Also bad:** "I won't save it anywhere" — a promise this skill cannot keep. It
+> controls the profile file, not chat history retention.
 
 ## Confirming stale values
 

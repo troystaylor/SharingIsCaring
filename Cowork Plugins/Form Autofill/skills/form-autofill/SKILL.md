@@ -45,6 +45,14 @@ Tier 3. Never fill these from memory, from the vault, from an earlier form in th
 same session, or from another attachment. Ask every time, even if the same value
 was provided ten minutes ago.
 
+**Prefer not filling them at all.** For Tier 3 fields, offer to leave the field
+blank so the user can complete it by hand before sending. Typing a government
+identifier into a conversation is a disclosure in itself, whatever this skill does
+with it afterwards. Recommend the hand-fill route first, and accept the value only
+if the user chooses to give it. A form returned with three blanks and a clear note
+about them is a better outcome than one filled at the cost of putting an identifier
+into chat history.
+
 ## Workflow
 
 ### 1. Triage the attachments
@@ -118,6 +126,24 @@ outbound form goes to a third party and deserves its own decision.
 
 Hand confirmed Tier 2 answers to `profile-vault`. Tier 3 answers are discarded at
 the end of the session and never written anywhere.
+
+## Never Mine Other Documents For Values
+
+Fill only from three places: the user's directory profile, the vault, and answers the
+user gives in this run.
+
+**Never read another document to harvest values.** Not a previously completed form,
+not a questionnaire, not a spreadsheet that happens to contain personal details, and
+not another attachment in the same packet beyond the form being filled.
+
+Completed forms accumulate in OneDrive and are easy to find by name. Using one to
+fill another crosses a boundary the user never authorised: the audiences differ, the
+values may be stale, and a detail given to a travel desk is not thereby available to
+a credit application. If the vault is absent, **ask** — do not go looking for a
+substitute.
+
+If a file that looks like a profile is encountered, do not read it for values. Say it
+exists and ask whether the user wants it used.
 
 ## Never Leak Values Into Summaries
 

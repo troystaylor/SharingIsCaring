@@ -56,6 +56,12 @@ for convenience, decline and explain: these values are asked fresh each time
 specifically so a stored copy can't be exposed. Offer to make the asking faster
 instead.
 
+**Be precise about what "never stored" means.** It means this skill never writes the
+value to the vault file. It does not mean the value exists nowhere — Copilot memory
+and chat history retention operate independently of this skill and are outside its
+control. When describing retention to the user, speak only for the vault, and point
+them to their Copilot personalization and memory settings for the rest.
+
 ### Don't store — Tier 1
 
 Directory profile values — job title, department, office, manager, work contacts —
@@ -126,6 +132,12 @@ than relying on this skill's own good behavior.
 3. Check the `Confirmed` date and apply the freshness rules below
 4. If the file doesn't exist, say so and proceed to interview — this is normal, not
    an error
+5. **Never substitute another file for the vault.** If `form-profile.md` is absent,
+   do not search OneDrive for something that looks like a profile, and do not read a
+   completed form, questionnaire, or spreadsheet as a stand-in. A file that happens
+   to contain personal details is not a vault: it has no provenance, no confirmation
+   dates, and the user never approved it as a fill source. Go to the interview
+   instead. An absent vault means *ask*, never *improvise*.
 
 ## Writing
 

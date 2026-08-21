@@ -66,12 +66,25 @@ as though the form can't proceed without it.
 
 ### 5. Handle sensitive fields separately
 
-Ask for sensitive details — government identifiers, tax numbers, bank details,
-passport numbers, health information — in a clearly marked final group, with:
+Sensitive details — government identifiers, tax numbers, bank details, passport
+numbers, health information — get a clearly marked final group.
 
-- Which form requires it and for what purpose
-- A statement that the value **will not be saved** and will be asked again next time
-- An explicit offer to leave it blank and complete that part personally
+**Offer the hand-fill option first.** For these fields, leaving the form blank so
+the user completes it themselves is the *preferred* outcome, not a fallback. Typing
+a government identifier into a conversation is a disclosure in itself, regardless
+of what happens to it afterwards. Say so plainly:
+
+> The payroll form needs your National Insurance number. My suggestion is to leave
+> it blank and write it in yourself before sending — that keeps it out of this
+> conversation entirely. If you'd rather I filled it in, tell me and I will.
+
+If the user chooses to supply the value, describe what happens to it **accurately**:
+
+- It is used for this form only and is **not written to the saved profile**
+- This skill will ask again next time rather than remembering it
+- **Do not claim the value is stored nowhere.** This skill controls only what it
+  writes to the profile file. It does not control Copilot memory or chat history
+  retention, which may keep conversation content independently.
 
 Never bundle a sensitive field quietly among ordinary ones.
 
@@ -143,6 +156,7 @@ without restarting the whole set.
 
 - Ask for a sensitive value that isn't actually required by a document in scope
 - Retain a sensitive value beyond the immediate task
+- Claim a value is stored nowhere — this skill speaks only for what it writes
 - Pressure, repeat, or rephrase a declined question
 - Guess or infer a personal detail from context
 - Echo an unmasked sensitive value back into the conversation

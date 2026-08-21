@@ -46,6 +46,55 @@ relying on the skills' own good behavior.
 You can read and edit the file directly — it's plain Markdown — and you can ask
 Cowork to show, correct, or delete its contents at any time.
 
+## What the Skills Can and Cannot Promise
+
+The skills control exactly one thing: **whether a value is written to the vault**.
+They do not control platform-level retention, and they no longer claim to.
+
+Microsoft 365 Copilot personalization and memory *can* retain details inferred from
+chat history, stored in your Exchange mailbox, and enhanced personalization is on by
+default. Whether anything is actually retained depends on tenant and user settings —
+in testing the memory store was queried directly and found **empty**, so treat this
+as a capability to be aware of rather than an observed leak.
+
+What follows:
+
+- The skills promise only that a value is **not written to the vault**. They never
+  claim it is stored nowhere, because they cannot know that.
+- For sensitive fields the skills **recommend leaving the field blank** so you
+  complete it by hand. Typing a government identifier into a conversation is a
+  disclosure in itself, whatever happens to it afterwards.
+- A form returned with a few blanks and a clear note about them is a better outcome
+  than one filled at the cost of putting an identifier into a conversation.
+
+Review what is retained under **Copilot → Settings → Personalization and memory**,
+where memories can be viewed and cleared. Admins can turn enhanced personalization
+off tenant-wide.
+
+## Completed Forms Are Not Data Sources
+
+Testing surfaced a real contamination path worth knowing about.
+
+A filled form left in OneDrive **becomes discoverable to later runs**. In testing,
+a completed travel questionnaire was found by name and used as a data source for an
+external credit application — output from one task silently became input to another,
+with a different audience and no confirmation the values were current.
+
+The skills now prohibit this explicitly:
+
+- An absent vault means **ask**, never improvise. No searching OneDrive for a
+  lookalike file, no reading a completed form as a stand-in.
+- Values come from exactly three places: the directory profile, the vault, and
+  answers given in the current run.
+
+Two practical consequences:
+
+- **Clear out completed forms you don't need**, especially ones holding personal
+  details. They are findable.
+- **A governed vault is safer than an ad-hoc file.** A single confirmed source with
+  provenance dates and an explicit prohibited-field list beats whatever a filename
+  search happens to surface.
+
 ## Install
 
 ### As personal skills
@@ -69,15 +118,21 @@ rendered from the Fluent UI System Icons **Form** glyph. During development,
 
 Set up an event-driven task in Cowork:
 
-> When I receive an email with a PDF, Word, or Excel attachment that looks like a
-> form to fill out, triage the attachments, fill what you can, ask me about the
-> rest, and draft a reply back to the sender.
+> When I receive an email with "Forms to complete" in the subject, triage any PDF,
+> Word, or Excel attachments, fill out the ones that are forms, ask me about anything
+> you can't fill, and draft a reply to the sender with the completed files attached.
+
+**Scope the trigger with a subject keyword.** Without a filter it fires on every
+email with an attachment, drafting replies to real correspondents.
 
 Event-driven tasks default to draft-and-approve, so the reply waits for you.
+Attachments on the triggering message are readable directly — no re-upload needed.
 
-**Choose "run in current conversation" if you want answers to persist between
-forms** — a new conversation each time loses session context, though the vault
-covers most of that gap.
+**Keep trigger instructions minimal.** Anything you put in the trigger prompt
+overrides skill behavior. In testing, a prompt telling the agent to "use the profile
+vault / saved personal details" caused it to search OneDrive and read an unrelated
+file when no vault existed. Describe *what* you want done and let the skills decide
+*how*.
 
 ## Design Notes
 
@@ -117,15 +172,23 @@ Verified against the fixtures in [test-fixtures/](test-fixtures/readme.md):
 | Question | Answer |
 |---|---|
 | Can Cowork fill an AcroForm and preserve it? | **Yes** — fields remained editable after filling; the read-only field was left intact |
-| Does it handle a flat, unfillable PDF honestly? | **Yes** — reported it, offered a new document, and asked first |
+| Does it handle a flat, unfillable PDF honestly? | **Yes** — reported it, offered an alternative, and asked first |
 | Is the directory profile retrievable? | **Yes** — Tier 1 fields filled silently; missing ones degraded to questions rather than guesses |
 | Does it tick consent checkboxes unasked? | **No** — it asked which consents to give and ticked only those |
 | Does it dedupe fields across a packet? | **Yes** — overlapping concepts asked once, not once per form |
+| Does the email trigger fire and reach attachments? | **Yes** — attachments read from the triggering message with no re-upload |
+| Does the reply wait for approval? | **Yes** — drafted to the original sender, never sent |
+| Does the reply body leak values? | **No** — field names only, with every blank itemised |
+| Does it flag an external recipient? | **Yes** — warned that the form was leaving the tenant |
+| Does it surface conflicting sources? | **Yes** — disclosed that two sources held different addresses and asked which to use |
 
 Still unproven:
 
+- **The source-restriction rules are untested.** They were added after a real
+  contamination incident and have not been re-exercised. This is the highest
+  priority for the next run.
 - **Can Cowork reliably rewrite the vault file it also reads as context?** The vault
-  has not been exercised yet — this is the main Phase 2 risk.
+  has never been exercised — the main Phase 2 risk.
 - **Do concurrent event-driven runs collide on vault writes?** Untested.
 
 ## Reserved Names
