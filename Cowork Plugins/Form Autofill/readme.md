@@ -13,6 +13,15 @@ result, and replies to the sender for your approval.
 | `profile-interview` | Collects missing details in one batched, well-organized ask |
 | `profile-vault` | Persists reusable answers so you aren't asked twice |
 
+## Requirements
+
+Copilot Cowork, and nothing else.
+
+This is a skills-only plugin: no MCP server, no connector, no OAuth, no API keys, no
+Azure resources, and nothing to configure after install. That's why `manifest.json`
+has no `agentConnectors` block. Testing confirmed a hosted PDF-filling tool isn't
+needed either — Cowork fills AcroForms natively.
+
 ## The Three-Tier Field Model
 
 Every form field lands in exactly one tier, and the tier decides the behavior.
@@ -30,10 +39,15 @@ Tier 1 values are never cached — caching would create a second source of truth
 silently goes stale. If the directory profile can't be retrieved, those fields
 degrade into Tier 2 and get asked instead of guessed.
 
-## The Vault
+## The Vault (optional)
 
-Saved answers live at **`/Documents/Personal/form-profile.md`** in your OneDrive —
-deliberately *outside* the skills folder.
+The vault is **opt-in, and the plugin works fully without it.** If you decline, the
+skills just ask you for Tier 2 details each time and nothing else changes — filling,
+verification, and the reply all behave identically. The vault exists solely to stop
+you retyping the same answers.
+
+If you opt in, saved answers live at **`/Documents/Personal/form-profile.md`** in
+your OneDrive — deliberately *outside* the skills folder.
 
 This matters: Cowork lets you share skills with colleagues. A vault stored inside a
 skill folder would be shared along with it. Keeping the data separate means sharing
