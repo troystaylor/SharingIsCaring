@@ -1,0 +1,1433 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Oracle Fusion Cloud Financials",
+        "description": "Generic create, read, update, and delete access to the Oracle Fusion Cloud Financials REST API (ADF REST), plus resource actions, ERP integration job submission, and an MCP endpoint for Copilot Studio. Works against any Financials resource collection (invoices, payablesPayments, receivablesInvoices, journalBatches, ledgerBalances, expenses, cashBankAccounts, and hundreds more). Resource, field, action, and body pickers are populated dynamically from the pod's own metadata.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "url": "https://github.com/troystaylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "replace-pod-host.oraclecloud.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/fscmRestApi/resources/11.13.18.05/{resource}": {
+            "get": {
+                "summary": "Query records",
+                "description": "Queries records from any Financials REST resource collection using the ADF query grammar (q, finder, fields, expand, orderBy, limit, offset).",
+                "operationId": "QueryRecords",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name, for example invoices, payablesPayments, receivablesInvoices, or journalBatches.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Row filter using the ADF query grammar, for example InvoiceNumber='INV-1001' or Supplier LIKE 'Zava%'.",
+                        "x-ms-summary": "Filter (q)"
+                    },
+                    {
+                        "name": "finder",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Named finder and its parameters, for example PrimaryKey;InvoiceId=300100012345678 or ESSJobStatusRF;requestId=12345.",
+                        "x-ms-summary": "Finder"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of attributes to return, for example InvoiceId,InvoiceNumber,InvoiceAmount. The picker lists one attribute at a time; separate multiple with commas.",
+                        "x-ms-summary": "Fields",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceFields",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child resources to include, for example invoiceLines,invoiceInstallments.",
+                        "x-ms-summary": "Expand",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "orderBy",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort expression, for example InvoiceDate:desc.",
+                        "x-ms-summary": "Order By"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 25,
+                        "description": "Maximum number of records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Zero-based index of the first record to return (for paging).",
+                        "x-ms-summary": "Offset"
+                    },
+                    {
+                        "name": "totalResults",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": false,
+                        "description": "When true, includes the total number of matching records in the response.",
+                        "x-ms-summary": "Total Results"
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links from each record.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of records.",
+                        "schema": {
+                            "$ref": "#/definitions/RecordCollection"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create record",
+                "description": "Creates a new record in the specified Financials REST resource collection.",
+                "operationId": "CreateRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name, for example invoices.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The attributes of the record to create. The form is generated from the selected resource's metadata.",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResourceSchema",
+                                "parameters": {
+                                    "resource": {
+                                        "parameter": "resource"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The created record.",
+                        "schema": {
+                            "$ref": "#/definitions/Record"
+                        }
+                    }
+                }
+            }
+        },
+        "/fscmRestApi/resources/11.13.18.05/{resource}/{id}": {
+            "get": {
+                "summary": "Get record",
+                "description": "Retrieves a single record by its resource key.",
+                "operationId": "GetRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The record key (primary key value from the resource's self link), for example an invoicesUniqID.",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of attributes to return.",
+                        "x-ms-summary": "Fields",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceFields",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child resources to include.",
+                        "x-ms-summary": "Expand",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links from the record.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The requested record.",
+                        "schema": {
+                            "$ref": "#/definitions/Record"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update record",
+                "description": "Partially updates an existing record. Include only the attributes that should change. Oracle does not cascade defaults, so review dependent attributes yourself.",
+                "operationId": "UpdateRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The record key.",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The attributes to change. The form is generated from the selected resource's metadata.",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetResourceSchema",
+                                "parameters": {
+                                    "resource": {
+                                        "parameter": "resource"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated record.",
+                        "schema": {
+                            "$ref": "#/definitions/Record"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete record",
+                "description": "Deletes a record by its resource key. Not all Financials resources support delete.",
+                "operationId": "DeleteRecord",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The record key.",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The record was deleted."
+                    }
+                }
+            }
+        },
+        "/fscmRestApi/resources/11.13.18.05/{resource}/{id}/child/{childResource}": {
+            "get": {
+                "summary": "Get child records",
+                "description": "Retrieves the child records of a parent record, for example the lines, distributions, or installments of an invoice.",
+                "operationId": "GetChildRecords",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent resource collection name, for example invoices.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent record key.",
+                        "x-ms-summary": "Record Key",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "childResource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The child resource name, for example invoiceLines or invoiceInstallments.",
+                        "x-ms-summary": "Child Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Row filter applied to the child records.",
+                        "x-ms-summary": "Filter (q)"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child attributes to return.",
+                        "x-ms-summary": "Fields"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 25,
+                        "description": "Maximum number of child records to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links from each child record.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of child records.",
+                        "schema": {
+                            "$ref": "#/definitions/RecordCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/fscmRestApi/resources/11.13.18.05/{resource}/describe": {
+            "get": {
+                "summary": "Describe resource",
+                "description": "Returns the metadata (attributes, actions, child resources) for a resource collection.",
+                "operationId": "DescribeResource",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The resource metadata document.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "Resources": {
+                                    "type": "object",
+                                    "description": "Map of resource metadata keyed by resource name."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/fscmRestApi/resources/11.13.18.05/{resource}/action/{action}": {
+            "post": {
+                "summary": "Invoke resource action",
+                "description": "Invokes a custom action on a Financials resource, for example validateInvoice, cancelInvoice, applyPrepayments, calculateTax, or initiateStopPayment.",
+                "operationId": "InvokeResourceAction",
+                "consumes": [
+                    "application/vnd.oracle.adf.action+json"
+                ],
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name that exposes the action, for example invoices.",
+                        "x-ms-summary": "Resource",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResources",
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The action name, for example validateInvoice.",
+                        "x-ms-summary": "Action",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceActions",
+                            "parameters": {
+                                "resource": {
+                                    "parameter": "resource"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The action parameters. The form is generated from the selected action's metadata; when the action has no published parameters, supply the payload as raw JSON.",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetActionSchema",
+                                "parameters": {
+                                    "resource": {
+                                        "parameter": "resource"
+                                    },
+                                    "action": {
+                                        "parameter": "action"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The action result.",
+                        "schema": {
+                            "$ref": "#/definitions/ActionResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/fscmRestApi/resources/11.13.18.05/invoices": {
+            "get": {
+                "summary": "Search payables invoices",
+                "description": "Searches supplier invoices in Oracle Payables by number, supplier, business unit, or a raw filter.",
+                "operationId": "SearchInvoices",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Row filter, for example InvoiceNumber='INV-1001' or Supplier LIKE 'Zava%' and InvoiceAmount>1000.",
+                        "x-ms-summary": "Filter (q)"
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of attributes to return.",
+                        "x-ms-summary": "Fields",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListResourceFields",
+                            "parameters": {
+                                "resource": "invoices"
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "expand",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated list of child resources to include, for example invoiceLines,invoiceInstallments.",
+                        "x-ms-summary": "Expand",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListChildResources",
+                            "parameters": {
+                                "resource": "invoices"
+                            },
+                            "value-collection": "value",
+                            "value-path": "name",
+                            "value-title": "title"
+                        }
+                    },
+                    {
+                        "name": "orderBy",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Sort expression, for example InvoiceDate:desc.",
+                        "x-ms-summary": "Order By"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "default": 25,
+                        "description": "Maximum number of invoices to return.",
+                        "x-ms-summary": "Limit"
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of invoices.",
+                        "schema": {
+                            "$ref": "#/definitions/InvoiceCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/fscmRestApi/resources/11.13.18.05/erpintegrations": {
+            "post": {
+                "summary": "Submit ERP integration request",
+                "description": "Submits an ERP integration operation, most commonly an Enterprise Scheduler (ESS) job such as the Import Payables Invoices or Post Journals process. Set Operation Name to submitESSJobRequest and supply the job package, job definition, and parameters.",
+                "operationId": "SubmitErpIntegration",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The ERP integration request.",
+                        "schema": {
+                            "$ref": "#/definitions/ErpIntegrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The submitted request, including the ESS request identifier.",
+                        "schema": {
+                            "$ref": "#/definitions/ErpIntegrationResult"
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Get ERP job status",
+                "description": "Returns the status of a submitted Enterprise Scheduler job using the ESSJobStatusRF finder.",
+                "operationId": "GetErpJobStatus",
+                "parameters": [
+                    {
+                        "name": "finder",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The status finder, for example ESSJobStatusRF;requestId=12345.",
+                        "x-ms-summary": "Finder"
+                    },
+                    {
+                        "name": "onlyData",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "default": true,
+                        "description": "When true, omits HATEOAS links.",
+                        "x-ms-summary": "Only Data"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The job status.",
+                        "schema": {
+                            "$ref": "#/definitions/ErpJobStatusCollection"
+                        }
+                    }
+                }
+            }
+        },
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Oracle Fusion Cloud Financials MCP",
+                "description": "Sends JSON-RPC 2.0 requests to the Model Context Protocol server for tool execution and capability management.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/resolvers/resources": {
+            "get": {
+                "summary": "List resources",
+                "description": "Internal resolver. Lists Financials resource collection names for the resource picker.",
+                "operationId": "ListResources",
+                "x-ms-visibility": "internal",
+                "responses": {
+                    "200": {
+                        "description": "The list of resources.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/fields": {
+            "get": {
+                "summary": "List resource fields",
+                "description": "Internal resolver. Lists the attributes of a resource for the field picker.",
+                "operationId": "ListResourceFields",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The list of fields.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/child-resources": {
+            "get": {
+                "summary": "List child resources",
+                "description": "Internal resolver. Lists the child resources of a resource for the expand and child pickers.",
+                "operationId": "ListChildResources",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The list of child resources.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/actions": {
+            "get": {
+                "summary": "List resource actions",
+                "description": "Internal resolver. Lists the custom actions published by a resource for the action picker.",
+                "operationId": "ListResourceActions",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The list of actions.",
+                        "schema": {
+                            "$ref": "#/definitions/ValueList"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/schema": {
+            "get": {
+                "summary": "Get resource schema",
+                "description": "Internal resolver. Returns a JSON Schema for a resource's attributes for the dynamic create and update body.",
+                "operationId": "GetResourceSchema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The resource schema.",
+                        "schema": {
+                            "$ref": "#/definitions/SchemaResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/resolvers/action-schema": {
+            "get": {
+                "summary": "Get action schema",
+                "description": "Internal resolver. Returns a JSON Schema for an action's parameters for the dynamic action body.",
+                "operationId": "GetActionSchema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "resource",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource collection name."
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The action name."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The action schema.",
+                        "schema": {
+                            "$ref": "#/definitions/SchemaResult"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Record": {
+            "type": "object",
+            "description": "A single Financials record. Attributes vary by resource; use Describe Resource to inspect them.",
+            "properties": {
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the record.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "RecordCollection": {
+            "type": "object",
+            "description": "A page of records returned by a query.",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "The records in this page.",
+                    "items": {
+                        "$ref": "#/definitions/Record"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The number of records in this page.",
+                    "title": "Count"
+                },
+                "totalResults": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The total number of matching records, when Total Results was requested.",
+                    "title": "Total Results"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "Whether more records are available beyond this page.",
+                    "title": "Has More"
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The page size used for this response.",
+                    "title": "Limit"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The zero-based index of the first record in this page.",
+                    "title": "Offset"
+                },
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the collection.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "Invoice": {
+            "type": "object",
+            "description": "A payables (supplier) invoice.",
+            "properties": {
+                "InvoiceId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "description": "The unique identifier of the invoice.",
+                    "title": "Invoice ID"
+                },
+                "InvoiceNumber": {
+                    "type": "string",
+                    "description": "The supplier's invoice number.",
+                    "title": "Invoice Number"
+                },
+                "InvoiceCurrency": {
+                    "type": "string",
+                    "description": "The currency code of the invoice.",
+                    "title": "Invoice Currency"
+                },
+                "InvoiceAmount": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The total amount of the invoice in the invoice currency.",
+                    "title": "Invoice Amount"
+                },
+                "InvoiceDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The date of the invoice.",
+                    "title": "Invoice Date"
+                },
+                "AccountingDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The accounting date used when the invoice is accounted.",
+                    "title": "Accounting Date"
+                },
+                "BusinessUnit": {
+                    "type": "string",
+                    "description": "The business unit that owns the invoice.",
+                    "title": "Business Unit"
+                },
+                "Supplier": {
+                    "type": "string",
+                    "description": "The supplier name.",
+                    "title": "Supplier"
+                },
+                "SupplierNumber": {
+                    "type": "string",
+                    "description": "The supplier number.",
+                    "title": "Supplier Number"
+                },
+                "SupplierSite": {
+                    "type": "string",
+                    "description": "The supplier site associated with the invoice.",
+                    "title": "Supplier Site"
+                },
+                "Description": {
+                    "type": "string",
+                    "description": "The invoice description.",
+                    "title": "Description"
+                },
+                "InvoiceType": {
+                    "type": "string",
+                    "description": "The invoice type, for example Standard, Credit memo, or Prepayment.",
+                    "title": "Invoice Type"
+                },
+                "PaymentTerms": {
+                    "type": "string",
+                    "description": "The payment terms applied to the invoice.",
+                    "title": "Payment Terms"
+                },
+                "InvoiceGroup": {
+                    "type": "string",
+                    "description": "The invoice group used to batch invoices.",
+                    "title": "Invoice Group"
+                },
+                "ApprovalStatus": {
+                    "type": "string",
+                    "description": "The invoice approval status.",
+                    "title": "Approval Status"
+                },
+                "PaidStatus": {
+                    "type": "string",
+                    "description": "Whether the invoice is fully paid, partially paid, or unpaid.",
+                    "title": "Paid Status"
+                },
+                "UnpaidAmount": {
+                    "type": "number",
+                    "format": "double",
+                    "description": "The amount still outstanding on the invoice.",
+                    "title": "Unpaid Amount"
+                },
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the invoice.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "InvoiceCollection": {
+            "type": "object",
+            "description": "A page of payables invoices.",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "The invoices in this page.",
+                    "items": {
+                        "$ref": "#/definitions/Invoice"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The number of invoices in this page.",
+                    "title": "Count"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "Whether more invoices are available beyond this page.",
+                    "title": "Has More"
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The page size used for this response.",
+                    "title": "Limit"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The zero-based index of the first invoice in this page.",
+                    "title": "Offset"
+                }
+            }
+        },
+        "ActionResult": {
+            "type": "object",
+            "description": "The result returned by a resource action. The shape depends on the action.",
+            "properties": {
+                "result": {
+                    "type": "string",
+                    "description": "The action's return value, when the action returns a scalar.",
+                    "title": "Result"
+                }
+            }
+        },
+        "ErpIntegrationRequest": {
+            "type": "object",
+            "required": [
+                "OperationName"
+            ],
+            "description": "An ERP integration operation request.",
+            "properties": {
+                "OperationName": {
+                    "type": "string",
+                    "description": "The ERP integration operation to run.",
+                    "title": "Operation Name",
+                    "default": "submitESSJobRequest",
+                    "enum": [
+                        "submitESSJobRequest",
+                        "importBulkData",
+                        "exportBulkData",
+                        "downloadESSJobExecutionDetails",
+                        "getESSJobStatus"
+                    ]
+                },
+                "JobPackageName": {
+                    "type": "string",
+                    "description": "The Enterprise Scheduler job package, for example /oracle/apps/ess/financials/payables/invoices/transactions.",
+                    "title": "Job Package Name"
+                },
+                "JobDefName": {
+                    "type": "string",
+                    "description": "The Enterprise Scheduler job definition, for example APXIIMPT for Import Payables Invoices.",
+                    "title": "Job Definition Name"
+                },
+                "ESSParameters": {
+                    "type": "string",
+                    "description": "The job parameters as a comma-separated list, in the order the job definition expects them.",
+                    "title": "ESS Parameters"
+                },
+                "ReqstId": {
+                    "type": "string",
+                    "description": "The ESS request identifier, used by downloadESSJobExecutionDetails and getESSJobStatus.",
+                    "title": "Request ID"
+                },
+                "DocumentContent": {
+                    "type": "string",
+                    "description": "Base64-encoded file content, used by importBulkData.",
+                    "title": "Document Content"
+                },
+                "ContentType": {
+                    "type": "string",
+                    "description": "The content type of the uploaded document, for example zip.",
+                    "title": "Content Type"
+                },
+                "FileName": {
+                    "type": "string",
+                    "description": "The name of the uploaded file, used by importBulkData.",
+                    "title": "File Name"
+                },
+                "DocumentAccount": {
+                    "type": "string",
+                    "description": "The UCM document account, for example fin$/payables$/import$.",
+                    "title": "Document Account"
+                },
+                "JobName": {
+                    "type": "string",
+                    "description": "The fully qualified job name used by importBulkData, in the form package,definition.",
+                    "title": "Job Name"
+                },
+                "ParameterList": {
+                    "type": "string",
+                    "description": "The comma-separated parameter list used by importBulkData.",
+                    "title": "Parameter List"
+                },
+                "CallbackURL": {
+                    "type": "string",
+                    "description": "An optional callback URL notified when the job completes.",
+                    "title": "Callback URL"
+                },
+                "NotificationCode": {
+                    "type": "string",
+                    "description": "The notification preference code for job completion.",
+                    "title": "Notification Code"
+                },
+                "FileType": {
+                    "type": "string",
+                    "description": "The output file type requested by downloadESSJobExecutionDetails, for example log or out.",
+                    "title": "File Type"
+                }
+            }
+        },
+        "ErpIntegrationResult": {
+            "type": "object",
+            "description": "The result of an ERP integration request.",
+            "properties": {
+                "OperationName": {
+                    "type": "string",
+                    "description": "The operation that was run.",
+                    "title": "Operation Name"
+                },
+                "ReqstId": {
+                    "type": "string",
+                    "description": "The Enterprise Scheduler request identifier of the submitted job.",
+                    "title": "Request ID"
+                },
+                "DocumentId": {
+                    "type": "string",
+                    "description": "The UCM document identifier, when a file was uploaded or produced.",
+                    "title": "Document ID"
+                },
+                "JobPackageName": {
+                    "type": "string",
+                    "description": "The job package that was submitted.",
+                    "title": "Job Package Name"
+                },
+                "JobDefName": {
+                    "type": "string",
+                    "description": "The job definition that was submitted.",
+                    "title": "Job Definition Name"
+                },
+                "ESSParameters": {
+                    "type": "string",
+                    "description": "The parameters that were submitted with the job.",
+                    "title": "ESS Parameters"
+                },
+                "DocumentContent": {
+                    "type": "string",
+                    "description": "Base64-encoded content returned by download operations.",
+                    "title": "Document Content"
+                },
+                "links": {
+                    "type": "array",
+                    "description": "HATEOAS links for the request.",
+                    "items": {
+                        "$ref": "#/definitions/Link"
+                    }
+                }
+            }
+        },
+        "ErpJobStatusCollection": {
+            "type": "object",
+            "description": "The status of one or more Enterprise Scheduler jobs.",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "description": "The job status records.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "OperationName": {
+                                "type": "string",
+                                "description": "The operation that produced the job.",
+                                "title": "Operation Name"
+                            },
+                            "ReqstId": {
+                                "type": "string",
+                                "description": "The Enterprise Scheduler request identifier.",
+                                "title": "Request ID"
+                            },
+                            "RequestStatus": {
+                                "type": "string",
+                                "description": "The job status, for example WAIT, RUNNING, SUCCEEDED, ERROR, or WARNING.",
+                                "title": "Request Status"
+                            }
+                        }
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The number of status records returned.",
+                    "title": "Count"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "Whether more status records are available.",
+                    "title": "Has More"
+                }
+            }
+        },
+        "Link": {
+            "type": "object",
+            "description": "A HATEOAS link.",
+            "properties": {
+                "rel": {
+                    "type": "string",
+                    "description": "The relationship of the link to the resource.",
+                    "title": "Relation"
+                },
+                "href": {
+                    "type": "string",
+                    "description": "The URL of the link.",
+                    "title": "Href"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The name of the link.",
+                    "title": "Name"
+                },
+                "kind": {
+                    "type": "string",
+                    "description": "The kind of resource the link points to.",
+                    "title": "Kind"
+                }
+            }
+        },
+        "ValueList": {
+            "type": "object",
+            "description": "A list of selectable values for a dynamic picker.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The selectable values.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The value to use.",
+                                "title": "Name"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "The display label.",
+                                "title": "Title"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "SchemaResult": {
+            "type": "object",
+            "description": "A wrapper for a dynamically generated JSON Schema.",
+            "properties": {
+                "schema": {
+                    "type": "object",
+                    "description": "The JSON Schema describing the resource's attributes or the action's parameters.",
+                    "title": "Schema"
+                }
+            }
+        },
+        "McpResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC protocol version.",
+                    "title": "JSON-RPC Version"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Request identifier matching the original request.",
+                    "title": "Request ID"
+                },
+                "result": {
+                    "type": "object",
+                    "description": "Successful response data from the MCP method.",
+                    "title": "Result"
+                }
+            }
+        },
+        "McpErrorResponse": {
+            "type": "object",
+            "properties": {
+                "jsonrpc": {
+                    "type": "string",
+                    "description": "JSON-RPC protocol version.",
+                    "title": "JSON-RPC Version"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Request identifier, or null if the request ID could not be determined.",
+                    "title": "Request ID"
+                },
+                "error": {
+                    "type": "object",
+                    "description": "The JSON-RPC error object.",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "format": "int32",
+                            "description": "The JSON-RPC error code.",
+                            "title": "Code"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "A short description of the error.",
+                            "title": "Message"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://replace-idcs-host.identity.oraclecloud.com/oauth2/v1/authorize",
+            "tokenUrl": "https://replace-idcs-host.identity.oraclecloud.com/oauth2/v1/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://www.oracle.com/erp/financials/"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://www.oracle.com/legal/privacy/"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Finance;Productivity"
+        }
+    ]
+}
