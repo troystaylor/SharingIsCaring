@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 public class Script : ScriptBase
 {
     private const string ServerName = "copilot-studio-bots";
-    private const string ServerVersion = "1.0.0";
+    private const string ServerVersion = "1.1.0";
     private const string ProtocolVersion = "2025-11-25";
     private const string ApiVersion = "2024-10-01";
     private const string BackendBaseUrl = "https://api.powerplatform.com/copilotstudio";
@@ -815,6 +815,17 @@ public class Script : ScriptBase
                     new JObject { ["confirm"] = Prop("Must be true to acknowledge that deletion is permanent.", "boolean") },
                     "confirm")),
 
+            // --- Entra Agent ID migration (preview) ---
+            McpTool(
+                "migrate_agent_identity",
+                "Migrate a Copilot Studio agent from its legacy app-registration identity to a Microsoft Entra Agent ID. The application (client) ID is preserved, so channel registrations and connectors keep resolving. Returns status 'Migrated' or 'AlreadyMigrated'. Migrate in small batches and validate each agent before continuing. Preview feature.",
+                AgentSchema()),
+
+            McpTool(
+                "rollback_agent_identity",
+                "Revert a Copilot Studio agent from its Microsoft Entra Agent ID back to the legacy app-registration identity. Use this when a migrated agent fails validation. Returns status 'RolledBack' or 'NotMigrated'. Preview feature.",
+                AgentSchema()),
+
             // --- Inventory and containment ---
             McpTool(
                 "list_agents",
@@ -1079,6 +1090,20 @@ public class Script : ScriptBase
                     endpoint = BuildEndpoint(args,
                         new[] { "environmentId", "botId" },
                         BotPath + "/api/botAdminOperations");
+                    break;
+
+                case "migrate_agent_identity":
+                    httpMethod = HttpMethod.Post;
+                    endpoint = BuildEndpoint(args,
+                        new[] { "environmentId", "botId" },
+                        BotPath + "/api/agentidentitymigration/migrate");
+                    break;
+
+                case "rollback_agent_identity":
+                    httpMethod = HttpMethod.Post;
+                    endpoint = BuildEndpoint(args,
+                        new[] { "environmentId", "botId" },
+                        BotPath + "/api/agentidentitymigration/rollback");
                     break;
 
                 default:

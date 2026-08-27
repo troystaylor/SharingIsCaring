@@ -2,17 +2,18 @@
 
 **Publisher: Troy Taylor**
 
-Complete coverage of the [Power Platform API Bots operations](https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/bots) for Microsoft Copilot Studio — all 13 documented operations — plus a tenant-wide agent inventory that identifies which agents run on the GitHub Copilot harness. Evaluation, governance, discovery, and containment in a single connector, with native MCP support for Copilot Studio agents and optional Application Insights logging.
+Complete coverage of the [Power Platform API Bots operations](https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/bots) for Microsoft Copilot Studio — all 13 documented operations — plus a tenant-wide agent inventory that identifies which agents run on the GitHub Copilot harness, and Microsoft Entra Agent ID migration. Evaluation, governance, discovery, identity migration, and containment in a single connector, with native MCP support for Copilot Studio agents and optional Application Insights logging.
 
 ## Overview
 
-This connector covers three related concerns:
+This connector covers four related concerns:
 
 - **Maker evaluation** — Manage test sets, trigger quality assessments, retrieve metrics, and download agent snapshots
 - **Administration** — Quarantine and release agents, control the connector consent bypass, reassign ownership, and delete agents
 - **Inventory and containment** — Find which agents run on the expensive GitHub Copilot harness, then quarantine the ones you choose
+- **Entra Agent ID migration** — Move agents from their legacy app-registration identity to a Microsoft Entra Agent ID, and roll back if validation fails
 
-The first two come from the documented Bots API. The third reads an undocumented resource query API, because the Bots API exposes no harness field — see [Agent Inventory and Containment](#agent-inventory-and-containment).
+The first two come from the documented Bots API. The third reads an undocumented resource query API, because the Bots API exposes no harness field — see [Agent Inventory and Containment](#agent-inventory-and-containment). The fourth calls migration endpoints that share the Bots host and base path but are documented separately — see [Entra Agent ID Migration](#entra-agent-id-migration).
 
 ### Operation count
 
@@ -22,12 +23,13 @@ Three different totals appear in this document and in tooling output. They recon
 |---|---|---|
 | Documented Bots API operations | evaluation + administration | 13 |
 | `List Agents` | agent inventory, not part of the Bots API | +1 |
+| Agent identity migration | `Migrate Agent Identity`, `Roll Back Agent Identity` — not part of the Bots API | +2 |
 | Internal dropdown sources | `Get Environment List`, `Get Agent List` | +2 |
-| **REST operations** | what appears in the Power Automate action list, minus the internal two | **16** |
+| **REST operations** | what appears in the Power Automate action list, minus the internal two | **18** |
 | `Invoke Copilot Studio Bots MCP` | the JSON-RPC endpoint | +1 |
-| **Total in the OpenAPI definition** | what `ppcv` and PAC CLI report | **17** |
+| **Total in the OpenAPI definition** | what `ppcv` and PAC CLI report | **19** |
 
-Separately, the connector exposes **16 MCP tools** to Copilot Studio. That number matches the REST count by coincidence, not by construction: the REST side includes two internal dropdown operations that are not tools, and the MCP side includes two containment tools — `find_containment_candidates` and `contain_agents` — that have no REST equivalent. The two differences happen to cancel out.
+Separately, the connector exposes **18 MCP tools** to Copilot Studio. That number matches the REST count by coincidence, not by construction: the REST side includes two internal dropdown operations that are not tools, and the MCP side includes two containment tools — `find_containment_candidates` and `contain_agents` — that have no REST equivalent. The two differences happen to cancel out.
 
 ## Capabilities
 
@@ -49,6 +51,8 @@ Separately, the connector exposes **16 MCP tools** to Copilot Studio. That numbe
 | Reassign Agent Owner | POST | Reassign Copilot Agent |
 | Delete Agent | DELETE | Delete Copilot Agent |
 | List Agents | GET | *(not a Bots operation — see Agent Inventory)* |
+| Migrate Agent Identity To Entra Agent ID | POST | *(not a Bots operation — see Entra Agent ID Migration)* |
+| Roll Back Agent Identity To App Registration | POST | *(not a Bots operation — see Entra Agent ID Migration)* |
 | Get Environment List | GET | *(internal — backs the environment dropdown)* |
 | Get Agent List | GET | *(internal — backs the agent dropdown)* |
 
@@ -56,7 +60,7 @@ The internal `Get Environment List` operation is hidden from the action picker a
 
 ### MCP Tools (Copilot Studio)
 
-All 13 operations are available as MCP tools:
+The 13 documented Bots operations are available as MCP tools, alongside inventory, containment, and identity migration:
 
 | Tool | Description |
 |------|-------------|
@@ -73,6 +77,8 @@ All 13 operations are available as MCP tools:
 | `set_connector_consent_bypass` | Set the admin consent bypass setting |
 | `reassign_agent` | Reassign the agent owner |
 | `delete_agent` | Permanently delete an agent — requires `confirm: true` |
+| `migrate_agent_identity` | Migrate an agent to a Microsoft Entra Agent ID |
+| `rollback_agent_identity` | Revert an agent to its legacy app-registration identity |
 | `list_agents` | Inventory agents with their harness, sharing, and publish state |
 | `find_containment_candidates` | Read-only. Find GitHub Copilot harness agents worth quarantining |
 | `contain_agents` | Quarantine an explicit list of agents — requires `confirm: true` |
@@ -171,6 +177,46 @@ User: "Quarantine both"
 - **Undocumented API.** `resourcequery` returns the resource provider's raw property bag, and `isCLIAgent` is not in the published reference. It can change shape or disappear without notice. Use it for reporting and chargeback triage, not as a hard enforcement gate.
 - **Paging ceiling.** The connector pages 1,000 rows at a time and stops after 10 pages, setting `truncated: true` rather than silently returning a partial estate. Scope to an environment if you hit it.
 - **`SkipToken` does not work.** The service returns one but it never advances, so the connector pages with `Skip` offsets and orders by a unique tiebreaker to keep the window stable.
+
+## Entra Agent ID Migration
+
+Copilot Studio automatically creates a [Microsoft Entra Agent ID](https://learn.microsoft.com/microsoft-copilot-studio/admin-use-entra-agent-identities) for every agent created after May 2026. Agents created before that still carry a legacy app registration. Microsoft will migrate them automatically in a future update, but you can migrate on your own schedule to validate agents against Conditional Access first.
+
+These two operations wrap the [migration API](https://learn.microsoft.com/microsoft-copilot-studio/govern-migrate-api-entra-agent-identity). They live on the same host, base path, and connection as the Bots operations, but are documented separately from the Bots REST reference.
+
+| Operation | Endpoint | Terminal status |
+|---|---|---|
+| `Migrate Agent Identity To Entra Agent ID` | `POST .../api/agentidentitymigration/migrate` | `Migrated`, `AlreadyMigrated` |
+| `Roll Back Agent Identity To App Registration` | `POST .../api/agentidentitymigration/rollback` | `RolledBack`, `NotMigrated` |
+
+Neither takes a body. Both use the same environment and agent dropdowns as every other operation.
+
+Migration converts the identity **in place** — the agent keeps its application (client) ID, so channel registrations and connectors continue to resolve to the same identifier. The response also reports the new `agentIdentityId` and `servicePrincipalObjectId` for lookup in the Microsoft Entra admin center.
+
+### Before you migrate
+
+- **Preview.** The manual migration path is a preview feature and the response shape can change.
+- **Requires a tenant admin.** Power Platform, Dynamics 365, or Global Administrator. Non-administrators get **403**.
+- **Migrate in batches.** Microsoft's guidance is to pilot a small set of noncritical agents first, validate each across its channels, actions, connectors, and authentication flows, then expand. Don't sweep the estate in one pass.
+- **`AlreadyMigrated` is not an error.** Re-running against a migrated agent is safe and idempotent.
+- **Throttling is expected on bulk runs.** The connector surfaces `429` rather than retrying, so back off and retry in your flow.
+
+### Example: staged migration
+
+```
+User: "Migrate the agents in my sandbox environment to Entra Agent ID"
+Agent:
+  1. list_agents { environmentId: "<sandbox>" }
+     → presents the agents with owners and publish state
+User: "Start with the two unpublished ones"
+  2. migrate_agent_identity { environmentId, botId }   × 2
+     → status: Migrated, agentIdentityId: <guid>
+User: "The second one broke its Teams channel — undo it"
+  3. rollback_agent_identity { environmentId, botId }
+     → status: RolledBack
+```
+
+Rollback is why migration is reasonable to expose to an agent at all: unlike `delete_agent`, it is reversible with a single call, which is the same reasoning that leaves `quarantine_agent` ungated.
 
 ## Authentication
 
@@ -434,6 +480,8 @@ Read `succeeded` and `failed` rather than the MCP `isError` flag, which is set o
 - **`isCLIAgent: 'false'` covers two harnesses.** It cannot separate Standard from Copilot Chat. To confirm a single agent definitively, clone it and read `template` and `recognizer.kind`.
 - **The inventory pages to a ceiling.** It reads 1,000 agents per page and stops after 10 pages. Check `truncated` before treating a result as a complete estate, and scope to an environment if it is `true`.
 - **`contain_agents` reports partial failures inside the payload.** `isError` is set only when every agent in the batch failed, so always read `succeeded`, `failed`, and the per-agent `results` rather than relying on `isError` alone.
+- **Entra Agent ID migration is a preview API.** `Migrate Agent Identity` and `Roll Back Agent Identity` are documented outside the Bots REST reference and their response shape can change. Migration is reversible with rollback, but it affects live agents — pilot a small batch and validate before expanding.
+- **Migration is single-agent.** There is no batch endpoint, so a bulk run means one call per agent. Expect **429** throttling and back off between calls.
 
 ## Troubleshooting
 
@@ -448,6 +496,9 @@ Read `succeeded` and `failed` rather than the MCP `isError` flag, which is set o
 | Empty agent dropdown | The inventory query failed or returned nothing | The picker swallows errors to avoid breaking the designer. Call `List Agents` directly to see the underlying error |
 | `List Agents` returns 400 | The resource query was rejected | Usually a schema change in the undocumented preview API. Confirm you can still read agents in PPAC, then check whether the query shape has changed |
 | `truncated: true` | More than 10,000 agents matched | Scope the call to a single environment |
+| 429 on migrate or rollback | The service is throttling identity migration | Wait and retry. The connector does not retry for you |
+| `status: AlreadyMigrated` | The agent already has an Entra Agent ID | Expected and idempotent, not a failure |
+| `status: NotMigrated` on rollback | The agent was never migrated | Expected, not a failure |
 
 MCP tool calls surface these as `isError: true` with the status code in the message text rather than as JSON-RPC errors, so a Copilot Studio agent can read and explain the failure. JSON-RPC errors (`-32601`, `-32602`) are reserved for unknown methods and unknown or malformed tool calls.
 
@@ -530,6 +581,13 @@ The 13 Bots operations target `https://api.powerplatform.com/copilotstudio` with
 | Reassign Agent Owner | `POST {base}/api/botAdminOperations/reassign` |
 | Delete Agent | `DELETE {base}/api/botAdminOperations` |
 
+Two further operations share the same host, base path, and connection, but are documented outside the Bots REST reference. They are preview:
+
+| Operation | Endpoint |
+|-----------|----------|
+| Migrate Agent Identity To Entra Agent ID | `POST {base}/api/agentidentitymigration/migrate` |
+| Roll Back Agent Identity To App Registration | `POST {base}/api/agentidentitymigration/rollback` |
+
 Three operations reach different Power Platform API surfaces on the same host. Their swagger paths are facades that the script rewrites, which is why they work despite the connector's `/copilotstudio` base path:
 
 | Operation | Swagger path | Actual endpoint |
@@ -544,9 +602,9 @@ All of them authenticate with the same token, because every surface sits behind 
 
 | File | Purpose |
 |------|---------|
-| `apiDefinition.swagger.json` | OpenAPI definition for the 16 REST operations plus the MCP endpoint |
+| `apiDefinition.swagger.json` | OpenAPI definition for the 18 REST operations plus the MCP endpoint |
 | `apiProperties.json` | OAuth 2.0 configuration and script operation registration |
-| `script.csx` | MCP JSON-RPC 2.0 handler, agent inventory and containment, binary snapshot handling, and optional telemetry |
+| `script.csx` | MCP JSON-RPC 2.0 handler, agent inventory and containment, Entra Agent ID migration, binary snapshot handling, and optional telemetry |
 | `readme.md` | This document |
 
 ## Related Connectors
@@ -562,6 +620,10 @@ All of them authenticate with the same token, because every surface sits behind 
 This connector supersedes the earlier `Copilot Studio Evaluations` and `Copilot Studio Agent Administration` folders, which split the same API group across two connectors. They were merged so that a single connection covers the whole Bots surface, matching the pattern used by Copilot Package Management.
 
 The agent inventory was later ported from the [Power Platform Admin](../Power%20Platform%20Admin/) connector so that discovery and containment live together: the Bots API can quarantine an agent but cannot tell you which agents are worth quarantining. That port is the connector's only dependency on an undocumented API.
+
+### 1.1
+
+Added the two [Entra Agent ID migration](#entra-agent-id-migration) operations — `Migrate Agent Identity To Entra Agent ID` and `Roll Back Agent Identity To App Registration` — with matching `migrate_agent_identity` and `rollback_agent_identity` MCP tools. They sit on the Bots host and base path but are documented separately from the Bots REST reference, and are preview.
 
 ## Author
 

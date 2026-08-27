@@ -2,8 +2,8 @@
   "swagger": "2.0",
   "info": {
     "title": "Copilot Studio Bots",
-    "description": "Complete coverage of the Power Platform API Bots operations for Microsoft Copilot Studio. Manage maker evaluation test sets and runs, download evaluation snapshots, quarantine and release agents, control the admin connector consent bypass, reassign agent ownership, and delete agents. Includes MCP support for Copilot Studio agents.",
-    "version": "1.0",
+    "description": "Complete coverage of the Power Platform API Bots operations for Microsoft Copilot Studio. Manage maker evaluation test sets and runs, download evaluation snapshots, quarantine and release agents, control the admin connector consent bypass, reassign agent ownership, delete agents, and migrate agents to Microsoft Entra Agent ID. Includes MCP support for Copilot Studio agents.",
+    "version": "1.1",
     "contact": {
       "name": "Troy Taylor",
       "email": "troy@troystaylor.com",
@@ -1150,6 +1150,176 @@
         "x-ms-docs-operation-type": "operation"
       }
     },
+    "/environments/{environmentId}/bots/{botId}/api/agentidentitymigration/migrate": {
+      "post": {
+        "summary": "Migrate Agent Identity To Entra Agent ID",
+        "description": "Migrate a Copilot Studio agent from its legacy app-registration identity to a Microsoft Entra Agent ID. The agent keeps its application (client) ID, so channel registrations and connectors continue to resolve. Preview feature.",
+        "operationId": "MigrateAgentIdentity",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentDropdown",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                }
+              },
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Migration completed, or the agent already had a Microsoft Entra Agent ID.",
+            "schema": {
+              "$ref": "#/definitions/AgentIdentityMigrationResult"
+            }
+          },
+          "400": {
+            "description": "Bad request - The agent is not eligible for migration."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          },
+          "429": {
+            "description": "Too many requests - The service is throttling migration calls. Wait and retry."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/bots/{botId}/api/agentidentitymigration/rollback": {
+      "post": {
+        "summary": "Roll Back Agent Identity To App Registration",
+        "description": "Revert a Copilot Studio agent from its Microsoft Entra Agent ID back to the legacy app-registration identity. Use this when a migrated agent fails validation. Preview feature.",
+        "operationId": "RollbackAgentIdentity",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment containing the agent.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentDropdown",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                }
+              },
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rollback completed, or the agent had not been migrated.",
+            "schema": {
+              "$ref": "#/definitions/AgentIdentityRollbackResult"
+            }
+          },
+          "400": {
+            "description": "Bad request - The agent is not eligible for rollback."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks tenant administrator permissions."
+          },
+          "404": {
+            "description": "Agent or environment not found."
+          },
+          "429": {
+            "description": "Too many requests - The service is throttling migration calls. Wait and retry."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
     "/agents": {
       "get": {
         "summary": "List Agents",
@@ -1703,6 +1873,98 @@
           "type": "string",
           "description": "The Microsoft Entra object ID of the user who becomes the new owner of the agent.",
           "x-ms-summary": "New Owner Entra User ID"
+        }
+      }
+    },
+    "AgentIdentityMigrationResult": {
+      "type": "object",
+      "description": "The outcome of migrating a Copilot Studio agent to a Microsoft Entra Agent ID.",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Terminal status of the migration.",
+          "x-ms-summary": "Status",
+          "enum": [
+            "Migrated",
+            "AlreadyMigrated"
+          ]
+        },
+        "cdsBotId": {
+          "type": "string",
+          "description": "The Dataverse identifier of the migrated agent.",
+          "x-ms-summary": "Agent ID"
+        },
+        "environmentId": {
+          "type": "string",
+          "description": "The environment containing the migrated agent.",
+          "x-ms-summary": "Environment ID"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "The tenant containing the migrated agent.",
+          "x-ms-summary": "Tenant ID"
+        },
+        "agentIdentityId": {
+          "type": "string",
+          "description": "The Microsoft Entra Agent ID now associated with the agent.",
+          "x-ms-summary": "Entra Agent ID"
+        },
+        "applicationId": {
+          "type": "string",
+          "description": "The application (client) ID, which is preserved across migration.",
+          "x-ms-summary": "Application ID"
+        },
+        "servicePrincipalObjectId": {
+          "type": "string",
+          "description": "The object ID of the service principal backing the agent identity.",
+          "x-ms-summary": "Service Principal Object ID"
+        },
+        "managedIdentityId": {
+          "type": "string",
+          "description": "The managed identity associated with the agent, when one exists.",
+          "x-ms-summary": "Managed Identity ID"
+        },
+        "completedAtUtc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the migration completed, in UTC.",
+          "x-ms-summary": "Completed At (UTC)"
+        }
+      }
+    },
+    "AgentIdentityRollbackResult": {
+      "type": "object",
+      "description": "The outcome of reverting a Copilot Studio agent to its legacy app-registration identity.",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Terminal status of the rollback.",
+          "x-ms-summary": "Status",
+          "enum": [
+            "RolledBack",
+            "NotMigrated"
+          ]
+        },
+        "cdsBotId": {
+          "type": "string",
+          "description": "The Dataverse identifier of the agent.",
+          "x-ms-summary": "Agent ID"
+        },
+        "environmentId": {
+          "type": "string",
+          "description": "The environment containing the agent.",
+          "x-ms-summary": "Environment ID"
+        },
+        "tenantId": {
+          "type": "string",
+          "description": "The tenant containing the agent.",
+          "x-ms-summary": "Tenant ID"
+        },
+        "completedAtUtc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the rollback completed, in UTC.",
+          "x-ms-summary": "Completed At (UTC)"
         }
       }
     },
