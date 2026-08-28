@@ -1,0 +1,64 @@
+{
+  "//": "Collection profiles. Copy to config/profiles.json and edit for your database.",
+  "//Access": "Required on every collection. Kind is Everyone, EntraGroupField, UpnField, or TenantField.",
+  "//Mode": "Indexed (crawled into the M365 search index), Live (queried in real time), or Both.",
+  "//UrlPath": "Relative; combined with Ui:BaseUrl at install time. Placeholders read document fields.",
+
+  "Mongo": {
+    "Collections": {
+
+      "support_tickets": {
+        "Mode": "Both",
+        "Database": "helpdesk",
+        "Description": "Customer support tickets, including subject, body, status, priority and the team they are assigned to. Use for questions about open issues, escalations, and ticket history.",
+        "IdField": "_id",
+        "TitleField": "subject",
+        "ContentField": "body",
+        "UrlPath": "/ticket/{_id}",
+        "Properties": {
+          "status": { "Type": "String", "IsQueryable": true, "IsRefinable": true },
+          "priority": { "Type": "String", "IsQueryable": true, "IsRefinable": true },
+          "customerName": { "Type": "String", "IsSearchable": true, "IsQueryable": true },
+          "assignedTo": { "Type": "String", "IsQueryable": true, "Labels": [ "createdBy" ] },
+          "updatedAt": { "Type": "DateTime", "IsQueryable": true, "Labels": [ "lastModifiedDateTime" ] },
+          "tags": { "Type": "StringCollection", "IsSearchable": true }
+        },
+        "Access": { "Kind": "EntraGroupField", "Field": "assignedTeamGroupId" }
+      },
+
+      "knowledge_articles": {
+        "Mode": "Indexed",
+        "Database": "helpdesk",
+        "Description": "Internal knowledge base articles describing product behaviour and troubleshooting steps.",
+        "IdField": "_id",
+        "TitleField": "title",
+        "ContentField": "markdown",
+        "UrlPath": "/kb/{slug}",
+        "Properties": {
+          "category": { "Type": "String", "IsQueryable": true, "IsRefinable": true },
+          "author": { "Type": "String", "Labels": [ "createdBy" ] },
+          "publishedAt": { "Type": "DateTime", "IsQueryable": true, "Labels": [ "lastModifiedDateTime" ] }
+        },
+        "Access": { "Kind": "Everyone" }
+      },
+
+      "orders": {
+        "Mode": "Live",
+        "Database": "commerce",
+        "Description": "Customer orders with line items, fulfilment status and shipping dates. Use for questions about a specific order number or a customer's recent purchases.",
+        "IdField": "_id",
+        "TitleField": "orderNumber",
+        "UrlPath": "/orders/{orderNumber}",
+        "Properties": {
+          "orderNumber": { "Type": "String", "IsQueryable": true },
+          "status": { "Type": "String", "IsQueryable": true },
+          "total": { "Type": "Double", "IsQueryable": true },
+          "customerEmail": { "Type": "String", "Path": "customer.email", "IsQueryable": true },
+          "placedAt": { "Type": "DateTime", "IsQueryable": true }
+        },
+        "Access": { "Kind": "UpnField", "Field": "accountManagerUpn" }
+      }
+
+    }
+  }
+}

@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Standalone .gitignore for the MongoDB Copilot connectors.
+#
+# Deliberately self-contained: this folder is meant to be shared on its own, so
+# it cannot rely on a .gitignore further up the tree.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Your configuration ───────────────────────────────────────────────────────
+# Collection profiles describe your database layout and are per-installation.
+# Copy config/profiles.example.json to config/profiles.json to get started.
+config/profiles.json
+appsettings.*.local.json
+*.local.json
+
+# ── Secrets ──────────────────────────────────────────────────────────────────
+# Nothing in this template stores a credential — the connection string arrives
+# as a Container App secret, and -MongoAuthMode ManagedIdentity removes it
+# entirely — but these guard against a local file slipping in.
+.env
+.env.*
+local.settings.json
+*.publishsettings
+*.pubxml
+*.pubxml.user
+*.azurePubxml
+*apikey*
+*secret*
+*password*
+*credentials*
+*token*
+
+# Re-include source files caught by the patterns above. Git cannot re-include a
+# file whose parent directory is excluded, but none of these directories are, so
+# these negations apply. Both cases are listed because the patterns above match
+# case-insensitively on Windows and macOS but not on Linux.
+!src/**/*[Tt]oken*.cs
+!tests/**/*[Tt]oken*.cs
+!src/**/*[Ss]ecret*.cs
+!tests/**/*[Ss]ecret*.cs
+!src/**/*[Cc]redential*.cs
+!tests/**/*[Cc]redential*.cs
+
+# ── Build output ─────────────────────────────────────────────────────────────
+bin/
+obj/
+publish/
+out/
+TestResults/
+*.coverage
+*.coverjson
+coverage*.xml
+*.trx
+
+# ── IDE and tooling ──────────────────────────────────────────────────────────
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.user
+*.userosscache
+*.suo
+*.DotSettings.user
+
+# ── OS noise ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

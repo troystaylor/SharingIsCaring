@@ -1,0 +1,21 @@
+# Normalize line endings in the repository to LF, checking out native on each
+# platform. Without this, files authored on Windows are stored as CRLF and a
+# customer cloning on Linux or macOS sees whole-file diffs and shell-script
+# execution problems.
+* text=auto
+
+# Always LF: these run inside Linux containers or on build agents regardless of
+# where they were edited.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.bicep text eol=lf
+
+# Always CRLF: PowerShell is most predictable with Windows endings.
+*.ps1 text eol=crlf
+
+# Treat as binary so git does not attempt line-ending conversion or diffing.
+*.png binary
+*.jpg binary
+*.zip binary
+*.pptx binary
+*.potx binary
