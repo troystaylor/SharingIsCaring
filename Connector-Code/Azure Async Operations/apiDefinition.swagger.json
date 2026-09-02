@@ -1,0 +1,639 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Azure Async Operations",
+        "description": "Start long-running Azure Resource Manager operations and poll them to completion from Power Automate. Custom connector scripts are capped at two minutes, so this connector never waits inline: starting an operation returns an opaque handle immediately, and a separate status action performs one check per call. The waiting belongs in your flow's Do-Until loop.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "management.azure.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/{providerNamespace}/{resourceType}/{resourceName}": {
+            "put": {
+                "operationId": "CreateOrUpdateResource",
+                "summary": "Create or Update Resource",
+                "description": "Start a create-or-update on any Azure Resource Manager resource. Returns immediately with an operation handle; use Get Operation Status to poll for completion.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource group that contains the resource.",
+                        "x-ms-summary": "Resource Group",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "providerNamespace",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource provider namespace, for example Microsoft.Storage.",
+                        "x-ms-summary": "Provider Namespace",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource type, for example storageAccounts.",
+                        "x-ms-summary": "Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource to create or update.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The API version for the target resource provider, for example 2023-01-01.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The resource definition, passed through to Azure Resource Manager unchanged.",
+                        "schema": {
+                            "$ref": "#/definitions/ResourcePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation started or completed.",
+                        "schema": {
+                            "$ref": "#/definitions/AsyncOperationResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteResource",
+                "summary": "Delete Resource",
+                "description": "Start a delete on any Azure Resource Manager resource. Returns immediately with an operation handle; use Get Operation Status to poll for completion.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource group that contains the resource.",
+                        "x-ms-summary": "Resource Group",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "providerNamespace",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource provider namespace, for example Microsoft.Storage.",
+                        "x-ms-summary": "Provider Namespace",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource type, for example storageAccounts.",
+                        "x-ms-summary": "Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource to delete.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The API version for the target resource provider, for example 2023-01-01.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation started or completed.",
+                        "schema": {
+                            "$ref": "#/definitions/AsyncOperationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/{providerNamespace}/{resourceType}/{resourceName}/{actionName}": {
+            "post": {
+                "operationId": "InvokeResourceAction",
+                "summary": "Invoke Resource Action",
+                "description": "Start a POST action on an Azure Resource Manager resource, such as starting, restarting, or deallocating a virtual machine, or regenerating access keys. Returns immediately with an operation handle; use Get Operation Status to poll for completion.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource group that contains the resource.",
+                        "x-ms-summary": "Resource Group",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "providerNamespace",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource provider namespace, for example Microsoft.Compute.",
+                        "x-ms-summary": "Provider Namespace",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource type, for example virtualMachines.",
+                        "x-ms-summary": "Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the resource to act on.",
+                        "x-ms-summary": "Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "actionName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The action to invoke, for example restart, start, deallocate, or regenerateKey.",
+                        "x-ms-summary": "Action Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The API version for the target resource provider, for example 2024-07-01.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "description": "Optional action payload. Many actions, such as restarting a virtual machine, take no body.",
+                        "schema": {
+                            "type": "object",
+                            "description": "Free-form action payload, forwarded to Azure Resource Manager unchanged.",
+                            "properties": {}
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Action started or completed.",
+                        "schema": {
+                            "$ref": "#/definitions/AsyncOperationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscriptions/{subscriptionId}/resourcegroups/{resourceGroupName}/providers/{providerNamespace}/{resourceType}/{resourceName}/{childResourceType}/{childResourceName}": {
+            "put": {
+                "operationId": "CreateOrUpdateChildResource",
+                "summary": "Create or Update Child Resource",
+                "description": "Start a create-or-update on a nested Azure Resource Manager resource, such as a virtual machine extension or a virtual network subnet. Returns immediately with an operation handle; use Get Operation Status to poll for completion.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource group that contains the parent resource.",
+                        "x-ms-summary": "Resource Group",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "providerNamespace",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource provider namespace, for example Microsoft.Network.",
+                        "x-ms-summary": "Provider Namespace",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent resource type, for example virtualNetworks.",
+                        "x-ms-summary": "Parent Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the parent resource.",
+                        "x-ms-summary": "Parent Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "childResourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The child resource type, for example subnets or extensions.",
+                        "x-ms-summary": "Child Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "childResourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the child resource.",
+                        "x-ms-summary": "Child Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The API version for the target resource provider, for example 2023-09-01.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The child resource definition, passed through to Azure Resource Manager unchanged.",
+                        "schema": {
+                            "$ref": "#/definitions/ResourcePayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation started or completed.",
+                        "schema": {
+                            "$ref": "#/definitions/AsyncOperationResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "DeleteChildResource",
+                "summary": "Delete Child Resource",
+                "description": "Start a delete on a nested Azure Resource Manager resource. Returns immediately with an operation handle; use Get Operation Status to poll for completion.",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Azure subscription ID.",
+                        "x-ms-summary": "Subscription ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceGroupName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource group that contains the parent resource.",
+                        "x-ms-summary": "Resource Group",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "providerNamespace",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource provider namespace, for example Microsoft.Network.",
+                        "x-ms-summary": "Provider Namespace",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The parent resource type, for example virtualNetworks.",
+                        "x-ms-summary": "Parent Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "resourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the parent resource.",
+                        "x-ms-summary": "Parent Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "childResourceType",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The child resource type, for example subnets or extensions.",
+                        "x-ms-summary": "Child Resource Type",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "childResourceName",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The name of the child resource to delete.",
+                        "x-ms-summary": "Child Resource Name",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The API version for the target resource provider, for example 2023-09-01.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation started or completed.",
+                        "schema": {
+                            "$ref": "#/definitions/AsyncOperationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/operationStatus": {
+            "get": {
+                "operationId": "GetOperationStatus",
+                "summary": "Get Operation Status",
+                "description": "Perform exactly one status check for a previously started operation. Call this in a Do-Until loop that exits when Is Complete is true, delaying by Retry After Seconds between iterations.",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "operationHandle",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Operation Handle returned by Create or Update Resource or Delete Resource.",
+                        "x-ms-summary": "Operation Handle",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current operation state.",
+                        "schema": {
+                            "$ref": "#/definitions/AsyncOperationResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ResourcePayload": {
+            "type": "object",
+            "description": "Free-form Azure Resource Manager resource body. The shape varies by resource type and is forwarded to Azure unchanged, so no fixed schema is imposed.",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The Azure region for the resource, for example eastus.",
+                    "x-ms-summary": "Location"
+                },
+                "tags": {
+                    "type": "object",
+                    "description": "Resource tags as key/value pairs.",
+                    "x-ms-summary": "Tags"
+                },
+                "sku": {
+                    "type": "object",
+                    "description": "The SKU for the resource, when the resource type requires one.",
+                    "x-ms-summary": "SKU",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "The SKU name, for example Standard_LRS.",
+                            "x-ms-summary": "SKU Name"
+                        },
+                        "tier": {
+                            "type": "string",
+                            "description": "The SKU tier, for example Standard.",
+                            "x-ms-summary": "SKU Tier"
+                        }
+                    }
+                },
+                "kind": {
+                    "type": "string",
+                    "description": "The resource kind, for example StorageV2.",
+                    "x-ms-summary": "Kind"
+                },
+                "properties": {
+                    "type": "object",
+                    "description": "Resource-type-specific properties.",
+                    "x-ms-summary": "Properties"
+                }
+            }
+        },
+        "AsyncOperationResponse": {
+            "type": "object",
+            "description": "Uniform envelope describing the state of a long-running operation.",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "Normalized operation state: Running, Succeeded, Failed, or Canceled.",
+                    "x-ms-summary": "Status"
+                },
+                "isComplete": {
+                    "type": "boolean",
+                    "description": "True when the operation has reached a terminal state. Use this as the exit condition for a Do-Until loop.",
+                    "x-ms-summary": "Is Complete"
+                },
+                "retryAfterSeconds": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "How long to wait before the next status check, taken from the service's Retry-After header when present.",
+                    "x-ms-summary": "Retry After Seconds"
+                },
+                "operationHandle": {
+                    "type": "string",
+                    "description": "Opaque handle identifying the running operation. Pass this to Get Operation Status. Null once the operation is complete.",
+                    "x-ms-summary": "Operation Handle"
+                },
+                "result": {
+                    "type": "object",
+                    "description": "The operation result once complete. For Location-style operations this is the provisioned resource; for status-document operations it is the final status document.",
+                    "x-ms-summary": "Result"
+                },
+                "error": {
+                    "type": "object",
+                    "description": "Error detail when the operation failed.",
+                    "x-ms-summary": "Error",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Normalized error code.",
+                            "x-ms-summary": "Error Code"
+                        },
+                        "message": {
+                            "type": "string",
+                            "description": "Human-readable error message.",
+                            "x-ms-summary": "Error Message"
+                        },
+                        "httpStatus": {
+                            "type": "integer",
+                            "format": "int32",
+                            "description": "HTTP status code returned by the service. Present only when the request itself failed; absent when a long-running operation reported failure over a successful HTTP response.",
+                            "x-ms-summary": "HTTP Status"
+                        },
+                        "details": {
+                            "type": "array",
+                            "description": "Additional error details returned by the service.",
+                            "x-ms-summary": "Error Details",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "code": {
+                                        "type": "string",
+                                        "description": "Detail error code.",
+                                        "x-ms-summary": "Code"
+                                    },
+                                    "message": {
+                                        "type": "string",
+                                        "description": "Detail error message.",
+                                        "x-ms-summary": "Message"
+                                    },
+                                    "target": {
+                                        "type": "string",
+                                        "description": "The target of the error, when the service reports one.",
+                                        "x-ms-summary": "Target"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://management.azure.com/.default": "Access Azure Resource Manager"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "https://management.azure.com/.default"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/azure/azure-resource-manager/management/async-operations"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
