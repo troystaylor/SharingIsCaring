@@ -1,0 +1,76 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "MCP Public Client PKCE",
+    "description": "Template for connecting Copilot Studio to a remote MCP Streamable HTTP server using OAuth authorization code flow, PKCE S256, and a static public client without a client secret.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "your-mcp-server.example.com",
+  "basePath": "/mcp",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json",
+    "text/event-stream"
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke MCP with public-client PKCE",
+        "description": "Sends JSON-RPC requests to a remote MCP Streamable HTTP server authenticated through public-client PKCE.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {},
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://your-auth-server.example.com/oauth/authorize",
+      "tokenUrl": "https://your-auth-server.example.com/oauth/token",
+      "scopes": {
+        "mcp.tools": "Use the remote MCP server tools."
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "mcp.tools"
+      ]
+    }
+  ],
+  "tags": [],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://github.com/troystaylor/SharingIsCaring"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Development Tools"
+    }
+  ]
+}
