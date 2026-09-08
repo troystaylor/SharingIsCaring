@@ -2,8 +2,8 @@
     "swagger": "2.0",
     "info": {
         "title": "Power Platform Admin",
-        "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, agent inventory, and application packages via the Power Platform Admin API.",
-        "version": "1.3.0",
+        "description": "MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, capacity allocations, Copilot governance, security recommendations, connectors, apps, agent inventory, and application packages via the Power Platform Admin API.",
+        "version": "1.4.0",
         "contact": {
             "name": "Troy Taylor",
             "email": "troy@troystaylor.com"
@@ -266,7 +266,7 @@
         "/admin/tenantpool": {
             "get": {
                 "summary": "Get Draw From Tenant Pool",
-                "description": "Check whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. An environment with no allocation document draws from the pool by default. Uses an unsupported licensing allocations endpoint that may change without notice.",
+                "description": "Check whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. An environment with no allocation document draws from the pool by default. Uses the documented Allocations By Environment API.",
                 "operationId": "GetTenantPoolDraw",
                 "parameters": [
                     {
@@ -335,7 +335,7 @@
         "/admin/tenantpool/update": {
             "post": {
                 "summary": "Set Draw From Tenant Pool",
-                "description": "Enable or disable whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. Reads the current allocation document first and changes only the TenantPool enforcement rule, preserving other allocation and enforcement data. Uses an unsupported licensing allocations endpoint that may change without notice.",
+                "description": "Enable or disable whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. Reads the current allocation first, changes only the TenantPool enforcement rule, then reads the result back to confirm it. Uses the documented Allocations By Environment API.",
                 "operationId": "SetTenantPoolDraw",
                 "parameters": [
                     {
@@ -399,10 +399,580 @@
                                         "type": "string"
                                     }
                                 },
+                                "verified": {
+                                    "type": "boolean",
+                                    "description": "True when the allocation was read back after the write and matched the requested state. False means a concurrent edit may have overwritten it.",
+                                    "x-ms-summary": "Verified"
+                                },
                                 "message": {
                                     "type": "string",
                                     "description": "Result message",
                                     "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/allocations": {
+            "get": {
+                "summary": "List Environment Allocations",
+                "description": "List capacity allocations for every environment in the tenant. Each entry reports the allocated and auto-allocated amount per currency along with its Alert, PayGo, TenantPool, and Deny enforcement rules.",
+                "operationId": "ListEnvironmentAllocations",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Allocations for every environment",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "environmentCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of environments returned",
+                                    "x-ms-summary": "Environment Count"
+                                },
+                                "environments": {
+                                    "type": "array",
+                                    "description": "Allocation summary per environment",
+                                    "x-ms-summary": "Environments",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment ID",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "currencyCount": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Number of currencies allocated to this environment",
+                                                "x-ms-summary": "Currency Count"
+                                            },
+                                            "currencies": {
+                                                "type": "array",
+                                                "description": "Allocation and enforcement per currency",
+                                                "x-ms-summary": "Currencies",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "currencyType": {
+                                                            "type": "string",
+                                                            "description": "Capacity currency, for example MCSMessages or AI",
+                                                            "x-ms-summary": "Currency Type"
+                                                        },
+                                                        "allocated": {
+                                                            "type": "number",
+                                                            "description": "Quantity allocated to this environment",
+                                                            "x-ms-summary": "Allocated"
+                                                        },
+                                                        "autoAllocated": {
+                                                            "type": "number",
+                                                            "description": "Quantity the platform allocated automatically",
+                                                            "x-ms-summary": "Auto Allocated"
+                                                        },
+                                                        "enforcementRules": {
+                                                            "type": "object",
+                                                            "description": "Enforcement rule states keyed by rule type",
+                                                            "x-ms-summary": "Enforcement Rules",
+                                                            "properties": {
+                                                                "Alert": {
+                                                                    "type": "boolean",
+                                                                    "description": "Notify when the allocation is approached",
+                                                                    "x-ms-summary": "Alert"
+                                                                },
+                                                                "PayGo": {
+                                                                    "type": "boolean",
+                                                                    "description": "Bill overage as pay-as-you-go",
+                                                                    "x-ms-summary": "Pay As You Go"
+                                                                },
+                                                                "TenantPool": {
+                                                                    "type": "boolean",
+                                                                    "description": "Draw from the shared tenant pool",
+                                                                    "x-ms-summary": "Tenant Pool"
+                                                                },
+                                                                "Deny": {
+                                                                    "type": "boolean",
+                                                                    "description": "Stop consumption once the allocation is exhausted",
+                                                                    "x-ms-summary": "Deny"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/allocations/environment": {
+            "get": {
+                "summary": "Get Environment Allocations",
+                "description": "Get the capacity allocation document for one environment, including every currency and its enforcement rules. Returns hasAllocationDocument false when the environment has never been allocated, which means it inherits tenant defaults rather than that the lookup failed.",
+                "operationId": "GetEnvironmentAllocations",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Allocation document for the environment",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "hasAllocationDocument": {
+                                    "type": "boolean",
+                                    "description": "False when the environment has no allocation document and inherits tenant defaults",
+                                    "x-ms-summary": "Has Allocation Document"
+                                },
+                                "currencies": {
+                                    "type": "array",
+                                    "description": "Allocation and enforcement per currency",
+                                    "x-ms-summary": "Currencies",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currencyType": {
+                                                "type": "string",
+                                                "description": "Capacity currency, for example MCSMessages or AI",
+                                                "x-ms-summary": "Currency Type"
+                                            },
+                                            "allocated": {
+                                                "type": "number",
+                                                "description": "Quantity allocated to this environment",
+                                                "x-ms-summary": "Allocated"
+                                            },
+                                            "autoAllocated": {
+                                                "type": "number",
+                                                "description": "Quantity the platform allocated automatically",
+                                                "x-ms-summary": "Auto Allocated"
+                                            },
+                                            "enforcementRules": {
+                                                "type": "object",
+                                                "description": "Enforcement rule states keyed by rule type",
+                                                "x-ms-summary": "Enforcement Rules",
+                                                "properties": {
+                                                    "Alert": {
+                                                        "type": "boolean",
+                                                        "description": "Notify when the allocation is approached",
+                                                        "x-ms-summary": "Alert"
+                                                    },
+                                                    "PayGo": {
+                                                        "type": "boolean",
+                                                        "description": "Bill overage as pay-as-you-go",
+                                                        "x-ms-summary": "Pay As You Go"
+                                                    },
+                                                    "TenantPool": {
+                                                        "type": "boolean",
+                                                        "description": "Draw from the shared tenant pool",
+                                                        "x-ms-summary": "Tenant Pool"
+                                                    },
+                                                    "Deny": {
+                                                        "type": "boolean",
+                                                        "description": "Stop consumption once the allocation is exhausted",
+                                                        "x-ms-summary": "Deny"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "allocation": {
+                                    "type": "object",
+                                    "description": "The raw allocation document as returned by the service, or null when none exists",
+                                    "x-ms-summary": "Allocation Document",
+                                    "properties": {
+                                        "environmentId": {
+                                            "type": "string",
+                                            "description": "Environment ID",
+                                            "x-ms-summary": "Environment ID"
+                                        },
+                                        "currencyAllocations": {
+                                            "type": "array",
+                                            "description": "Raw currency allocations",
+                                            "x-ms-summary": "Currency Allocations",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "currencyType": {
+                                                        "type": "string",
+                                                        "description": "Capacity currency",
+                                                        "x-ms-summary": "Currency Type"
+                                                    },
+                                                    "allocated": {
+                                                        "type": "number",
+                                                        "description": "Allocated quantity",
+                                                        "x-ms-summary": "Allocated"
+                                                    },
+                                                    "autoAllocated": {
+                                                        "type": "number",
+                                                        "description": "Auto-allocated quantity",
+                                                        "x-ms-summary": "Auto Allocated"
+                                                    },
+                                                    "enforcementRules": {
+                                                        "type": "array",
+                                                        "description": "Enforcement rules on this currency",
+                                                        "x-ms-summary": "Enforcement Rules",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "ruleType": {
+                                                                    "type": "string",
+                                                                    "description": "Alert, PayGo, TenantPool, or Deny",
+                                                                    "x-ms-summary": "Rule Type"
+                                                                },
+                                                                "enabled": {
+                                                                    "type": "boolean",
+                                                                    "description": "Whether the rule is enabled",
+                                                                    "x-ms-summary": "Enabled"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/allocations/environment/update": {
+            "post": {
+                "summary": "Update Environment Allocation",
+                "description": "Set the allocated capacity and/or enforcement rules for a single currency on one environment. Reads the current allocation, changes only the named currency, writes the whole document back, then re-reads to verify. Other currencies are preserved. Enabling Deny stops consumption once the allocation is exhausted.",
+                "operationId": "UpdateEnvironmentAllocation",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "currencyType"
+                            ],
+                            "properties": {
+                                "currencyType": {
+                                    "type": "string",
+                                    "description": "The capacity currency to change",
+                                    "x-ms-summary": "Currency Type",
+                                    "enum": [
+                                        "AI",
+                                        "AppPass",
+                                        "AppPassForTeams",
+                                        "Invoice",
+                                        "MCSSessions",
+                                        "MCSMessages",
+                                        "PAHostedRPA",
+                                        "PAUnattendedRPA",
+                                        "PerFlowPlan",
+                                        "PortalAddOns",
+                                        "PortalLogins",
+                                        "PortalViews",
+                                        "PowerPagesAuthenticated",
+                                        "PowerPagesAnonymous",
+                                        "PowerAutomatePerProcess",
+                                        "ProcessMiningDataStorage",
+                                        "SCMessages",
+                                        "VAConversations"
+                                    ]
+                                },
+                                "allocated": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Whole-number quantity to allocate. Omit to leave the current amount unchanged.",
+                                    "x-ms-summary": "Allocated"
+                                },
+                                "enforcementRules": {
+                                    "type": "array",
+                                    "description": "Enforcement rules to set. Only the rules listed here change; any others already on the currency are preserved.",
+                                    "x-ms-summary": "Enforcement Rules",
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "ruleType",
+                                            "enabled"
+                                        ],
+                                        "properties": {
+                                            "ruleType": {
+                                                "type": "string",
+                                                "description": "Alert notifies, PayGo bills overage, TenantPool draws from the shared pool, Deny stops consumption at the limit",
+                                                "x-ms-summary": "Rule Type",
+                                                "enum": [
+                                                    "Alert",
+                                                    "PayGo",
+                                                    "TenantPool",
+                                                    "Deny"
+                                                ]
+                                            },
+                                            "enabled": {
+                                                "type": "boolean",
+                                                "description": "True to enable the rule, false to disable it",
+                                                "x-ms-summary": "Enabled"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Update result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string",
+                                    "description": "Operation status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "currencyType": {
+                                    "type": "string",
+                                    "description": "The currency that was changed",
+                                    "x-ms-summary": "Currency Type"
+                                },
+                                "createdCurrencyEntry": {
+                                    "type": "boolean",
+                                    "description": "True when the currency had no prior entry and one was created",
+                                    "x-ms-summary": "Created Currency Entry"
+                                },
+                                "hadExistingDocument": {
+                                    "type": "boolean",
+                                    "description": "True when the environment already had an allocation document",
+                                    "x-ms-summary": "Had Existing Document"
+                                },
+                                "changes": {
+                                    "type": "array",
+                                    "description": "Field-level before and after values",
+                                    "x-ms-summary": "Changes",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "field": {
+                                                "type": "string",
+                                                "description": "The field that changed",
+                                                "x-ms-summary": "Field"
+                                            },
+                                            "from": {
+                                                "type": "string",
+                                                "description": "Previous value, or null when newly created",
+                                                "x-ms-summary": "From"
+                                            },
+                                            "to": {
+                                                "type": "string",
+                                                "description": "Applied value",
+                                                "x-ms-summary": "To"
+                                            }
+                                        }
+                                    }
+                                },
+                                "verified": {
+                                    "type": "boolean",
+                                    "description": "True when the allocation was read back after the write and matched the requested state. False means a concurrent edit may have overwritten it.",
+                                    "x-ms-summary": "Verified"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/allocations/availability": {
+            "get": {
+                "summary": "Get Allocation Availability",
+                "description": "Get how much of each entitlement is still available to allocate. Use this before increasing an environment allocation to check the tenant has unallocated capacity left.",
+                "operationId": "GetAllocationAvailability",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Optional OData filter. The filterable fields are not published, so prefer leaving this blank and narrowing the result yourself.",
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Available entitlement capacity",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "filter": {
+                                    "type": "string",
+                                    "description": "The filter that was applied, or null",
+                                    "x-ms-summary": "Filter"
+                                },
+                                "availability": {
+                                    "type": "object",
+                                    "description": "Availability document as returned by the service",
+                                    "x-ms-summary": "Availability",
+                                    "properties": {
+                                        "entitlementAllocationsAvailable": {
+                                            "type": "array",
+                                            "description": "Available quantity per entitlement",
+                                            "x-ms-summary": "Available Allocations",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "entitlementId": {
+                                                        "type": "string",
+                                                        "description": "Entitlement ID",
+                                                        "x-ms-summary": "Entitlement ID"
+                                                    },
+                                                    "availableQuantity": {
+                                                        "type": "number",
+                                                        "description": "Quantity still available to allocate",
+                                                        "x-ms-summary": "Available Quantity"
+                                                    },
+                                                    "unit": {
+                                                        "type": "string",
+                                                        "description": "Unit of measure: NotSpecified, MB, Count, or Hour",
+                                                        "x-ms-summary": "Unit"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "note": {
+                                    "type": "string",
+                                    "description": "Caveat about undocumented filter fields",
+                                    "x-ms-summary": "Note"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/allocations/reserved": {
+            "get": {
+                "summary": "Get Reserved Entitlements",
+                "description": "Get the reserved quantity and unit for each entitlement in the tenant. Reserved capacity is committed to a scope and is not available for new allocations. This does not report enforcement rules.",
+                "operationId": "GetReservedEntitlements",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Optional OData filter. The filterable fields are not published, so prefer leaving this blank and narrowing the result yourself.",
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reserved entitlement capacity",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "filter": {
+                                    "type": "string",
+                                    "description": "The filter that was applied, or null",
+                                    "x-ms-summary": "Filter"
+                                },
+                                "entitlementCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of entitlements returned",
+                                    "x-ms-summary": "Entitlement Count"
+                                },
+                                "entitlements": {
+                                    "type": "array",
+                                    "description": "Reserved quantity per entitlement",
+                                    "x-ms-summary": "Entitlements",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "entitlementId": {
+                                                "type": "string",
+                                                "description": "Entitlement ID",
+                                                "x-ms-summary": "Entitlement ID"
+                                            },
+                                            "reserved": {
+                                                "type": "object",
+                                                "description": "Reserved quantity and unit",
+                                                "x-ms-summary": "Reserved",
+                                                "properties": {
+                                                    "quantity": {
+                                                        "type": "number",
+                                                        "description": "Reserved quantity",
+                                                        "x-ms-summary": "Quantity"
+                                                    },
+                                                    "unit": {
+                                                        "type": "string",
+                                                        "description": "Unit of measure: NotSpecified, MB, Count, or Hour",
+                                                        "x-ms-summary": "Unit"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "note": {
+                                    "type": "string",
+                                    "description": "Pointer to the allocation operations for enforcement rules",
+                                    "x-ms-summary": "Note"
                                 }
                             }
                         }

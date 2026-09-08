@@ -1,17 +1,25 @@
 # Power Platform Admin
 
-MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, Copilot governance, security recommendations, connectors, apps, and application packages via the Power Platform Admin API.
+MCP server for cross-environment Power Platform administration through natural language in Copilot Studio. Manages environment settings, capacity allocations, Copilot governance, security recommendations, connectors, apps, and application packages via the Power Platform Admin API.
 
 ## Overview
 
-This connector exposes 17 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
+This connector exposes 22 admin tools across 4 categories through a single MCP endpoint, letting Copilot Studio agents perform cross-environment administration without opening the Power Platform admin center.
 
 | Category | Tools | Purpose |
 |----------|-------|---------|
 | Environment Management | 5 | List environments, get details, read/update PPAC settings, compare settings across environments |
-| Governance & Security | 8 | Copilot governance, Copilot Studio tenant pool draw, resource thresholds, security recommendations, cross-tenant connection audit |
+| Governance & Security | 13 | Copilot governance, capacity allocations and enforcement, Copilot Studio tenant pool draw, resource thresholds, security recommendations, cross-tenant connection audit |
 | Resource Inventory | 3 | List connectors and Power Apps per environment, inventory agents across the tenant |
 | Application Lifecycle | 1 | Install Microsoft application packages |
+
+## Mutating tools require explicit confirmation
+
+Every tool that changes tenant or environment configuration refuses to run unless the caller passes `confirm: true`. A description that merely says "confirm with the user" is not a control — an agent resolving an ambiguous instruction can skip it. The gate is enforced in the tool router, so it cannot be bypassed by calling the tool directly.
+
+Gated tools: `admin_update_setting`, `admin_update_copilot_governance`, `admin_set_tenant_pool_draw`, `admin_upsert_resource_threshold`, `admin_update_environment_allocation`, and `admin_install_package`.
+
+The typed Power Automate operations are deliberately **not** gated. A maker who drops the action into a designer has already made the decision explicitly, and adding a required body property would break every existing flow.
 
 ## Prerequisites
 
@@ -36,7 +44,7 @@ This connector exposes 17 admin tools across 4 categories through a single MCP e
 
 2. **Power Platform admin role** (System Administrator, Power Platform Administrator, or Dynamics 365 Administrator)
 
-   The tenant pool tools additionally require the caller to hold **Power Platform Administrator** or **Global Administrator** — the same tenant admin roles that gate licensing and capacity settings in PPAC. The `Licensing.Allocations.*` scopes are documented against the supported Currency Allocation API; the unsupported allocations route shares that namespace and resource type, so grant both and verify with a read before relying on the write.
+   The allocation and tenant pool tools additionally require the caller to hold **Power Platform Administrator** or **Global Administrator** — the same tenant admin roles that gate licensing and capacity settings in PPAC. The `Licensing.Allocations.*` scopes are documented for the Currency Allocation API that these tools call. The endpoint reference itself advertises only the `.default` scope, so confirm with a read before relying on a write.
 
    The resource threshold tools call the supported `licensing/entitlements/.../resourceThresholds` and `licensing/.../threshold` routes. No threshold-specific scope is published, so the same `Licensing.Allocations.*` scopes plus a tenant admin role are what to grant; verify with `admin_list_resource_thresholds` before relying on the write.
 
@@ -73,6 +81,11 @@ These are exposed through the single `/mcp` endpoint for agent use. If you are b
 |------|-------------|
 | `admin_get_copilot_governance` | Get Copilot governance features and settings (tenant or environment scope) |
 | `admin_update_copilot_governance` | Update Copilot governance settings |
+| `admin_list_environment_allocations` | List capacity allocations for every environment, with enforcement rules per currency |
+| `admin_get_environment_allocations` | Get the allocation document for one environment |
+| `admin_update_environment_allocation` | Set the allocated amount and/or enforcement rules for one currency on one environment |
+| `admin_get_allocation_availability` | Check how much of each entitlement is still available to allocate |
+| `admin_get_reserved_entitlements` | Get reserved quantity per entitlement |
 | `admin_get_tenant_pool_draw` | Check whether an environment draws Copilot Studio message and session capacity from the tenant pool |
 | `admin_set_tenant_pool_draw` | Enable or disable drawing Copilot Studio capacity from the tenant pool |
 | `admin_list_resource_thresholds` | List the resource thresholds configured for a licensing entitlement, with limits, consumption, and stop flags |
@@ -80,9 +93,19 @@ These are exposed through the single `/mcp` endpoint for agent use. If you are b
 | `admin_get_security_recommendations` | Get security recommendations from Power Platform Advisor |
 | `admin_get_cross_tenant_connections` | Cross-tenant connection reports for compliance auditing |
 
-> **Draw from Tenant Pool is unsupported.** The two `*_tenant_pool_draw` tools call `licensing/allocations`, which is not part of the published Power Platform REST reference and may change or stop working without notice. Treat it as a temporary mitigation for bulk changes that PPAC only exposes one environment at a time.
+#### Capacity allocations
+
+The allocation tools call the documented **Allocations By Environment** API (`GET`/`PATCH /licensing/allocationsByEnvironment`, api-version `2024-10-01`) added in July 2026. They cover every documented `ExternalCurrencyType` — AI, Copilot Studio messages and sessions, Power Pages authenticated and anonymous, hosted and unattended RPA, Power Automate per-process, Process Mining storage, and the rest — with the `Alert`, `PayGo`, `TenantPool`, and `Deny` enforcement rules.
+
+Earlier versions of this connector reached a tenant-routed host (`{tenant}.tenant.api.powerplatform.com/licensing/allocations`) that was never part of the published REST reference. That path is gone. Nothing in the connector now calls an undocumented licensing route.
+
+> **Writes are read-modify-write and verified.** `admin_update_environment_allocation` and `admin_set_tenant_pool_draw` read the current allocation, change only the currency you named, send the **whole** `currencyAllocations` array back, then re-read and compare. Sending the full array makes the outcome identical whether the service merges or replaces the collection — the one behaviour the published contract does not state.
 >
-> `admin_set_tenant_pool_draw` reads the current allocation document and rewrites only the `TenantPool` enforcement rule. The underlying `PUT` replaces the entire document and the service offers no ETag, so concurrent edits from PPAC or another caller can still be lost.
+> The response carries `verified`. When it is `false` the write was accepted but the read-back did not match, which almost always means a concurrent edit from PPAC or another caller. The service exposes no ETag, so this is detection rather than prevention: re-read before making further changes, and avoid running these tools on a fan-out loop.
+
+> **`Deny` stops consumption.** Enabling `Deny` on a currency halts consumption once the allocation is exhausted, which can break running apps and agents. `Throttle` appears on the `allocationsV2` surface but not on the by-environment API, so the connector rejects it rather than sending a value the endpoint does not document.
+
+> **Availability and reserved filters are unspecified.** `admin_get_allocation_availability` and `admin_get_reserved_entitlements` accept an OData `$filter`, but Microsoft does not publish the filterable fields. Prefer calling them unfiltered and narrowing the result yourself. Reserved quantities do not include enforcement rules — use `admin_get_environment_allocations` for those.
 
 > **Resource thresholds are documented but replace-on-write.** `admin_upsert_resource_threshold` calls the published `licensing/.../threshold` `PUT`, which replaces the whole threshold document. The connector reads the current threshold for the environment and resource first and merges only the fields you supply, so an update that sets `limit` alone will not clear `notificationThreshold` or the stop flags. If the read fails — for example, when the caller can write but not read licensing data — the call degrades to a create and unspecified fields are left unset. There is no ETag, so a concurrent edit can still be lost.
 >
@@ -126,6 +149,11 @@ The connector is dual-mode. The same capabilities are also exposed as typed REST
 | **Update Settings** | POST | `environmentId` (required), body `{ "settings": { "Name": value } }` |
 | **Get Draw From Tenant Pool** | GET | `environmentId` (required) |
 | **Set Draw From Tenant Pool** | POST | `environmentId` (required), body `{ "enabled": true }` |
+| **List Environment Allocations** | GET | none |
+| **Get Environment Allocations** | GET | `environmentId` (required) |
+| **Update Environment Allocation** | POST | `environmentId` (required), body `{ "currencyType": "AI", "allocated": 250, "enforcementRules": [{ "ruleType": "Deny", "enabled": true }] }` |
+| **Get Allocation Availability** | GET | `filter` (optional, advanced) |
+| **Get Reserved Entitlements** | GET | `filter` (optional, advanced) |
 | **List Resource Thresholds** | GET | `entitlementId` (required), `environmentId` (optional filter) |
 | **Upsert Resource Threshold** | POST | `entitlementId`, `environmentId`, `resourceId` (all required), body with any of `limit`, `notificationThreshold`, `notifyIfOverCapacity`, `resourceConsumption`, `stopIfOverCapacity`, `stopResource` |
 | **List Agents** | GET | `environmentId` (optional — leave blank to inventory the whole tenant) |
@@ -139,7 +167,8 @@ Every `environmentId` field renders as a picker of environment display names, po
 - **List Agents returns one object, not a paged list.** The shape is `agentCount`, `truncated`, `environmentId`, and an `agents` array — apply-to-each over `agents`. Check `truncated` before treating the result as a complete inventory; `true` means the page ceiling was reached and agents are missing.
 - **`isCLIAgent` is a string, not a boolean.** Compare against `'true'`, `'false'`, or `'unknown'`. A condition that tests it as a boolean will silently never match, and `'unknown'` must not be treated as `'false'`.
 - **`riskSignals` and `channels` are string arrays.** Flatten with `join(item()?['riskSignals'], ', ')` for a table or email body.
-- **Update Settings, Set Draw From Tenant Pool, and Upsert Resource Threshold are writes.** Set Draw From Tenant Pool rewrites an entire allocation document and the service offers no ETag, so a concurrent edit from PPAC can be lost. Upsert Resource Threshold merges into the current threshold, but the underlying call is still a full replace with no ETag. Read first, and avoid running either on a fan-out loop.
+- **Update Settings, Set Draw From Tenant Pool, Update Environment Allocation, and Upsert Resource Threshold are writes.** The allocation writes read the current document, change only the currency you named, write the whole document back, and re-read to verify — check the `verified` field on the response. A `false` there means a concurrent edit landed between the write and the read-back; the service offers no ETag. Upsert Resource Threshold merges into the current threshold, but the underlying call is still a full replace with no ETag. Read first, and avoid running any of them on a fan-out loop.
+- **Update Environment Allocation changes one currency per call.** Other currencies on the environment are preserved. Omit `allocated` to change only enforcement rules, or omit `enforcementRules` to change only the amount; a call that supplies neither is rejected rather than silently rewriting the document.
 - **Upsert Resource Threshold only sends the body fields you supply.** Leave a property out of the body to keep its current value; sending `null` is treated the same as omitting it.
 
 ## Example Prompts
@@ -153,6 +182,12 @@ Enable SAS IP restrictions on environment [ID]
 What Copilot governance settings are configured for my tenant?
 Does my sandbox environment draw Copilot Studio capacity from the tenant pool?
 Stop the sandbox environments from drawing from the Copilot Studio tenant pool
+Show me capacity allocations across every environment
+What AI capacity is allocated to my production environment?
+How much AI capacity is still unallocated in the tenant?
+Allocate 250 AI capacity to my sandbox and deny overage
+Which environments have Deny enabled on any currency?
+Which environments draw from the tenant pool but have no resource threshold?
 What resource thresholds are set on the MCSMessages entitlement?
 Cap Copilot Studio messages at 50,000 for this environment and notify me at 80%
 Stop the resource once it goes over its message limit
@@ -184,7 +219,7 @@ Install the Customer Service package in my sandbox environment
                             └──────────────────────────┘
 ```
 
-The tenant pool tools target a different, tenant-routed host derived from the `tid` claim of the access token: the tenant GUID lowercased and stripped of dashes, split into the first 30 hex characters and the last 2, as `{prefix}.{suffix}.tenant.api.powerplatform.com`. No extra connection parameter is needed because the tenant is read from the token itself.
+Every operation targets `api.powerplatform.com`. Earlier versions routed the tenant pool tools to a tenant-derived host (`{prefix}.{suffix}.tenant.api.powerplatform.com`) built from the `tid` claim of the access token. That host and the undocumented `licensing/allocations` route it served are no longer used — capacity work now goes through the documented Allocations By Environment API on the same host as everything else.
 
 This connector is part of the Dataverse connector family:
 
@@ -207,6 +242,11 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=your-k
 
 - [Power Platform API Reference](https://learn.microsoft.com/power-platform/admin/programmability-and-extensibility/powerplatform-api-reference)
 - [Permissions Reference](https://learn.microsoft.com/power-platform/admin/programmability-permission-reference)
+- [Get Allocations By Environment](https://learn.microsoft.com/rest/api/power-platform/licensing/allocations-by-environment/get-allocations-by-environment)
+- [Update Allocations By Environment](https://learn.microsoft.com/rest/api/power-platform/licensing/allocations-by-environment/update-allocations-by-environment)
+- [List Allocations By Environment](https://learn.microsoft.com/rest/api/power-platform/licensing/allocations-by-environment/list-allocations-by-environment)
+- [Get Allocations Availability V2](https://learn.microsoft.com/rest/api/power-platform/licensing/allocation/get-allocations-availability-v2)
+- [Get Many Entitlements Reserved V2](https://learn.microsoft.com/rest/api/power-platform/licensing/allocation/get-many-entitlements-reserved-v2)
 - [Environment Management Settings Tutorial](https://learn.microsoft.com/power-platform/admin/programmability-tutorial-environmentmanagement-settings)
 - [Tenant settings — required admin roles](https://learn.microsoft.com/power-platform/admin/tenant-settings)
 - [Currency Allocation — the supported licensing allocation API](https://learn.microsoft.com/rest/api/power-platform/licensing/currency-allocation)

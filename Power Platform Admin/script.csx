@@ -13,7 +13,24 @@ public class Script : ScriptBase
 {
     // MCP Server metadata
     private const string SERVER_NAME = "power-platform-admin-mcp";
-    private const string SERVER_VERSION = "1.3.0";
+    private const string SERVER_VERSION = "1.4.0";
+
+    // MCP tools that change tenant or environment configuration. An agent can act on
+    // an ambiguous instruction, so each of these requires an explicit confirm flag
+    // rather than relying on wording in the tool description. Typed Power Automate
+    // operations are deliberately excluded: a maker who drops the action into a
+    // designer has already made the decision explicitly, and adding a required body
+    // property there would break every existing flow.
+    private static readonly HashSet<string> CONFIRMATION_REQUIRED_TOOLS =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "admin_update_setting",
+            "admin_update_copilot_governance",
+            "admin_set_tenant_pool_draw",
+            "admin_upsert_resource_threshold",
+            "admin_update_environment_allocation",
+            "admin_install_package"
+        };
 
     // Power Platform Admin API
     private const string ADMIN_API_BASE = "https://api.powerplatform.com";
@@ -30,10 +47,29 @@ public class Script : ScriptBase
     // Entra Agent IDs became mandatory for newly created agents in July 2026, so a gap after this date is a stronger signal.
     private static readonly DateTimeOffset ENTRA_AGENT_ID_MANDATE = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
 
-    // Licensing allocations API (unsupported endpoint, tenant-routed host)
-    private const string TENANT_HOST_SUFFIX = ".tenant.api.powerplatform.com";
-    private const string LICENSING_API_VERSION = "1";
-    private static readonly string[] TENANT_POOL_ENTITLEMENTS = { "MCSMessages", "MCSSessions" };
+    // Licensing allocations (documented API on api.powerplatform.com, July 2026)
+    private const string LICENSING_API_VERSION = "2024-10-01";
+    private const string ALLOCATIONS_BY_ENVIRONMENT = "/licensing/allocationsByEnvironment";
+    private const string ALLOCATIONS_V2 = "/licensing/allocationsV2";
+
+    // MCSMessages and MCSSessions are ExternalCurrencyType values on the documented
+    // allocation API. The retired tenant-routed endpoint modelled them as entitlement
+    // IDs, so the wire shape differs even though the identifiers are spelled the same.
+    private static readonly string[] TENANT_POOL_CURRENCIES = { "MCSMessages", "MCSSessions" };
+
+    // Documented ExternalCurrencyType values for Update Allocations By Environment.
+    // The service may add members without a version bump, so this list validates
+    // input spelling only and unknown values from the service are passed through.
+    private static readonly string[] EXTERNAL_CURRENCY_TYPES =
+    {
+        "AI", "AppPass", "AppPassForTeams", "Invoice", "MCSSessions", "MCSMessages",
+        "PAHostedRPA", "PAUnattendedRPA", "PerFlowPlan", "PortalAddOns", "PortalLogins",
+        "PortalViews", "PowerPagesAuthenticated", "PowerPagesAnonymous",
+        "PowerAutomatePerProcess", "ProcessMiningDataStorage", "SCMessages", "VAConversations"
+    };
+
+    // Documented EnforcementRuleTypes for the by-environment allocation surface.
+    private static readonly string[] ENFORCEMENT_RULE_TYPES = { "Alert", "PayGo", "TenantPool", "Deny" };
 
     // Resource thresholds (supported licensing API on api.powerplatform.com)
     private const string LICENSING_THRESHOLD_API_VERSION = "2024-10-01";
@@ -46,8 +82,6 @@ public class Script : ScriptBase
     // Application Insights
     private const string APP_INSIGHTS_CONNECTION_STRING = "[INSERT_YOUR_APP_INSIGHTS_CONNECTION_STRING]";
     private const string APP_INSIGHTS_ENDPOINT = "https://dc.applicationinsights.azure.com/v2/track";
-
-    private string _tenantId;
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
     {
@@ -69,6 +103,16 @@ public class Script : ScriptBase
                     return await HandleTypedGetTenantPoolDraw().ConfigureAwait(false);
                 case "SetTenantPoolDraw":
                     return await HandleTypedSetTenantPoolDraw().ConfigureAwait(false);
+                case "ListEnvironmentAllocations":
+                    return await HandleTypedListEnvironmentAllocations().ConfigureAwait(false);
+                case "GetEnvironmentAllocations":
+                    return await HandleTypedGetEnvironmentAllocations().ConfigureAwait(false);
+                case "UpdateEnvironmentAllocation":
+                    return await HandleTypedUpdateEnvironmentAllocation().ConfigureAwait(false);
+                case "GetAllocationAvailability":
+                    return await HandleTypedGetAllocationAvailability().ConfigureAwait(false);
+                case "GetReservedEntitlements":
+                    return await HandleTypedGetReservedEntitlements().ConfigureAwait(false);
                 case "ListResourceThresholds":
                     return await HandleTypedListResourceThresholds().ConfigureAwait(false);
                 case "UpsertResourceThreshold":
@@ -256,9 +300,14 @@ public class Script : ScriptBase
                         {
                             ["type"] = "object",
                             ["description"] = "Key-value pairs of setting names and their new values. Example: {\"EnableIpBasedStorageAccessSignatureRule\": true}"
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Must be true. Set it only after showing the caller the environment and the settings that will change."
                         }
                     },
-                    ["required"] = new JArray { "environmentId", "settings" }
+                    ["required"] = new JArray { "environmentId", "settings", "confirm" }
                 }
             },
             new JObject
@@ -317,15 +366,20 @@ public class Script : ScriptBase
                         {
                             ["type"] = "object",
                             ["description"] = "Key-value pairs of Copilot governance settings to update."
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Must be true. Set it only after showing the caller the scope and the settings that will change."
                         }
                     },
-                    ["required"] = new JArray { "settings" }
+                    ["required"] = new JArray { "settings", "confirm" }
                 }
             },
             new JObject
             {
                 ["name"] = "admin_get_tenant_pool_draw",
-                ["description"] = "Check whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. An environment with no allocation document draws from the pool by default. Read-only. Note: this uses an unsupported licensing allocations endpoint that may change without notice.",
+                ["description"] = "Check whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. An environment with no allocation document draws from the pool by default. Read-only. Uses the documented Allocations By Environment API.",
                 ["inputSchema"] = new JObject
                 {
                     ["type"] = "object",
@@ -343,7 +397,7 @@ public class Script : ScriptBase
             new JObject
             {
                 ["name"] = "admin_set_tenant_pool_draw",
-                ["description"] = "Enable or disable whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. Reads the current allocation document first and changes only the TenantPool enforcement rule, preserving all other allocation and enforcement data. This is a destructive operation — confirm with the user before executing. Note: this uses an unsupported licensing allocations endpoint that may change without notice.",
+                ["description"] = "Enable or disable whether an environment draws Copilot Studio message and session capacity (MCSMessages, MCSSessions) from the tenant pool. Reads the current allocation first, changes only the TenantPool enforcement rule, then reads the result back to confirm it. Changes capacity behavior — show the caller the current state first, then set confirm to true.",
                 ["inputSchema"] = new JObject
                 {
                     ["type"] = "object",
@@ -358,9 +412,137 @@ public class Script : ScriptBase
                         {
                             ["type"] = "boolean",
                             ["description"] = "true to draw from the tenant pool, false to stop drawing from it."
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Must be true. Set it only after showing the caller which environment changes and in which direction."
                         }
                     },
-                    ["required"] = new JArray { "environmentId", "enabled" }
+                    ["required"] = new JArray { "environmentId", "enabled", "confirm" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_list_environment_allocations",
+                ["description"] = "List capacity allocations for every environment in the tenant. Each entry reports the allocated and auto-allocated amount per currency (AI, MCSMessages, MCSSessions, PowerPagesAuthenticated, PAHostedRPA, ProcessMiningDataStorage, and others) along with its Alert, PayGo, TenantPool, and Deny enforcement rules. Read-only. Use this to find allocation drift across the tenant.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject(),
+                    ["required"] = new JArray()
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_get_environment_allocations",
+                ["description"] = "Get the capacity allocation document for one environment, including every currency and its enforcement rules. Returns hasAllocationDocument false when the environment has never been allocated, which means it inherits tenant defaults rather than that the lookup failed. Read-only.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The environment ID (GUID)."
+                        }
+                    },
+                    ["required"] = new JArray { "environmentId" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_update_environment_allocation",
+                ["description"] = "Set the allocated capacity and/or enforcement rules for a single currency on one environment. Reads the current allocation, changes only the named currency, writes the whole document back, then re-reads to verify. Other currencies are preserved. Deny stops consumption once the allocation is exhausted and can break running apps and agents — describe the exact effect before setting confirm to true.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["environmentId"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The environment ID (GUID)."
+                        },
+                        ["currencyType"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "The capacity currency to change, for example MCSMessages, AI, PowerPagesAuthenticated, PAHostedRPA, or ProcessMiningDataStorage.",
+                            ["enum"] = new JArray(EXTERNAL_CURRENCY_TYPES)
+                        },
+                        ["allocated"] = new JObject
+                        {
+                            ["type"] = "integer",
+                            ["description"] = "Optional. The whole-number quantity to allocate to this environment. Omit to leave the current amount unchanged."
+                        },
+                        ["enforcementRules"] = new JObject
+                        {
+                            ["type"] = "array",
+                            ["description"] = "Optional. Enforcement rules to set. Only the rules listed here change; any others already on the currency are preserved.",
+                            ["items"] = new JObject
+                            {
+                                ["type"] = "object",
+                                ["properties"] = new JObject
+                                {
+                                    ["ruleType"] = new JObject
+                                    {
+                                        ["type"] = "string",
+                                        ["description"] = "Alert notifies, PayGo bills overage, TenantPool draws from the shared tenant pool, Deny stops consumption at the limit.",
+                                        ["enum"] = new JArray(ENFORCEMENT_RULE_TYPES)
+                                    },
+                                    ["enabled"] = new JObject
+                                    {
+                                        ["type"] = "boolean",
+                                        ["description"] = "true to enable the rule, false to disable it."
+                                    }
+                                },
+                                ["required"] = new JArray { "ruleType", "enabled" }
+                            }
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Must be true. Set it only after showing the caller the environment, currency, current value, and proposed value."
+                        }
+                    },
+                    ["required"] = new JArray { "environmentId", "currencyType", "confirm" }
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_get_allocation_availability",
+                ["description"] = "Get how much of each entitlement is still available to allocate. Use this before increasing an environment allocation to check the tenant has unallocated capacity left. Read-only.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["filter"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Optional OData filter. The filterable fields are not published, so prefer omitting this and narrowing the result yourself."
+                        }
+                    },
+                    ["required"] = new JArray()
+                }
+            },
+            new JObject
+            {
+                ["name"] = "admin_get_reserved_entitlements",
+                ["description"] = "Get the reserved quantity and unit for each entitlement in the tenant. Reserved capacity is committed to a scope and is not available for new allocations. This does not report enforcement rules — use admin_get_environment_allocations for those. Read-only.",
+                ["inputSchema"] = new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject
+                    {
+                        ["filter"] = new JObject
+                        {
+                            ["type"] = "string",
+                            ["description"] = "Optional OData filter. The filterable fields are not published, so prefer omitting this and narrowing the result yourself."
+                        }
+                    },
+                    ["required"] = new JArray()
                 }
             },
             new JObject
@@ -439,9 +621,14 @@ public class Script : ScriptBase
                         {
                             ["type"] = "boolean",
                             ["description"] = "Optional. true to explicitly stop the resource, putting it in a disabled state."
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Must be true. Set it only after showing the caller the resource and the fields that will change. Enabling stopIfOverCapacity or stopResource halts consumption and can break running workloads."
                         }
                     },
-                    ["required"] = new JArray { "environmentId", "entitlementId", "resourceId" }
+                    ["required"] = new JArray { "environmentId", "entitlementId", "resourceId", "confirm" }
                 }
             },
             new JObject
@@ -556,9 +743,14 @@ public class Script : ScriptBase
                         {
                             ["type"] = "string",
                             ["description"] = "The unique name of the application package to install."
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Must be true. Set it only after showing the caller which package installs into which environment. Package installs modify the environment and are not trivially reversible."
                         }
                     },
-                    ["required"] = new JArray { "environmentId", "packageUniqueName" }
+                    ["required"] = new JArray { "environmentId", "packageUniqueName", "confirm" }
                 }
             }
         };
@@ -580,6 +772,8 @@ public class Script : ScriptBase
 
         try
         {
+            RequireConfirmation(toolName, arguments);
+
             JToken result;
             switch (toolName)
             {
@@ -612,6 +806,21 @@ public class Script : ScriptBase
                     break;
                 case "admin_set_tenant_pool_draw":
                     result = await HandleSetTenantPoolDraw(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_list_environment_allocations":
+                    result = await HandleListEnvironmentAllocations(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_get_environment_allocations":
+                    result = await HandleGetEnvironmentAllocations(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_update_environment_allocation":
+                    result = await HandleUpdateEnvironmentAllocation(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_get_allocation_availability":
+                    result = await HandleGetAllocationAvailability(arguments).ConfigureAwait(false);
+                    break;
+                case "admin_get_reserved_entitlements":
+                    result = await HandleGetReservedEntitlements(arguments).ConfigureAwait(false);
                     break;
                 case "admin_list_resource_thresholds":
                     result = await HandleListResourceThresholds(arguments).ConfigureAwait(false);
@@ -681,6 +890,32 @@ public class Script : ScriptBase
                 ["isError"] = true
             });
         }
+    }
+
+    // A missing, false, or non-boolean confirm is treated identically: the call is
+    // refused. Accepting a string "true" keeps agents that stringify booleans working,
+    // but nothing weaker than an explicit affirmative gets through.
+    private static void RequireConfirmation(string toolName, JObject arguments)
+    {
+        if (string.IsNullOrEmpty(toolName) || !CONFIRMATION_REQUIRED_TOOLS.Contains(toolName))
+            return;
+
+        var confirm = arguments["confirm"];
+
+        if (confirm != null && confirm.Type != JTokenType.Null)
+        {
+            if (confirm.Type == JTokenType.Boolean && confirm.Value<bool>())
+                return;
+
+            bool parsed;
+            if (confirm.Type == JTokenType.String &&
+                bool.TryParse(confirm.ToString(), out parsed) && parsed)
+                return;
+        }
+
+        throw new ArgumentException(
+            $"{toolName} changes tenant or environment configuration and cannot be run from an " +
+            "implied instruction. Show the caller what will change, then set confirm to true.");
     }
 
     // ─── Category 1: Environment Management ─────────────────────────────
@@ -924,18 +1159,246 @@ public class Script : ScriptBase
         };
     }
 
+    // ─── Licensing Allocations (documented API) ─────────────────────────
+
+    private async Task<JToken> HandleListEnvironmentAllocations(JObject arguments)
+    {
+        var response = await CallAdminApiRaw(
+            HttpMethod.Get,
+            $"{ALLOCATIONS_BY_ENVIRONMENT}?api-version={LICENSING_API_VERSION}"
+        ).ConfigureAwait(false);
+
+        if (!response.IsSuccess)
+            throw new InvalidOperationException(DescribeAllocationFailure(response, null));
+
+        var allocations = ReadAllocationCollection(response.ParseBody());
+
+        var summary = new JArray();
+        foreach (var item in allocations)
+        {
+            var model = item as JObject;
+            if (model == null) continue;
+
+            summary.Add(new JObject
+            {
+                ["environmentId"] = model["environmentId"],
+                ["currencyCount"] = (model["currencyAllocations"] as JArray)?.Count ?? 0,
+                ["currencies"] = SummarizeCurrencyAllocations(model)
+            });
+        }
+
+        return new JObject
+        {
+            ["environmentCount"] = summary.Count,
+            ["environments"] = summary
+        };
+    }
+
+    private async Task<JToken> HandleGetEnvironmentAllocations(JObject arguments)
+    {
+        var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
+
+        var document = await FetchEnvironmentAllocation(envId).ConfigureAwait(false);
+
+        return new JObject
+        {
+            ["environmentId"] = envId,
+            ["hasAllocationDocument"] = document != null,
+            ["currencies"] = document == null ? new JArray() : SummarizeCurrencyAllocations(document),
+            ["allocation"] = document == null ? (JToken)JValue.CreateNull() : document,
+            ["message"] = document == null
+                ? "No allocation document exists for this environment. It inherits tenant defaults."
+                : "Returned the current allocation document for this environment."
+        };
+    }
+
+    private async Task<JToken> HandleUpdateEnvironmentAllocation(JObject arguments)
+    {
+        var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
+        var currencyType = RequireCurrencyType(arguments["currencyType"]?.ToString());
+
+        var allocated = arguments["allocated"];
+        var enforcementRules = arguments["enforcementRules"] as JArray;
+
+        var hasAllocated = allocated != null && allocated.Type != JTokenType.Null;
+        var hasRules = enforcementRules != null && enforcementRules.Count > 0;
+
+        if (!hasAllocated && !hasRules)
+            throw new ArgumentException(
+                "Supply allocated, enforcementRules, or both. An update that changes nothing is rejected " +
+                "so an empty call cannot silently rewrite the allocation document.");
+
+        var before = await FetchEnvironmentAllocation(envId).ConfigureAwait(false);
+
+        // The whole currencyAllocations array is sent back on every write. That makes the
+        // result identical whether the service merges or replaces the collection, which is
+        // the one behaviour the published contract does not state.
+        var document = before != null
+            ? (JObject)before.DeepClone()
+            : new JObject { ["environmentId"] = envId, ["currencyAllocations"] = new JArray() };
+
+        document["environmentId"] = envId;
+
+        var currencies = document["currencyAllocations"] as JArray;
+        if (currencies == null)
+        {
+            currencies = new JArray();
+            document["currencyAllocations"] = currencies;
+        }
+
+        var target = FindCurrencyAllocation(currencies, currencyType);
+        var created = target == null;
+
+        if (created)
+        {
+            target = new JObject
+            {
+                ["currencyType"] = currencyType,
+                ["allocated"] = 0,
+                ["autoAllocated"] = 0,
+                ["enforcementRules"] = new JArray()
+            };
+            currencies.Add(target);
+        }
+
+        var changes = new JArray();
+
+        if (hasAllocated)
+        {
+            var previous = target["allocated"];
+            var next = CoerceAllocatedQuantity(allocated);
+            target["allocated"] = next;
+
+            changes.Add(new JObject
+            {
+                ["field"] = "allocated",
+                ["from"] = created ? (JToken)JValue.CreateNull() : previous,
+                ["to"] = next
+            });
+        }
+
+        if (hasRules)
+        {
+            var rules = target["enforcementRules"] as JArray;
+            if (rules == null)
+            {
+                rules = new JArray();
+                target["enforcementRules"] = rules;
+            }
+
+            foreach (var item in enforcementRules)
+            {
+                var requested = item as JObject;
+                if (requested == null)
+                    throw new ArgumentException("Each enforcementRules entry must be an object with ruleType and enabled.");
+
+                var ruleType = RequireEnforcementRuleType(requested["ruleType"]?.ToString());
+                var ruleEnabled = ReadRequiredBoolean(requested["enabled"], $"enforcementRules.{ruleType}.enabled");
+
+                var existing = FindEnforcementRule(rules, ruleType);
+                var previous = existing == null ? (JToken)JValue.CreateNull() : existing["enabled"];
+
+                if (existing == null)
+                    rules.Add(new JObject { ["ruleType"] = ruleType, ["enabled"] = ruleEnabled });
+                else
+                    existing["enabled"] = ruleEnabled;
+
+                changes.Add(new JObject
+                {
+                    ["field"] = $"enforcementRules.{ruleType}.enabled",
+                    ["from"] = previous,
+                    ["to"] = ruleEnabled
+                });
+            }
+        }
+
+        var applied = await PatchEnvironmentAllocation(envId, document).ConfigureAwait(false);
+        var after = await FetchEnvironmentAllocation(envId).ConfigureAwait(false);
+
+        var verified = VerifyCurrencyMatches(after, currencyType, target);
+
+        return new JObject
+        {
+            ["status"] = "success",
+            ["environmentId"] = envId,
+            ["currencyType"] = currencyType,
+            ["createdCurrencyEntry"] = created,
+            ["hadExistingDocument"] = before != null,
+            ["changes"] = changes,
+            ["verified"] = verified,
+            ["before"] = before == null ? (JToken)JValue.CreateNull() : SummarizeCurrencyAllocations(before),
+            ["after"] = after == null
+                ? (applied ?? (JToken)JValue.CreateNull())
+                : SummarizeCurrencyAllocations(after),
+            ["message"] = verified
+                ? $"Updated {currencyType} on environment {envId} and confirmed the change by reading it back."
+                : $"Updated {currencyType} on environment {envId}, but the read-back did not match the requested " +
+                  "values. Another administrator may have written concurrently — the service exposes no ETag. " +
+                  "Re-read the allocation before making further changes."
+        };
+    }
+
+    private async Task<JToken> HandleGetAllocationAvailability(JObject arguments)
+    {
+        var filter = arguments["filter"]?.ToString();
+
+        var path = $"{ALLOCATIONS_V2}/availability?api-version={LICENSING_API_VERSION}";
+        if (!string.IsNullOrWhiteSpace(filter))
+            path += $"&$filter={Uri.EscapeDataString(filter.Trim())}";
+
+        var response = await CallAdminApiRaw(HttpMethod.Get, path).ConfigureAwait(false);
+
+        if (!response.IsSuccess)
+            throw new InvalidOperationException(DescribeAllocationFailure(response, null));
+
+        return new JObject
+        {
+            ["filter"] = string.IsNullOrWhiteSpace(filter) ? (JToken)JValue.CreateNull() : filter,
+            ["availability"] = response.ParseBody() ?? new JObject(),
+            ["note"] = "The filterable fields for this endpoint are not published. If a filter returns " +
+                       "nothing unexpectedly, retry without one and narrow the result yourself."
+        };
+    }
+
+    private async Task<JToken> HandleGetReservedEntitlements(JObject arguments)
+    {
+        var filter = arguments["filter"]?.ToString();
+
+        var path = $"{ALLOCATIONS_V2}/entitlements/reserved?api-version={LICENSING_API_VERSION}";
+        if (!string.IsNullOrWhiteSpace(filter))
+            path += $"&$filter={Uri.EscapeDataString(filter.Trim())}";
+
+        var response = await CallAdminApiRaw(HttpMethod.Get, path).ConfigureAwait(false);
+
+        if (!response.IsSuccess)
+            throw new InvalidOperationException(DescribeAllocationFailure(response, null));
+
+        var reserved = ReadAllocationCollection(response.ParseBody());
+
+        return new JObject
+        {
+            ["filter"] = string.IsNullOrWhiteSpace(filter) ? (JToken)JValue.CreateNull() : filter,
+            ["entitlementCount"] = reserved.Count,
+            ["entitlements"] = reserved,
+            ["note"] = "Reserved quantities do not include enforcement rules. Use " +
+                       "admin_get_environment_allocations to inspect TenantPool, Deny, PayGo, or Alert."
+        };
+    }
+
+    // ─── Tenant Pool (thin wrapper over the documented allocation API) ──
+
     private async Task<JToken> HandleGetTenantPoolDraw(JObject arguments)
     {
         var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
 
-        var document = await FetchAllocationDocument(envId).ConfigureAwait(false);
+        var document = await FetchEnvironmentAllocation(envId).ConfigureAwait(false);
 
         var entitlements = new JObject();
         var allEnabled = true;
-        foreach (var entitlementId in TENANT_POOL_ENTITLEMENTS)
+        foreach (var currencyType in TENANT_POOL_CURRENCIES)
         {
-            var ruleEnabled = ReadTenantPoolEnabled(document, entitlementId);
-            entitlements[entitlementId] = ruleEnabled;
+            var ruleEnabled = ReadTenantPoolEnabled(document, currencyType);
+            entitlements[currencyType] = ruleEnabled;
             if (!ruleEnabled) allEnabled = false;
         }
 
@@ -961,74 +1424,63 @@ public class Script : ScriptBase
     {
         var envId = RequireEnvironmentGuid(arguments["environmentId"]?.ToString());
 
-        var enabledToken = arguments["enabled"];
-        if (enabledToken == null || enabledToken.Type == JTokenType.Null)
-            throw new ArgumentException("enabled is required and must be true or false.");
-        var enabled = enabledToken.Value<bool>();
+        var enabled = ReadRequiredBoolean(arguments["enabled"], "enabled");
 
-        var tenantId = ResolveTenantId();
+        var before = await FetchEnvironmentAllocation(envId).ConfigureAwait(false);
 
-        // Read-modify-write: the PUT replaces the whole document, so a blind write
-        // would drop any other allocation or enforcement data on this environment.
-        var document = await FetchAllocationDocument(envId).ConfigureAwait(false);
-        var entitlements = document == null ? null : document["allocatedEntitlements"] as JArray;
-        if (entitlements == null) entitlements = new JArray();
+        var document = before != null
+            ? (JObject)before.DeepClone()
+            : new JObject { ["environmentId"] = envId, ["currencyAllocations"] = new JArray() };
 
-        foreach (var entitlementId in TENANT_POOL_ENTITLEMENTS)
+        document["environmentId"] = envId;
+
+        var currencies = document["currencyAllocations"] as JArray;
+        if (currencies == null)
         {
-            var entitlement = FindEntitlement(entitlements, entitlementId);
-            if (entitlement == null)
+            currencies = new JArray();
+            document["currencyAllocations"] = currencies;
+        }
+
+        foreach (var currencyType in TENANT_POOL_CURRENCIES)
+        {
+            var allocation = FindCurrencyAllocation(currencies, currencyType);
+            if (allocation == null)
             {
-                entitlement = new JObject
+                allocation = new JObject
                 {
-                    ["allocation"] = new JObject
-                    {
-                        ["quantity"] = 0.0,
-                        ["autoAllocated"] = 0.0,
-                        ["unit"] = "NotSpecified"
-                    },
-                    ["entitlementId"] = entitlementId,
+                    ["currencyType"] = currencyType,
+                    ["allocated"] = 0,
+                    ["autoAllocated"] = 0,
                     ["enforcementRules"] = new JArray()
                 };
-                entitlements.Add(entitlement);
+                currencies.Add(allocation);
             }
 
-            var rules = entitlement["enforcementRules"] as JArray;
+            var rules = allocation["enforcementRules"] as JArray;
             if (rules == null)
             {
                 rules = new JArray();
-                entitlement["enforcementRules"] = rules;
+                allocation["enforcementRules"] = rules;
             }
 
-            var rule = FindTenantPoolRule(entitlement);
+            var rule = FindEnforcementRule(rules, "TenantPool");
             if (rule == null)
                 rules.Add(new JObject { ["ruleType"] = "TenantPool", ["enabled"] = enabled });
             else
                 rule["enabled"] = enabled;
         }
 
-        var payload = new JObject
-        {
-            ["scope"] = new JObject
-            {
-                ["tenantId"] = tenantId,
-                ["environmentId"] = envId
-            },
-            ["allocatedEntitlements"] = entitlements
-        };
+        await PatchEnvironmentAllocation(envId, document).ConfigureAwait(false);
 
-        var result = await CallLicensingApi(
-            HttpMethod.Put,
-            $"/licensing/allocations?api-version={LICENSING_API_VERSION}",
-            payload.ToString(Newtonsoft.Json.Formatting.None)
-        ).ConfigureAwait(false);
+        var after = await FetchEnvironmentAllocation(envId).ConfigureAwait(false);
 
-        if (!result.IsSuccess)
-            throw new InvalidOperationException(
-                $"Licensing allocations API returned {(int)result.Status} {result.Status}: {TruncateForError(result.Body)}");
-
+        var verified = true;
         var affected = new JArray();
-        foreach (var entitlementId in TENANT_POOL_ENTITLEMENTS) affected.Add(entitlementId);
+        foreach (var currencyType in TENANT_POOL_CURRENCIES)
+        {
+            affected.Add(currencyType);
+            if (ReadTenantPoolEnabled(after, currencyType) != enabled) verified = false;
+        }
 
         return new JObject
         {
@@ -1036,10 +1488,305 @@ public class Script : ScriptBase
             ["environmentId"] = envId,
             ["enabled"] = enabled,
             ["entitlements"] = affected,
-            ["message"] = enabled
-                ? "This environment now draws Copilot Studio message and session capacity from the tenant pool."
-                : "This environment no longer draws Copilot Studio message and session capacity from the tenant pool."
+            ["verified"] = verified,
+            ["message"] = verified
+                ? (enabled
+                    ? "This environment now draws Copilot Studio message and session capacity from the tenant pool."
+                    : "This environment no longer draws Copilot Studio message and session capacity from the tenant pool.")
+                : "The write was accepted but the read-back did not show the expected TenantPool state. " +
+                  "Another administrator may have written concurrently — the service exposes no ETag. " +
+                  "Re-read before making further changes."
         };
+    }
+
+    // ─── Allocation helpers ─────────────────────────────────────────────
+
+    private async Task<JObject> FetchEnvironmentAllocation(string environmentId)
+    {
+        var response = await CallAdminApiRaw(
+            HttpMethod.Get,
+            $"{ALLOCATIONS_BY_ENVIRONMENT}/{Uri.EscapeDataString(environmentId)}?api-version={LICENSING_API_VERSION}"
+        ).ConfigureAwait(false);
+
+        // An environment that has never been allocated has no document. That is the
+        // inherit-tenant-defaults case, not a failure, and it must stay distinct from
+        // a 404 caused by a bad environment ID or a missing permission.
+        if (response.Status == HttpStatusCode.NotFound) return null;
+        if (response.Status == HttpStatusCode.NoContent) return null;
+
+        if (!response.IsSuccess)
+            throw new InvalidOperationException(DescribeAllocationFailure(response, environmentId));
+
+        var parsed = response.ParseBody();
+        if (parsed == null) return null;
+
+        var model = parsed as JObject;
+        if (model != null && model["currencyAllocations"] != null) return model;
+
+        // Tolerate an envelope in case the service pages or wraps the single result.
+        var collection = ReadAllocationCollection(parsed);
+        foreach (var item in collection)
+        {
+            var candidate = item as JObject;
+            if (candidate == null) continue;
+
+            if (string.Equals(candidate["environmentId"]?.ToString(), environmentId, StringComparison.OrdinalIgnoreCase))
+                return candidate;
+        }
+
+        return model;
+    }
+
+    private async Task<JToken> PatchEnvironmentAllocation(string environmentId, JObject document)
+    {
+        var response = await CallAdminApiRaw(
+            new HttpMethod("PATCH"),
+            $"{ALLOCATIONS_BY_ENVIRONMENT}?api-version={LICENSING_API_VERSION}",
+            document.ToString(Newtonsoft.Json.Formatting.None)
+        ).ConfigureAwait(false);
+
+        if (!response.IsSuccess)
+            throw new InvalidOperationException(DescribeAllocationFailure(response, environmentId));
+
+        return response.ParseBody();
+    }
+
+    private static JArray ReadAllocationCollection(JToken parsed)
+    {
+        if (parsed == null) return new JArray();
+
+        var array = parsed as JArray;
+        if (array != null) return array;
+
+        var envelope = parsed as JObject;
+        if (envelope != null)
+        {
+            var value = envelope["value"] as JArray;
+            if (value != null) return value;
+
+            var collection = envelope["collection"] as JArray;
+            if (collection != null) return collection;
+        }
+
+        return new JArray();
+    }
+
+    private static JArray SummarizeCurrencyAllocations(JObject document)
+    {
+        var summary = new JArray();
+        var currencies = document?["currencyAllocations"] as JArray;
+        if (currencies == null) return summary;
+
+        foreach (var item in currencies)
+        {
+            var allocation = item as JObject;
+            if (allocation == null) continue;
+
+            var rules = new JObject();
+            var ruleArray = allocation["enforcementRules"] as JArray;
+            if (ruleArray != null)
+            {
+                foreach (var ruleItem in ruleArray)
+                {
+                    var rule = ruleItem as JObject;
+                    var ruleType = rule?["ruleType"]?.ToString();
+                    if (string.IsNullOrEmpty(ruleType)) continue;
+
+                    rules[ruleType] = rule["enabled"];
+                }
+            }
+
+            summary.Add(new JObject
+            {
+                ["currencyType"] = allocation["currencyType"],
+                ["allocated"] = allocation["allocated"],
+                ["autoAllocated"] = allocation["autoAllocated"],
+                ["enforcementRules"] = rules
+            });
+        }
+
+        return summary;
+    }
+
+    private static JObject FindCurrencyAllocation(JArray currencies, string currencyType)
+    {
+        if (currencies == null) return null;
+
+        foreach (var item in currencies)
+        {
+            var allocation = item as JObject;
+            if (allocation != null &&
+                string.Equals(allocation["currencyType"]?.ToString(), currencyType, StringComparison.OrdinalIgnoreCase))
+            {
+                return allocation;
+            }
+        }
+
+        return null;
+    }
+
+    private static JObject FindEnforcementRule(JArray rules, string ruleType)
+    {
+        if (rules == null) return null;
+
+        foreach (var item in rules)
+        {
+            var rule = item as JObject;
+            if (rule != null &&
+                string.Equals(rule["ruleType"]?.ToString(), ruleType, StringComparison.OrdinalIgnoreCase))
+            {
+                return rule;
+            }
+        }
+
+        return null;
+    }
+
+    // An absent currency or TenantPool rule means the environment draws from the pool.
+    private static bool ReadTenantPoolEnabled(JObject document, string currencyType)
+    {
+        var currencies = document?["currencyAllocations"] as JArray;
+        var allocation = FindCurrencyAllocation(currencies, currencyType);
+        if (allocation == null) return true;
+
+        var rule = FindEnforcementRule(allocation["enforcementRules"] as JArray, "TenantPool");
+        if (rule == null) return true;
+
+        var enabled = rule["enabled"];
+        if (enabled == null || enabled.Type == JTokenType.Null) return true;
+
+        return enabled.Value<bool>();
+    }
+
+    private static bool VerifyCurrencyMatches(JObject after, string currencyType, JObject expected)
+    {
+        if (after == null) return false;
+
+        var actual = FindCurrencyAllocation(after["currencyAllocations"] as JArray, currencyType);
+        if (actual == null) return false;
+
+        var expectedAllocated = expected["allocated"];
+        if (expectedAllocated != null && expectedAllocated.Type != JTokenType.Null)
+        {
+            var actualAllocated = actual["allocated"];
+            if (actualAllocated == null || actualAllocated.Type == JTokenType.Null) return false;
+
+            if (Math.Abs(actualAllocated.Value<double>() - expectedAllocated.Value<double>()) > 0.0001)
+                return false;
+        }
+
+        var expectedRules = expected["enforcementRules"] as JArray;
+        if (expectedRules != null)
+        {
+            var actualRules = actual["enforcementRules"] as JArray;
+
+            foreach (var item in expectedRules)
+            {
+                var rule = item as JObject;
+                var ruleType = rule?["ruleType"]?.ToString();
+                if (string.IsNullOrEmpty(ruleType)) continue;
+
+                var actualRule = FindEnforcementRule(actualRules, ruleType);
+                if (actualRule == null) return false;
+
+                var expectedEnabled = rule["enabled"];
+                var actualEnabled = actualRule["enabled"];
+
+                if (expectedEnabled == null || actualEnabled == null) return false;
+                if (expectedEnabled.Value<bool>() != actualEnabled.Value<bool>()) return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string RequireCurrencyType(string currencyType)
+    {
+        if (string.IsNullOrWhiteSpace(currencyType))
+            throw new ArgumentException(
+                "currencyType is required, for example MCSMessages, AI, or PowerPagesAuthenticated.");
+
+        var trimmed = currencyType.Trim();
+
+        foreach (var known in EXTERNAL_CURRENCY_TYPES)
+        {
+            if (string.Equals(known, trimmed, StringComparison.OrdinalIgnoreCase)) return known;
+        }
+
+        throw new ArgumentException(
+            $"currencyType '{trimmed}' is not a documented ExternalCurrencyType. Expected one of: " +
+            string.Join(", ", EXTERNAL_CURRENCY_TYPES) + ".");
+    }
+
+    private static string RequireEnforcementRuleType(string ruleType)
+    {
+        if (string.IsNullOrWhiteSpace(ruleType))
+            throw new ArgumentException("Each enforcement rule requires a ruleType.");
+
+        var trimmed = ruleType.Trim();
+
+        foreach (var known in ENFORCEMENT_RULE_TYPES)
+        {
+            if (string.Equals(known, trimmed, StringComparison.OrdinalIgnoreCase)) return known;
+        }
+
+        throw new ArgumentException(
+            $"ruleType '{trimmed}' is not a documented enforcement rule for the by-environment allocation " +
+            "API. Expected one of: " + string.Join(", ", ENFORCEMENT_RULE_TYPES) + ".");
+    }
+
+    private static bool ReadRequiredBoolean(JToken value, string name)
+    {
+        if (value == null || value.Type == JTokenType.Null)
+            throw new ArgumentException($"{name} is required and must be true or false.");
+
+        if (value.Type == JTokenType.Boolean) return value.Value<bool>();
+
+        bool parsed;
+        if (value.Type == JTokenType.String && bool.TryParse(value.ToString(), out parsed)) return parsed;
+
+        throw new ArgumentException($"{name} must be true or false.");
+    }
+
+    private static JToken CoerceAllocatedQuantity(JToken value)
+    {
+        if (value.Type == JTokenType.Integer) return value.Value<long>();
+
+        double number;
+        if (value.Type == JTokenType.Float)
+        {
+            number = value.Value<double>();
+        }
+        else if (!double.TryParse(value.ToString(), System.Globalization.NumberStyles.Any,
+                     System.Globalization.CultureInfo.InvariantCulture, out number))
+        {
+            throw new ArgumentException("allocated must be a number.");
+        }
+
+        if (number < 0)
+            throw new ArgumentException("allocated cannot be negative.");
+
+        // The model declares allocated as int32, so an echoed 1000.0 can fail binding.
+        if (Math.Abs(number - Math.Round(number)) < 0.0001) return (long)Math.Round(number);
+
+        throw new ArgumentException("allocated must be a whole number.");
+    }
+
+    private static string DescribeAllocationFailure(AdminApiResponse response, string environmentId)
+    {
+        var scope = string.IsNullOrEmpty(environmentId) ? "" : $" for environment {environmentId}";
+
+        if (response.Status == HttpStatusCode.Forbidden)
+            return $"The licensing allocation API returned 403{scope}. This surface requires " +
+                   "Licensing.Allocations.ReadWrite plus a Power Platform or Global administrator role.";
+
+        if (response.Status == HttpStatusCode.NotFound)
+            return $"The licensing allocation API returned 404{scope}. Verify the environment ID, and note " +
+                   "that an environment with no allocation document cannot always be patched before one " +
+                   "exists — create the allocation in the admin center first if this persists.";
+
+        return $"The licensing allocation API returned {(int)response.Status} {response.ReasonPhrase}{scope}: " +
+               TruncateForError(response.Body);
     }
 
     // ─── Resource Thresholds ────────────────────────────────────────────
@@ -1749,10 +2496,31 @@ public class Script : ScriptBase
 
     // ─── API Call Helper ────────────────────────────────────────────────
 
-    private async Task<string> CallAdminApi(HttpMethod method, string path, string body = null)
+    // Captures status and the long-running-operation headers alongside the body. The
+    // previous body-only helper discarded Location and Retry-After, which made any
+    // header-driven async contract impossible to implement on top of it.
+    private class AdminApiResponse
     {
-        var url = $"{ADMIN_API_BASE}{path}";
-        var request = new HttpRequestMessage(method, url);
+        public HttpStatusCode Status;
+        public string ReasonPhrase;
+        public string Body;
+        public string Location;
+        public string OperationLocation;
+        public string AzureAsyncOperation;
+        public int? RetryAfterSeconds;
+
+        public bool IsSuccess { get { return (int)Status >= 200 && (int)Status < 300; } }
+
+        public JToken ParseBody()
+        {
+            if (string.IsNullOrWhiteSpace(Body)) return null;
+            try { return JToken.Parse(Body); } catch (JsonException) { return null; }
+        }
+    }
+
+    private async Task<AdminApiResponse> CallAdminApiRaw(HttpMethod method, string path, string body = null)
+    {
+        var request = new HttpRequestMessage(method, $"{ADMIN_API_BASE}{path}");
 
         // Forward the auth token from the connector
         if (this.Context.Request.Headers.Authorization != null)
@@ -1768,26 +2536,73 @@ public class Script : ScriptBase
         }
 
         var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
-        var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-        if (!response.IsSuccessStatusCode)
+        var result = new AdminApiResponse
         {
-            this.Context.Logger.LogError($"Admin API error {response.StatusCode}: {responseBody}");
+            Status = response.StatusCode,
+            ReasonPhrase = response.ReasonPhrase,
+            Body = response.Content == null
+                ? string.Empty
+                : await response.Content.ReadAsStringAsync().ConfigureAwait(false)
+        };
+
+        string header;
+        if (TryReadHeader(response, "Location", out header)) result.Location = header;
+        if (TryReadHeader(response, "Operation-Location", out header)) result.OperationLocation = header;
+        if (TryReadHeader(response, "Azure-AsyncOperation", out header)) result.AzureAsyncOperation = header;
+
+        if (response.Headers.RetryAfter != null)
+        {
+            if (response.Headers.RetryAfter.Delta.HasValue)
+            {
+                result.RetryAfterSeconds = (int)response.Headers.RetryAfter.Delta.Value.TotalSeconds;
+            }
+            else if (response.Headers.RetryAfter.Date.HasValue)
+            {
+                result.RetryAfterSeconds =
+                    (int)(response.Headers.RetryAfter.Date.Value - DateTimeOffset.UtcNow).TotalSeconds;
+            }
+        }
+
+        if (!result.IsSuccess)
+        {
+            this.Context.Logger.LogError($"Admin API error {result.Status} for {path}: {TruncateForError(result.Body)}");
+        }
+
+        return result;
+    }
+
+    // Throwing wrapper kept for the many call sites that only need the body and treat
+    // any non-success status as fatal.
+    private async Task<string> CallAdminApi(HttpMethod method, string path, string body = null)
+    {
+        var response = await CallAdminApiRaw(method, path, body).ConfigureAwait(false);
+
+        if (!response.IsSuccess)
+        {
             throw new InvalidOperationException(
-                $"Power Platform Admin API returned {(int)response.StatusCode} {response.ReasonPhrase}: {TruncateForError(responseBody)}"
+                $"Power Platform Admin API returned {(int)response.Status} {response.ReasonPhrase}: {TruncateForError(response.Body)}"
             );
         }
 
-        return responseBody;
+        return response.Body;
     }
 
-    // ─── Licensing Allocations (unsupported endpoint) ───────────────────
-
-    private class ApiResult
+    private static bool TryReadHeader(HttpResponseMessage response, string name, out string value)
     {
-        public HttpStatusCode Status;
-        public string Body;
-        public bool IsSuccess { get { return (int)Status >= 200 && (int)Status < 300; } }
+        value = null;
+        IEnumerable<string> values;
+
+        if (response.Headers.TryGetValues(name, out values))
+        {
+            value = values.FirstOrDefault();
+        }
+        else if (response.Content != null && response.Content.Headers.TryGetValues(name, out values))
+        {
+            value = values.FirstOrDefault();
+        }
+
+        return !string.IsNullOrWhiteSpace(value);
     }
 
     private static string RequireEnvironmentGuid(string environmentId)
@@ -1796,170 +2611,6 @@ public class Script : ScriptBase
         if (string.IsNullOrEmpty(environmentId) || !Guid.TryParse(environmentId, out parsed))
             throw new ArgumentException("environmentId is required and must be a GUID.");
         return parsed.ToString();
-    }
-
-    private string ResolveTenantId()
-    {
-        if (!string.IsNullOrEmpty(_tenantId)) return _tenantId;
-
-        var auth = this.Context.Request.Headers.Authorization;
-        if (auth == null || string.IsNullOrEmpty(auth.Parameter))
-            throw new InvalidOperationException("Authorization header is missing; cannot resolve the tenant.");
-
-        var segments = auth.Parameter.Split('.');
-        if (segments.Length < 2)
-            throw new InvalidOperationException("Access token is not a JWT; cannot resolve the tenant.");
-
-        var payload = segments[1].Replace('-', '+').Replace('_', '/');
-        if (payload.Length % 4 == 2) payload += "==";
-        else if (payload.Length % 4 == 3) payload += "=";
-
-        var claims = JObject.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(payload)));
-        var tid = claims["tid"]?.ToString();
-        if (string.IsNullOrEmpty(tid))
-            throw new InvalidOperationException("Access token has no 'tid' claim; cannot resolve the tenant.");
-
-        _tenantId = tid;
-        return _tenantId;
-    }
-
-    // Licensing is served from a tenant-routed host: first 30 hex, dot, last 2 hex.
-    private string ResolveTenantHost()
-    {
-        var dashless = ResolveTenantId().Replace("-", "").ToLowerInvariant();
-        if (dashless.Length != 32)
-            throw new InvalidOperationException("Tenant id is not 32 hex characters; cannot build the licensing host.");
-
-        return $"{dashless.Substring(0, 30)}.{dashless.Substring(30)}{TENANT_HOST_SUFFIX}";
-    }
-
-    private async Task<ApiResult> CallLicensingApi(HttpMethod method, string path, string body = null)
-    {
-        var request = new HttpRequestMessage(method, $"https://{ResolveTenantHost()}{path}");
-
-        if (this.Context.Request.Headers.Authorization != null)
-        {
-            request.Headers.Authorization = this.Context.Request.Headers.Authorization;
-        }
-
-        request.Headers.Add("Accept", "application/json");
-
-        if (body != null)
-        {
-            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
-        }
-
-        var response = await this.Context.SendAsync(request, this.CancellationToken).ConfigureAwait(false);
-        var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            this.Context.Logger.LogError($"Licensing allocations API error {response.StatusCode}: {responseBody}");
-        }
-
-        return new ApiResult { Status = response.StatusCode, Body = responseBody };
-    }
-
-    private async Task<JObject> FetchAllocationDocument(string environmentId)
-    {
-        var filter = $"environmentId eq '{environmentId}' and EntitlementId in ({string.Join(",", TENANT_POOL_ENTITLEMENTS)})";
-        var result = await CallLicensingApi(
-            HttpMethod.Get,
-            $"/licensing/allocationsV2?$filter={Uri.EscapeDataString(filter)}&api-version={LICENSING_API_VERSION}"
-        ).ConfigureAwait(false);
-
-        // A missing document is the implicit "draws from the pool" default, not a failure.
-        // RouteNotFound shares the 404 status, so discriminate on the body code.
-        if (result.Status == HttpStatusCode.NotFound &&
-            result.Body != null &&
-            result.Body.IndexOf("AllocationDocumentDoesNotExist", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            return null;
-        }
-
-        if (!result.IsSuccess)
-            throw new InvalidOperationException(
-                $"Licensing allocations API returned {(int)result.Status} {result.Status}: {TruncateForError(result.Body)}");
-
-        return ExtractAllocationDocument(result.Body);
-    }
-
-    private JObject ExtractAllocationDocument(string body)
-    {
-        if (string.IsNullOrWhiteSpace(body)) return null;
-
-        var parsed = JToken.Parse(body) as JObject;
-        if (parsed == null) return null;
-
-        if (parsed["allocatedEntitlements"] as JArray != null) return parsed;
-
-        var value = parsed["value"];
-
-        var valueObject = value as JObject;
-        if (valueObject != null && valueObject["allocatedEntitlements"] as JArray != null) return valueObject;
-
-        var valueArray = value as JArray;
-        if (valueArray != null)
-        {
-            foreach (var item in valueArray)
-            {
-                var candidate = item as JObject;
-                if (candidate != null && candidate["allocatedEntitlements"] as JArray != null) return candidate;
-            }
-        }
-
-        return null;
-    }
-
-    // An absent entitlement or TenantPool rule means the environment draws from the pool.
-    private bool ReadTenantPoolEnabled(JObject document, string entitlementId)
-    {
-        var entitlements = document == null ? null : document["allocatedEntitlements"] as JArray;
-        var entitlement = FindEntitlement(entitlements, entitlementId);
-        if (entitlement == null) return true;
-
-        var rule = FindTenantPoolRule(entitlement);
-        if (rule == null) return true;
-
-        var enabled = rule["enabled"];
-        if (enabled == null || enabled.Type == JTokenType.Null) return true;
-
-        return enabled.Value<bool>();
-    }
-
-    private JObject FindEntitlement(JArray entitlements, string entitlementId)
-    {
-        if (entitlements == null) return null;
-
-        foreach (var item in entitlements)
-        {
-            var entitlement = item as JObject;
-            if (entitlement != null &&
-                string.Equals(entitlement["entitlementId"]?.ToString(), entitlementId, StringComparison.OrdinalIgnoreCase))
-            {
-                return entitlement;
-            }
-        }
-
-        return null;
-    }
-
-    private JObject FindTenantPoolRule(JObject entitlement)
-    {
-        var rules = entitlement["enforcementRules"] as JArray;
-        if (rules == null) return null;
-
-        foreach (var item in rules)
-        {
-            var rule = item as JObject;
-            if (rule != null &&
-                string.Equals(rule["ruleType"]?.ToString(), "TenantPool", StringComparison.OrdinalIgnoreCase))
-            {
-                return rule;
-            }
-        }
-
-        return null;
     }
 
     // ─── Typed Operations (Power Automate) ────────────────────────────
@@ -2037,6 +2688,112 @@ public class Script : ScriptBase
         var args = new JObject { ["environmentId"] = envId, ["enabled"] = enabled };
         var result = await HandleSetTenantPoolDraw(args).ConfigureAwait(false);
         return CreateTypedResponse(result);
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedListEnvironmentAllocations()
+    {
+        try
+        {
+            var result = await HandleListEnvironmentAllocations(new JObject()).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedGetEnvironmentAllocations()
+    {
+        var envId = GetQueryParam("environmentId");
+        if (string.IsNullOrWhiteSpace(envId))
+            return CreateTypedErrorResponse("environmentId query parameter is required.", 400);
+
+        try
+        {
+            var result = await HandleGetEnvironmentAllocations(
+                new JObject { ["environmentId"] = envId }).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedUpdateEnvironmentAllocation()
+    {
+        var envId = GetQueryParam("environmentId");
+        if (string.IsNullOrWhiteSpace(envId))
+            return CreateTypedErrorResponse("environmentId query parameter is required.", 400);
+
+        var body = await this.Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        JObject bodyObj;
+        try
+        {
+            bodyObj = string.IsNullOrWhiteSpace(body) ? new JObject() : JObject.Parse(body);
+        }
+        catch (JsonException ex)
+        {
+            return CreateTypedErrorResponse($"Request body is not valid JSON: {ex.Message}", 400);
+        }
+
+        var args = new JObject { ["environmentId"] = envId };
+
+        // A maker who placed this action in a designer has already made the decision
+        // explicitly, so the typed surface does not carry the MCP confirm gate.
+        foreach (var field in new[] { "currencyType", "allocated", "enforcementRules" })
+        {
+            var supplied = bodyObj[field];
+            if (supplied != null && supplied.Type != JTokenType.Null) args[field] = supplied;
+        }
+
+        try
+        {
+            var result = await HandleUpdateEnvironmentAllocation(args).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedGetAllocationAvailability()
+    {
+        var args = new JObject();
+
+        var filter = GetQueryParam("filter");
+        if (!string.IsNullOrWhiteSpace(filter)) args["filter"] = filter;
+
+        try
+        {
+            var result = await HandleGetAllocationAvailability(args).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
+    }
+
+    private async Task<HttpResponseMessage> HandleTypedGetReservedEntitlements()
+    {
+        var args = new JObject();
+
+        var filter = GetQueryParam("filter");
+        if (!string.IsNullOrWhiteSpace(filter)) args["filter"] = filter;
+
+        try
+        {
+            var result = await HandleGetReservedEntitlements(args).ConfigureAwait(false);
+            return CreateTypedResponse(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateTypedErrorResponse(ex.Message, 400);
+        }
     }
 
     private async Task<HttpResponseMessage> HandleTypedListResourceThresholds()
@@ -2280,7 +3037,7 @@ public class Script : ScriptBase
 
     // ─── Utility ────────────────────────────────────────────────────────
 
-    private string TruncateForError(string text, int maxLength = 500)
+    private static string TruncateForError(string text, int maxLength = 500)
     {
         if (string.IsNullOrEmpty(text) || text.Length <= maxLength) return text;
         return text.Substring(0, maxLength) + "... (truncated)";
