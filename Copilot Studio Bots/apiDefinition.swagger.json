@@ -2,8 +2,8 @@
   "swagger": "2.0",
   "info": {
     "title": "Copilot Studio Bots",
-    "description": "Complete coverage of the Power Platform API Bots operations for Microsoft Copilot Studio. Manage maker evaluation test sets and runs, download evaluation snapshots, quarantine and release agents, control the admin connector consent bypass, reassign agent ownership, delete agents, and migrate agents to Microsoft Entra Agent ID. Includes MCP support for Copilot Studio agents.",
-    "version": "1.1",
+    "description": "Complete coverage of the Power Platform API Bots operations for Microsoft Copilot Studio. Manage maker evaluation test sets and runs, download evaluation snapshots and agent channel manifests, quarantine and release agents, control the admin connector consent bypass, reassign agent ownership, delete agents, and migrate agents to Microsoft Entra Agent ID. Includes MCP support for Copilot Studio agents.",
+    "version": "1.2",
     "contact": {
       "name": "Troy Taylor",
       "email": "troy@troystaylor.com",
@@ -587,6 +587,115 @@
           },
           "404": {
             "description": "Test run not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://api.powerplatform.com/.default"
+            ]
+          }
+        ],
+        "x-ms-docs-operation-type": "operation"
+      }
+    },
+    "/environments/{environmentId}/agents/{botId}/channels/{channelName}/download": {
+      "get": {
+        "summary": "Download Agent Channel Manifest",
+        "description": "Download the channel manifest package for an agent as a ZIP file. Use this to archive or inspect what an agent publishes to a channel. Only the M365 channel is currently supported.",
+        "operationId": "DownloadAgentChannelManifest",
+        "produces": [
+          "application/zip"
+        ],
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "description": "The unique identifier for the environment.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Environment ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetEnvironmentDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "botId",
+            "in": "path",
+            "description": "The unique identifier for the agent (bot).",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Agent ID",
+            "x-ms-dynamic-values": {
+              "operationId": "GetAgentDropdown",
+              "parameters": {
+                "environmentId": {
+                  "parameter": "environmentId"
+                }
+              },
+              "value-path": "id",
+              "value-title": "name"
+            }
+          },
+          {
+            "name": "channelName",
+            "in": "path",
+            "description": "The channel to download the manifest for. Only M365 is currently supported.",
+            "required": true,
+            "type": "string",
+            "default": "M365",
+            "enum": [
+              "M365"
+            ],
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Channel"
+          },
+          {
+            "name": "includeAgentSchema",
+            "in": "query",
+            "description": "Include the agent schema in the downloaded manifest package.",
+            "required": false,
+            "type": "boolean",
+            "x-ms-summary": "Include Agent Schema"
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "API version.",
+            "required": true,
+            "type": "string",
+            "default": "2024-10-01",
+            "x-ms-summary": "API Version"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The agent channel manifest ZIP file.",
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "The agent channel manifest ZIP file.",
+              "x-ms-summary": "Manifest File"
+            },
+            "headers": {
+              "Content-Disposition": {
+                "type": "string",
+                "description": "Contains the suggested file name for the downloaded manifest."
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The caller lacks permission to read this agent."
+          },
+          "404": {
+            "description": "Agent, environment, or channel not found."
           }
         },
         "security": [

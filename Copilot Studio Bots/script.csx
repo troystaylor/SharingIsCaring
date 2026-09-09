@@ -10,13 +10,23 @@ using Newtonsoft.Json.Linq;
 public class Script : ScriptBase
 {
     private const string ServerName = "copilot-studio-bots";
-    private const string ServerVersion = "1.1.0";
+    private const string ServerVersion = "1.2.1";
     private const string ProtocolVersion = "2025-11-25";
     private const string ApiVersion = "2024-10-01";
     private const string BackendBaseUrl = "https://api.powerplatform.com/copilotstudio";
     private const int MaxInlineSnapshotBytes = 4 * 1024 * 1024;
 
     private const string BotPath = "/environments/{environmentId}/bots/{botId}";
+
+    // The channel manifest sits under agents/{id}/channels rather than bots/{id}, so it
+    // needs its own template even though it shares the copilotstudio base URL.
+    private const string AgentChannelDownloadPath =
+        "/environments/{environmentId}/agents/{botId}/channels/{channelName}/download";
+
+    // Microsoft documents M365 as the only supported channel. An undocumented value
+    // has no defined error response, so it is rejected here rather than sent blind.
+    private const string DefaultAgentChannel = "M365";
+    private static readonly string[] SupportedAgentChannels = { "M365" };
 
     // The environment picker is served from a different Power Platform API surface
     // than the Bots operations, so it is addressed absolutely rather than via basePath.
@@ -114,7 +124,7 @@ public class Script : ScriptBase
                 dropdown.Add(new JObject
                 {
                     ["id"] = id,
-                    ["name"] = env["properties"]?["displayName"]?.ToString() ?? id
+                    ["name"] = FirstValue(env, "displayName", "properties.displayName", "name")?.ToString() ?? id
                 });
             }
         }
@@ -130,6 +140,38 @@ public class Script : ScriptBase
                 Encoding.UTF8,
                 "application/json")
         };
+    }
+
+    /// <summary>
+    /// Returns the first non-null token among the supplied paths.
+    /// <para>
+    /// The environmentmanagement API returns environment fields at the top level
+    /// (displayName, type, state, url). Older BAP-shaped payloads nest the same data
+    /// under "properties". Verified against the live service: none of 19 environments
+    /// returned a "properties" object, so a nested-only read yields null for every
+    /// field and the picker falls back to showing raw GUIDs.
+    /// </para>
+    /// </summary>
+    private static JToken FirstValue(JToken source, params string[] paths)
+    {
+        if (source == null) return null;
+
+        foreach (var path in paths)
+        {
+            JToken token;
+            try
+            {
+                token = source.SelectToken(path);
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (token != null && token.Type != JTokenType.Null) return token;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -276,17 +318,7 @@ public class Script : ScriptBase
         while (true)
         {
             var body = BuildAgentQuery(environmentId, skip);
-            var response = await CallPlatformApiAsync(
-                HttpMethod.Post,
-                PlatformApiBase + "/resourcequery/resources/query?api-version=" + ResourceQueryApiVersion,
-                body).ConfigureAwait(false);
-
-            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new InvalidOperationException(
-                    $"Agent inventory query returned {(int)response.StatusCode}: {Truncate(content)}");
-            }
+            var content = await CallResourceQueryAsync(body).ConfigureAwait(false);
 
             var rows = JObject.Parse(content)["data"] as JArray ?? new JArray();
 
@@ -552,6 +584,53 @@ public class Script : ScriptBase
         };
     }
 
+    /// <summary>
+    /// The undocumented resourcequery API intermittently rejects a payload it accepted
+    /// moments earlier with 400 "KQLOM format is wrong or it cannot be null". Reproduced
+    /// against the live service with a byte-identical body that had just succeeded, so it
+    /// is a service fault rather than a malformed request. Without a retry a single blip
+    /// fails the agent inventory, the agent picker, and both containment tools.
+    /// </summary>
+    private async Task<string> CallResourceQueryAsync(JObject body)
+    {
+        const int maxAttempts = 3;
+        var url = PlatformApiBase + "/resourcequery/resources/query?api-version=" + ResourceQueryApiVersion;
+
+        HttpResponseMessage response = null;
+        string content = null;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            response = await CallPlatformApiAsync(HttpMethod.Post, url, body).ConfigureAwait(false);
+            content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            if (response.IsSuccessStatusCode) return content;
+            if (!IsTransientResourceQueryFailure(response.StatusCode, content)) break;
+            if (attempt == maxAttempts) break;
+
+            await Task.Delay(400 * attempt).ConfigureAwait(false);
+        }
+
+        var retried = IsTransientResourceQueryFailure(response.StatusCode, content)
+            ? $" after {maxAttempts} attempts"
+            : string.Empty;
+
+        throw new InvalidOperationException(
+            $"Agent inventory query returned {(int)response.StatusCode}{retried}: {Truncate(content)}");
+    }
+
+    private static bool IsTransientResourceQueryFailure(HttpStatusCode status, string body)
+    {
+        if ((int)status == 429) return true;
+        if ((int)status >= 500) return true;
+
+        // The connector builds this query itself, so a caller cannot supply a genuinely
+        // malformed one. A KQLOM complaint here is the known intermittent fault.
+        return status == HttpStatusCode.BadRequest &&
+               body != null &&
+               body.IndexOf("KQLOM", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
     private async Task<HttpResponseMessage> CallPlatformApiAsync(HttpMethod method, string absoluteUrl, JObject body)
     {
         var outbound = new HttpRequestMessage(method, absoluteUrl);
@@ -770,6 +849,19 @@ public class Script : ScriptBase
                     new JObject { ["testRunId"] = Prop("Test run ID") },
                     "testRunId")),
 
+            McpTool(
+                "download_agent_channel_manifest",
+                "Download the channel manifest package for an agent as a ZIP file. Use this to archive or inspect what an agent publishes to a channel. Only the M365 channel is currently supported.",
+                AgentSchema(
+                    new JObject
+                    {
+                        ["channelName"] = Prop(
+                            "Channel to download. Only M365 is currently supported; omit to use it."),
+                        ["includeAgentSchema"] = Prop(
+                            "True to include the agent schema in the package. Omit to exclude it.",
+                            "boolean")
+                    })),
+
             // --- Administration ---
             McpTool(
                 "get_quarantine_status",
@@ -951,10 +1043,15 @@ public class Script : ScriptBase
 
         try
         {
-            // Binary download is handled separately so the ZIP payload is never read as text.
+            // Binary downloads are handled separately so the ZIP payload is never read as text.
             if (string.Equals(toolName, "download_evaluation_snapshot", StringComparison.OrdinalIgnoreCase))
             {
                 return await HandleSnapshotDownloadAsync(args, requestId).ConfigureAwait(false);
+            }
+
+            if (string.Equals(toolName, "download_agent_channel_manifest", StringComparison.OrdinalIgnoreCase))
+            {
+                return await HandleChannelManifestDownloadAsync(args, requestId).ConfigureAwait(false);
             }
 
             // These tools compose several calls, so they return a built result
@@ -1202,13 +1299,82 @@ public class Script : ScriptBase
             new[] { "environmentId", "botId", "testRunId" },
             BotPath + "/api/makerevaluation/testruns/{testRunId}/snapshot");
 
+        return await HandleBinaryDownloadAsync(
+            requestId,
+            endpoint,
+            toolName: "download_evaluation_snapshot",
+            fallbackFileName: "evaluation-snapshot-" + args.Value<string>("testRunId") + ".zip",
+            resourceUriPrefix: "copilotstudio://evaluation-snapshot/",
+            oversizeHint: "Use the Download Agent Evaluation Snapshot REST operation in a flow to save the file to storage.",
+            extraTelemetry: null).ConfigureAwait(false);
+    }
+
+    private async Task<HttpResponseMessage> HandleChannelManifestDownloadAsync(JObject args, JToken requestId)
+    {
+        var channelName = ResolveAgentChannel(args["channelName"]);
+
+        // BuildEndpoint substitutes from args, so the resolved default has to be written
+        // back before the template is expanded.
+        var callArgs = (JObject)args.DeepClone();
+        callArgs["channelName"] = channelName;
+
+        var optionalQuery = new Dictionary<string, string>();
+        var includeSchema = args["includeAgentSchema"];
+        if (includeSchema != null && includeSchema.Type != JTokenType.Null)
+        {
+            optionalQuery["includeAgentSchema"] =
+                ToBoolean(includeSchema, "includeAgentSchema") ? "true" : "false";
+        }
+
+        var endpoint = BuildEndpoint(callArgs,
+            new[] { "environmentId", "botId", "channelName" },
+            AgentChannelDownloadPath,
+            optionalQuery);
+
+        return await HandleBinaryDownloadAsync(
+            requestId,
+            endpoint,
+            toolName: "download_agent_channel_manifest",
+            fallbackFileName: "agent-channel-manifest-" + channelName + ".zip",
+            resourceUriPrefix: "copilotstudio://agent-channel-manifest/",
+            oversizeHint: "Use the Download Agent Channel Manifest REST operation in a flow to save the file to storage.",
+            extraTelemetry: new Dictionary<string, string>
+            {
+                { "channel", channelName },
+                { "includeAgentSchema", optionalQuery.ContainsKey("includeAgentSchema")
+                    ? optionalQuery["includeAgentSchema"]
+                    : "unset" }
+            }).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Shared ZIP retrieval for every binary tool. Reads the payload as bytes so the
+    /// archive is never corrupted by text decoding, and keeps the inline size ceiling
+    /// in one place.
+    /// </summary>
+    private async Task<HttpResponseMessage> HandleBinaryDownloadAsync(
+        JToken requestId,
+        string endpoint,
+        string toolName,
+        string fallbackFileName,
+        string resourceUriPrefix,
+        string oversizeHint,
+        IDictionary<string, string> extraTelemetry)
+    {
         var response = await InvokeBackendAsync(HttpMethod.Get, endpoint, null).ConfigureAwait(false);
 
-        await LogToAppInsightsAsync("MCP_ToolCall", new Dictionary<string, string>
+        var telemetry = new Dictionary<string, string>
         {
-            { "tool", "download_evaluation_snapshot" },
+            { "tool", toolName },
             { "status", ((int)response.StatusCode).ToString() }
-        }).ConfigureAwait(false);
+        };
+
+        if (extraTelemetry != null)
+        {
+            foreach (var kvp in extraTelemetry) telemetry[kvp.Key] = kvp.Value;
+        }
+
+        await LogToAppInsightsAsync("MCP_ToolCall", telemetry).ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -1220,7 +1386,7 @@ public class Script : ScriptBase
                     new JObject
                     {
                         ["type"] = "text",
-                        ["text"] = $"Snapshot download failed with status {(int)response.StatusCode}. {errorText}"
+                        ["text"] = $"Download failed with status {(int)response.StatusCode}. {errorText}"
                     }
                 },
                 ["isError"] = true
@@ -1228,7 +1394,7 @@ public class Script : ScriptBase
         }
 
         var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-        var fileName = GetSnapshotFileName(response, args.Value<string>("testRunId"));
+        var fileName = GetDownloadFileName(response, fallbackFileName);
 
         var summary = new JObject
         {
@@ -1253,7 +1419,7 @@ public class Script : ScriptBase
                 ["type"] = "resource",
                 ["resource"] = new JObject
                 {
-                    ["uri"] = "copilotstudio://evaluation-snapshot/" + fileName,
+                    ["uri"] = resourceUriPrefix + Uri.EscapeDataString(fileName),
                     ["mimeType"] = "application/zip",
                     ["blob"] = Convert.ToBase64String(bytes)
                 }
@@ -1264,7 +1430,7 @@ public class Script : ScriptBase
             content.Add(new JObject
             {
                 ["type"] = "text",
-                ["text"] = $"The snapshot is {bytes.Length} bytes, which exceeds the {MaxInlineSnapshotBytes} byte inline limit. Use the Download Agent Evaluation Snapshot REST operation in a flow to save the file to storage."
+                ["text"] = $"The file is {bytes.Length} bytes, which exceeds the {MaxInlineSnapshotBytes} byte inline limit. {oversizeHint}"
             });
         }
 
@@ -1275,23 +1441,84 @@ public class Script : ScriptBase
         });
     }
 
-    private static string GetSnapshotFileName(HttpResponseMessage response, string testRunId)
+    private static string ResolveAgentChannel(JToken value)
     {
+        if (value == null || value.Type == JTokenType.Null) return DefaultAgentChannel;
+
+        var requested = value.ToString().Trim();
+        if (requested.Length == 0) return DefaultAgentChannel;
+
+        foreach (var supported in SupportedAgentChannels)
+        {
+            if (string.Equals(supported, requested, StringComparison.OrdinalIgnoreCase)) return supported;
+        }
+
+        throw new ArgumentException(
+            $"Channel '{requested}' is not supported. Microsoft documents only " +
+            string.Join(", ", SupportedAgentChannels) +
+            ". An undocumented channel has no defined error response, so it is not sent.");
+    }
+
+    /// <summary>
+    /// Resolves the download file name from Content-Disposition, falling back to a
+    /// generated name. The header is attacker-influenced service data that ends up in
+    /// an MCP resource URI, so it is reduced to a bare, bounded file name rather than
+    /// trusted as-is.
+    /// </summary>
+    private static string GetDownloadFileName(HttpResponseMessage response, string fallbackFileName)
+    {
+        string candidate = null;
+
         try
         {
             var disposition = response.Content?.Headers?.ContentDisposition;
-            var name = disposition?.FileNameStar ?? disposition?.FileName;
-            if (!string.IsNullOrWhiteSpace(name))
-            {
-                return name.Trim('"');
-            }
+            candidate = disposition?.FileNameStar ?? disposition?.FileName;
         }
         catch
         {
-            // Fall through to the generated name when the header is malformed.
+            // A malformed header throws on parse; fall through to the generated name.
         }
 
-        return $"evaluation-snapshot-{testRunId}.zip";
+        return SanitizeDownloadFileName(candidate, SanitizeDownloadFileName(fallbackFileName, "download.zip"));
+    }
+
+    private static string SanitizeDownloadFileName(string candidate, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(candidate)) return fallback;
+
+        var name = candidate.Trim().Trim('"').Trim();
+
+        // Keep only the final segment so a traversal or absolute path cannot survive.
+        var separator = name.LastIndexOfAny(new[] { '/', '\\' });
+        if (separator >= 0) name = name.Substring(separator + 1);
+
+        var builder = new StringBuilder(name.Length);
+        foreach (var c in name)
+        {
+            if (char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '_' || c == ' ')
+            {
+                builder.Append(c);
+            }
+            else
+            {
+                builder.Append('_');
+            }
+        }
+
+        var cleaned = builder.ToString().Trim().Trim('.');
+
+        if (cleaned.Length == 0) return fallback;
+
+        if (!cleaned.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) cleaned += ".zip";
+
+        // Bound the length so a hostile header cannot produce an unwieldy resource URI.
+        const int maxLength = 120;
+        if (cleaned.Length > maxLength)
+        {
+            cleaned = cleaned.Substring(0, maxLength - 4).TrimEnd('.', ' ') + ".zip";
+        }
+
+        return cleaned;
     }
 
     private static bool ToBoolean(JToken value, string argumentName)

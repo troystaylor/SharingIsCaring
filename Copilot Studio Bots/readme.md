@@ -1,35 +1,35 @@
 # Copilot Studio Bots
 
-**Publisher: Troy Taylor**
-
-Complete coverage of the [Power Platform API Bots operations](https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/bots) for Microsoft Copilot Studio — all 13 documented operations — plus a tenant-wide agent inventory that identifies which agents run on the GitHub Copilot harness, and Microsoft Entra Agent ID migration. Evaluation, governance, discovery, identity migration, and containment in a single connector, with native MCP support for Copilot Studio agents and optional Application Insights logging.
+Complete coverage of the [Power Platform API Bots operations](https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/bots) for Microsoft Copilot Studio — all 13 documented operations — plus agent channel manifest export, a tenant-wide agent inventory that identifies which agents run on the GitHub Copilot harness, and Microsoft Entra Agent ID migration. Evaluation, governance, discovery, packaging, identity migration, and containment in a single connector, with native MCP support for Copilot Studio agents and optional Application Insights logging.
 
 ## Overview
 
-This connector covers four related concerns:
+This connector covers five related concerns:
 
 - **Maker evaluation** — Manage test sets, trigger quality assessments, retrieve metrics, and download agent snapshots
 - **Administration** — Quarantine and release agents, control the connector consent bypass, reassign ownership, and delete agents
+- **Channel packaging** — Download the manifest package an agent publishes to a channel, for archival or inspection
 - **Inventory and containment** — Find which agents run on the expensive GitHub Copilot harness, then quarantine the ones you choose
 - **Entra Agent ID migration** — Move agents from their legacy app-registration identity to a Microsoft Entra Agent ID, and roll back if validation fails
 
-The first two come from the documented Bots API. The third reads an undocumented resource query API, because the Bots API exposes no harness field — see [Agent Inventory and Containment](#agent-inventory-and-containment). The fourth calls migration endpoints that share the Bots host and base path but are documented separately — see [Entra Agent ID Migration](#entra-agent-id-migration).
+The first two come from the documented Bots API. Channel packaging calls the documented [Download Agent Channel Manifest](https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/agent-channels/download-agent-channel-manifest) endpoint, which lives under `agent-channels` rather than `bots`. The fourth reads an undocumented resource query API, because the Bots API exposes no harness field — see [Agent Inventory and Containment](#agent-inventory-and-containment). The fifth calls migration endpoints that share the Bots host and base path but are documented separately — see [Entra Agent ID Migration](#entra-agent-id-migration).
 
 ### Operation count
 
-Three different totals appear in this document and in tooling output. They reconcile like this:
+Several different totals appear in this document and in tooling output. They reconcile like this:
 
 | Operations | | Count |
 |---|---|---|
 | Documented Bots API operations | evaluation + administration | 13 |
+| `Download Agent Channel Manifest` | documented, but under `agent-channels` rather than `bots` | +1 |
 | `List Agents` | agent inventory, not part of the Bots API | +1 |
 | Agent identity migration | `Migrate Agent Identity`, `Roll Back Agent Identity` — not part of the Bots API | +2 |
-| Internal dropdown sources | `Get Environment List`, `Get Agent List` | +2 |
-| **REST operations** | what appears in the Power Automate action list, minus the internal two | **18** |
-| `Invoke Copilot Studio Bots MCP` | the JSON-RPC endpoint | +1 |
-| **Total in the OpenAPI definition** | what `ppcv` and PAC CLI report | **19** |
+| **Usable REST actions** | what you actually pick from in the designer | **17** |
+| `Invoke Copilot Studio Bots MCP` | the JSON-RPC endpoint — it also appears in the action list, but ignore it in a flow | +1 |
+| Internal dropdown sources | `Get Environment List`, `Get Agent List` — hidden by `x-ms-visibility: internal` | +2 |
+| **Total in the OpenAPI definition** | what `ppcv` and PAC CLI report | **20** |
 
-Separately, the connector exposes **18 MCP tools** to Copilot Studio. That number matches the REST count by coincidence, not by construction: the REST side includes two internal dropdown operations that are not tools, and the MCP side includes two containment tools — `find_containment_candidates` and `contain_agents` — that have no REST equivalent. The two differences happen to cancel out.
+Separately, the connector exposes **19 MCP tools** to Copilot Studio. That is the 17 usable REST actions mapped one-to-one, plus two containment tools — `find_containment_candidates` and `contain_agents` — that compose several calls and have no single REST equivalent.
 
 ## Capabilities
 
@@ -43,6 +43,7 @@ Separately, the connector exposes **18 MCP tools** to Copilot Studio. That numbe
 | Get Agent Test Runs | GET | List Maker Evaluation Test Runs |
 | Get Agent Test Run Details | GET | Get Maker Evaluation Test Run |
 | Download Agent Evaluation Snapshot | GET | Download Maker Evaluation Snapshot |
+| Download Agent Channel Manifest | GET | Download Agent Channel Manifest *(agent-channels, not Bots)* |
 | Get Agent Quarantine Status | GET | Get Bot Quarantine Status |
 | Quarantine Agent | POST | Set Bot As Quarantined |
 | Release Agent From Quarantine | POST | Set Bot As Unquarantined |
@@ -70,6 +71,7 @@ The 13 documented Bots operations are available as MCP tools, alongside inventor
 | `list_test_runs` | Get all historical evaluation runs |
 | `get_run_details` | Retrieve quality metrics and test results |
 | `download_evaluation_snapshot` | Download the agent content snapshot for a run |
+| `download_agent_channel_manifest` | Download the channel manifest package an agent publishes (M365 only) |
 | `get_quarantine_status` | Read the quarantine state of an agent |
 | `quarantine_agent` | Quarantine an agent |
 | `unquarantine_agent` | Release an agent from quarantine |
@@ -93,13 +95,32 @@ Because this connector exposes destructive administrative operations to agents, 
 
 If you want makers to run evaluations without any access to the administrative operations, restrict this connector to admin environments with a DLP policy. Note that the API itself returns **403** to non-administrators for the administrative operations regardless of connector configuration.
 
-## Snapshot Downloads
+## Binary Downloads
 
-`download_evaluation_snapshot` returns a binary ZIP. The connector reads it as bytes rather than text so the archive is never corrupted:
+Two tools return a binary ZIP: `download_evaluation_snapshot` and `download_agent_channel_manifest`. Both share one code path that reads the payload as bytes rather than text, so the archive is never corrupted:
 
 - Files **4 MB or smaller** are returned as an MCP `resource` with a base64 `blob`
-- **Larger files** return metadata only, with a pointer to the REST operation — use that in a flow to stream the file to SharePoint or OneDrive instead of through an agent conversation
-- The file name comes from the `Content-Disposition` header, falling back to `evaluation-snapshot-{testRunId}.zip`
+- **Larger files** return metadata only, with a pointer to the matching REST operation — use that in a flow to stream the file to SharePoint or OneDrive instead of through an agent conversation
+- The file name comes from the `Content-Disposition` header, falling back to `evaluation-snapshot-{testRunId}.zip` or `agent-channel-manifest-{channel}.zip`
+
+> **File names are sanitized, not trusted.** `Content-Disposition` is service-controlled data that ends up in an MCP resource URI. The connector reduces it to a bare file name — stripping any directory component so a traversal like `../../etc/evil.zip` becomes `evil.zip` — replaces characters that would break a URI, forces a `.zip` extension, and caps the length at 120 characters. If the header is missing or malformed, the generated fallback is used instead.
+
+### Agent channel manifest
+
+`download_agent_channel_manifest` calls the documented [Download Agent Channel Manifest](https://learn.microsoft.com/en-us/rest/api/power-platform/copilotstudio/agent-channels/download-agent-channel-manifest) endpoint. It is synchronous — the ZIP comes back on a `200`, with no polling.
+
+| Input | Required | Notes |
+|-------|----------|-------|
+| `environmentId` | Yes | Environment picker in the designer |
+| `botId` | Yes | Agent picker, cascading from the environment |
+| `channelName` | No | Defaults to `M365` |
+| `includeAgentSchema` | No | Omitted from the request entirely when not supplied |
+
+> **Only the M365 channel is supported.** Microsoft documents `M365` as the sole valid channel and publishes no error responses for this endpoint at all, so an undocumented channel value has no defined failure mode. The connector rejects anything else up front rather than sending a request whose outcome is unspecified. When Microsoft documents more channels, add them to `SupportedAgentChannels` in `script.csx`.
+
+> **Authorization is evaluated before validation.** Live testing confirmed the endpoint returns **403** for an invalid channel name and for a nonexistent agent ID, not 400 or 404, when the caller lacks `CopilotStudio.MakerOperations.Read`. A 403 therefore does not prove the agent or channel is wrong — fix the permission first, then retry before concluding anything about the identifiers. The connector's own channel check runs client-side, so it still catches a bad channel regardless of permission state.
+
+Useful in a flow for agent ALM: run it on a schedule and write the ZIP to SharePoint to keep a versioned record of what each agent publishes, or call it before and after a change to diff the manifest.
 
 ## Dynamic Dropdowns
 
@@ -228,21 +249,52 @@ OAuth 2.0 with Microsoft Entra ID — requires an app registration with Power Pl
 
 1. **App Registration**
    - Register an application in Microsoft Entra ID
-   - Configure "Power Platform API" permissions
-   - Grant the `.default` scope
+   - Add the delegated **Power Platform API** permissions listed below (resource ID `8578e004-a5c6-46e7-913e-12f58912df43`) and grant admin consent
    - Replace `REPLACE_WITH_CLIENT_ID` in `apiProperties.json` with the Client ID
 
-2. **Permissions**
+2. **Delegated permissions**
+
+   The Bots endpoints split across two permission families. Which one you need depends on the operation, not the connector — granting only one leaves the other half returning **403**.
+
+   | Operations | Required delegated permission |
+   |---|---|
+   | Evaluation: test sets, test runs, snapshots | `CopilotStudio.MakerOperations.Read` |
+   | Start an evaluation run | `CopilotStudio.MakerOperations.ReadWrite` |
+   | Download Agent Channel Manifest | `CopilotStudio.MakerOperations.Read` |
+   | Quarantine, consent bypass, reassign | `CopilotStudio.AdminActions.Invoke` |
+   | Delete agent | `CopilotStudio.MakerOperations.Delete` |
+   | Agent inventory and containment | Power Platform admin role (no documented `resourcequery` scope) |
+
+   > **These names are not in Microsoft's [permission reference](https://learn.microsoft.com/power-platform/admin/programmability-permission-reference).** That page lists only `CopilotStudio.AdminActions.Invoke` and `CopilotStudio.Copilots.Invoke`. The Power Platform API service principal actually publishes eight `CopilotStudio.*` delegated scopes, and the endpoints enforce the undocumented ones. The table above was derived from live `403` responses, which name the accepted permissions in `innererror.message`:
+   >
+   > ```json
+   > {"code":"Forbidden","innererror":{"code":"InsufficientDelegatedPermissions",
+   >  "message":"Application missing required delegated permissions: [CopilotStudio.MakerOperations.Read, CopilotStudio.MakerOperations.ReadWrite, All.All.ReadWrite]"}}
+   > ```
+   >
+   > If an operation returns 403 with a permission you do not recognize, read `innererror.message` — it names exactly what to grant. `All.All.ReadWrite` also appears in those messages but is **not** a grantable scope on this service principal; ignore it and grant the specific `CopilotStudio.*` permission instead.
+
+   Add a permission by ID:
+
+   ```powershell
+   # CopilotStudio.MakerOperations.Read
+   az ad app permission add --id <appId> `
+     --api 8578e004-a5c6-46e7-913e-12f58912df43 `
+     --api-permissions 4bbe06bc-340b-4b7c-8d99-775c5becc1c7=Scope
+   az ad app permission admin-consent --id <appId>
+   ```
+
+3. **Roles**
    - Evaluation operations require maker access to the agent
    - Administrative operations require Power Platform or Dynamics 365 administrator privileges
    - The agent inventory reads tenant-wide resources, so it also requires administrator privileges
 
-3. **Agent Identifiers**
+4. **Agent Identifiers**
    - Environment ID — The Dataverse environment containing your agent
    - Bot ID — The Copilot Studio agent identifier
    - Both are dropdowns in the designer, so you rarely need to supply them by hand
 
-4. **(Optional) User Profiles**
+5. **(Optional) User Profiles**
    - For authenticating agent connections during evaluation, obtain the MCS Connection ID:
      1. Go to [Power Automate](https://make.powerautomate.com/)
      2. Open the Connections page
@@ -254,12 +306,25 @@ OAuth 2.0 with Microsoft Entra ID — requires an app registration with Power Pl
 ### 1. Set Up App Registration
 
 ```powershell
-# Create app registration for connector
-$app = New-AzADApplication -DisplayName "Copilot Studio Bots Connector"
+# Create the app registration
+az ad app create --display-name "Copilot Studio Bots Connector" `
+  --sign-in-audience AzureADMyOrg `
+  --web-redirect-uris "https://global.consent.azure-apim.net/redirect"
 
-# Grant Power Platform API permissions
-# (Configure in Azure Portal or via Microsoft Graph)
+# Grant the delegated Power Platform API permissions this connector needs.
+# See Prerequisites above for which operations require which permission.
+$ppapi = "8578e004-a5c6-46e7-913e-12f58912df43"
+az ad app permission add --id <appId> --api $ppapi --api-permissions `
+  4bbe06bc-340b-4b7c-8d99-775c5becc1c7=Scope `   # CopilotStudio.MakerOperations.Read
+  d5061c0f-71ab-40de-ad68-1855ecedc721=Scope `   # CopilotStudio.MakerOperations.ReadWrite
+  db2c958a-27e1-4238-8eb8-610a8b5d8436=Scope     # CopilotStudio.AdminActions.Invoke
+
+az ad app permission admin-consent --id <appId>
 ```
+
+Add `CopilotStudio.MakerOperations.Delete` (`0793f40a-abd0-427e-9b9e-00b7dab6b50c`) only if you intend to use `Delete Agent`.
+
+> After deploying, the platform generates a per-connector redirect URL that must also be registered on the app registration or consent fails. Read it back with `pac connector download` and add it — see [Register the Connector](#2-register-the-connector).
 
 ### 2. Register the Connector
 
@@ -323,6 +388,27 @@ Deploying with `REPLACE_WITH_CLIENT_ID` still in place succeeds, but the connect
 ```
 
 This is the workflow that motivated a single connector — it spans evaluation and administration in one flow, with one connection.
+
+**Scenario: Archive what each agent publishes to Microsoft 365**
+
+```
+1. Trigger: Scheduled (weekly)
+2. List Agents  (leave Environment ID blank to sweep the tenant)
+3. Filter array: channels contains 'Microsoft 365 Copilot'
+4. For Each remaining agent:
+   5. Download Agent Channel Manifest
+      - Environment ID:      item()?['environmentId']
+      - Agent ID:            item()?['botId']
+      - Channel:             M365
+      - Include Agent Schema: Yes
+   6. Create file in SharePoint
+      - Name:    concat(item()?['displayName'], '-', utcNow('yyyy-MM-dd'), '.zip')
+      - Content: body('Download_Agent_Channel_Manifest')
+```
+
+Pipe the manifest straight from the action into the storage connector. Holding it in a
+variable first can hit flow content limits on larger packages. Run the same flow before and
+after a change to diff what an agent actually publishes.
 
 **Scenario: Reclaim agents owned by departed employees**
 
@@ -475,7 +561,10 @@ Read `succeeded` and `failed` rather than the MCP `isError` flag, which is set o
 - **Enabling connector consent bypass removes an end user safeguard.** Audit which connections the agent uses before turning it on.
 - **`api-version` is pinned to `2024-10-01`.** It is exposed as a parameter with that default; the MCP tools always send it.
 - **Dropdowns are a designer-only convenience.** MCP tools receive raw IDs, so an agent calling `quarantine_agent` still needs the environment and agent GUIDs. Dynamic values do not apply to MCP tool arguments.
+- **Binary downloads have a 4 MB inline ceiling.** `Download Agent Evaluation Snapshot` and `Download Agent Channel Manifest` return the ZIP inline to an agent only up to 4 MB; beyond that the MCP tool returns metadata and tells you to use the REST action. In a flow, pipe the REST action's output straight into a storage connector rather than through a variable.
+- **`Download Agent Channel Manifest` accepts only the `M365` channel.** The connector rejects other values before calling, since the endpoint documents no error responses. `includeAgentSchema` is omitted from the request entirely when you leave it blank, rather than sent as `false`.
 - **The agent inventory depends on an undocumented API.** `List Agents`, the agent dropdown, and both containment tools read `resourcequery` at `api-version=2022-03-01-preview`, which returns the resource provider's raw property bag. `isCLIAgent` is not in the published reference and can change shape or disappear without notice. Use it for reporting and chargeback triage, not as a hard enforcement gate.
+- **That API is also intermittently unreliable.** Live testing caught it returning `400 Bad Request` with body `"KQLOM format is wrong or it cannot be null"` for a byte-identical payload that had succeeded moments earlier. It is not throttling — the status is 400 with no `Retry-After`. The connector retries that specific failure up to three times with backoff, alongside `429` and `5xx`; a genuine client error still fails on the first attempt. Exhausted retries are reported as `after 3 attempts`.
 - **`isCLIAgent` is a string with three values.** Compare against `'true'`, `'false'`, and `'unknown'`. A flow condition testing it as a boolean silently never matches, and `'unknown'` must never be treated as `'false'`.
 - **`isCLIAgent: 'false'` covers two harnesses.** It cannot separate Standard from Copilot Chat. To confirm a single agent definitively, clone it and read `template` and `recognizer.kind`.
 - **The inventory pages to a ceiling.** It reads 1,000 agents per page and stops after 10 pages. Check `truncated` before treating a result as a complete estate, and scope to an environment if it is `true`.
@@ -489,7 +578,7 @@ Read `succeeded` and `failed` rather than the MCP `isError` flag, which is set o
 |--------|---------|------------|
 | 400 | Malformed body | Check `adminConsentBypass` is a boolean and `NewOwnerAadUserId` is a valid Entra object ID |
 | 401 | Token invalid or expired | Reauthorize the connection; confirm the app registration has Power Platform API permission |
-| 403 | Caller lacks tenant admin rights | Sign in as a Power Platform or Dynamics 365 administrator for the administrative operations |
+| 403 | Either the app registration lacks the delegated permission, or the caller lacks tenant admin rights | Read `innererror.code`. `InsufficientDelegatedPermissions` names the accepted scopes in `innererror.message` — grant one of those. Otherwise sign in as a Power Platform or Dynamics 365 administrator |
 | 404 | Agent, environment, test set, or run not found | Verify the Environment ID and Agent ID; a 404 on snapshot usually means the run ID is wrong or the run never completed |
 | 422 | An evaluation run is already in progress | Wait for the current run to reach `Completed` or `Failed`, then retry |
 | 500 | Service-side failure on reassign | Retry; if it persists confirm the new owner exists and has access to the environment |
@@ -588,6 +677,12 @@ Two further operations share the same host, base path, and connection, but are d
 | Migrate Agent Identity To Entra Agent ID | `POST {base}/api/agentidentitymigration/migrate` |
 | Roll Back Agent Identity To App Registration | `POST {base}/api/agentidentitymigration/rollback` |
 
+One documented operation shares the host and base path but sits under `agents/{id}` rather than `bots/{id}`, so it does not use `{base}`:
+
+| Operation | Endpoint |
+|-----------|----------|
+| Download Agent Channel Manifest | `GET /environments/{environmentId}/agents/{botId}/channels/{channelName}/download` |
+
 Three operations reach different Power Platform API surfaces on the same host. Their swagger paths are facades that the script rewrites, which is why they work despite the connector's `/copilotstudio` base path:
 
 | Operation | Swagger path | Actual endpoint |
@@ -602,9 +697,9 @@ All of them authenticate with the same token, because every surface sits behind 
 
 | File | Purpose |
 |------|---------|
-| `apiDefinition.swagger.json` | OpenAPI definition for the 18 REST operations plus the MCP endpoint |
+| `apiDefinition.swagger.json` | OpenAPI definition for the 17 usable REST actions, two internal dropdown sources, and the MCP endpoint |
 | `apiProperties.json` | OAuth 2.0 configuration and script operation registration |
-| `script.csx` | MCP JSON-RPC 2.0 handler, agent inventory and containment, Entra Agent ID migration, binary snapshot handling, and optional telemetry |
+| `script.csx` | MCP JSON-RPC 2.0 handler, agent inventory and containment, Entra Agent ID migration, binary ZIP handling for snapshots and channel manifests, and optional telemetry |
 | `readme.md` | This document |
 
 ## Related Connectors
@@ -624,6 +719,19 @@ The agent inventory was later ported from the [Power Platform Admin](../Power%20
 ### 1.1
 
 Added the two [Entra Agent ID migration](#entra-agent-id-migration) operations — `Migrate Agent Identity To Entra Agent ID` and `Roll Back Agent Identity To App Registration` — with matching `migrate_agent_identity` and `rollback_agent_identity` MCP tools. They sit on the Bots host and base path but are documented separately from the Bots REST reference, and are preview.
+
+### 1.2
+
+Added [Download Agent Channel Manifest](#agent-channel-manifest) — the July 2026 `agent-channels` endpoint — as both a REST action and the `download_agent_channel_manifest` MCP tool. Only the `M365` channel is supported; anything else is rejected client-side because the endpoint publishes no error responses at all.
+
+Both binary downloads now share one code path. Downloaded file names are sanitized before use: the previous handler trimmed quotes off `Content-Disposition` and passed the result straight into an MCP resource URI, so a service-supplied name containing a path or URI delimiter went through intact. Names are now reduced to a bare, bounded `.zip` file name.
+
+### 1.2.1
+
+Two defects found by testing against the live API:
+
+- **Environment fields were read from the wrong place.** `GET /environmentmanagement/environments` returns `displayName`, `type`, `state`, and `url` at the top level; the connector read them from a nested `properties` object that no environment actually returns. The environment picker fell back to showing raw GUIDs. Fields are now read flat-first with a nested fallback, so both shapes work.
+- **The agent inventory had no retry.** The undocumented `resourcequery` API intermittently returns `400` with `"KQLOM format is wrong or it cannot be null"` for a payload it accepted moments earlier — reproduced with a byte-identical body. A single blip failed `List Agents`, the agent picker, and both containment tools. That specific failure is now retried up to three times, alongside `429` and `5xx`.
 
 ## Author
 
