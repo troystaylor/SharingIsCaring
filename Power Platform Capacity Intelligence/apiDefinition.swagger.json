@@ -1,0 +1,1478 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power Platform Capacity",
+        "description": "Tenant-wide licensing, entitlement, and consumption intelligence for Power Platform. Reports what capacity a tenant holds, what it has consumed, which environments and resources consumed it, and how much headroom is left. Read-only, with MCP support for Copilot Studio agents.",
+        "version": "1.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.powerplatform.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Power Platform Capacity Intelligence MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides tenant capacity and consumption tools.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/capacity/finops/licensesummary": {
+            "get": {
+                "summary": "Get Fin Ops License Summary",
+                "description": "Get the tenant Finance and Operations license summary. Returns Has Data false when the tenant has no Finance and Operations estate, so zero counts are not mistaken for a measured result.",
+                "operationId": "GetFinOpsLicenseSummary",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "License summary",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "tenantId": {
+                                    "type": "string",
+                                    "description": "Tenant ID",
+                                    "x-ms-summary": "Tenant ID"
+                                },
+                                "hasData": {
+                                    "type": "boolean",
+                                    "description": "False when the tenant has never produced a Finance and Operations licensing report",
+                                    "x-ms-summary": "Has Data"
+                                },
+                                "lastReportRefreshTime": {
+                                    "type": "string",
+                                    "description": "When the report was last refreshed, or null when it never was",
+                                    "x-ms-summary": "Last Refreshed"
+                                },
+                                "allUsersCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Total users",
+                                    "x-ms-summary": "All Users"
+                                },
+                                "usersWithoutLicensesCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Users with no license",
+                                    "x-ms-summary": "Unlicensed Users"
+                                },
+                                "underLicensedUsersCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Users whose usage exceeds their license",
+                                    "x-ms-summary": "Under-Licensed Users"
+                                },
+                                "overLicensedUsersCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Users licensed above their usage",
+                                    "x-ms-summary": "Over-Licensed Users"
+                                },
+                                "licensesConsumption": {
+                                    "type": "object",
+                                    "description": "Per-product license consumption breakdown",
+                                    "x-ms-summary": "Licenses Consumption",
+                                    "properties": {
+                                        "finance": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Finance licenses consumed",
+                                            "x-ms-summary": "Finance"
+                                        },
+                                        "operations": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Operations licenses consumed",
+                                            "x-ms-summary": "Operations"
+                                        },
+                                        "supplyChainManagement": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Supply Chain Management licenses consumed",
+                                            "x-ms-summary": "Supply Chain Management"
+                                        },
+                                        "humanResources": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Human Resources licenses consumed",
+                                            "x-ms-summary": "Human Resources"
+                                        },
+                                        "projectOperations": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Project Operations licenses consumed",
+                                            "x-ms-summary": "Project Operations"
+                                        },
+                                        "commerce": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Commerce licenses consumed",
+                                            "x-ms-summary": "Commerce"
+                                        },
+                                        "teamMember": {
+                                            "type": "integer",
+                                            "format": "int32",
+                                            "description": "Team Member licenses consumed",
+                                            "x-ms-summary": "Team Member"
+                                        }
+                                    }
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/entitlement": {
+            "get": {
+                "summary": "Get Entitlement",
+                "description": "Get tenant-wide capacity for one entitlement: entitled, consumed, allocated, available, and overage status.",
+                "operationId": "GetEntitlement",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID, for example MCSMessages or AI",
+                        "x-ms-summary": "Entitlement ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entitlement capacity",
+                        "schema": {
+                            "$ref": "#/definitions/EntitlementCapacity"
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/environment/entitlements": {
+            "get": {
+                "summary": "List Environment Entitlements",
+                "description": "List every entitlement available to one environment with its capacity, consumption, and enforcement rules. Use this to discover entitlement IDs.",
+                "operationId": "ListEnvironmentEntitlements",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Optional OData filter. The filterable fields are not published; prefer leaving this blank.",
+                        "x-ms-summary": "Filter",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entitlements for the environment",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment ID",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "entitlementCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of entitlements returned",
+                                    "x-ms-summary": "Entitlement Count"
+                                },
+                                "entitlements": {
+                                    "type": "array",
+                                    "description": "Entitlements available to this environment",
+                                    "x-ms-summary": "Entitlements",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "entitlementId": {
+                                                "type": "string",
+                                                "description": "Entitlement ID",
+                                                "x-ms-summary": "Entitlement ID"
+                                            },
+                                            "unit": {
+                                                "type": "string",
+                                                "description": "Unit of measure as reported by the service",
+                                                "x-ms-summary": "Unit"
+                                            },
+                                            "entitled": {
+                                                "type": "number",
+                                                "description": "Quantity the tenant is entitled to",
+                                                "x-ms-summary": "Entitled"
+                                            },
+                                            "consumed": {
+                                                "type": "number",
+                                                "description": "Quantity consumed",
+                                                "x-ms-summary": "Consumed"
+                                            },
+                                            "allocated": {
+                                                "type": "number",
+                                                "description": "Quantity allocated to this environment",
+                                                "x-ms-summary": "Allocated"
+                                            },
+                                            "availableQuantity": {
+                                                "type": "number",
+                                                "description": "Quantity still available",
+                                                "x-ms-summary": "Available"
+                                            },
+                                            "status": {
+                                                "type": "string",
+                                                "description": "Overage status, for example WithinCapacity or Overage",
+                                                "x-ms-summary": "Status"
+                                            },
+                                            "enforcementRules": {
+                                                "type": "object",
+                                                "description": "Enforcement rule states keyed by rule type",
+                                                "x-ms-summary": "Enforcement Rules",
+                                                "properties": {
+                                                    "Alert": {
+                                                        "type": "boolean",
+                                                        "description": "Notify when the allocation is approached",
+                                                        "x-ms-summary": "Alert"
+                                                    },
+                                                    "PayGo": {
+                                                        "type": "boolean",
+                                                        "description": "Bill overage as pay-as-you-go",
+                                                        "x-ms-summary": "Pay As You Go"
+                                                    },
+                                                    "TenantPool": {
+                                                        "type": "boolean",
+                                                        "description": "Draw from the shared tenant pool",
+                                                        "x-ms-summary": "Tenant Pool"
+                                                    },
+                                                    "Deny": {
+                                                        "type": "boolean",
+                                                        "description": "Stop consumption once exhausted",
+                                                        "x-ms-summary": "Deny"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/entitlement/posture": {
+            "get": {
+                "summary": "Get Entitlement Posture",
+                "description": "Combined read for one entitlement: capacity, unallocated headroom, and configured thresholds, with percent used. Each part degrades independently, so check Problems before treating the result as complete.",
+                "operationId": "GetEntitlementPosture",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entitlement posture",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "entitlementId": {
+                                    "type": "string",
+                                    "description": "Entitlement ID",
+                                    "x-ms-summary": "Entitlement ID"
+                                },
+                                "entitled": {
+                                    "type": "number",
+                                    "description": "Quantity the tenant is entitled to",
+                                    "x-ms-summary": "Entitled"
+                                },
+                                "consumed": {
+                                    "type": "number",
+                                    "description": "Quantity consumed",
+                                    "x-ms-summary": "Consumed"
+                                },
+                                "percentUsed": {
+                                    "type": "number",
+                                    "description": "Consumed as a percentage of entitled, computed by the connector",
+                                    "x-ms-summary": "Percent Used"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Overage status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "consumptionType": {
+                                    "type": "string",
+                                    "description": "What the consumed figure covers, for example MonthToDate or Snapshot",
+                                    "x-ms-summary": "Consumption Type"
+                                },
+                                "lastUpdatedOn": {
+                                    "type": "string",
+                                    "description": "When consumption was last measured",
+                                    "x-ms-summary": "Last Updated"
+                                },
+                                "problems": {
+                                    "type": "array",
+                                    "description": "Parts that could not be read. Empty when the posture is complete.",
+                                    "x-ms-summary": "Problems",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "complete": {
+                                    "type": "boolean",
+                                    "description": "True when every part was read successfully",
+                                    "x-ms-summary": "Complete"
+                                },
+                                "note": {
+                                    "type": "string",
+                                    "description": "How to interpret the figures",
+                                    "x-ms-summary": "Note"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/allocations/availability": {
+            "get": {
+                "summary": "Get Allocation Availability",
+                "description": "Get how much of an entitlement is still available to allocate. Call this before increasing an environment allocation to confirm the tenant has headroom.",
+                "operationId": "GetAllocationAvailability",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID. Required: the service rejects this call without an entitlement filter.",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Narrows the availability scope to one environment",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Available capacity",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "entitlementId": {
+                                    "type": "string",
+                                    "description": "Entitlement ID",
+                                    "x-ms-summary": "Entitlement ID"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment the scope was narrowed to, or null",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "availableQuantity": {
+                                    "type": "number",
+                                    "description": "Quantity still available to allocate",
+                                    "x-ms-summary": "Available Quantity"
+                                },
+                                "scope": {
+                                    "type": "object",
+                                    "description": "The scope the service resolved",
+                                    "x-ms-summary": "Scope",
+                                    "properties": {
+                                        "tenantId": {
+                                            "type": "string",
+                                            "description": "Tenant ID",
+                                            "x-ms-summary": "Tenant ID"
+                                        },
+                                        "environmentId": {
+                                            "type": "string",
+                                            "description": "Environment ID",
+                                            "x-ms-summary": "Environment ID"
+                                        }
+                                    }
+                                },
+                                "available": {
+                                    "type": "array",
+                                    "description": "Available quantity per entitlement",
+                                    "x-ms-summary": "Available",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "entitlementId": {
+                                                "type": "string",
+                                                "description": "Entitlement ID",
+                                                "x-ms-summary": "Entitlement ID"
+                                            },
+                                            "availableQuantity": {
+                                                "type": "number",
+                                                "description": "Quantity available",
+                                                "x-ms-summary": "Available Quantity"
+                                            },
+                                            "unit": {
+                                                "type": "string",
+                                                "description": "Unit of measure",
+                                                "x-ms-summary": "Unit"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/thresholds": {
+            "get": {
+                "summary": "List Resource Thresholds",
+                "description": "List the consumption thresholds configured for an entitlement. An empty result means consumption is not capped.",
+                "operationId": "ListResourceThresholds",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filters the result to one environment",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Configured thresholds",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "entitlementId": {
+                                    "type": "string",
+                                    "description": "Entitlement ID",
+                                    "x-ms-summary": "Entitlement ID"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment the result was filtered to, or null",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "thresholdCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of thresholds returned",
+                                    "x-ms-summary": "Threshold Count"
+                                },
+                                "thresholds": {
+                                    "type": "array",
+                                    "description": "Configured thresholds",
+                                    "x-ms-summary": "Thresholds",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "entitlementId": {
+                                                "type": "string",
+                                                "description": "Entitlement the threshold applies to",
+                                                "x-ms-summary": "Entitlement ID"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment the threshold applies to",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "resourceId": {
+                                                "type": "string",
+                                                "description": "Resource the threshold applies to",
+                                                "x-ms-summary": "Resource ID"
+                                            },
+                                            "limit": {
+                                                "type": "number",
+                                                "description": "Consumption limit",
+                                                "x-ms-summary": "Limit"
+                                            },
+                                            "notificationThreshold": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Percentage of the limit at which notifications are sent",
+                                                "x-ms-summary": "Notification Threshold"
+                                            },
+                                            "notifyIfOverCapacity": {
+                                                "type": "boolean",
+                                                "description": "Notify when over capacity",
+                                                "x-ms-summary": "Notify If Over Capacity"
+                                            },
+                                            "stopIfOverCapacity": {
+                                                "type": "boolean",
+                                                "description": "Stop consumption when over capacity",
+                                                "x-ms-summary": "Stop If Over Capacity"
+                                            },
+                                            "stopResource": {
+                                                "type": "boolean",
+                                                "description": "Whether the resource is explicitly stopped",
+                                                "x-ms-summary": "Stop Resource"
+                                            },
+                                            "resourceConsumption": {
+                                                "type": "number",
+                                                "description": "Current consumption for the resource",
+                                                "x-ms-summary": "Resource Consumption"
+                                            },
+                                            "createdOn": {
+                                                "type": "string",
+                                                "description": "When the threshold was created",
+                                                "x-ms-summary": "Created On"
+                                            }
+                                        }
+                                    }
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/licensetrends": {
+            "get": {
+                "summary": "Get License Trends",
+                "description": "Get licence counts for an entitlement over a date range. Capacity-model entitlements with no assigned licences return nothing.",
+                "operationId": "GetLicenseTrends",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start of the range, inclusive, as yyyy-MM-dd. Defaults to the first of the current month.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End of the range, inclusive, as yyyy-MM-dd. Defaults to today.",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "top",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Maximum records to return",
+                        "x-ms-summary": "Top",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "License trend points",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "entitlementId": {
+                                    "type": "string",
+                                    "description": "Entitlement ID",
+                                    "x-ms-summary": "Entitlement ID"
+                                },
+                                "fromDate": {
+                                    "type": "string",
+                                    "description": "Start of the range used",
+                                    "x-ms-summary": "From Date"
+                                },
+                                "toDate": {
+                                    "type": "string",
+                                    "description": "End of the range used",
+                                    "x-ms-summary": "To Date"
+                                },
+                                "pointCount": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of trend points returned",
+                                    "x-ms-summary": "Point Count"
+                                },
+                                "trends": {
+                                    "type": "array",
+                                    "description": "Trend points",
+                                    "x-ms-summary": "Trends",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "date": {
+                                                "type": "string",
+                                                "description": "Date of the measurement",
+                                                "x-ms-summary": "Date"
+                                            },
+                                            "licenseModelType": {
+                                                "type": "string",
+                                                "description": "License model, for example Usl, Capacity, PayGo, or TenantLicense",
+                                                "x-ms-summary": "License Model"
+                                            },
+                                            "licenses": {
+                                                "type": "array",
+                                                "description": "Licenses at this point",
+                                                "x-ms-summary": "Licenses",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "licenseId": {
+                                                            "type": "string",
+                                                            "description": "License ID",
+                                                            "x-ms-summary": "License ID"
+                                                        },
+                                                        "skuId": {
+                                                            "type": "string",
+                                                            "description": "SKU ID",
+                                                            "x-ms-summary": "SKU ID"
+                                                        },
+                                                        "productName": {
+                                                            "type": "string",
+                                                            "description": "Product name",
+                                                            "x-ms-summary": "Product Name"
+                                                        },
+                                                        "licenseQuantity": {
+                                                            "type": "integer",
+                                                            "format": "int32",
+                                                            "description": "Number of licenses",
+                                                            "x-ms-summary": "License Quantity"
+                                                        },
+                                                        "licenseStatus": {
+                                                            "type": "string",
+                                                            "description": "License status",
+                                                            "x-ms-summary": "License Status"
+                                                        },
+                                                        "licenseTier": {
+                                                            "type": "string",
+                                                            "description": "Paid, Trial, or Internal",
+                                                            "x-ms-summary": "License Tier"
+                                                        },
+                                                        "entitled": {
+                                                            "type": "number",
+                                                            "description": "Quantity entitled by this license",
+                                                            "x-ms-summary": "Entitled"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "continuationToken": {
+                                    "type": "string",
+                                    "description": "Pass back to fetch the next page",
+                                    "x-ms-summary": "Continuation Token"
+                                },
+                                "hasMore": {
+                                    "type": "boolean",
+                                    "description": "True when more pages are available",
+                                    "x-ms-summary": "Has More"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Result message",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/environment/resources": {
+            "get": {
+                "summary": "Get Environment Resources",
+                "description": "Get per-resource consumption for one entitlement inside one environment: which agents, apps, or flows consumed the capacity.",
+                "operationId": "GetEnvironmentResources",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The environment ID (GUID)",
+                        "x-ms-summary": "Environment ID",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start of the range, inclusive, as yyyy-MM-dd. Defaults to the first of the current month.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End of the range, inclusive, as yyyy-MM-dd. Defaults to today.",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token from a previous response",
+                        "x-ms-summary": "Continuation Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Per-resource consumption",
+                        "schema": {
+                            "$ref": "#/definitions/ResourceConsumptionPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/tenant/resources": {
+            "get": {
+                "summary": "Get Tenant Resources",
+                "description": "Get per-resource consumption for one entitlement across every environment in the tenant. Use this to find the largest consumers estate-wide.",
+                "operationId": "GetTenantResources",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start of the range, inclusive, as yyyy-MM-dd. Defaults to the first of the current month.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End of the range, inclusive, as yyyy-MM-dd. Defaults to today.",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Rows per page, 1-1000. Defaults to 100.",
+                        "x-ms-summary": "Page Size"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token from a previous response",
+                        "x-ms-summary": "Continuation Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Per-resource consumption",
+                        "schema": {
+                            "$ref": "#/definitions/ResourceConsumptionPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/tenant/users": {
+            "get": {
+                "summary": "List Tenant Users",
+                "description": "List the users consuming an entitlement, with how much each consumed. Returns data about identifiable individuals.",
+                "operationId": "ListTenantUsers",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start of the range, inclusive, as yyyy-MM-dd. Defaults to the first of the current month.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End of the range, inclusive, as yyyy-MM-dd. Defaults to today.",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Rows per page, 1-1000. Defaults to 100.",
+                        "x-ms-summary": "Page Size"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token from a previous response",
+                        "x-ms-summary": "Continuation Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users consuming the entitlement",
+                        "schema": {
+                            "$ref": "#/definitions/UserConsumptionPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/user/consumption": {
+            "get": {
+                "summary": "Get User Consumption",
+                "description": "Get what one user consumed of an entitlement, broken down by resource. Returns data about an identifiable individual.",
+                "operationId": "GetUserConsumption",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "userId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The user ID. Use List Tenant Users to find one.",
+                        "x-ms-summary": "User ID"
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start of the range, inclusive, as yyyy-MM-dd. Defaults to the first of the current month.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End of the range, inclusive, as yyyy-MM-dd. Defaults to today.",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Rows per page, 1-1000. Defaults to 100.",
+                        "x-ms-summary": "Page Size"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token from a previous response",
+                        "x-ms-summary": "Continuation Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Resources the user consumed",
+                        "schema": {
+                            "$ref": "#/definitions/ResourceConsumptionPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/capacity/resource/consumers": {
+            "get": {
+                "summary": "Get Resource Consumers",
+                "description": "Get which users consumed a specific resource, such as one agent or app. Returns data about identifiable individuals.",
+                "operationId": "GetResourceConsumers",
+                "parameters": [
+                    {
+                        "name": "entitlementId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The entitlement ID",
+                        "x-ms-summary": "Entitlement ID"
+                    },
+                    {
+                        "name": "resourceId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The resource ID, for example an agent or app identifier",
+                        "x-ms-summary": "Resource ID"
+                    },
+                    {
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Start of the range, inclusive, as yyyy-MM-dd. Defaults to the first of the current month.",
+                        "x-ms-summary": "From Date"
+                    },
+                    {
+                        "name": "toDate",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "End of the range, inclusive, as yyyy-MM-dd. Defaults to today.",
+                        "x-ms-summary": "To Date"
+                    },
+                    {
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Rows per page, 1-1000. Defaults to 100.",
+                        "x-ms-summary": "Page Size"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token from a previous response",
+                        "x-ms-summary": "Continuation Token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users who consumed the resource",
+                        "schema": {
+                            "$ref": "#/definitions/UserConsumptionPage"
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/environments": {
+            "get": {
+                "summary": "Get Environment List",
+                "description": "Internal operation for dynamic dropdowns. Returns environment IDs and display names.",
+                "operationId": "GetEnvironmentDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "Environment list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Environment ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment display name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/entitlements": {
+            "get": {
+                "summary": "Get Entitlement List",
+                "description": "Internal operation for dynamic dropdowns. Returns the entitlement IDs available to an environment.",
+                "operationId": "GetEntitlementDropdown",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "The environment to list entitlements for"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Entitlement list for dropdown",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Entitlement ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Entitlement ID"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "EntitlementCapacity": {
+            "type": "object",
+            "properties": {
+                "entitlementId": {
+                    "type": "string",
+                    "description": "Entitlement ID",
+                    "x-ms-summary": "Entitlement ID"
+                },
+                "unit": {
+                    "type": "string",
+                    "description": "Unit of measure as reported by the service",
+                    "x-ms-summary": "Unit"
+                },
+                "entitled": {
+                    "type": "number",
+                    "description": "Quantity the tenant is entitled to",
+                    "x-ms-summary": "Entitled"
+                },
+                "consumed": {
+                    "type": "number",
+                    "description": "Quantity consumed",
+                    "x-ms-summary": "Consumed"
+                },
+                "consumptionType": {
+                    "type": "string",
+                    "description": "What the consumed figure covers, for example MonthToDate or Snapshot",
+                    "x-ms-summary": "Consumption Type"
+                },
+                "lastUpdatedOn": {
+                    "type": "string",
+                    "description": "When consumption was last measured",
+                    "x-ms-summary": "Last Updated"
+                },
+                "allocated": {
+                    "type": "number",
+                    "description": "Quantity allocated",
+                    "x-ms-summary": "Allocated"
+                },
+                "autoAllocated": {
+                    "type": "number",
+                    "description": "Quantity the platform allocated automatically",
+                    "x-ms-summary": "Auto Allocated"
+                },
+                "availableQuantity": {
+                    "type": "number",
+                    "description": "Quantity still available",
+                    "x-ms-summary": "Available Quantity"
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Overage status, for example WithinCapacity or Overage",
+                    "x-ms-summary": "Status"
+                },
+                "payGoEntitled": {
+                    "type": "number",
+                    "description": "Pay-as-you-go entitled quantity",
+                    "x-ms-summary": "PayGo Entitled"
+                },
+                "productCategories": {
+                    "type": "array",
+                    "description": "Product categories associated with the entitlement",
+                    "x-ms-summary": "Product Categories",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "licenses": {
+                    "type": "array",
+                    "description": "Licenses backing the entitlement",
+                    "x-ms-summary": "Licenses",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "licenseId": {
+                                "type": "string",
+                                "description": "License ID",
+                                "x-ms-summary": "License ID"
+                            },
+                            "productName": {
+                                "type": "string",
+                                "description": "Product name",
+                                "x-ms-summary": "Product Name"
+                            },
+                            "licenseQuantity": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "Number of licenses",
+                                "x-ms-summary": "License Quantity"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ResourceConsumptionPage": {
+            "type": "object",
+            "properties": {
+                "entitlementId": {
+                    "type": "string",
+                    "description": "Entitlement ID",
+                    "x-ms-summary": "Entitlement ID"
+                },
+                "environmentId": {
+                    "type": "string",
+                    "description": "Environment ID, when scoped to one",
+                    "x-ms-summary": "Environment ID"
+                },
+                "userId": {
+                    "type": "string",
+                    "description": "User ID, when scoped to one user",
+                    "x-ms-summary": "User ID"
+                },
+                "fromDate": {
+                    "type": "string",
+                    "description": "Start of the range used",
+                    "x-ms-summary": "From Date"
+                },
+                "toDate": {
+                    "type": "string",
+                    "description": "End of the range used",
+                    "x-ms-summary": "To Date"
+                },
+                "resourceCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of resources on this page",
+                    "x-ms-summary": "Resource Count"
+                },
+                "resources": {
+                    "type": "array",
+                    "description": "Per-resource consumption",
+                    "x-ms-summary": "Resources",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "resourceId": {
+                                "type": "string",
+                                "description": "Resource ID",
+                                "x-ms-summary": "Resource ID"
+                            },
+                            "environmentId": {
+                                "type": "string",
+                                "description": "Environment the resource lives in",
+                                "x-ms-summary": "Environment ID"
+                            },
+                            "tenantId": {
+                                "type": "string",
+                                "description": "Tenant ID",
+                                "x-ms-summary": "Tenant ID"
+                            },
+                            "consumed": {
+                                "type": "number",
+                                "description": "Quantity consumed by this resource",
+                                "x-ms-summary": "Consumed"
+                            },
+                            "unit": {
+                                "type": "string",
+                                "description": "Unit of measure as reported by the service",
+                                "x-ms-summary": "Unit"
+                            },
+                            "lastRefreshedDate": {
+                                "type": "string",
+                                "description": "When this figure was last refreshed",
+                                "x-ms-summary": "Last Refreshed"
+                            },
+                            "asOfDate": {
+                                "type": "string",
+                                "description": "Date the measurement applies to",
+                                "x-ms-summary": "As Of Date"
+                            },
+                            "metadata": {
+                                "type": "object",
+                                "description": "Additional detail such as Feature, ProductName, and NonBillableQuantity",
+                                "x-ms-summary": "Metadata",
+                                "properties": {
+                                    "Feature": {
+                                        "type": "string",
+                                        "description": "Feature name",
+                                        "x-ms-summary": "Feature"
+                                    },
+                                    "ProductName": {
+                                        "type": "string",
+                                        "description": "Product name",
+                                        "x-ms-summary": "Product Name"
+                                    },
+                                    "NonBillableQuantity": {
+                                        "type": "number",
+                                        "description": "Portion of consumption that is not billed",
+                                        "x-ms-summary": "Non-Billable Quantity"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Pass back to fetch the next page",
+                    "x-ms-summary": "Continuation Token"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "True when more pages are available",
+                    "x-ms-summary": "Has More"
+                }
+            }
+        },
+        "UserConsumptionPage": {
+            "type": "object",
+            "properties": {
+                "entitlementId": {
+                    "type": "string",
+                    "description": "Entitlement ID",
+                    "x-ms-summary": "Entitlement ID"
+                },
+                "resourceId": {
+                    "type": "string",
+                    "description": "Resource ID, when scoped to one resource",
+                    "x-ms-summary": "Resource ID"
+                },
+                "fromDate": {
+                    "type": "string",
+                    "description": "Start of the range used",
+                    "x-ms-summary": "From Date"
+                },
+                "toDate": {
+                    "type": "string",
+                    "description": "End of the range used",
+                    "x-ms-summary": "To Date"
+                },
+                "userCount": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of users on this page",
+                    "x-ms-summary": "User Count"
+                },
+                "users": {
+                    "type": "array",
+                    "description": "Per-user consumption",
+                    "x-ms-summary": "Users",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "userId": {
+                                "type": "string",
+                                "description": "User ID",
+                                "x-ms-summary": "User ID"
+                            },
+                            "tenantId": {
+                                "type": "string",
+                                "description": "Tenant ID",
+                                "x-ms-summary": "Tenant ID"
+                            },
+                            "environmentId": {
+                                "type": "string",
+                                "description": "Environment the consumption occurred in",
+                                "x-ms-summary": "Environment ID"
+                            },
+                            "consumed": {
+                                "type": "number",
+                                "description": "Quantity consumed by this user",
+                                "x-ms-summary": "Consumed"
+                            },
+                            "unit": {
+                                "type": "string",
+                                "description": "Unit of measure as reported by the service",
+                                "x-ms-summary": "Unit"
+                            },
+                            "asOfDate": {
+                                "type": "string",
+                                "description": "Date the measurement applies to",
+                                "x-ms-summary": "As Of Date"
+                            },
+                            "metadata": {
+                                "type": "object",
+                                "description": "Additional detail such as Resources and NonBillableQuantity",
+                                "x-ms-summary": "Metadata",
+                                "properties": {
+                                    "Resources": {
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "description": "Number of resources this user consumed",
+                                        "x-ms-summary": "Resources"
+                                    },
+                                    "NonBillableQuantity": {
+                                        "type": "number",
+                                        "description": "Portion of consumption that is not billed",
+                                        "x-ms-summary": "Non-Billable Quantity"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Pass back to fetch the next page",
+                    "x-ms-summary": "Continuation Token"
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "True when more pages are available",
+                    "x-ms-summary": "Has More"
+                },
+                "privacyNote": {
+                    "type": "string",
+                    "description": "Reminder that the rows identify individuals",
+                    "x-ms-summary": "Privacy Note"
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {}
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": []
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/rest/api/power-platform/licensing"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations"
+        }
+    ]
+}
