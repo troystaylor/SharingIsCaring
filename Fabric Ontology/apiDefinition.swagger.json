@@ -1,0 +1,1347 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Fabric Ontology",
+        "description": "Dual-purpose connector for Microsoft Fabric ontology. Manages ontology items through the Fabric REST API and exposes a single ontology as an MCP server for Copilot Studio agents.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.fabric.microsoft.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/rest/api/fabric/ontology/items"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Data;AI"
+        }
+    ],
+    "paths": {
+        "/v1/mcp/dataPlane/workspaces/WORKSPACE_ID/items/ONTOLOGY_ITEM_ID/ontologyEndpoint": {
+            "post": {
+                "summary": "Invoke Fabric Ontology MCP",
+                "description": "Model Context Protocol endpoint for a single Fabric ontology item. Replace WORKSPACE_ID and ONTOLOGY_ITEM_ID in the path with literal GUIDs before deploying. Discover the GUIDs with List Workspaces and List Ontologies.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/v1/workspaces": {
+            "get": {
+                "summary": "List workspaces",
+                "description": "Returns the Fabric workspaces the signed-in user can access. Used as the source for workspace pickers.",
+                "operationId": "ListWorkspaces",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "roles",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Comma-separated workspace roles to filter by, for example Admin,Member,Contributor,Viewer.",
+                        "x-ms-summary": "Roles",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token returned by a previous call to retrieve the next page of results.",
+                        "x-ms-summary": "Continuation token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/Workspaces"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/folders": {
+            "get": {
+                "summary": "List folders",
+                "description": "Returns the folders in a workspace. Used as the source for root folder pickers.",
+                "operationId": "ListFolders",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "rootFolderId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Return only folders beneath this folder. Omit to start at the workspace root.",
+                        "x-ms-summary": "Root folder ID",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "recursive",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "True returns nested folders as well. Defaults to true.",
+                        "x-ms-summary": "Recursive",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token returned by a previous call to retrieve the next page of results.",
+                        "x-ms-summary": "Continuation token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/Folders"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/lakehouses": {
+            "get": {
+                "summary": "List lakehouses",
+                "description": "Returns the lakehouses in a workspace. Useful when authoring entity type data bindings, which reference a source lakehouse and table.",
+                "operationId": "ListLakehouses",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token returned by a previous call to retrieve the next page of results.",
+                        "x-ms-summary": "Continuation token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/Lakehouses"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/lakehouses/{lakehouseId}/tables": {
+            "get": {
+                "summary": "List lakehouse tables",
+                "description": "Returns the tables in a lakehouse. Use the table names when building the sourceTableProperties of an entity type data binding.",
+                "operationId": "ListLakehouseTables",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "lakehouseId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The lakehouse ID.",
+                        "x-ms-summary": "Lakehouse",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListLakehouses",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "maxResults",
+                        "in": "query",
+                        "required": false,
+                        "type": "integer",
+                        "description": "Maximum number of results per page, between 1 and 100.",
+                        "x-ms-summary": "Max results",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token returned by a previous call to retrieve the next page of results.",
+                        "x-ms-summary": "Continuation token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/LakehouseTables"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/ontologies": {
+            "get": {
+                "summary": "List ontologies",
+                "description": "Returns the ontology items in a workspace. Requires a viewer workspace role.",
+                "operationId": "ListOntologies",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "recursive",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "True lists items in a folder and its nested folders. Defaults to true.",
+                        "x-ms-summary": "Recursive",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "rootFolderId",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Restrict results to a specific root folder. Omit to use the workspace as the root.",
+                        "x-ms-summary": "Root folder",
+                        "x-ms-visibility": "advanced",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListFolders",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "continuationToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Token returned by a previous call to retrieve the next page of results.",
+                        "x-ms-summary": "Continuation token",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/Ontologies"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create ontology",
+                "description": "Creates an ontology item in a workspace. Requires a contributor workspace role and a supported Fabric capacity. Returns 202 with an operation ID when provisioning runs asynchronously.",
+                "operationId": "CreateOntology",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The ontology to create.",
+                        "schema": {
+                            "$ref": "#/definitions/CreateOntologyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Successfully created.",
+                        "schema": {
+                            "$ref": "#/definitions/Ontology"
+                        }
+                    },
+                    "202": {
+                        "description": "Request accepted, provisioning in progress.",
+                        "schema": {
+                            "$ref": "#/definitions/AcceptedOperation"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/ontologies/{ontologyId}": {
+            "get": {
+                "summary": "Get ontology",
+                "description": "Returns the properties of an ontology item.",
+                "operationId": "GetOntology",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "ontologyId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ontology ID.",
+                        "x-ms-summary": "Ontology",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListOntologies",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/Ontology"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update ontology",
+                "description": "Updates the display name or description of an ontology item. Does not change the definition.",
+                "operationId": "UpdateOntology",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "ontologyId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ontology ID.",
+                        "x-ms-summary": "Ontology",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListOntologies",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The properties to update.",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateOntologyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/Ontology"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete ontology",
+                "description": "Deletes an ontology item. This cannot be undone.",
+                "operationId": "DeleteOntology",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "ontologyId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ontology ID.",
+                        "x-ms-summary": "Ontology",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListOntologies",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully."
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/ontologies/{ontologyId}/getDefinition": {
+            "post": {
+                "summary": "Get ontology definition",
+                "description": "Returns the public definition of an ontology as a set of parts. Each part payload is base64. The connector script adds a decoded payloadText alongside every part so the JSON is readable without a separate decode step.",
+                "operationId": "GetOntologyDefinition",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "ontologyId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ontology ID.",
+                        "x-ms-summary": "Ontology",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListOntologies",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "The format of the returned definition. Ontology items support JSON.",
+                        "x-ms-summary": "Format",
+                        "x-ms-visibility": "advanced"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/OntologyDefinitionResponse"
+                        }
+                    },
+                    "202": {
+                        "description": "Request accepted, retrieval in progress.",
+                        "schema": {
+                            "$ref": "#/definitions/AcceptedOperation"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/ontologies/{ontologyId}/updateDefinition": {
+            "post": {
+                "summary": "Update ontology definition",
+                "description": "Overwrites the definition of an ontology. Supply each part either as base64 in payload or as readable JSON in payloadText, which the connector script encodes for you.",
+                "operationId": "UpdateOntologyDefinition",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The workspace ID.",
+                        "x-ms-summary": "Workspace",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListWorkspaces",
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "ontologyId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ontology ID.",
+                        "x-ms-summary": "Ontology",
+                        "x-ms-url-encoding": "single",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListOntologies",
+                            "parameters": {
+                                "workspaceId": {
+                                    "parameter": "workspaceId"
+                                }
+                            },
+                            "value-collection": "value",
+                            "value-path": "id",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "updateMetadata",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean",
+                        "description": "True updates item metadata from the .platform part if it is supplied.",
+                        "x-ms-summary": "Update metadata",
+                        "x-ms-visibility": "advanced"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "The replacement definition.",
+                        "schema": {
+                            "$ref": "#/definitions/UpdateOntologyDefinitionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully."
+                    },
+                    "202": {
+                        "description": "Request accepted, update in progress.",
+                        "schema": {
+                            "$ref": "#/definitions/AcceptedOperation"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/operations/{operationId}": {
+            "get": {
+                "summary": "Get operation state",
+                "description": "Returns the state of a long running operation. Use the operation ID returned by Create ontology, Get ontology definition, or Update ontology definition when they respond with 202.",
+                "operationId": "GetOperationState",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "operationId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The operation ID from the x-ms-operation-id response header.",
+                        "x-ms-summary": "Operation ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/OperationState"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/operations/{operationId}/result": {
+            "get": {
+                "summary": "Get operation result",
+                "description": "Returns the result of a completed long running operation. Call this only after Get operation state reports Succeeded. Definition parts in the result are decoded into payloadText by the connector script.",
+                "operationId": "GetOperationResult",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "operationId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The operation ID from the x-ms-operation-id response header.",
+                        "x-ms-summary": "Operation ID",
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request completed successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/OntologyDefinitionResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Workspaces": {
+            "type": "object",
+            "description": "A paginated list of workspaces.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The workspaces.",
+                    "items": {
+                        "$ref": "#/definitions/Workspace"
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page of results.",
+                    "x-ms-summary": "Continuation token"
+                },
+                "continuationUri": {
+                    "type": "string",
+                    "description": "URI of the next page of results.",
+                    "x-ms-summary": "Continuation URI"
+                }
+            }
+        },
+        "Workspace": {
+            "type": "object",
+            "description": "A Fabric workspace.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The workspace ID.",
+                    "x-ms-summary": "Workspace ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The workspace display name.",
+                    "x-ms-summary": "Display name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The workspace description.",
+                    "x-ms-summary": "Description"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The workspace type, for example Workspace or Personal.",
+                    "x-ms-summary": "Type"
+                },
+                "capacityId": {
+                    "type": "string",
+                    "description": "The capacity the workspace is assigned to.",
+                    "x-ms-summary": "Capacity ID"
+                }
+            }
+        },
+        "Folders": {
+            "type": "object",
+            "description": "A paginated list of folders.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The folders.",
+                    "items": {
+                        "$ref": "#/definitions/Folder"
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page of results.",
+                    "x-ms-summary": "Continuation token"
+                },
+                "continuationUri": {
+                    "type": "string",
+                    "description": "URI of the next page of results.",
+                    "x-ms-summary": "Continuation URI"
+                }
+            }
+        },
+        "Folder": {
+            "type": "object",
+            "description": "A workspace folder.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The folder ID.",
+                    "x-ms-summary": "Folder ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The folder display name.",
+                    "x-ms-summary": "Display name"
+                },
+                "parentFolderId": {
+                    "type": "string",
+                    "description": "The parent folder ID, absent for top-level folders.",
+                    "x-ms-summary": "Parent folder ID"
+                },
+                "workspaceId": {
+                    "type": "string",
+                    "description": "The workspace the folder belongs to.",
+                    "x-ms-summary": "Workspace ID"
+                }
+            }
+        },
+        "Lakehouses": {
+            "type": "object",
+            "description": "A paginated list of lakehouses.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The lakehouses.",
+                    "items": {
+                        "$ref": "#/definitions/Lakehouse"
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page of results.",
+                    "x-ms-summary": "Continuation token"
+                },
+                "continuationUri": {
+                    "type": "string",
+                    "description": "URI of the next page of results.",
+                    "x-ms-summary": "Continuation URI"
+                }
+            }
+        },
+        "Lakehouse": {
+            "type": "object",
+            "description": "A lakehouse item.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The lakehouse ID.",
+                    "x-ms-summary": "Lakehouse ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The lakehouse display name.",
+                    "x-ms-summary": "Display name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The lakehouse description.",
+                    "x-ms-summary": "Description"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The item type, always Lakehouse.",
+                    "x-ms-summary": "Type"
+                },
+                "workspaceId": {
+                    "type": "string",
+                    "description": "The workspace the lakehouse belongs to.",
+                    "x-ms-summary": "Workspace ID"
+                }
+            }
+        },
+        "LakehouseTables": {
+            "type": "object",
+            "description": "A paginated list of lakehouse tables.",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "description": "The tables.",
+                    "items": {
+                        "$ref": "#/definitions/LakehouseTable"
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page of results.",
+                    "x-ms-summary": "Continuation token"
+                },
+                "continuationUri": {
+                    "type": "string",
+                    "description": "URI of the next page of results.",
+                    "x-ms-summary": "Continuation URI"
+                }
+            }
+        },
+        "LakehouseTable": {
+            "type": "object",
+            "description": "A table in a lakehouse.",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The table name. Use this as sourceTableName in a data binding.",
+                    "x-ms-summary": "Table name"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The table type, Managed or External.",
+                    "x-ms-summary": "Table type"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "The table format, for example Delta.",
+                    "x-ms-summary": "Format"
+                },
+                "location": {
+                    "type": "string",
+                    "description": "The OneLake location of the table.",
+                    "x-ms-summary": "Location"
+                }
+            }
+        },
+        "Ontologies": {
+            "type": "object",
+            "description": "A paginated list of ontologies.",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "The ontologies.",
+                    "items": {
+                        "$ref": "#/definitions/Ontology"
+                    }
+                },
+                "continuationToken": {
+                    "type": "string",
+                    "description": "Token to retrieve the next page of results.",
+                    "x-ms-summary": "Continuation token"
+                },
+                "continuationUri": {
+                    "type": "string",
+                    "description": "URI of the next page of results.",
+                    "x-ms-summary": "Continuation URI"
+                }
+            }
+        },
+        "Ontology": {
+            "type": "object",
+            "description": "An ontology item.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The ontology ID. Use this as ONTOLOGY_ITEM_ID in the MCP endpoint path.",
+                    "x-ms-summary": "Ontology ID"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "The ontology display name.",
+                    "x-ms-summary": "Display name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The ontology description.",
+                    "x-ms-summary": "Description"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The item type, always Ontology.",
+                    "x-ms-summary": "Type"
+                },
+                "workspaceId": {
+                    "type": "string",
+                    "description": "The workspace the ontology belongs to. Use this as WORKSPACE_ID in the MCP endpoint path.",
+                    "x-ms-summary": "Workspace ID"
+                },
+                "folderId": {
+                    "type": "string",
+                    "description": "The folder containing the ontology.",
+                    "x-ms-summary": "Folder ID"
+                },
+                "logicalId": {
+                    "type": "string",
+                    "description": "The item's logical identifier. Corresponding item instances across environments share the same logical ID. Null when none has been assigned.",
+                    "x-ms-summary": "Logical ID"
+                },
+                "sensitivityLabel": {
+                    "$ref": "#/definitions/SensitivityLabel"
+                }
+            }
+        },
+        "SensitivityLabel": {
+            "type": "object",
+            "description": "The sensitivity label applied to the item.",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The sensitivity label ID.",
+                    "x-ms-summary": "Sensitivity label ID"
+                }
+            }
+        },
+        "CreateOntologyRequest": {
+            "type": "object",
+            "description": "The ontology to create.",
+            "required": [
+                "displayName"
+            ],
+            "properties": {
+                "displayName": {
+                    "type": "string",
+                    "description": "The display name. Must start with a letter, contain only letters, numbers, or underscores, and be under 100 characters.",
+                    "x-ms-summary": "Display name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The description. Maximum 256 characters.",
+                    "x-ms-summary": "Description"
+                },
+                "definition": {
+                    "$ref": "#/definitions/OntologyDefinition"
+                },
+                "sensitivityLabelSettings": {
+                    "$ref": "#/definitions/SensitivityLabelSettings"
+                }
+            }
+        },
+        "SensitivityLabelSettings": {
+            "type": "object",
+            "description": "Sensitivity label settings for the ontology.",
+            "x-ms-visibility": "advanced",
+            "properties": {
+                "labelId": {
+                    "type": "string",
+                    "description": "The sensitivity label ID to apply.",
+                    "x-ms-summary": "Sensitivity label ID"
+                },
+                "sensitivityLabelApplyStrategy": {
+                    "type": "string",
+                    "description": "The strategy for applying the sensitivity label.",
+                    "x-ms-summary": "Apply strategy"
+                }
+            }
+        },
+        "UpdateOntologyRequest": {
+            "type": "object",
+            "description": "The ontology properties to update.",
+            "properties": {
+                "displayName": {
+                    "type": "string",
+                    "description": "The new display name.",
+                    "x-ms-summary": "Display name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "The new description. Maximum 256 characters.",
+                    "x-ms-summary": "Description"
+                }
+            }
+        },
+        "UpdateOntologyDefinitionRequest": {
+            "type": "object",
+            "description": "The replacement ontology definition.",
+            "required": [
+                "definition"
+            ],
+            "properties": {
+                "definition": {
+                    "$ref": "#/definitions/OntologyDefinition"
+                }
+            }
+        },
+        "OntologyDefinition": {
+            "type": "object",
+            "description": "An ontology public definition expressed as a set of parts.",
+            "required": [
+                "parts"
+            ],
+            "properties": {
+                "parts": {
+                    "type": "array",
+                    "description": "The definition parts. A definition.json part and a .platform part are both required.",
+                    "items": {
+                        "$ref": "#/definitions/OntologyDefinitionPart"
+                    }
+                }
+            }
+        },
+        "OntologyDefinitionPart": {
+            "type": "object",
+            "description": "A single part of an ontology definition.",
+            "required": [
+                "path",
+                "payloadType"
+            ],
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "The part path, for example definition.json, .platform, or EntityTypes/8813598896083/definition.json.",
+                    "x-ms-summary": "Path"
+                },
+                "payload": {
+                    "type": "string",
+                    "description": "The part content as base64. Leave empty and use Payload text instead to let the connector encode readable JSON for you.",
+                    "x-ms-summary": "Payload (base64)"
+                },
+                "payloadText": {
+                    "type": "string",
+                    "description": "The part content as readable JSON. The connector script base64 encodes this into payload before sending, and populates it on responses after decoding.",
+                    "x-ms-summary": "Payload text"
+                },
+                "payloadType": {
+                    "type": "string",
+                    "description": "How the payload is encoded. Always InlineBase64.",
+                    "default": "InlineBase64",
+                    "x-ms-visibility": "internal",
+                    "title": ""
+                }
+            }
+        },
+        "OntologyDefinitionResponse": {
+            "type": "object",
+            "description": "The ontology public definition.",
+            "properties": {
+                "definition": {
+                    "$ref": "#/definitions/OntologyDefinition"
+                }
+            }
+        },
+        "AcceptedOperation": {
+            "type": "object",
+            "description": "A long running operation accepted by Fabric. Synthesized by the connector script from the 202 response headers.",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "Always Accepted.",
+                    "x-ms-summary": "Status"
+                },
+                "operationId": {
+                    "type": "string",
+                    "description": "The operation ID. Pass this to Get operation state.",
+                    "x-ms-summary": "Operation ID"
+                },
+                "location": {
+                    "type": "string",
+                    "description": "The URL to poll for operation state.",
+                    "x-ms-summary": "Location"
+                },
+                "retryAfter": {
+                    "type": "integer",
+                    "description": "Seconds to wait before polling.",
+                    "x-ms-summary": "Retry after (seconds)"
+                }
+            }
+        },
+        "OperationState": {
+            "type": "object",
+            "description": "The state of a long running operation.",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "One of Undefined, NotStarted, Running, Succeeded, or Failed.",
+                    "x-ms-summary": "Status"
+                },
+                "createdTimeUtc": {
+                    "type": "string",
+                    "description": "When the operation started.",
+                    "x-ms-summary": "Created time (UTC)"
+                },
+                "lastUpdatedTimeUtc": {
+                    "type": "string",
+                    "description": "When the operation last changed.",
+                    "x-ms-summary": "Last updated time (UTC)"
+                },
+                "percentComplete": {
+                    "type": "integer",
+                    "description": "Progress as a percentage.",
+                    "x-ms-summary": "Percent complete"
+                },
+                "error": {
+                    "$ref": "#/definitions/ErrorResponse"
+                }
+            }
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "description": "A Fabric API error.",
+            "properties": {
+                "errorCode": {
+                    "type": "string",
+                    "description": "The error code.",
+                    "x-ms-summary": "Error code"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "A human readable description of the error.",
+                    "x-ms-summary": "Message"
+                },
+                "requestId": {
+                    "type": "string",
+                    "description": "The request ID associated with the error.",
+                    "x-ms-summary": "Request ID"
+                },
+                "isRetriable": {
+                    "type": "boolean",
+                    "description": "True when the request can be retried.",
+                    "x-ms-summary": "Is retriable"
+                },
+                "moreDetails": {
+                    "type": "array",
+                    "description": "Additional error details.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "errorCode": {
+                                "type": "string",
+                                "description": "The detail error code.",
+                                "x-ms-summary": "Error code"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "The detail message.",
+                                "x-ms-summary": "Message"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://api.fabric.microsoft.com/.default": "Access Microsoft Fabric as the signed-in user"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "https://api.fabric.microsoft.com/.default"
+            ]
+        }
+    ],
+    "tags": []
+}
