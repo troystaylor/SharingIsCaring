@@ -1,0 +1,786 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Dataverse SQL",
+        "description": "Dual-purpose Dataverse connector for the Web API sql query option. Exposes an MCP endpoint for Copilot Studio agents plus typed operations for Power Automate and Power Apps. Statements are validated against the supported read-only T-SQL subset before they are sent, and the entity set is resolved from the FROM clause automatically.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "org.crm.dynamics.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Dataverse SQL MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Exposes table discovery, column discovery, validation and SQL execution tools over JSON-RPC 2.0.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP JSON-RPC 2.0 response"
+                    }
+                }
+            }
+        },
+        "/sql/query": {
+            "post": {
+                "summary": "Execute SQL",
+                "description": "Runs a read-only SELECT against Dataverse and returns the matching rows. The entity set is resolved from the FROM clause, so write the statement against the table logical name.",
+                "operationId": "ExecuteSql",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteSqlRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rows returned by the statement",
+                        "schema": {
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetRowSchema",
+                                "parameters": {
+                                    "sql": {
+                                        "parameter": "body/sql"
+                                    }
+                                },
+                                "value-path": "schema"
+                            },
+                            "x-ms-dynamic-properties": {
+                                "operationId": "GetRowSchema",
+                                "parameters": {
+                                    "sql": {
+                                        "parameterReference": "body/sql"
+                                    }
+                                },
+                                "itemValuePath": "schema"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The statement is outside the supported SQL subset, or Dataverse rejected it",
+                        "schema": {
+                            "$ref": "#/definitions/SqlError"
+                        }
+                    }
+                }
+            }
+        },
+        "/sql/schema": {
+            "post": {
+                "summary": "Get row schema (internal)",
+                "description": "Resolves the shape of the rows a statement returns, so the designer can offer typed dynamic content for Execute SQL.",
+                "operationId": "GetRowSchema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ValidateSqlRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The resolved row schema",
+                        "schema": {
+                            "$ref": "#/definitions/RowSchemaResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "The statement could not be parsed",
+                        "schema": {
+                            "$ref": "#/definitions/SqlError"
+                        }
+                    }
+                }
+            }
+        },
+        "/sql/next": {
+            "post": {
+                "summary": "Get next page",
+                "description": "Fetches the next page of a previous Execute SQL result. Pass the next link exactly as it was returned.",
+                "operationId": "GetNextPage",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NextPageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The next page of rows",
+                        "schema": {
+                            "$ref": "#/definitions/RowsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "The next link is missing or does not belong to this environment",
+                        "schema": {
+                            "$ref": "#/definitions/SqlError"
+                        }
+                    }
+                }
+            }
+        },
+        "/sql/count": {
+            "post": {
+                "summary": "Count rows",
+                "description": "Counts the rows in a table, optionally filtered. An aggregate query may evaluate at most 50,000 records, so filter large tables.",
+                "operationId": "CountRows",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CountRowsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The matching row count",
+                        "schema": {
+                            "$ref": "#/definitions/CountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "The table or filter could not be used",
+                        "schema": {
+                            "$ref": "#/definitions/SqlError"
+                        }
+                    }
+                }
+            }
+        },
+        "/sql/validate": {
+            "post": {
+                "summary": "Validate SQL",
+                "description": "Checks a SELECT statement against the supported subset and resolves its base table without running it. Returns a named issue for every unsupported construct.",
+                "operationId": "ValidateSql",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ValidateSqlRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The validation report",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/tables": {
+            "get": {
+                "summary": "List tables",
+                "description": "Lists the Dataverse tables in this environment with the logical name to use in a FROM clause.",
+                "operationId": "ListTables",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Match against the table logical name and display name.",
+                        "x-ms-summary": "Search",
+                        "type": "string"
+                    },
+                    {
+                        "name": "customOnly",
+                        "in": "query",
+                        "description": "Return only custom tables.",
+                        "x-ms-summary": "Custom tables only",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum tables to return (1-5000). Default 1000.",
+                        "x-ms-summary": "Limit",
+                        "type": "integer",
+                        "default": 1000
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching tables",
+                        "schema": {
+                            "$ref": "#/definitions/TableListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/metadata/columns": {
+            "get": {
+                "summary": "List columns",
+                "description": "Lists the columns of one table so a SELECT list can be built from real logical names.",
+                "operationId": "ListColumns",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "query",
+                        "description": "Table logical name, for example account.",
+                        "x-ms-summary": "Table",
+                        "required": true,
+                        "type": "string",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListTables",
+                            "value-collection": "value",
+                            "value-path": "logicalName",
+                            "value-title": "displayName"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Match against the column logical name and display name.",
+                        "x-ms-summary": "Search",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Columns of the table",
+                        "schema": {
+                            "$ref": "#/definitions/ColumnListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "The table could not be resolved",
+                        "schema": {
+                            "$ref": "#/definitions/SqlError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ExecuteSqlRequest": {
+            "type": "object",
+            "required": [
+                "sql"
+            ],
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "description": "The SELECT statement to run, for example SELECT name, telephone1 FROM account WHERE statecode = 0 ORDER BY name.",
+                    "x-ms-summary": "SQL statement"
+                },
+                "maxPageSize": {
+                    "type": "integer",
+                    "description": "Rows per page (1-5000). Sent to Dataverse as Prefer: odata.maxpagesize.",
+                    "x-ms-summary": "Page size",
+                    "default": 100
+                },
+                "maxRows": {
+                    "type": "integer",
+                    "description": "Collect up to this many rows by following next links automatically. 0 returns a single page. Paging stops early if the script runs out of time; check Stopped because.",
+                    "x-ms-summary": "Maximum rows",
+                    "default": 0
+                },
+                "includeFormattedValues": {
+                    "type": "boolean",
+                    "description": "Also return display text for choice, lookup and date columns as FormattedValue annotations.",
+                    "x-ms-summary": "Include formatted values",
+                    "default": false
+                }
+            }
+        },
+        "NextPageRequest": {
+            "type": "object",
+            "required": [
+                "nextLink"
+            ],
+            "properties": {
+                "nextLink": {
+                    "type": "string",
+                    "description": "The next link returned by the previous page.",
+                    "x-ms-summary": "Next link"
+                }
+            }
+        },
+        "CountRowsRequest": {
+            "type": "object",
+            "required": [
+                "table"
+            ],
+            "properties": {
+                "table": {
+                    "type": "string",
+                    "description": "Table logical name, for example contact.",
+                    "x-ms-summary": "Table",
+                    "x-ms-dynamic-values": {
+                        "operationId": "ListTables",
+                        "value-collection": "value",
+                        "value-path": "logicalName",
+                        "value-title": "displayName"
+                    }
+                },
+                "where": {
+                    "type": "string",
+                    "description": "Filter condition without the WHERE keyword, for example statecode = 0.",
+                    "x-ms-summary": "Where"
+                }
+            }
+        },
+        "ValidateSqlRequest": {
+            "type": "object",
+            "required": [
+                "sql"
+            ],
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "description": "The SELECT statement to check.",
+                    "x-ms-summary": "SQL statement"
+                }
+            }
+        },
+        "RowsResponse": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "description": "The statement that was sent to Dataverse, with comments removed.",
+                    "x-ms-summary": "SQL statement"
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Logical name of the base table.",
+                    "x-ms-summary": "Table"
+                },
+                "entitySet": {
+                    "type": "string",
+                    "description": "Entity set used in the request URL.",
+                    "x-ms-summary": "Entity set"
+                },
+                "rowCount": {
+                    "type": "integer",
+                    "description": "Number of rows in this page.",
+                    "x-ms-summary": "Row count"
+                },
+                "rows": {
+                    "type": "array",
+                    "description": "The rows returned. Column names match the SELECT list, so the shape varies by statement.",
+                    "x-ms-summary": "Rows",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
+                "hasMore": {
+                    "type": "boolean",
+                    "description": "True when another page is available.",
+                    "x-ms-summary": "Has more"
+                },
+                "nextLink": {
+                    "type": "string",
+                    "description": "Pass to Get next page to retrieve the next page of rows.",
+                    "x-ms-summary": "Next link"
+                },
+                "pagesFetched": {
+                    "type": "integer",
+                    "description": "How many pages were retrieved in this call.",
+                    "x-ms-summary": "Pages fetched"
+                },
+                "stoppedBecause": {
+                    "type": "string",
+                    "description": "Why paging stopped: complete, page, maxRows or timeBudget.",
+                    "x-ms-summary": "Stopped because"
+                },
+                "warnings": {
+                    "type": "array",
+                    "description": "Constructs that were allowed through but may not behave as written.",
+                    "x-ms-summary": "Warnings",
+                    "items": {
+                        "$ref": "#/definitions/Issue"
+                    }
+                }
+            }
+        },
+        "CountResponse": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "description": "The COUNT statement that was sent to Dataverse.",
+                    "x-ms-summary": "SQL statement"
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Logical name of the table that was counted.",
+                    "x-ms-summary": "Table"
+                },
+                "entitySet": {
+                    "type": "string",
+                    "description": "Entity set used in the request URL.",
+                    "x-ms-summary": "Entity set"
+                },
+                "count": {
+                    "type": "integer",
+                    "description": "Number of matching rows.",
+                    "x-ms-summary": "Count"
+                },
+                "warnings": {
+                    "type": "array",
+                    "description": "Constructs that were allowed through but may not behave as written.",
+                    "x-ms-summary": "Warnings",
+                    "items": {
+                        "$ref": "#/definitions/Issue"
+                    }
+                }
+            }
+        },
+        "ValidationResponse": {
+            "type": "object",
+            "properties": {
+                "valid": {
+                    "type": "boolean",
+                    "description": "True when the statement is inside the supported subset and its table resolves.",
+                    "x-ms-summary": "Valid"
+                },
+                "statement": {
+                    "type": "string",
+                    "description": "The statement with comments removed and a trailing semicolon stripped.",
+                    "x-ms-summary": "Statement"
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Logical name resolved from the FROM clause.",
+                    "x-ms-summary": "Table"
+                },
+                "entitySet": {
+                    "type": "string",
+                    "description": "Entity set that would be used in the request URL.",
+                    "x-ms-summary": "Entity set"
+                },
+                "errors": {
+                    "type": "array",
+                    "description": "Unsupported constructs that would cause the statement to fail.",
+                    "x-ms-summary": "Errors",
+                    "items": {
+                        "$ref": "#/definitions/Issue"
+                    }
+                },
+                "warnings": {
+                    "type": "array",
+                    "description": "Constructs that were allowed through but may not behave as written.",
+                    "x-ms-summary": "Warnings",
+                    "items": {
+                        "$ref": "#/definitions/Issue"
+                    }
+                }
+            }
+        },
+        "TableListResponse": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "array",
+                    "description": "Matching tables.",
+                    "x-ms-summary": "Tables",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "logicalName": {
+                                "type": "string",
+                                "description": "Name to use in a FROM clause.",
+                                "x-ms-summary": "Logical name"
+                            },
+                            "entitySetName": {
+                                "type": "string",
+                                "description": "Web API resource for the table.",
+                                "x-ms-summary": "Entity set name"
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "description": "Localized table name.",
+                                "x-ms-summary": "Display name"
+                            },
+                            "primaryIdColumn": {
+                                "type": "string",
+                                "description": "Primary key column.",
+                                "x-ms-summary": "Primary id column"
+                            },
+                            "primaryNameColumn": {
+                                "type": "string",
+                                "description": "Primary name column.",
+                                "x-ms-summary": "Primary name column"
+                            },
+                            "isCustom": {
+                                "type": "boolean",
+                                "description": "True for custom tables.",
+                                "x-ms-summary": "Is custom"
+                            }
+                        }
+                    }
+                },
+                "totalCount": {
+                    "type": "integer",
+                    "description": "Number of tables that matched before the limit was applied.",
+                    "x-ms-summary": "Total count"
+                },
+                "truncated": {
+                    "type": "boolean",
+                    "description": "True when more tables matched than the limit allowed.",
+                    "x-ms-summary": "Truncated"
+                }
+            }
+        },
+        "ColumnListResponse": {
+            "type": "object",
+            "properties": {
+                "table": {
+                    "type": "string",
+                    "description": "Logical name of the table.",
+                    "x-ms-summary": "Table"
+                },
+                "entitySetName": {
+                    "type": "string",
+                    "description": "Web API resource for the table.",
+                    "x-ms-summary": "Entity set name"
+                },
+                "displayName": {
+                    "type": "string",
+                    "description": "Localized table name.",
+                    "x-ms-summary": "Display name"
+                },
+                "primaryIdColumn": {
+                    "type": "string",
+                    "description": "Primary key column.",
+                    "x-ms-summary": "Primary id column"
+                },
+                "primaryNameColumn": {
+                    "type": "string",
+                    "description": "Primary name column.",
+                    "x-ms-summary": "Primary name column"
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Columns that can be named in a SELECT list.",
+                    "x-ms-summary": "Columns",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "logicalName": {
+                                "type": "string",
+                                "description": "Name to use in a SELECT list.",
+                                "x-ms-summary": "Logical name"
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "description": "Localized column name.",
+                                "x-ms-summary": "Display name"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Dataverse attribute type, for example String, Integer or Lookup.",
+                                "x-ms-summary": "Type"
+                            },
+                            "isPrimaryId": {
+                                "type": "boolean",
+                                "description": "True for the primary key column.",
+                                "x-ms-summary": "Is primary id"
+                            },
+                            "isPrimaryName": {
+                                "type": "boolean",
+                                "description": "True for the primary name column.",
+                                "x-ms-summary": "Is primary name"
+                            }
+                        }
+                    }
+                },
+                "totalCount": {
+                    "type": "integer",
+                    "description": "Number of columns that matched.",
+                    "x-ms-summary": "Total count"
+                },
+                "truncated": {
+                    "type": "boolean",
+                    "description": "True when more columns matched than were returned. Narrow the result with search.",
+                    "x-ms-summary": "Truncated"
+                },
+                "sample": {
+                    "type": "string",
+                    "description": "A minimal SELECT against this table to start from.",
+                    "x-ms-summary": "Sample statement"
+                }
+            }
+        },
+        "RowSchemaResponse": {
+            "type": "object",
+            "properties": {
+                "table": {
+                    "type": "string",
+                    "description": "Logical name of the base table.",
+                    "x-ms-summary": "Table"
+                },
+                "entitySet": {
+                    "type": "string",
+                    "description": "Entity set that would be used in the request URL.",
+                    "x-ms-summary": "Entity set"
+                },
+                "columns": {
+                    "type": "array",
+                    "description": "The resolved output columns.",
+                    "x-ms-summary": "Columns",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Property name in each row.",
+                                "x-ms-summary": "Name"
+                            },
+                            "source": {
+                                "type": "string",
+                                "description": "The SELECT list expression the column came from.",
+                                "x-ms-summary": "Source"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "Resolved JSON type.",
+                                "x-ms-summary": "Type"
+                            }
+                        }
+                    }
+                },
+                "schema": {
+                    "type": "object",
+                    "description": "JSON schema of the Execute SQL response, with typed rows.",
+                    "x-ms-summary": "Schema"
+                },
+                "sampled": {
+                    "type": "boolean",
+                    "description": "True when the statement returned a row that was inspected to confirm the real column set.",
+                    "x-ms-summary": "Sampled"
+                }
+            }
+        },
+        "Issue": {
+            "type": "object",
+            "properties": {
+                "rule": {
+                    "type": "string",
+                    "description": "Identifier of the rule that was triggered, for example select_star or having.",
+                    "x-ms-summary": "Rule"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "What is unsupported and what to write instead.",
+                    "x-ms-summary": "Message"
+                }
+            }
+        },
+        "SqlError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "description": "Error code, for example invalid_sql, unknown_table or aggregate_limit_exceeded.",
+                    "x-ms-summary": "Error"
+                },
+                "message": {
+                    "type": "string",
+                    "description": "What went wrong.",
+                    "x-ms-summary": "Message"
+                },
+                "providedValue": {
+                    "type": "string",
+                    "description": "The value that was rejected.",
+                    "x-ms-summary": "Provided value"
+                },
+                "validValues": {
+                    "type": "array",
+                    "description": "Values that would have been accepted, when the connector can work them out.",
+                    "x-ms-summary": "Valid values",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "value": {
+                                "type": "string",
+                                "description": "An accepted value.",
+                                "x-ms-summary": "Value"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Friendly name for the value.",
+                                "x-ms-summary": "Title"
+                            }
+                        }
+                    }
+                },
+                "issues": {
+                    "type": "array",
+                    "description": "Every unsupported construct found in the statement.",
+                    "x-ms-summary": "Issues",
+                    "items": {
+                        "$ref": "#/definitions/Issue"
+                    }
+                },
+                "retryAfterSeconds": {
+                    "type": "integer",
+                    "description": "For a throttled error, how long to wait before retrying. Zero otherwise.",
+                    "x-ms-summary": "Retry after seconds"
+                },
+                "hint": {
+                    "type": "string",
+                    "description": "How to correct the request.",
+                    "x-ms-summary": "Hint"
+                }
+            }
+        }
+    },
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://learn.microsoft.com/power-apps/developer/data-platform/webapi/query/sql"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "Data;Productivity"
+        }
+    ]
+}
