@@ -1,0 +1,590 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Dataverse Ask",
+    "description": "Dual-purpose Dataverse connector for the Ask APIs. Exposes an MCP endpoint for Copilot Studio agents plus typed operations for Power Automate and Power Apps. A semantic model names the tables that can answer a question, and the Ask operation returns matching rows, a natural-language summary, citation links and a paging token. Part of Business Applications in Work IQ (preview).",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "org.crm.dynamics.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Dataverse Ask MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio integration.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/api/iq/v1.0/semanticmodel": {
+      "get": {
+        "operationId": "ListSemanticModels",
+        "summary": "List semantic models",
+        "description": "Lists the semantic models available in this Dataverse environment. Locate a model by its exact unique name or ID rather than by position, because the order of the array is not guaranteed.",
+        "parameters": [
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "botinfo"
+            ],
+            "description": "Set to botinfo to also return the model-driven apps, bot components and agents that use each semantic model.",
+            "x-ms-summary": "Include app and agent usage",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The semantic models in this environment.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "description": "The semantic models available in this environment.",
+                  "title": "Semantic models",
+                  "x-ms-summary": "Semantic models",
+                  "items": {
+                    "$ref": "#/definitions/SemanticModel"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid, or Business Applications in Work IQ is not enabled for this environment."
+          },
+          "401": {
+            "description": "The access token is missing, expired, or issued for another resource."
+          },
+          "403": {
+            "description": "The caller lacks a security role with semantic model privileges."
+          },
+          "429": {
+            "description": "A service protection limit was exceeded. Wait for the Retry-After duration."
+          }
+        }
+      },
+      "post": {
+        "operationId": "CreateSemanticModel",
+        "summary": "Create semantic model",
+        "description": "Associates a unique name with one or more Dataverse tables. Creating a model indexes the selected tables, which consumes Dataverse database storage. Semantic model names must be unique within an environment.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "uniqueName",
+                "tables"
+              ],
+              "properties": {
+                "uniqueName": {
+                  "type": "string",
+                  "description": "The unique name of the semantic model to create, such as Sales pipeline.",
+                  "title": "Unique name",
+                  "x-ms-summary": "Unique name"
+                },
+                "tables": {
+                  "type": "array",
+                  "description": "Dataverse table logical names, such as account or opportunity. Logical names only — display names, entity set names and collection names are rejected.",
+                  "title": "Tables",
+                  "x-ms-summary": "Tables",
+                  "items": {
+                    "type": "string",
+                    "description": "A Dataverse table logical name.",
+                    "title": "Table logical name",
+                    "x-ms-dynamic-values": {
+                      "operationId": "ListTables",
+                      "value-collection": "value",
+                      "value-path": "logicalName",
+                      "value-title": "title"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The semantic model was created.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "description": "The created semantic model.",
+                  "title": "Semantic model",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique identifier of the created semantic model. Store this value to delete the model later.",
+                      "title": "ID",
+                      "x-ms-summary": "ID"
+                    },
+                    "uniqueName": {
+                      "type": "string",
+                      "description": "The unique name of the created semantic model. Pass this value as the semantic model name on an Ask request.",
+                      "title": "Unique name",
+                      "x-ms-summary": "Unique name"
+                    },
+                    "createdOn": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "The UTC date and time when the semantic model was created.",
+                      "title": "Created on",
+                      "x-ms-summary": "Created on"
+                    }
+                  }
+                },
+                "message": {
+                  "type": "string",
+                  "description": "A message describing the result of the operation.",
+                  "title": "Message",
+                  "x-ms-summary": "Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid, or Business Applications in Work IQ is not enabled for this environment."
+          },
+          "401": {
+            "description": "The access token is missing, expired, or issued for another resource."
+          },
+          "403": {
+            "description": "The caller lacks a security role with semantic model privileges."
+          },
+          "429": {
+            "description": "A service protection limit was exceeded. Wait for the Retry-After duration."
+          }
+        }
+      }
+    },
+    "/api/iq/v1.0/semanticmodel/{id}": {
+      "delete": {
+        "operationId": "DeleteSemanticModel",
+        "summary": "Delete semantic model",
+        "description": "Deletes a semantic model by ID. Only models created through the Create semantic model operation can be deleted; models owned by an app module, bot component or agent cannot. After deletion, Ask requests can no longer use the model name.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The unique identifier of the semantic model to delete.",
+            "x-ms-summary": "Semantic model",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSemanticModels",
+              "value-collection": "data",
+              "value-path": "id",
+              "value-title": "uniqueName"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The semantic model was deleted.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "description": "The deleted semantic model.",
+                  "title": "Semantic model",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The unique identifier of the deleted semantic model.",
+                      "title": "ID",
+                      "x-ms-summary": "ID"
+                    }
+                  }
+                },
+                "message": {
+                  "type": "string",
+                  "description": "A message describing the result of the operation.",
+                  "title": "Message",
+                  "x-ms-summary": "Message"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or issued for another resource."
+          },
+          "403": {
+            "description": "The caller lacks a security role with semantic model privileges."
+          },
+          "404": {
+            "description": "No semantic model with that identifier exists."
+          },
+          "429": {
+            "description": "A service protection limit was exceeded. Wait for the Retry-After duration."
+          }
+        }
+      }
+    },
+    "/api/data/v9.2/EntityDefinitions": {
+      "get": {
+        "operationId": "ListTables",
+        "summary": "List tables",
+        "description": "Lists the Dataverse tables in this environment with their logical names. Backs the table picker on Create semantic model.",
+        "x-ms-visibility": "internal",
+        "responses": {
+          "200": {
+            "description": "The tables in this environment.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "array",
+                  "description": "The tables available in this environment.",
+                  "title": "Tables",
+                  "items": {
+                    "type": "object",
+                    "description": "A Dataverse table.",
+                    "title": "Table",
+                    "properties": {
+                      "logicalName": {
+                        "type": "string",
+                        "description": "The table logical name, such as account.",
+                        "title": "Logical name",
+                        "x-ms-summary": "Logical name"
+                      },
+                      "displayName": {
+                        "type": "string",
+                        "description": "The table display name, such as Account.",
+                        "title": "Display name",
+                        "x-ms-summary": "Display name"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "The display name and logical name together, for the picker.",
+                        "title": "Title",
+                        "x-ms-summary": "Title"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller cannot read table metadata in this environment."
+          }
+        }
+      }
+    },
+    "/api/iq/v1.0/ask": {
+      "post": {
+        "operationId": "Ask",
+        "summary": "Ask a question",
+        "description": "Submits a natural-language question against a semantic model and returns the rows that answer it, a natural-language summary and citation links. Results are trimmed to what the caller is authorized to read, so record ownership, business unit access, sharing and column-level security all affect the answer.",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "query",
+                "semanticModelName"
+              ],
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "description": "The natural-language question to answer, such as Which open opportunities have the highest estimated revenue?",
+                  "title": "Question",
+                  "x-ms-summary": "Question"
+                },
+                "semanticModelName": {
+                  "type": "string",
+                  "description": "The exact unique name of the semantic model to use.",
+                  "title": "Semantic model name",
+                  "x-ms-summary": "Semantic model name",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListSemanticModels",
+                    "value-collection": "data",
+                    "value-path": "uniqueName",
+                    "value-title": "uniqueName"
+                  }
+                },
+                "searchMode": {
+                  "type": "string",
+                  "enum": [
+                    "Auto",
+                    "QuickResponse",
+                    "ThinkDeeper"
+                  ],
+                  "default": "Auto",
+                  "description": "The search strategy. Auto lets the service choose, QuickResponse favors a faster answer, and ThinkDeeper favors deeper analysis and takes longer.",
+                  "title": "Search mode",
+                  "x-ms-summary": "Search mode",
+                  "x-ms-visibility": "advanced"
+                },
+                "count": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 100,
+                  "description": "The maximum number of rows to return in this page.",
+                  "title": "Row count",
+                  "x-ms-summary": "Row count",
+                  "x-ms-visibility": "advanced"
+                },
+                "pagingToken": {
+                  "type": "string",
+                  "description": "The paging token from a previous response, passed back unchanged to retrieve the next page. Leave empty for the first page.",
+                  "title": "Paging token",
+                  "x-ms-summary": "Paging token",
+                  "x-ms-visibility": "advanced"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The answer to the question.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "rawResult": {
+                  "type": "array",
+                  "description": "The rows that answer the question. The properties of each row depend on the question and the query the service generated, so treat these as dynamic JSON objects.",
+                  "title": "Rows",
+                  "x-ms-summary": "Rows",
+                  "items": {
+                    "type": "object",
+                    "description": "One row of the result. Its properties vary by question.",
+                    "title": "Row"
+                  }
+                },
+                "citationLinks": {
+                  "type": "array",
+                  "description": "Links to the Dataverse records behind the answer.",
+                  "title": "Citation links",
+                  "x-ms-summary": "Citation links",
+                  "items": {
+                    "type": "string",
+                    "description": "A link to a source record.",
+                    "title": "Citation link"
+                  }
+                },
+                "summary": {
+                  "type": "string",
+                  "description": "A natural-language summary of the result. May be absent; do not depend on it to process the rows.",
+                  "title": "Summary",
+                  "x-ms-summary": "Summary"
+                },
+                "totalResultCount": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "The total number of matching rows when available. This value might reflect only the current page.",
+                  "title": "Total result count",
+                  "x-ms-summary": "Total result count"
+                },
+                "pagingToken": {
+                  "type": "string",
+                  "description": "An opaque token for the next page. When it is null or empty there are no more pages. Pass it back exactly as returned.",
+                  "title": "Paging token",
+                  "x-ms-summary": "Paging token"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid, Business Applications in Work IQ is not enabled for this environment, or no authorized table can answer the question."
+          },
+          "401": {
+            "description": "The access token is missing, expired, or issued for another resource."
+          },
+          "403": {
+            "description": "The caller lacks a required privilege."
+          },
+          "404": {
+            "description": "The semantic model does not exist."
+          },
+          "429": {
+            "description": "The limit of 30 requests per user per minute was exceeded. Wait for the Retry-After duration."
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SemanticModel": {
+      "type": "object",
+      "description": "A semantic model and the Dataverse tables it covers.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier of the semantic model.",
+          "title": "ID",
+          "x-ms-summary": "ID"
+        },
+        "uniqueName": {
+          "type": "string",
+          "description": "The unique name of the semantic model. Pass this value as the semantic model name on an Ask request.",
+          "title": "Unique name",
+          "x-ms-summary": "Unique name"
+        },
+        "source": {
+          "type": "string",
+          "description": "The channel that created the semantic model, such as SemanticModelAPI.",
+          "title": "Source",
+          "x-ms-summary": "Source"
+        },
+        "description": {
+          "type": "string",
+          "description": "The description of the semantic model.",
+          "title": "Description",
+          "x-ms-summary": "Description"
+        },
+        "tables": {
+          "type": "array",
+          "description": "The logical names of the Dataverse tables covered by the semantic model.",
+          "title": "Tables",
+          "x-ms-summary": "Tables",
+          "items": {
+            "type": "string",
+            "description": "A Dataverse table logical name.",
+            "title": "Table logical name"
+          }
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "The full name of the user who created the semantic model.",
+          "title": "Created by",
+          "x-ms-summary": "Created by"
+        },
+        "modifiedOn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The UTC date and time when the semantic model was last modified.",
+          "title": "Modified on",
+          "x-ms-summary": "Modified on"
+        },
+        "createdOn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The UTC date and time when the semantic model was created.",
+          "title": "Created on",
+          "x-ms-summary": "Created on"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "The unique identifier of the semantic model owner.",
+          "title": "Owner ID",
+          "x-ms-summary": "Owner ID"
+        },
+        "owner": {
+          "type": "string",
+          "description": "The full name of the user who owns the semantic model.",
+          "title": "Owner",
+          "x-ms-summary": "Owner"
+        },
+        "m365AppModuleId": {
+          "type": "string",
+          "description": "The model-driven app associated with an ALM-compliant primary semantic model. Returned when app and agent usage is included.",
+          "title": "Primary app module ID",
+          "x-ms-summary": "Primary app module ID"
+        },
+        "appModulePrimaryName": {
+          "type": "string",
+          "description": "The display name of the primary app module. Returned when app and agent usage is included.",
+          "title": "Primary app module name",
+          "x-ms-summary": "Primary app module name"
+        },
+        "appModulePrimaryUniqueName": {
+          "type": "string",
+          "description": "The logical name of the primary app module. Returned when app and agent usage is included.",
+          "title": "Primary app module unique name",
+          "x-ms-summary": "Primary app module unique name"
+        },
+        "m365AppModuleIdSecondary": {
+          "type": "string",
+          "description": "The app module associated with a secondary semantic model. Returned when app and agent usage is included.",
+          "title": "Secondary app module ID",
+          "x-ms-summary": "Secondary app module ID"
+        },
+        "appModuleSecondaryName": {
+          "type": "string",
+          "description": "The display name of the secondary app module. Returned when app and agent usage is included.",
+          "title": "Secondary app module name",
+          "x-ms-summary": "Secondary app module name"
+        },
+        "appModuleSecondaryUniqueName": {
+          "type": "string",
+          "description": "The logical name of the secondary app module. Returned when app and agent usage is included.",
+          "title": "Secondary app module unique name",
+          "x-ms-summary": "Secondary app module unique name"
+        },
+        "bots": {
+          "type": "array",
+          "description": "The bot components and agents that use the semantic model. Returned when app and agent usage is included.",
+          "title": "Agents",
+          "x-ms-summary": "Agents",
+          "items": {
+            "type": "object",
+            "description": "A bot component and the agent that contains it.",
+            "title": "Agent",
+            "properties": {
+              "botComponentName": {
+                "type": "string",
+                "description": "The display name of a bot component that references the semantic model.",
+                "title": "Bot component name",
+                "x-ms-summary": "Bot component name"
+              },
+              "agentName": {
+                "type": "string",
+                "description": "The display name of the agent that contains the bot component.",
+                "title": "Agent name",
+                "x-ms-summary": "Agent name"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/power-apps/developer/data-platform/ask/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Data;AI"
+    }
+  ]
+}
