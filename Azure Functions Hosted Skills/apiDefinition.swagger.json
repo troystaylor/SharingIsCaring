@@ -1,0 +1,559 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Azure Functions Hosted Skills",
+    "description": "Invoke Azure Functions hosted skills from Power Automate, Power Apps and Copilot Studio. Send a prompt to a skill defined in an .agent.md file, resume multi-turn sessions, replay a session transcript, and track dynamic workflow runs. The same connector exposes every skill in the function app as MCP tools.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com"
+    }
+  },
+  "host": "placeholder.azurewebsites.net",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/agents/{agentSlug}/chat": {
+      "post": {
+        "operationId": "InvokeSkill",
+        "summary": "Invoke a hosted skill",
+        "description": "Sends a prompt to a hosted skill and returns its final response, the session it ran in, and every tool the skill called. Pass the returned session ID back on the next call to continue the same conversation.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "agentSlug",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Slug of the hosted skill, derived from its .agent.md file name. A file named order_triage.agent.md has the slug order_triage.",
+            "x-ms-summary": "Skill",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSkills",
+              "value-collection": "value",
+              "value-path": "slug",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "x-ms-session-id",
+            "in": "header",
+            "required": false,
+            "type": "string",
+            "description": "Session to continue. Omit to start a new session; the response returns the session ID that was created. Letters, digits, dots, hyphens and underscores only, up to 128 characters.",
+            "x-ms-summary": "Session ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SkillRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The skill ran and returned a response.",
+            "schema": {
+              "$ref": "#/definitions/SkillResponse"
+            },
+            "headers": {
+              "x-ms-session-id": {
+                "type": "string",
+                "description": "Session the skill ran in."
+              }
+            }
+          },
+          "400": {
+            "description": "The prompt was missing or the session ID was rejected.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "The function key was missing or rejected.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "No hosted skill with this slug exposes a chat API.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "The skill run failed.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agentSlug}/history": {
+      "get": {
+        "operationId": "GetSessionHistory",
+        "summary": "Get session transcript",
+        "description": "Returns the persisted user and assistant turns for one session, oldest first. Only the most recent 200 turns are returned.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "agentSlug",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Slug of the hosted skill, derived from its .agent.md file name.",
+            "x-ms-summary": "Skill",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSkills",
+              "value-collection": "value",
+              "value-path": "slug",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "x-ms-session-id",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Session whose transcript you want.",
+            "x-ms-summary": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The transcript for the session.",
+            "schema": {
+              "$ref": "#/definitions/HistoryResponse"
+            }
+          },
+          "400": {
+            "description": "The session ID was missing or rejected.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "The transcript could not be read.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agentSlug}/workflows": {
+      "get": {
+        "operationId": "ListSessionWorkflows",
+        "summary": "List dynamic workflows for a session",
+        "description": "Returns every dynamic workflow the skill started in this session, newest first. Only skills that enable dynamic workflows expose this endpoint.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "agentSlug",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Slug of the hosted skill, derived from its .agent.md file name.",
+            "x-ms-summary": "Skill",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSkills",
+              "value-collection": "value",
+              "value-path": "slug",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "x-ms-session-id",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Session whose workflows you want.",
+            "x-ms-summary": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflows started in the session.",
+            "schema": {
+              "$ref": "#/definitions/WorkflowListResponse"
+            }
+          },
+          "default": {
+            "description": "The workflow list could not be read.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/agents/{agentSlug}/workflow-status": {
+      "get": {
+        "operationId": "GetWorkflowStatus",
+        "summary": "Get dynamic workflow status",
+        "description": "Returns the runtime status and, once it finishes, the output of one dynamic workflow run.",
+        "x-ms-visibility": "advanced",
+        "parameters": [
+          {
+            "name": "agentSlug",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Slug of the hosted skill, derived from its .agent.md file name.",
+            "x-ms-summary": "Skill",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSkills",
+              "value-collection": "value",
+              "value-path": "slug",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "workflow_id",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Workflow run to inspect, as returned by List dynamic workflows for a session.",
+            "x-ms-summary": "Workflow ID",
+            "x-ms-dynamic-values": {
+              "operationId": "ListSessionWorkflows",
+              "parameters": {
+                "agentSlug": {
+                  "parameter": "agentSlug"
+                },
+                "x-ms-session-id": {
+                  "parameter": "x-ms-session-id"
+                }
+              },
+              "value-collection": "workflows",
+              "value-path": "workflow_id",
+              "value-title": "displayName"
+            }
+          },
+          {
+            "name": "x-ms-session-id",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Session the workflow belongs to.",
+            "x-ms-summary": "Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status of the workflow run.",
+            "schema": {
+              "$ref": "#/definitions/WorkflowStatus"
+            }
+          },
+          "400": {
+            "description": "The session ID or workflow ID was missing.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "No workflow with this ID belongs to the session.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "The workflow status could not be read.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/admin/functions": {
+      "get": {
+        "operationId": "ListSkills",
+        "summary": "List hosted skills",
+        "description": "Lists the hosted skills registered in the function app and the endpoints each one exposes. Reads the function app's admin API, which accepts only the master key, so the list comes back empty unless the connection's Function Key is that master key. The reason is reported in message.",
+        "x-ms-visibility": "advanced",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Hosted skills found in the function app.",
+            "schema": {
+              "$ref": "#/definitions/SkillListResponse"
+            }
+          },
+          "default": {
+            "description": "The hosted skills could not be listed.",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Azure Functions Hosted Skills MCP",
+        "description": "Model Context Protocol endpoint that exposes the hosted skills in your function app as tools for Copilot Studio agents.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SkillRequest": {
+      "type": "object",
+      "required": [
+        "prompt"
+      ],
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Instruction or question for the hosted skill. The skill's own .agent.md instructions already describe its job, so send only what changes per call.",
+          "x-ms-summary": "Prompt"
+        }
+      }
+    },
+    "SkillResponse": {
+      "type": "object",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Session the skill ran in. Pass this back to continue the conversation.",
+          "x-ms-summary": "Session ID"
+        },
+        "response": {
+          "type": "string",
+          "description": "Final response text from the hosted skill.",
+          "x-ms-summary": "Response"
+        },
+        "tool_calls": {
+          "type": "array",
+          "description": "Tools the skill called while producing the response.",
+          "x-ms-summary": "Tool calls",
+          "items": {
+            "$ref": "#/definitions/ToolCall"
+          }
+        }
+      }
+    },
+    "ToolCall": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Event type. Reads tool_start even for a completed call, because the call and its result are merged into one entry.",
+          "x-ms-summary": "Type"
+        },
+        "tool_call_id": {
+          "type": "string",
+          "description": "Identifier that pairs a tool_start with its tool_end.",
+          "x-ms-summary": "Tool call ID"
+        },
+        "tool_name": {
+          "type": "string",
+          "description": "Name of the tool the skill called.",
+          "x-ms-summary": "Tool name"
+        },
+        "arguments": {
+          "type": "string",
+          "description": "Arguments the skill passed to the tool, as JSON text.",
+          "x-ms-summary": "Arguments"
+        },
+        "result": {
+          "type": "string",
+          "description": "What the tool returned, as text.",
+          "x-ms-summary": "Result"
+        }
+      }
+    },
+    "HistoryResponse": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array",
+          "description": "User and assistant turns in the session, oldest first.",
+          "x-ms-summary": "Messages",
+          "items": {
+            "$ref": "#/definitions/HistoryMessage"
+          }
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "True when older turns were dropped because the session exceeds 200 turns.",
+          "x-ms-summary": "Truncated"
+        }
+      }
+    },
+    "HistoryMessage": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Who produced the turn, either user or assistant.",
+          "x-ms-summary": "Role"
+        },
+        "text": {
+          "type": "string",
+          "description": "Text of the turn.",
+          "x-ms-summary": "Text"
+        }
+      }
+    },
+    "WorkflowListResponse": {
+      "type": "object",
+      "properties": {
+        "workflows": {
+          "type": "array",
+          "description": "Workflows started in the session, newest first.",
+          "x-ms-summary": "Workflows",
+          "items": {
+            "$ref": "#/definitions/WorkflowStatus"
+          }
+        }
+      }
+    },
+    "WorkflowStatus": {
+      "type": "object",
+      "properties": {
+        "workflow_id": {
+          "type": "string",
+          "description": "Identifier of the workflow run.",
+          "x-ms-summary": "Workflow ID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Readable label for the run, combining its ID, status and start time.",
+          "x-ms-summary": "Display name"
+        },
+        "runtime_status": {
+          "type": "string",
+          "description": "Durable status of the run, such as Running, Completed, Failed, Canceled or Terminated.",
+          "x-ms-summary": "Runtime status"
+        },
+        "custom_status": {
+          "type": "string",
+          "description": "Progress detail the workflow set for itself, as text.",
+          "x-ms-summary": "Custom status"
+        },
+        "output": {
+          "type": "string",
+          "description": "Result of the workflow once it reaches a terminal status, as text. Structured results are returned as JSON text.",
+          "x-ms-summary": "Output"
+        },
+        "created_time": {
+          "type": "string",
+          "description": "When the workflow started.",
+          "x-ms-summary": "Created time"
+        },
+        "last_updated_time": {
+          "type": "string",
+          "description": "When the workflow last made progress.",
+          "x-ms-summary": "Last updated time"
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "description": "What went wrong.",
+          "x-ms-summary": "Error"
+        }
+      }
+    },
+    "SkillListResponse": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "Hosted skills found in the function app, by slug.",
+          "x-ms-summary": "Skills",
+          "items": {
+            "$ref": "#/definitions/SkillSummary"
+          }
+        },
+        "source": {
+          "type": "string",
+          "description": "Where the list came from: adminApi when the function app was queried, or unavailable when nothing could be discovered.",
+          "x-ms-summary": "Source"
+        },
+        "message": {
+          "type": "string",
+          "description": "Why the list is incomplete, when it is.",
+          "x-ms-summary": "Message"
+        }
+      }
+    },
+    "SkillSummary": {
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "Slug of the hosted skill, as used by every other operation.",
+          "x-ms-summary": "Slug"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Name shown in skill pickers.",
+          "x-ms-summary": "Display name"
+        },
+        "hasChat": {
+          "type": "boolean",
+          "description": "True when the skill exposes a chat API and can be invoked by this connector.",
+          "x-ms-summary": "Has chat API"
+        },
+        "hasHistory": {
+          "type": "boolean",
+          "description": "True when the skill exposes a session transcript endpoint.",
+          "x-ms-summary": "Has transcript"
+        },
+        "hasWorkflows": {
+          "type": "boolean",
+          "description": "True when the skill enables dynamic workflows.",
+          "x-ms-summary": "Has workflows"
+        },
+        "hasChatUi": {
+          "type": "boolean",
+          "description": "True when the skill serves the browser debug chat UI.",
+          "x-ms-summary": "Has debug UI"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {},
+  "security": [],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/azure/azure-functions/functions-hosted-skills"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Productivity"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "functionAppHost": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Function App Host",
+          "description": "Hostname of the function app running your hosted skills.",
+          "tooltip": "Enter the hostname only, such as contoso-skills.azurewebsites.net. Do not include https:// or a path.",
+          "constraints": {
+            "tabIndex": 1,
+            "required": "true"
+          }
+        }
+      },
+      "functionKey": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "Function Key",
+          "description": "Key that authorizes calls to the built-in skill endpoints.",
+          "tooltip": "Copy a host key from App keys, or a function key from the skill's chat function, in the Azure portal. Use the _master key instead if you want the Skill picker to list the app's skills.",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#0062AD",
+    "capabilities": [],
+    "publisher": "Troy Taylor",
+    "stackOwner": "Microsoft",
+    "scriptOperations": [
+      "InvokeSkill",
+      "GetSessionHistory",
+      "ListSessionWorkflows",
+      "GetWorkflowStatus",
+      "ListSkills",
+      "InvokeMCP"
+    ],
+    "policyTemplateInstances": [
+      {
+        "templateId": "dynamichosturl",
+        "title": "Set Function App Host",
+        "parameters": {
+          "x-ms-apimTemplateParameter.urlTemplate": "https://@connectionParameters('functionAppHost')"
+        }
+      },
+      {
+        "templateId": "setheader",
+        "title": "Set Function Key Header",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "x-functions-key",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('functionKey')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ]
+  }
+}
