@@ -1,0 +1,594 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Work IQ for Power Automate",
+        "description": "Typed Power Automate and Power Apps actions for Microsoft Work IQ — Outlook mail, calendar and contacts, Teams chats and channels, OneDrive and SharePoint files, people, groups, and Planner. Complements the first-party Work IQ MCP connector by exposing named actions with structured inputs and outputs instead of a raw MCP passthrough. All access is permission-trimmed to the signed-in user.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "workiq.svc.cloud.microsoft",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/a2a": {
+            "post": {
+                "summary": "Ask Work IQ",
+                "description": "Ask a natural language question about your Microsoft 365 data and receive an answer. Work IQ reasons across mail, meetings, files, Teams messages, and people. Pass the returned Context ID back to continue a conversation.",
+                "operationId": "AskWorkIQ",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "question"
+                            ],
+                            "properties": {
+                                "question": {
+                                    "type": "string",
+                                    "description": "The natural language question to ask about your Microsoft 365 data.",
+                                    "x-ms-summary": "Question"
+                                },
+                                "contextId": {
+                                    "type": "string",
+                                    "description": "Context ID returned by a previous Ask Work IQ call, to continue that conversation.",
+                                    "x-ms-summary": "Context ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work IQ answer",
+                        "schema": {
+                            "$ref": "#/definitions/AskResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/ask": {
+            "post": {
+                "summary": "Ask a Copilot agent",
+                "description": "Ask a question through a specific Microsoft 365 Copilot agent. Use List Copilot agents to discover agent IDs. Unlike Ask Work IQ, this can target a named agent and attach files.",
+                "operationId": "AskAgent",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "question"
+                            ],
+                            "properties": {
+                                "question": {
+                                    "type": "string",
+                                    "description": "The natural language question to ask.",
+                                    "x-ms-summary": "Question"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID from List Copilot agents. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                },
+                                "conversationId": {
+                                    "type": "string",
+                                    "description": "Conversation ID from a previous answer, to continue that conversation.",
+                                    "x-ms-summary": "Conversation ID"
+                                },
+                                "timeZone": {
+                                    "type": "string",
+                                    "description": "IANA time zone used to resolve relative dates, for example America/New_York.",
+                                    "x-ms-summary": "Time Zone"
+                                },
+                                "fileUrls": {
+                                    "type": "array",
+                                    "description": "Work IQ file paths to attach as context for the question.",
+                                    "x-ms-summary": "File URLs",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A Work IQ file path."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Agent answer",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/list-agents": {
+            "post": {
+                "summary": "List Copilot agents",
+                "description": "List the Microsoft 365 Copilot agents available to you. Returns agent IDs that can be passed to Ask a Copilot agent.",
+                "operationId": "ListAgents",
+                "responses": {
+                    "200": {
+                        "description": "Available agents",
+                        "schema": {
+                            "$ref": "#/definitions/AgentList"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/search-paths": {
+            "post": {
+                "summary": "Search entity paths",
+                "description": "Search the Work IQ path catalog for entity paths and the operations they support. Run this before Fetch entities, Create entity, Update entity, Delete entity, or Do action when you are unsure of the correct path.",
+                "operationId": "SearchPaths",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "filter"
+                            ],
+                            "properties": {
+                                "filter": {
+                                    "type": "string",
+                                    "description": "Regular expression matched against the path catalog, for example messages or calendar.",
+                                    "x-ms-summary": "Filter"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching paths",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/get-schema": {
+            "post": {
+                "summary": "Get operation schema",
+                "description": "Get the schema for a Work IQ operation, including the fields a write accepts. Run this before Create entity, Update entity, or Do action.",
+                "operationId": "GetSchema",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "path": {
+                                    "type": "string",
+                                    "description": "The Work IQ path to describe, for example /me/messages.",
+                                    "x-ms-summary": "Path"
+                                },
+                                "operationType": {
+                                    "type": "string",
+                                    "description": "Which operation to describe for the path. Use action to get the request body schema for Do action.",
+                                    "x-ms-summary": "Operation Type"
+                                },
+                                "format": {
+                                    "type": "string",
+                                    "description": "Optional output format for the returned schema, passed through to Work IQ.",
+                                    "x-ms-summary": "Format"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to resolve the schema as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Operation schema",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/fetch": {
+            "post": {
+                "summary": "Fetch entities",
+                "description": "Read one or more Microsoft 365 entities by path. Batch independent reads into a single call, and use Select Fields and Top to keep responses small.",
+                "operationId": "FetchEntities",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "entityUrls"
+                            ],
+                            "properties": {
+                                "entityUrls": {
+                                    "type": "array",
+                                    "description": "Entity paths to read, for example /me/messages?$select=subject,from&$top=25.",
+                                    "x-ms-summary": "Entity Paths",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "A Work IQ entity path."
+                                    }
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to execute the read as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fetched entities",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/create-entity": {
+            "post": {
+                "summary": "Create entity",
+                "description": "Create a Microsoft 365 entity by posting JSON to a parent collection path, for example a mail message or calendar event. Run Get operation schema first to discover required fields.",
+                "operationId": "CreateEntity",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "parentUrl",
+                                "jsonBody"
+                            ],
+                            "properties": {
+                                "parentUrl": {
+                                    "type": "string",
+                                    "description": "Parent collection path, for example /me/events.",
+                                    "x-ms-summary": "Parent Path"
+                                },
+                                "jsonBody": {
+                                    "type": "object",
+                                    "description": "The entity to create, as a JSON object.",
+                                    "x-ms-summary": "Entity JSON"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to execute the write as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Created entity",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/update-entity": {
+            "post": {
+                "summary": "Update entity",
+                "description": "Update an existing Microsoft 365 entity by path, supplying only the fields to change. Run Get operation schema first to discover the accepted fields.",
+                "operationId": "UpdateEntity",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "entityUrl",
+                                "jsonBody"
+                            ],
+                            "properties": {
+                                "entityUrl": {
+                                    "type": "string",
+                                    "description": "Path of the entity to update, for example /me/messages/{id}.",
+                                    "x-ms-summary": "Entity Path"
+                                },
+                                "jsonBody": {
+                                    "type": "object",
+                                    "description": "The fields to change, as a JSON object.",
+                                    "x-ms-summary": "Update JSON"
+                                },
+                                "headers": {
+                                    "type": "object",
+                                    "description": "Optional HTTP headers to send with the update, such as a concurrency check.",
+                                    "x-ms-summary": "Headers"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to execute the write as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated entity",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/delete-entity": {
+            "post": {
+                "summary": "Delete entity",
+                "description": "Delete a Microsoft 365 entity by path. This is destructive — confirm the path before running it.",
+                "operationId": "DeleteEntity",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "entityUrl"
+                            ],
+                            "properties": {
+                                "entityUrl": {
+                                    "type": "string",
+                                    "description": "Path of the entity to delete, for example /me/messages/{id}.",
+                                    "x-ms-summary": "Entity Path"
+                                },
+                                "headers": {
+                                    "type": "object",
+                                    "description": "Optional HTTP headers to send with the delete, such as a concurrency check.",
+                                    "x-ms-summary": "Headers"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to execute the delete as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/do-action": {
+            "post": {
+                "summary": "Do action",
+                "description": "Run a Microsoft 365 action such as sending mail, replying, forwarding, moving, or copying an item. Action paths end in a camelCase verb, for example /me/sendMail.",
+                "operationId": "DoAction",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "actionUrl",
+                                "jsonBody"
+                            ],
+                            "properties": {
+                                "actionUrl": {
+                                    "type": "string",
+                                    "description": "Action path, for example /me/sendMail.",
+                                    "x-ms-summary": "Action Path"
+                                },
+                                "jsonBody": {
+                                    "type": "object",
+                                    "description": "The action parameters, as a JSON object.",
+                                    "x-ms-summary": "Action JSON"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to execute the action as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Action result",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/tools/call-function": {
+            "post": {
+                "summary": "Call function",
+                "description": "Call a Microsoft 365 function that computes or synthesizes data rather than reading an entity, for example /me/calendarView/delta.",
+                "operationId": "CallFunction",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "functionUrl"
+                            ],
+                            "properties": {
+                                "functionUrl": {
+                                    "type": "string",
+                                    "description": "Function path including its parameters, for example /me/calendarView/delta.",
+                                    "x-ms-summary": "Function Path"
+                                },
+                                "agentId": {
+                                    "type": "string",
+                                    "description": "Agent ID to execute the function as. Omit to use the default agent.",
+                                    "x-ms-summary": "Agent ID"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Function result",
+                        "schema": {
+                            "$ref": "#/definitions/ToolResult"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "AskResult": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string",
+                    "description": "The answer text returned by Work IQ.",
+                    "x-ms-summary": "Answer"
+                },
+                "contextId": {
+                    "type": "string",
+                    "description": "Pass this back as Context ID to continue the conversation.",
+                    "x-ms-summary": "Context ID"
+                },
+                "taskId": {
+                    "type": "string",
+                    "description": "Identifier of the Work IQ task that produced the answer.",
+                    "x-ms-summary": "Task ID"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Final task state, for example completed.",
+                    "x-ms-summary": "State"
+                }
+            }
+        },
+        "AgentList": {
+            "type": "object",
+            "properties": {
+                "agents": {
+                    "type": "array",
+                    "description": "Copilot agents available to the signed-in user.",
+                    "x-ms-summary": "Agents",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "agentId": {
+                                "type": "string",
+                                "description": "Agent ID to pass to Ask a Copilot agent.",
+                                "x-ms-summary": "Agent ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Display name of the agent.",
+                                "x-ms-summary": "Name"
+                            },
+                            "provider": {
+                                "type": "string",
+                                "description": "Publisher of the agent.",
+                                "x-ms-summary": "Provider"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ToolResult": {
+            "type": "object",
+            "properties": {
+                "isError": {
+                    "type": "boolean",
+                    "description": "True when Work IQ reported an error for this call.",
+                    "x-ms-summary": "Is Error"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "The raw text Work IQ returned.",
+                    "x-ms-summary": "Text"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "The returned payload parsed as JSON, when Work IQ returned JSON. Shape varies by operation.",
+                    "x-ms-summary": "Data"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "oauth2_auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/organizations/oauth2/v2.0/token",
+            "scopes": {
+                "api://workiq.svc.cloud.microsoft/WorkIQAgent.Ask": "Ask Work IQ agents and use Work IQ tools"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2_auth": [
+                "api://workiq.svc.cloud.microsoft/WorkIQAgent.Ask"
+            ]
+        }
+    ],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}
