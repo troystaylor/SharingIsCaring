@@ -1,0 +1,1720 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Copilot Managed Runtime",
+        "description": "Dual-mode connector for Microsoft Copilot Managed Runtime (public preview). Manages Copilot Managed Runtime app lifecycle - create, list, build, deploy, share, and assign roles - plus connector and connection discovery. Exposes an MCP endpoint for Copilot Studio agents alongside typed operations with full schemas for Power Automate. Wraps the Power Platform API 'appframework' service used by the @microsoft/managed-apps-cli 'ms' CLI.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.powerplatform.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/mcp": {
+            "post": {
+                "summary": "Invoke Copilot Managed Runtime MCP",
+                "description": "Model Context Protocol endpoint for Copilot Studio integration. Provides Copilot Managed Runtime app lifecycle, sharing, and connectivity tools.",
+                "operationId": "InvokeMCP",
+                "x-ms-agentic-protocol": "mcp-streamable-1.0",
+                "responses": {
+                    "200": {
+                        "description": "MCP response"
+                    }
+                }
+            }
+        },
+        "/managedapps/apps": {
+            "get": {
+                "summary": "List Managed Runtime apps",
+                "description": "List all Copilot Managed Runtime apps in a Power Platform environment. Returns app ID, display name, description, environment, and backing repository.",
+                "operationId": "ListApps",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "permission",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Filter apps by the permission the caller holds. 'read' returns apps you can play, 'write' returns apps you can edit.",
+                        "x-ms-summary": "Permission",
+                        "default": "read",
+                        "enum": [
+                            "read",
+                            "write"
+                        ]
+                    },
+                    {
+                        "name": "skipToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Continuation token from a previous response to fetch the next page",
+                        "x-ms-summary": "Skip Token"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Copilot Managed Runtime apps",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "appCount": {
+                                    "type": "integer",
+                                    "description": "Number of apps returned in this page",
+                                    "x-ms-summary": "App Count"
+                                },
+                                "nextLink": {
+                                    "type": "string",
+                                    "description": "URL for the next page of results, when more results exist",
+                                    "x-ms-summary": "Next Link"
+                                },
+                                "skipToken": {
+                                    "type": "string",
+                                    "description": "Continuation token extracted from the next link, for use in a follow-up request",
+                                    "x-ms-summary": "Skip Token"
+                                },
+                                "apps": {
+                                    "type": "array",
+                                    "description": "Array of Copilot Managed Runtime apps",
+                                    "x-ms-summary": "Apps",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "App ID (GUID)",
+                                                "x-ms-summary": "App ID"
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "App name (GUID)",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "App display name",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "description": {
+                                                "type": "string",
+                                                "description": "App description",
+                                                "x-ms-summary": "Description"
+                                            },
+                                            "environmentId": {
+                                                "type": "string",
+                                                "description": "Environment that hosts the app",
+                                                "x-ms-summary": "Environment ID"
+                                            },
+                                            "repositoryId": {
+                                                "type": "string",
+                                                "description": "Backing source repository ID",
+                                                "x-ms-summary": "Repository ID"
+                                            },
+                                            "location": {
+                                                "type": "string",
+                                                "description": "Geographic location of the app",
+                                                "x-ms-summary": "Location"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Managed Runtime app",
+                "description": "Create a new Copilot Managed Runtime app in a Power Platform environment. Returns the new app ID and its backing repository ID.",
+                "operationId": "CreateApp",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "displayName"
+                            ],
+                            "properties": {
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Display name for the new app",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Description of the new app",
+                                    "x-ms-summary": "Description"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created Copilot Managed Runtime app",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "App ID (GUID)",
+                                    "x-ms-summary": "App ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "App name (GUID)",
+                                    "x-ms-summary": "Name"
+                                },
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "App display name",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "App description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment that hosts the app",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "repositoryId": {
+                                    "type": "string",
+                                    "description": "Backing source repository ID",
+                                    "x-ms-summary": "Repository ID"
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "description": "Geographic location of the app",
+                                    "x-ms-summary": "Location"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}": {
+            "get": {
+                "summary": "Get Managed Runtime app",
+                "description": "Get details for a single Copilot Managed Runtime app by ID.",
+                "operationId": "GetApp",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The Copilot Managed Runtime app",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "App ID (GUID)",
+                                    "x-ms-summary": "App ID"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "App name (GUID)",
+                                    "x-ms-summary": "Name"
+                                },
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "App display name",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "App description",
+                                    "x-ms-summary": "Description"
+                                },
+                                "environmentId": {
+                                    "type": "string",
+                                    "description": "Environment that hosts the app",
+                                    "x-ms-summary": "Environment ID"
+                                },
+                                "repositoryId": {
+                                    "type": "string",
+                                    "description": "Backing source repository ID",
+                                    "x-ms-summary": "Repository ID"
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "description": "Geographic location of the app",
+                                    "x-ms-summary": "Location"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Managed Runtime app",
+                "description": "Delete a Copilot Managed Runtime app. Reports whether the app existed before the call.",
+                "operationId": "DeleteApp",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "appId": {
+                                    "type": "string",
+                                    "description": "The app ID that was deleted",
+                                    "x-ms-summary": "App ID"
+                                },
+                                "existed": {
+                                    "type": "boolean",
+                                    "description": "True when the app existed and was deleted, false when it was already absent",
+                                    "x-ms-summary": "Existed"
+                                },
+                                "deleted": {
+                                    "type": "boolean",
+                                    "description": "Whether the delete call succeeded",
+                                    "x-ms-summary": "Deleted"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/locate": {
+            "post": {
+                "summary": "Locate Managed Runtime app",
+                "description": "Resolve which tenant, environment, and geography host a Copilot Managed Runtime app. Useful when you have an app ID but do not know where it lives.",
+                "operationId": "LocateApp",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "A Power Platform environment ID to route the lookup through",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "App location",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "tenantId": {
+                                    "type": "string",
+                                    "description": "Tenant that owns the app",
+                                    "x-ms-summary": "Tenant ID"
+                                },
+                                "environmentName": {
+                                    "type": "string",
+                                    "description": "Environment that hosts the app",
+                                    "x-ms-summary": "Environment Name"
+                                },
+                                "geo": {
+                                    "type": "string",
+                                    "description": "Geography hosting the app",
+                                    "x-ms-summary": "Geo"
+                                },
+                                "appName": {
+                                    "type": "string",
+                                    "description": "Name of the app",
+                                    "x-ms-summary": "App Name"
+                                },
+                                "repositoryId": {
+                                    "type": "string",
+                                    "description": "Backing source repository ID",
+                                    "x-ms-summary": "Repository ID"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/build": {
+            "post": {
+                "summary": "Build Managed Runtime app",
+                "description": "Start a server-side build of a Copilot Managed Runtime app from its backing repository. Returns a build operation ID to poll with Get Build Operation.",
+                "operationId": "BuildApp",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "commitSha": {
+                                    "type": "string",
+                                    "description": "Specific commit to build. Omit to build the latest commit.",
+                                    "x-ms-summary": "Commit SHA"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Build operation",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "description": "Build operation ID to poll for status",
+                                    "x-ms-summary": "Operation ID"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Current operation status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "commitSha": {
+                                    "type": "string",
+                                    "description": "Commit being built",
+                                    "x-ms-summary": "Commit SHA"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/buildoperations/{operationId}": {
+            "get": {
+                "summary": "Get Build Operation",
+                "description": "Get the status and result of a Copilot Managed Runtime app build operation.",
+                "operationId": "GetBuildOperation",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "operationId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The build operation ID",
+                        "x-ms-summary": "Operation ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Build operation status",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "description": "Build operation ID",
+                                    "x-ms-summary": "Operation ID"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Operation status, for example Running, Succeeded, or Failed",
+                                    "x-ms-summary": "Status"
+                                },
+                                "commitSha": {
+                                    "type": "string",
+                                    "description": "Commit that was built",
+                                    "x-ms-summary": "Commit SHA"
+                                },
+                                "error": {
+                                    "type": "object",
+                                    "description": "Error detail when the operation failed",
+                                    "x-ms-summary": "Error",
+                                    "properties": {
+                                        "code": {
+                                            "type": "string",
+                                            "description": "Error code",
+                                            "x-ms-summary": "Error Code"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error message",
+                                            "x-ms-summary": "Error Message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/buildoperations/{operationId}/log": {
+            "get": {
+                "summary": "Get Build Operation Log",
+                "description": "Get the build log for a Copilot Managed Runtime app build operation. Useful for diagnosing failed builds.",
+                "operationId": "GetBuildOperationLog",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "operationId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The build operation ID",
+                        "x-ms-summary": "Operation ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Build log",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "description": "Build operation ID",
+                                    "x-ms-summary": "Operation ID"
+                                },
+                                "log": {
+                                    "type": "string",
+                                    "description": "Build log text",
+                                    "x-ms-summary": "Log"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/deploy": {
+            "post": {
+                "summary": "Deploy Managed Runtime app",
+                "description": "Deploy a built commit of a Copilot Managed Runtime app so it becomes available to players.",
+                "operationId": "DeployApp",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "commitSha"
+                            ],
+                            "properties": {
+                                "commitSha": {
+                                    "type": "string",
+                                    "description": "The built commit SHA to deploy",
+                                    "x-ms-summary": "Commit SHA"
+                                },
+                                "stageName": {
+                                    "type": "string",
+                                    "description": "Optional deployment stage name",
+                                    "x-ms-summary": "Stage Name"
+                                },
+                                "forceReauth": {
+                                    "type": "boolean",
+                                    "description": "Force connection re-authorization as part of the deployment",
+                                    "x-ms-summary": "Force Reauth"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deployment result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "operationId": {
+                                    "type": "string",
+                                    "description": "Deployment operation ID",
+                                    "x-ms-summary": "Operation ID"
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Deployment status",
+                                    "x-ms-summary": "Status"
+                                },
+                                "commitSha": {
+                                    "type": "string",
+                                    "description": "Commit that was deployed",
+                                    "x-ms-summary": "Commit SHA"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/sharelinks": {
+            "get": {
+                "summary": "List Share Links",
+                "description": "List the share links that currently grant access to a Copilot Managed Runtime app.",
+                "operationId": "ListShareLinks",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Share links",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "shareLinkCount": {
+                                    "type": "integer",
+                                    "description": "Number of share links returned",
+                                    "x-ms-summary": "Share Link Count"
+                                },
+                                "shareLinks": {
+                                    "type": "array",
+                                    "description": "Array of share links",
+                                    "x-ms-summary": "Share Links",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Share link ID",
+                                                "x-ms-summary": "Share Link ID"
+                                            },
+                                            "url": {
+                                                "type": "string",
+                                                "description": "Shareable URL",
+                                                "x-ms-summary": "URL"
+                                            },
+                                            "roleName": {
+                                                "type": "string",
+                                                "description": "Role granted by this link",
+                                                "x-ms-summary": "Role Name"
+                                            },
+                                            "expiresOn": {
+                                                "type": "string",
+                                                "description": "Expiration timestamp",
+                                                "x-ms-summary": "Expires On"
+                                            },
+                                            "createdOn": {
+                                                "type": "string",
+                                                "description": "Creation timestamp",
+                                                "x-ms-summary": "Created On"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Share Link",
+                "description": "Create a share link that grants access to a Copilot Managed Runtime app.",
+                "operationId": "CreateShareLink",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": false,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "roleName": {
+                                    "type": "string",
+                                    "description": "Role to grant through the link",
+                                    "x-ms-summary": "Role Name"
+                                },
+                                "expiresOn": {
+                                    "type": "string",
+                                    "description": "Expiration timestamp in ISO 8601 format",
+                                    "x-ms-summary": "Expires On"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created share link",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Share link ID",
+                                    "x-ms-summary": "Share Link ID"
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "Shareable URL",
+                                    "x-ms-summary": "URL"
+                                },
+                                "roleName": {
+                                    "type": "string",
+                                    "description": "Role granted by this link",
+                                    "x-ms-summary": "Role Name"
+                                },
+                                "expiresOn": {
+                                    "type": "string",
+                                    "description": "Expiration timestamp",
+                                    "x-ms-summary": "Expires On"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/sharelinks/{shareLinkId}": {
+            "delete": {
+                "summary": "Delete Share Link",
+                "description": "Revoke a share link so it no longer grants access to the Copilot Managed Runtime app.",
+                "operationId": "DeleteShareLink",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "shareLinkId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The share link ID to revoke",
+                        "x-ms-summary": "Share Link ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Delete result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "shareLinkId": {
+                                    "type": "string",
+                                    "description": "The share link ID that was revoked",
+                                    "x-ms-summary": "Share Link ID"
+                                },
+                                "deleted": {
+                                    "type": "boolean",
+                                    "description": "Whether the share link was revoked",
+                                    "x-ms-summary": "Deleted"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/roleassignments": {
+            "get": {
+                "summary": "List Role Assignments",
+                "description": "List the users and groups assigned roles on a Copilot Managed Runtime app.",
+                "operationId": "ListRoleAssignments",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "skipToken",
+                        "in": "query",
+                        "required": false,
+                        "type": "string",
+                        "description": "Continuation token from a previous response to fetch the next page",
+                        "x-ms-summary": "Skip Token"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Role assignments",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "roleAssignmentCount": {
+                                    "type": "integer",
+                                    "description": "Number of role assignments returned in this page",
+                                    "x-ms-summary": "Role Assignment Count"
+                                },
+                                "nextLink": {
+                                    "type": "string",
+                                    "description": "URL for the next page of results, when more results exist",
+                                    "x-ms-summary": "Next Link"
+                                },
+                                "skipToken": {
+                                    "type": "string",
+                                    "description": "Continuation token extracted from the next link, for use in a follow-up request",
+                                    "x-ms-summary": "Skip Token"
+                                },
+                                "roleAssignments": {
+                                    "type": "array",
+                                    "description": "Array of role assignments",
+                                    "x-ms-summary": "Role Assignments",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Role assignment ID",
+                                                "x-ms-summary": "Role Assignment ID"
+                                            },
+                                            "roleName": {
+                                                "type": "string",
+                                                "description": "Assigned role name",
+                                                "x-ms-summary": "Role Name"
+                                            },
+                                            "principalId": {
+                                                "type": "string",
+                                                "description": "Object ID of the assigned user or group",
+                                                "x-ms-summary": "Principal ID"
+                                            },
+                                            "principalType": {
+                                                "type": "string",
+                                                "description": "Type of principal, for example User or Group",
+                                                "x-ms-summary": "Principal Type"
+                                            },
+                                            "principalDisplayName": {
+                                                "type": "string",
+                                                "description": "Display name of the assigned principal",
+                                                "x-ms-summary": "Principal Display Name"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/modifyroleassignments": {
+            "post": {
+                "summary": "Modify Role Assignments",
+                "description": "Grant or revoke Copilot Managed Runtime app roles for users and groups in a single call.",
+                "operationId": "ModifyRoleAssignments",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "put": {
+                                    "type": "array",
+                                    "description": "Role assignments to create or update",
+                                    "x-ms-summary": "Grant",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "principalId": {
+                                                "type": "string",
+                                                "description": "Object ID of the user or group",
+                                                "x-ms-summary": "Principal ID"
+                                            },
+                                            "principalType": {
+                                                "type": "string",
+                                                "description": "Type of principal, for example User or Group",
+                                                "x-ms-summary": "Principal Type"
+                                            },
+                                            "roleName": {
+                                                "type": "string",
+                                                "description": "Role to assign",
+                                                "x-ms-summary": "Role Name"
+                                            }
+                                        }
+                                    }
+                                },
+                                "delete": {
+                                    "type": "array",
+                                    "description": "Role assignments to remove",
+                                    "x-ms-summary": "Revoke",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Role assignment ID to remove",
+                                                "x-ms-summary": "Role Assignment ID"
+                                            },
+                                            "principalId": {
+                                                "type": "string",
+                                                "description": "Object ID of the user or group to remove",
+                                                "x-ms-summary": "Principal ID"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Modification result",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "appId": {
+                                    "type": "string",
+                                    "description": "The app whose role assignments changed",
+                                    "x-ms-summary": "App ID"
+                                },
+                                "grantedCount": {
+                                    "type": "integer",
+                                    "description": "Number of role assignments granted",
+                                    "x-ms-summary": "Granted Count"
+                                },
+                                "revokedCount": {
+                                    "type": "integer",
+                                    "description": "Number of role assignments revoked",
+                                    "x-ms-summary": "Revoked Count"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/connectors": {
+            "get": {
+                "summary": "List Connectors",
+                "description": "List the connectors available as Copilot Managed Runtime app data sources in an environment.",
+                "operationId": "ListConnectors",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Available connectors",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "connectorCount": {
+                                    "type": "integer",
+                                    "description": "Number of connectors returned",
+                                    "x-ms-summary": "Connector Count"
+                                },
+                                "connectors": {
+                                    "type": "array",
+                                    "description": "Array of connectors",
+                                    "x-ms-summary": "Connectors",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Connector name, for example shared_sharepointonline",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Fully qualified connector ID",
+                                                "x-ms-summary": "Connector ID"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Connector display name",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "isCustomApi": {
+                                                "type": "boolean",
+                                                "description": "Whether the connector is a custom connector",
+                                                "x-ms-summary": "Is Custom"
+                                            },
+                                            "capabilities": {
+                                                "type": "array",
+                                                "description": "Connector capabilities",
+                                                "x-ms-summary": "Capabilities",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/connectors/{connectorId}": {
+            "get": {
+                "summary": "Get Connector",
+                "description": "Get metadata for a single connector available as a Copilot Managed Runtime app data source.",
+                "operationId": "GetConnector",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "connectorId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The connector name, for example shared_sharepointonline",
+                        "x-ms-summary": "Connector",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connector metadata",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Connector name",
+                                    "x-ms-summary": "Name"
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": "Fully qualified connector ID",
+                                    "x-ms-summary": "Connector ID"
+                                },
+                                "displayName": {
+                                    "type": "string",
+                                    "description": "Connector display name",
+                                    "x-ms-summary": "Display Name"
+                                },
+                                "isCustomApi": {
+                                    "type": "boolean",
+                                    "description": "Whether the connector is a custom connector",
+                                    "x-ms-summary": "Is Custom"
+                                },
+                                "capabilities": {
+                                    "type": "array",
+                                    "description": "Connector capabilities",
+                                    "x-ms-summary": "Capabilities",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/connectors/{connectorId}/connections": {
+            "get": {
+                "summary": "List Connections",
+                "description": "List the caller's existing connections for a connector, for binding as a Copilot Managed Runtime app data source.",
+                "operationId": "ListConnections",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "connectorId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The connector name, for example shared_sharepointonline",
+                        "x-ms-summary": "Connector",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Connections",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "connectionCount": {
+                                    "type": "integer",
+                                    "description": "Number of connections returned",
+                                    "x-ms-summary": "Connection Count"
+                                },
+                                "connections": {
+                                    "type": "array",
+                                    "description": "Array of connections",
+                                    "x-ms-summary": "Connections",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Connection name",
+                                                "x-ms-summary": "Name"
+                                            },
+                                            "id": {
+                                                "type": "string",
+                                                "description": "Fully qualified connection ID",
+                                                "x-ms-summary": "Connection ID"
+                                            },
+                                            "displayName": {
+                                                "type": "string",
+                                                "description": "Connection display name",
+                                                "x-ms-summary": "Display Name"
+                                            },
+                                            "status": {
+                                                "type": "string",
+                                                "description": "Connection status, for example Connected",
+                                                "x-ms-summary": "Status"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/apps/{appId}/uploadbuild": {
+            "post": {
+                "summary": "Upload Build Artifact",
+                "description": "Upload a built app artifact as a zip. The service commits it to the app's backing repository and returns the commit SHA, which Deploy Managed Runtime app can then deploy. Power Platform limits the overall payload to 100 MB, so use the 'ms deploy --artifact' CLI command for larger artifacts.",
+                "operationId": "UploadBuild",
+                "x-ms-visibility": "important",
+                "consumes": [
+                    "application/zip"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Copilot Managed Runtime app ID",
+                        "x-ms-summary": "App ID",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "binary",
+                            "description": "The built app output packaged as a zip file",
+                            "x-ms-summary": "Zip Artifact"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Artifact committed",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "commitSha": {
+                                    "type": "string",
+                                    "description": "The commit created from the uploaded artifact",
+                                    "x-ms-summary": "Commit SHA"
+                                },
+                                "artifactBytes": {
+                                    "type": "integer",
+                                    "description": "Size of the uploaded artifact in bytes",
+                                    "x-ms-summary": "Artifact Bytes"
+                                },
+                                "artifactSize": {
+                                    "type": "string",
+                                    "description": "Human readable artifact size",
+                                    "x-ms-summary": "Artifact Size"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "What to do next with the returned commit SHA",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/github/auth/device": {
+            "post": {
+                "summary": "Start GitHub Auth",
+                "description": "Start GitHub authorization for a bring-your-own repository. Returns a one-time user code and a verification URI the user must visit to authorize the Managed Apps GitHub App, plus a session ID for polling.",
+                "operationId": "StartGitHubAuth",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "repositoryUrl"
+                            ],
+                            "properties": {
+                                "repositoryUrl": {
+                                    "type": "string",
+                                    "description": "The repository URL, for example https://github.com/owner/repo",
+                                    "x-ms-summary": "Repository URL"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device code session started",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "sessionId": {
+                                    "type": "string",
+                                    "description": "Session ID to pass to Get GitHub Auth Status",
+                                    "x-ms-summary": "Session ID"
+                                },
+                                "userCode": {
+                                    "type": "string",
+                                    "description": "One-time code the user enters at the verification URI",
+                                    "x-ms-summary": "User Code"
+                                },
+                                "verificationUri": {
+                                    "type": "string",
+                                    "description": "URL the user opens to enter the code",
+                                    "x-ms-summary": "Verification URI"
+                                },
+                                "expiresIn": {
+                                    "type": "integer",
+                                    "description": "Seconds before the session expires",
+                                    "x-ms-summary": "Expires In (seconds)"
+                                },
+                                "pollIntervalSeconds": {
+                                    "type": "integer",
+                                    "description": "Seconds to wait between status checks",
+                                    "x-ms-summary": "Poll Interval (seconds)"
+                                },
+                                "oauthBaseUri": {
+                                    "type": "string",
+                                    "description": "GitHub base URI for this repository, to pass to Get GitHub Auth Status",
+                                    "x-ms-summary": "OAuth Base URI"
+                                },
+                                "owner": {
+                                    "type": "string",
+                                    "description": "Repository owner parsed from the URL",
+                                    "x-ms-summary": "Owner"
+                                },
+                                "repo": {
+                                    "type": "string",
+                                    "description": "Repository name parsed from the URL",
+                                    "x-ms-summary": "Repository"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/github/auth/status": {
+            "post": {
+                "summary": "Get GitHub Auth Status",
+                "description": "Check whether the user has finished GitHub authorization. Poll while the state is Pending, waiting the poll interval returned when the session started.",
+                "operationId": "GetGitHubAuthStatus",
+                "x-ms-visibility": "important",
+                "parameters": [
+                    {
+                        "name": "environmentId",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The Power Platform environment ID",
+                        "x-ms-summary": "Environment",
+                        "x-ms-dynamic-values": {
+                            "operationId": "GetEnvironmentDropdown",
+                            "value-path": "id",
+                            "value-title": "name"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "sessionId"
+                            ],
+                            "properties": {
+                                "sessionId": {
+                                    "type": "string",
+                                    "description": "The session ID returned by Start GitHub Auth",
+                                    "x-ms-summary": "Session ID"
+                                },
+                                "oauthBaseUri": {
+                                    "type": "string",
+                                    "description": "The OAuth base URI returned by Start GitHub Auth. Defaults to https://github.com when omitted.",
+                                    "x-ms-summary": "OAuth Base URI",
+                                    "x-ms-visibility": "advanced"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authorization status",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "state": {
+                                    "type": "string",
+                                    "description": "One of Pending, Complete, Denied, NotFound, or Expired",
+                                    "x-ms-summary": "State"
+                                },
+                                "isComplete": {
+                                    "type": "boolean",
+                                    "description": "True when authorization finished successfully",
+                                    "x-ms-summary": "Is Complete"
+                                },
+                                "isPending": {
+                                    "type": "boolean",
+                                    "description": "True while waiting for the user to finish signing in",
+                                    "x-ms-summary": "Is Pending"
+                                },
+                                "githubLogin": {
+                                    "type": "string",
+                                    "description": "The authorized GitHub account, set once complete",
+                                    "x-ms-summary": "GitHub Login"
+                                },
+                                "mappingExpiresAt": {
+                                    "type": "string",
+                                    "description": "When the account mapping expires, set once complete",
+                                    "x-ms-summary": "Mapping Expires At"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "Human readable explanation of the current state",
+                                    "x-ms-summary": "Message"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/managedapps/environments": {
+            "get": {
+                "summary": "Get Environment Dropdown",
+                "description": "Internal helper that lists Power Platform environments for dynamic dropdowns.",
+                "operationId": "GetEnvironmentDropdown",
+                "x-ms-visibility": "internal",
+                "responses": {
+                    "200": {
+                        "description": "Environments",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Environment ID",
+                                        "x-ms-summary": "Environment ID"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Environment display name",
+                                        "x-ms-summary": "Name"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {},
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {
+        "oauth2-auth": {
+            "type": "oauth2",
+            "flow": "accessCode",
+            "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+            "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+            "scopes": {
+                "https://api.powerplatform.com/.default": "Access the Power Platform API"
+            }
+        }
+    },
+    "security": [
+        {
+            "oauth2-auth": [
+                "https://api.powerplatform.com/.default"
+            ]
+        }
+    ],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://github.com/microsoft/managed-apps"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://privacy.microsoft.com/privacystatement"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "IT Operations;Productivity"
+        }
+    ]
+}
