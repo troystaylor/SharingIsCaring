@@ -1,0 +1,2059 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Epic FHIR",
+    "description": "Read patient demographics, clinical notes, document content, encounters, and insurance coverage from Epic through FHIR R4. Includes an MCP endpoint for Copilot Studio agents and typed actions for Power Automate and Power Apps.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "fhir.epic.com",
+  "basePath": "/interconnect-fhir-oauth/api/FHIR/R4",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Epic FHIR MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio. Exposes read-only patient, clinical note, encounter, and coverage tools against Epic FHIR R4.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/Patient": {
+      "get": {
+        "operationId": "SearchPatients",
+        "summary": "Search patients",
+        "description": "Searches for patients by demographics or identifier (Epic Patient.Search (Demographics)). By default Epic requires one of: an identifier (FHIR ID or MRN); given name + family name + birth date; or given name + family name + legal sex + phone or email. Review every match before you act on a result.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "family",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Patient's family (last) name.",
+            "x-ms-summary": "Family Name"
+          },
+          {
+            "name": "given",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Patient's given name. First and middle names are supported.",
+            "x-ms-summary": "Given Name"
+          },
+          {
+            "name": "birthdate",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Date of birth in YYYY-MM-DD format.",
+            "x-ms-summary": "Birth Date"
+          },
+          {
+            "name": "identifier",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Patient identifier as <system>|<value> or <value>, such as an MRN.",
+            "x-ms-summary": "Identifier"
+          },
+          {
+            "name": "legal-sex",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Legal sex: male, female, other, or unknown. Takes precedence over Gender.",
+            "x-ms-summary": "Legal Sex",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Administrative gender: male, female, other, or unknown.",
+            "x-ms-summary": "Gender",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "telecom",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Phone number or email address.",
+            "x-ms-summary": "Phone or Email",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Any part of the patient's name. Ignored when Family Name or Given Name is provided.",
+            "x-ms-summary": "Name",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Street address.",
+            "x-ms-summary": "Address",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "address-city",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "City of the home address.",
+            "x-ms-summary": "City",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "address-state",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "State of the home address.",
+            "x-ms-summary": "State",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "address-postalcode",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Postal code of the home address.",
+            "x-ms-summary": "Postal Code",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "_id",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Patient FHIR ID. When provided, other search parameters are ignored.",
+            "x-ms-summary": "Patient FHIR ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "_count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/PatientBundle"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/Patient/{id}": {
+      "get": {
+        "operationId": "GetPatient",
+        "summary": "Get patient",
+        "description": "Retrieves a patient's demographics by FHIR ID (Epic Patient.Read (Demographics)).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Patient FHIR ID.",
+            "x-ms-summary": "Patient FHIR ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Patient"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/DocumentReference": {
+      "get": {
+        "operationId": "SearchDocumentReferences",
+        "summary": "Search document references",
+        "description": "Searches a patient's document references, such as clinical notes (Epic DocumentReference.Search (Clinical Notes)). Each result's content lists Binary IDs that you pass to Get binary content to read the note text.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Patient FHIR ID.",
+            "x-ms-summary": "Patient FHIR ID"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Document category. Use clinical-note for clinical notes.",
+            "x-ms-summary": "Category",
+            "default": "clinical-note"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Note type as <system>|<code>, such as http://loinc.org|11506-3 for progress notes.",
+            "x-ms-summary": "Type"
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Earliest note creation date (YYYY-MM-DD or ISO 8601 date-time). Sent to Epic as date=ge{value}.",
+            "x-ms-summary": "Created From"
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Latest note creation date (YYYY-MM-DD or ISO 8601 date-time). Sent to Epic as date=le{value}.",
+            "x-ms-summary": "Created To"
+          },
+          {
+            "name": "docstatus",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Note status.",
+            "x-ms-summary": "Document Status",
+            "x-ms-visibility": "advanced",
+            "enum": [
+              "preliminary",
+              "final",
+              "amended",
+              "entered-in-error"
+            ]
+          },
+          {
+            "name": "encounter",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Encounter FHIR ID for the encounter associated with the note.",
+            "x-ms-summary": "Encounter FHIR ID",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "_count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DocumentReferenceBundle"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/DocumentReference/{id}": {
+      "get": {
+        "operationId": "GetDocumentReference",
+        "summary": "Get document reference",
+        "description": "Retrieves a document reference, such as a clinical note's metadata, by FHIR ID (Epic DocumentReference.Read (Clinical Notes)).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "DocumentReference FHIR ID.",
+            "x-ms-summary": "Document Reference FHIR ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DocumentReference"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/Binary/{id}": {
+      "get": {
+        "operationId": "GetBinary",
+        "summary": "Get binary content",
+        "description": "Retrieves document content, such as the HTML or RTF text of a clinical note, by Binary FHIR ID (Epic Binary.Read). Content is returned Base64-encoded in Data.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Binary FHIR ID, taken from a document reference's content attachment URL (Binary/{id}).",
+            "x-ms-summary": "Binary FHIR ID",
+            "x-ms-url-encoding": "single"
+          },
+          {
+            "name": "includeDecodedText",
+            "in": "query",
+            "type": "boolean",
+            "required": false,
+            "description": "When Yes, also returns the content decoded as UTF-8 text in Decoded Text for textual content types. This parameter is handled by the connector and is not sent to Epic.",
+            "x-ms-summary": "Include Decoded Text",
+            "default": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Binary"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/Encounter": {
+      "get": {
+        "operationId": "SearchEncounters",
+        "summary": "Search encounters",
+        "description": "Searches a patient's encounters (Epic Encounter.Search (Patient Chart)). Returns inpatient encounters and outpatient encounters that have been checked in. Future appointments are not returned.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Patient FHIR ID.",
+            "x-ms-summary": "Patient FHIR ID"
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Earliest encounter date (YYYY-MM-DD or ISO 8601 date-time). Sent to Epic as date=ge{value}.",
+            "x-ms-summary": "Date From"
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Latest encounter date (YYYY-MM-DD or ISO 8601 date-time). Sent to Epic as date=le{value}.",
+            "x-ms-summary": "Date To"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Encounter status, such as finished or in-progress.",
+            "x-ms-summary": "Status",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "class",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Encounter class as <system>|<code>. Your Epic organization defines the codes.",
+            "x-ms-summary": "Class",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Encounter type, such as contact type or visit type.",
+            "x-ms-summary": "Type",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "identifier",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Encounter identifier as <system>|<value>, such as a CSN.",
+            "x-ms-summary": "Identifier",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "_count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/EncounterBundle"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/Encounter/{id}": {
+      "get": {
+        "operationId": "GetEncounter",
+        "summary": "Get encounter",
+        "description": "Retrieves an encounter by FHIR ID (Epic Encounter.Read (Patient Chart)).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Encounter FHIR ID.",
+            "x-ms-summary": "Encounter FHIR ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Encounter"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/Coverage": {
+      "get": {
+        "operationId": "SearchCoverages",
+        "summary": "Search coverages",
+        "description": "Searches a patient's insurance coverages (Epic Coverage.Search (Patient Insurance Information)). Returns every coverage that could apply to the patient, not only the coverages billed for a specific visit.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "type": "string",
+            "required": true,
+            "description": "Patient FHIR ID.",
+            "x-ms-summary": "Patient FHIR ID"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Coverage status, such as active.",
+            "x-ms-summary": "Status",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "_count",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Maximum results per page.",
+            "x-ms-summary": "Page Size",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CoverageBundle"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    },
+    "/Coverage/{id}": {
+      "get": {
+        "operationId": "GetCoverage",
+        "summary": "Get coverage",
+        "description": "Retrieves an insurance coverage by FHIR ID (Epic Coverage.Read (Patient Insurance Information)).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Coverage FHIR ID.",
+            "x-ms-summary": "Coverage FHIR ID",
+            "x-ms-url-encoding": "single"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Coverage"
+            }
+          },
+          "400": {
+            "description": "Bad request. The body is an OperationOutcome.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "401": {
+            "description": "The access token is missing, expired, or invalid."
+          },
+          "403": {
+            "description": "The user or app is not authorized for this resource.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          },
+          "404": {
+            "description": "Resource not found.",
+            "schema": {
+              "$ref": "#/definitions/OperationOutcome"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Coding": {
+      "type": "object",
+      "properties": {
+        "system": {
+          "type": "string",
+          "description": "Code system URI or OID.",
+          "x-ms-summary": "System"
+        },
+        "code": {
+          "type": "string",
+          "description": "Code value.",
+          "x-ms-summary": "Code"
+        },
+        "display": {
+          "type": "string",
+          "description": "Display text for the code.",
+          "x-ms-summary": "Display"
+        },
+        "userSelected": {
+          "type": "boolean",
+          "description": "Whether the user selected this coding.",
+          "x-ms-summary": "User Selected"
+        }
+      },
+      "description": "A code from a terminology system."
+    },
+    "CodeableConcept": {
+      "type": "object",
+      "properties": {
+        "coding": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Coding"
+          },
+          "description": "Codes from one or more terminology systems.",
+          "x-ms-summary": "Codings"
+        },
+        "text": {
+          "type": "string",
+          "description": "Plain text representation of the concept.",
+          "x-ms-summary": "Text"
+        }
+      },
+      "description": "A concept with codings and text."
+    },
+    "Period": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Start of the period.",
+          "x-ms-summary": "Start"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "End of the period.",
+          "x-ms-summary": "End"
+        }
+      },
+      "description": "A time period."
+    },
+    "Identifier": {
+      "type": "object",
+      "properties": {
+        "use": {
+          "type": "string",
+          "description": "usual, official, temp, secondary, or old.",
+          "x-ms-summary": "Use"
+        },
+        "type": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "system": {
+          "type": "string",
+          "description": "Namespace (URI or OID) for the identifier value.",
+          "x-ms-summary": "System"
+        },
+        "value": {
+          "type": "string",
+          "description": "The identifier value.",
+          "x-ms-summary": "Value"
+        }
+      },
+      "description": "A business identifier."
+    },
+    "SimpleIdentifier": {
+      "type": "object",
+      "properties": {
+        "use": {
+          "type": "string",
+          "description": "Identifier use.",
+          "x-ms-summary": "Use"
+        },
+        "system": {
+          "type": "string",
+          "description": "Namespace (URI or OID) for the identifier value.",
+          "x-ms-summary": "System"
+        },
+        "value": {
+          "type": "string",
+          "description": "The identifier value.",
+          "x-ms-summary": "Value"
+        }
+      },
+      "description": "An identifier inside a reference."
+    },
+    "Reference": {
+      "type": "object",
+      "properties": {
+        "reference": {
+          "type": "string",
+          "description": "Relative reference, such as Patient/{id}.",
+          "x-ms-summary": "Reference"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the referenced resource.",
+          "x-ms-summary": "Type"
+        },
+        "display": {
+          "type": "string",
+          "description": "Display text for the referenced resource.",
+          "x-ms-summary": "Display"
+        },
+        "identifier": {
+          "$ref": "#/definitions/SimpleIdentifier"
+        }
+      },
+      "description": "A reference to another resource."
+    },
+    "Extension": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL that identifies the extension.",
+          "x-ms-summary": "URL"
+        },
+        "valueString": {
+          "type": "string",
+          "description": "String value.",
+          "x-ms-summary": "Value String"
+        },
+        "valueCode": {
+          "type": "string",
+          "description": "Code value.",
+          "x-ms-summary": "Value Code"
+        },
+        "valueBoolean": {
+          "type": "boolean",
+          "description": "Boolean value.",
+          "x-ms-summary": "Value Boolean"
+        },
+        "valueDateTime": {
+          "type": "string",
+          "description": "Date-time value.",
+          "x-ms-summary": "Value Date Time"
+        },
+        "valueCoding": {
+          "$ref": "#/definitions/Coding"
+        },
+        "valueCodeableConcept": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "valueIdentifier": {
+          "$ref": "#/definitions/SimpleIdentifier"
+        },
+        "extension": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "URL that identifies the nested extension.",
+                "x-ms-summary": "URL"
+              },
+              "valueString": {
+                "type": "string",
+                "description": "String value.",
+                "x-ms-summary": "Value String"
+              },
+              "valueCode": {
+                "type": "string",
+                "description": "Code value.",
+                "x-ms-summary": "Value Code"
+              },
+              "valueCoding": {
+                "$ref": "#/definitions/Coding"
+              },
+              "valueCodeableConcept": {
+                "$ref": "#/definitions/CodeableConcept"
+              }
+            }
+          },
+          "description": "Nested extensions.",
+          "x-ms-summary": "Nested Extensions"
+        }
+      },
+      "description": "An Epic or US Core extension."
+    },
+    "HumanName": {
+      "type": "object",
+      "properties": {
+        "use": {
+          "type": "string",
+          "description": "usual, official, nickname, maiden, and so on.",
+          "x-ms-summary": "Use"
+        },
+        "text": {
+          "type": "string",
+          "description": "Full name as text.",
+          "x-ms-summary": "Full Name"
+        },
+        "family": {
+          "type": "string",
+          "description": "Family (last) name.",
+          "x-ms-summary": "Family Name"
+        },
+        "given": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Given (first and middle) names.",
+          "x-ms-summary": "Given Names"
+        },
+        "prefix": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Name prefixes.",
+          "x-ms-summary": "Prefixes"
+        },
+        "suffix": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Name suffixes.",
+          "x-ms-summary": "Suffixes"
+        },
+        "period": {
+          "$ref": "#/definitions/Period"
+        }
+      },
+      "description": "A person's name."
+    },
+    "Address": {
+      "type": "object",
+      "properties": {
+        "use": {
+          "type": "string",
+          "description": "home, work, temp, old, or billing.",
+          "x-ms-summary": "Use"
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Street address lines.",
+          "x-ms-summary": "Lines"
+        },
+        "city": {
+          "type": "string",
+          "description": "City.",
+          "x-ms-summary": "City"
+        },
+        "district": {
+          "type": "string",
+          "description": "District or county.",
+          "x-ms-summary": "District"
+        },
+        "state": {
+          "type": "string",
+          "description": "State.",
+          "x-ms-summary": "State"
+        },
+        "postalCode": {
+          "type": "string",
+          "description": "Postal code.",
+          "x-ms-summary": "Postal Code"
+        },
+        "country": {
+          "type": "string",
+          "description": "Country.",
+          "x-ms-summary": "Country"
+        },
+        "period": {
+          "$ref": "#/definitions/Period"
+        }
+      },
+      "description": "A postal address."
+    },
+    "ContactPoint": {
+      "type": "object",
+      "properties": {
+        "system": {
+          "type": "string",
+          "description": "phone, email, fax, and so on.",
+          "x-ms-summary": "System"
+        },
+        "value": {
+          "type": "string",
+          "description": "The phone number or email address.",
+          "x-ms-summary": "Value"
+        },
+        "use": {
+          "type": "string",
+          "description": "home, work, mobile, and so on.",
+          "x-ms-summary": "Use"
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Preference order.",
+          "x-ms-summary": "Rank"
+        }
+      },
+      "description": "A phone number or email address."
+    },
+    "Meta": {
+      "type": "object",
+      "properties": {
+        "versionId": {
+          "type": "string",
+          "description": "Version ID.",
+          "x-ms-summary": "Version ID"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the resource last changed.",
+          "x-ms-summary": "Last Updated"
+        }
+      },
+      "description": "Resource metadata."
+    },
+    "Attachment": {
+      "type": "object",
+      "properties": {
+        "contentType": {
+          "type": "string",
+          "description": "MIME type, such as text/html or text/rtf.",
+          "x-ms-summary": "Content Type"
+        },
+        "url": {
+          "type": "string",
+          "description": "Binary reference for the content, such as Binary/{id}. Pass the ID to Get binary content.",
+          "x-ms-summary": "Content URL"
+        },
+        "title": {
+          "type": "string",
+          "description": "Attachment title.",
+          "x-ms-summary": "Title"
+        },
+        "size": {
+          "type": "integer",
+          "description": "Size in bytes.",
+          "x-ms-summary": "Size"
+        },
+        "creation": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the attachment was created.",
+          "x-ms-summary": "Created"
+        }
+      },
+      "description": "A content attachment."
+    },
+    "BundleLink": {
+      "type": "object",
+      "properties": {
+        "relation": {
+          "type": "string",
+          "description": "self, next, or previous.",
+          "x-ms-summary": "Relation"
+        },
+        "url": {
+          "type": "string",
+          "description": "Link URL.",
+          "x-ms-summary": "URL"
+        }
+      },
+      "description": "A bundle link."
+    },
+    "OperationOutcomeIssue": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "type": "string",
+          "description": "fatal, error, warning, or information.",
+          "x-ms-summary": "Severity"
+        },
+        "code": {
+          "type": "string",
+          "description": "Issue type code.",
+          "x-ms-summary": "Code"
+        },
+        "details": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "diagnostics": {
+          "type": "string",
+          "description": "Additional diagnostic text.",
+          "x-ms-summary": "Diagnostics"
+        },
+        "location": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Element paths related to the issue.",
+          "x-ms-summary": "Locations"
+        },
+        "expression": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "FHIRPath expressions related to the issue.",
+          "x-ms-summary": "Expressions"
+        }
+      },
+      "description": "An issue reported by the server."
+    },
+    "Patient": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "FHIR resource type.",
+          "x-ms-summary": "Resource Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "FHIR ID of the resource.",
+          "x-ms-summary": "ID"
+        },
+        "meta": {
+          "$ref": "#/definitions/Meta"
+        },
+        "extension": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "description": "Extensions on the resource.",
+          "x-ms-summary": "Extensions"
+        },
+        "identifier": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "description": "Business identifiers.",
+          "x-ms-summary": "Identifiers"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the patient record is active.",
+          "x-ms-summary": "Active"
+        },
+        "name": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HumanName"
+          },
+          "description": "Patient names.",
+          "x-ms-summary": "Names"
+        },
+        "telecom": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContactPoint"
+          },
+          "description": "Phone numbers and email addresses.",
+          "x-ms-summary": "Telecom"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Administrative gender: male, female, other, or unknown.",
+          "x-ms-summary": "Gender"
+        },
+        "birthDate": {
+          "type": "string",
+          "description": "Date of birth (YYYY-MM-DD).",
+          "x-ms-summary": "Birth Date"
+        },
+        "deceasedBoolean": {
+          "type": "boolean",
+          "description": "Whether the patient is deceased.",
+          "x-ms-summary": "Deceased"
+        },
+        "deceasedDateTime": {
+          "type": "string",
+          "description": "Date and time of death.",
+          "x-ms-summary": "Deceased Date Time"
+        },
+        "address": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Address"
+          },
+          "description": "Patient addresses.",
+          "x-ms-summary": "Addresses"
+        },
+        "maritalStatus": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "multipleBirthBoolean": {
+          "type": "boolean",
+          "description": "Whether the patient is part of a multiple birth.",
+          "x-ms-summary": "Multiple Birth"
+        },
+        "communication": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "language": {
+                "$ref": "#/definitions/CodeableConcept"
+              },
+              "preferred": {
+                "type": "boolean",
+                "description": "Whether this is the preferred language.",
+                "x-ms-summary": "Preferred"
+              }
+            }
+          },
+          "description": "Languages the patient communicates in.",
+          "x-ms-summary": "Communication"
+        },
+        "contact": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "relationship": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/CodeableConcept"
+                },
+                "description": "Relationship to the patient.",
+                "x-ms-summary": "Relationships"
+              },
+              "name": {
+                "$ref": "#/definitions/HumanName"
+              },
+              "telecom": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ContactPoint"
+                },
+                "description": "Contact phone numbers and email addresses.",
+                "x-ms-summary": "Telecom"
+              },
+              "address": {
+                "$ref": "#/definitions/Address"
+              }
+            }
+          },
+          "description": "Emergency contacts and other contact parties.",
+          "x-ms-summary": "Contacts"
+        },
+        "generalPractitioner": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "description": "Primary care providers.",
+          "x-ms-summary": "General Practitioners"
+        },
+        "managingOrganization": {
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "description": "An Epic Patient (Demographics) resource."
+    },
+    "DocumentReference": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "FHIR resource type.",
+          "x-ms-summary": "Resource Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "FHIR ID of the resource.",
+          "x-ms-summary": "ID"
+        },
+        "meta": {
+          "$ref": "#/definitions/Meta"
+        },
+        "extension": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "description": "Extensions on the resource.",
+          "x-ms-summary": "Extensions"
+        },
+        "identifier": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "description": "Business identifiers.",
+          "x-ms-summary": "Identifiers"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the reference. Always current for clinical notes.",
+          "x-ms-summary": "Status"
+        },
+        "docStatus": {
+          "type": "string",
+          "description": "Note status: preliminary, final, amended, or entered-in-error.",
+          "x-ms-summary": "Document Status"
+        },
+        "type": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "category": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeableConcept"
+          },
+          "description": "Document categories, such as clinical-note.",
+          "x-ms-summary": "Categories"
+        },
+        "subject": {
+          "$ref": "#/definitions/Reference"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the note was created.",
+          "x-ms-summary": "Date"
+        },
+        "author": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "description": "Note authors.",
+          "x-ms-summary": "Authors"
+        },
+        "authenticator": {
+          "$ref": "#/definitions/Reference"
+        },
+        "custodian": {
+          "$ref": "#/definitions/Reference"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description.",
+          "x-ms-summary": "Description"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "attachment": {
+                "$ref": "#/definitions/Attachment"
+              },
+              "format": {
+                "$ref": "#/definitions/Coding"
+              }
+            }
+          },
+          "description": "Note content. Each entry points to a Binary resource in HTML or RTF format.",
+          "x-ms-summary": "Content"
+        },
+        "context": {
+          "type": "object",
+          "properties": {
+            "encounter": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Reference"
+              },
+              "description": "Encounters associated with the note.",
+              "x-ms-summary": "Encounters"
+            },
+            "period": {
+              "$ref": "#/definitions/Period"
+            },
+            "practiceSetting": {
+              "$ref": "#/definitions/CodeableConcept"
+            },
+            "extension": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Extension"
+              },
+              "description": "Context extensions.",
+              "x-ms-summary": "Extensions"
+            }
+          },
+          "description": "Clinical context of the note.",
+          "x-ms-summary": "Context"
+        }
+      },
+      "description": "An Epic DocumentReference (Clinical Notes) resource."
+    },
+    "Encounter": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "FHIR resource type.",
+          "x-ms-summary": "Resource Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "FHIR ID of the resource.",
+          "x-ms-summary": "ID"
+        },
+        "meta": {
+          "$ref": "#/definitions/Meta"
+        },
+        "extension": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "description": "Extensions on the resource.",
+          "x-ms-summary": "Extensions"
+        },
+        "identifier": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "description": "Business identifiers.",
+          "x-ms-summary": "Identifiers"
+        },
+        "status": {
+          "type": "string",
+          "description": "planned, arrived, in-progress, finished, cancelled, and so on.",
+          "x-ms-summary": "Status"
+        },
+        "class": {
+          "$ref": "#/definitions/Coding"
+        },
+        "type": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeableConcept"
+          },
+          "description": "Encounter types.",
+          "x-ms-summary": "Types"
+        },
+        "serviceType": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "priority": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "subject": {
+          "$ref": "#/definitions/Reference"
+        },
+        "participant": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/CodeableConcept"
+                },
+                "description": "Participant roles.",
+                "x-ms-summary": "Roles"
+              },
+              "period": {
+                "$ref": "#/definitions/Period"
+              },
+              "individual": {
+                "$ref": "#/definitions/Reference"
+              }
+            }
+          },
+          "description": "Providers and others involved in the encounter.",
+          "x-ms-summary": "Participants"
+        },
+        "period": {
+          "$ref": "#/definitions/Period"
+        },
+        "reasonCode": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeableConcept"
+          },
+          "description": "Reasons for the visit.",
+          "x-ms-summary": "Reason Codes"
+        },
+        "diagnosis": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "condition": {
+                "$ref": "#/definitions/Reference"
+              },
+              "use": {
+                "$ref": "#/definitions/CodeableConcept"
+              },
+              "rank": {
+                "type": "integer",
+                "description": "Diagnosis rank.",
+                "x-ms-summary": "Rank"
+              }
+            }
+          },
+          "description": "Diagnoses for the encounter.",
+          "x-ms-summary": "Diagnoses"
+        },
+        "account": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "description": "Billing accounts.",
+          "x-ms-summary": "Accounts"
+        },
+        "hospitalization": {
+          "type": "object",
+          "properties": {
+            "admitSource": {
+              "$ref": "#/definitions/CodeableConcept"
+            },
+            "dischargeDisposition": {
+              "$ref": "#/definitions/CodeableConcept"
+            },
+            "extension": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Extension"
+              },
+              "description": "Hospitalization extensions.",
+              "x-ms-summary": "Extensions"
+            }
+          },
+          "description": "Hospitalization details.",
+          "x-ms-summary": "Hospitalization"
+        },
+        "location": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "$ref": "#/definitions/Reference"
+              },
+              "status": {
+                "type": "string",
+                "description": "Location status.",
+                "x-ms-summary": "Status"
+              },
+              "physicalType": {
+                "$ref": "#/definitions/CodeableConcept"
+              },
+              "period": {
+                "$ref": "#/definitions/Period"
+              }
+            }
+          },
+          "description": "Locations where the encounter took place.",
+          "x-ms-summary": "Locations"
+        },
+        "serviceProvider": {
+          "$ref": "#/definitions/Reference"
+        },
+        "partOf": {
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "description": "An Epic Encounter (Patient Chart) resource."
+    },
+    "Coverage": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "FHIR resource type.",
+          "x-ms-summary": "Resource Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "FHIR ID of the resource.",
+          "x-ms-summary": "ID"
+        },
+        "meta": {
+          "$ref": "#/definitions/Meta"
+        },
+        "extension": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "description": "Extensions on the resource.",
+          "x-ms-summary": "Extensions"
+        },
+        "identifier": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "description": "Business identifiers.",
+          "x-ms-summary": "Identifiers"
+        },
+        "status": {
+          "type": "string",
+          "description": "active, cancelled, draft, or entered-in-error.",
+          "x-ms-summary": "Status"
+        },
+        "type": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "policyHolder": {
+          "$ref": "#/definitions/Reference"
+        },
+        "subscriber": {
+          "$ref": "#/definitions/Reference"
+        },
+        "subscriberId": {
+          "type": "string",
+          "description": "Subscriber ID.",
+          "x-ms-summary": "Subscriber ID"
+        },
+        "beneficiary": {
+          "$ref": "#/definitions/Reference"
+        },
+        "dependent": {
+          "type": "string",
+          "description": "Dependent number.",
+          "x-ms-summary": "Dependent"
+        },
+        "relationship": {
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "period": {
+          "$ref": "#/definitions/Period"
+        },
+        "payor": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "description": "Insurers or payers.",
+          "x-ms-summary": "Payors"
+        },
+        "class": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "$ref": "#/definitions/CodeableConcept"
+              },
+              "value": {
+                "type": "string",
+                "description": "Class value, such as a group or plan number.",
+                "x-ms-summary": "Value"
+              },
+              "name": {
+                "type": "string",
+                "description": "Class name, such as the group or plan name.",
+                "x-ms-summary": "Name"
+              },
+              "extension": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Extension"
+                },
+                "description": "Class extensions.",
+                "x-ms-summary": "Extensions"
+              }
+            }
+          },
+          "description": "Plan, group, and other coverage classifications.",
+          "x-ms-summary": "Classes"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Filing order relative to the patient's other coverages.",
+          "x-ms-summary": "Order"
+        },
+        "network": {
+          "type": "string",
+          "description": "Insurer network.",
+          "x-ms-summary": "Network"
+        }
+      },
+      "description": "An Epic Coverage (Patient Insurance Information) resource."
+    },
+    "Binary": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Always Binary.",
+          "x-ms-summary": "Resource Type"
+        },
+        "id": {
+          "type": "string",
+          "description": "FHIR ID of the Binary resource.",
+          "x-ms-summary": "ID"
+        },
+        "contentType": {
+          "type": "string",
+          "description": "MIME type of the content, such as text/html or text/rtf.",
+          "x-ms-summary": "Content Type"
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "Base64-encoded content.",
+          "x-ms-summary": "Data (Base64)"
+        },
+        "decodedText": {
+          "type": "string",
+          "description": "UTF-8 decoded content. Present only when Include Decoded Text is Yes and the content is textual.",
+          "x-ms-summary": "Decoded Text"
+        }
+      },
+      "description": "An Epic Binary resource."
+    },
+    "OperationOutcome": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Always OperationOutcome.",
+          "x-ms-summary": "Resource Type"
+        },
+        "issue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OperationOutcomeIssue"
+          },
+          "description": "Issues reported by the server.",
+          "x-ms-summary": "Issues"
+        }
+      },
+      "description": "Errors and warnings reported by the Epic FHIR server."
+    },
+    "PatientBundle": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Always Bundle.",
+          "x-ms-summary": "Resource Type"
+        },
+        "type": {
+          "type": "string",
+          "description": "Always searchset.",
+          "x-ms-summary": "Bundle Type"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of matching resources.",
+          "x-ms-summary": "Total"
+        },
+        "link": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BundleLink"
+          },
+          "description": "Paging links. A next link means more results are available.",
+          "x-ms-summary": "Links"
+        },
+        "entry": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fullUrl": {
+                "type": "string",
+                "description": "Absolute URL of the resource.",
+                "x-ms-summary": "Full URL"
+              },
+              "resource": {
+                "$ref": "#/definitions/Patient"
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "description": "match for results, outcome for server warnings.",
+                    "x-ms-summary": "Search Mode"
+                  }
+                },
+                "description": "Search metadata for the entry.",
+                "x-ms-summary": "Search"
+              }
+            }
+          },
+          "description": "Matching Patient resources. Entries with search mode outcome contain an OperationOutcome instead.",
+          "x-ms-summary": "Entries"
+        }
+      },
+      "description": "A FHIR searchset bundle of Patient resources."
+    },
+    "DocumentReferenceBundle": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Always Bundle.",
+          "x-ms-summary": "Resource Type"
+        },
+        "type": {
+          "type": "string",
+          "description": "Always searchset.",
+          "x-ms-summary": "Bundle Type"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of matching resources.",
+          "x-ms-summary": "Total"
+        },
+        "link": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BundleLink"
+          },
+          "description": "Paging links. A next link means more results are available.",
+          "x-ms-summary": "Links"
+        },
+        "entry": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fullUrl": {
+                "type": "string",
+                "description": "Absolute URL of the resource.",
+                "x-ms-summary": "Full URL"
+              },
+              "resource": {
+                "$ref": "#/definitions/DocumentReference"
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "description": "match for results, outcome for server warnings.",
+                    "x-ms-summary": "Search Mode"
+                  }
+                },
+                "description": "Search metadata for the entry.",
+                "x-ms-summary": "Search"
+              }
+            }
+          },
+          "description": "Matching DocumentReference resources. Entries with search mode outcome contain an OperationOutcome instead.",
+          "x-ms-summary": "Entries"
+        }
+      },
+      "description": "A FHIR searchset bundle of DocumentReference resources."
+    },
+    "EncounterBundle": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Always Bundle.",
+          "x-ms-summary": "Resource Type"
+        },
+        "type": {
+          "type": "string",
+          "description": "Always searchset.",
+          "x-ms-summary": "Bundle Type"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of matching resources.",
+          "x-ms-summary": "Total"
+        },
+        "link": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BundleLink"
+          },
+          "description": "Paging links. A next link means more results are available.",
+          "x-ms-summary": "Links"
+        },
+        "entry": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fullUrl": {
+                "type": "string",
+                "description": "Absolute URL of the resource.",
+                "x-ms-summary": "Full URL"
+              },
+              "resource": {
+                "$ref": "#/definitions/Encounter"
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "description": "match for results, outcome for server warnings.",
+                    "x-ms-summary": "Search Mode"
+                  }
+                },
+                "description": "Search metadata for the entry.",
+                "x-ms-summary": "Search"
+              }
+            }
+          },
+          "description": "Matching Encounter resources. Entries with search mode outcome contain an OperationOutcome instead.",
+          "x-ms-summary": "Entries"
+        }
+      },
+      "description": "A FHIR searchset bundle of Encounter resources."
+    },
+    "CoverageBundle": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string",
+          "description": "Always Bundle.",
+          "x-ms-summary": "Resource Type"
+        },
+        "type": {
+          "type": "string",
+          "description": "Always searchset.",
+          "x-ms-summary": "Bundle Type"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of matching resources.",
+          "x-ms-summary": "Total"
+        },
+        "link": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BundleLink"
+          },
+          "description": "Paging links. A next link means more results are available.",
+          "x-ms-summary": "Links"
+        },
+        "entry": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fullUrl": {
+                "type": "string",
+                "description": "Absolute URL of the resource.",
+                "x-ms-summary": "Full URL"
+              },
+              "resource": {
+                "$ref": "#/definitions/Coverage"
+              },
+              "search": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "description": "match for results, outcome for server warnings.",
+                    "x-ms-summary": "Search Mode"
+                  }
+                },
+                "description": "Search metadata for the entry.",
+                "x-ms-summary": "Search"
+              }
+            }
+          },
+          "description": "Matching Coverage resources. Entries with search mode outcome contain an OperationOutcome instead.",
+          "x-ms-summary": "Entries"
+        }
+      },
+      "description": "A FHIR searchset bundle of Coverage resources."
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/authorize",
+      "tokenUrl": "https://fhir.epic.com/interconnect-fhir-oauth/oauth2/token",
+      "scopes": {
+        "offline_access user/Patient.read user/DocumentReference.read user/Binary.read user/Encounter.read user/Coverage.read": "Read Patient, DocumentReference, Binary, Encounter, and Coverage resources as the signed-in user"
+      }
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": [
+        "offline_access user/Patient.read user/DocumentReference.read user/Binary.read user/Encounter.read user/Coverage.read"
+      ]
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://fhir.epic.com/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://www.epic.com/privacypolicies/"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "Data;Productivity"
+    }
+  ]
+}
