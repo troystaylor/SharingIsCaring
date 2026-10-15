@@ -1,0 +1,56 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce SObject All${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce SObject All (Full Access)"
+  },
+  "description": {
+    "short": "Read, create, update and delete Salesforce records, with confirmation first.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted SObject All MCP server so you can query, search, create, update and delete Salesforce records across standard and custom objects, with skills for end-to-end record management and safe deletion. The skills show every change and confirm before writing or deleting. Deleted records go to the Salesforce Recycle Bin for 15 days and cannot be restored through this plugin. Every call runs as you, so Salesforce permissions, validation rules, field-level security and sharing rules apply."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-sobject-all",
+      "displayName": "Salesforce SObject All",
+      "description": "Full access to Salesforce records through the hosted SObject All MCP server: schema, SOQL, search, create, update and delete.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/sobject-all",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/manage-salesforce-records"
+    },
+    {
+      "folder": "skills/delete-records-safely"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "tools": [
+    {
+      "name": "search",
+      "description": "Describe what you want to do in natural language; returns the matching Data 360 tool families and tool names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural-language intent, for example create and manage a segment."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Search",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "payload_examples",
+      "description": "Returns the input JSON schema, an example payload and a description for a named Data 360 tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "toolName": {
+            "type": "string",
+            "description": "Name of the tool, for example d360_query_sql."
+          }
+        },
+        "required": [
+          "toolName"
+        ]
+      },
+      "annotations": {
+        "title": "Payload examples",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "execute",
+      "description": "Runs a named Data 360 tool through the Connect API. Tools can create, update and delete data, so confirm changes with the user first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "toolName": {
+            "type": "string",
+            "description": "Name of the tool to invoke."
+          },
+          "paramsJson": {
+            "type": "string",
+            "description": "Tool parameters as a JSON string matching the tool schema."
+          }
+        },
+        "required": [
+          "toolName",
+          "paramsJson"
+        ]
+      },
+      "annotations": {
+        "title": "Execute",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce Headless 360${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce Headless 360 (Beta)"
+  },
+  "description": {
+    "short": "Run Salesforce Setup and platform tasks through discover, describe, dispatch.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted Headless 360 MCP server (Beta) so admins and developers can discover, describe and run Salesforce Setup and platform operations such as user and permission management, named credentials, event integrations and Apex triggers. The skills plan first, use read-only calls to inspect state, and confirm every change. Intended for admins; use a sandbox first. Every call runs as you and is attributed to you in the audit trail."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-headless-360",
+      "displayName": "Salesforce Headless 360",
+      "description": "Discover, describe and dispatch Salesforce Setup and platform operations (Beta).",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/headless-360",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/run-setup-task"
+    },
+    {
+      "folder": "skills/manage-user-access"
+    },
+    {
+      "folder": "skills/audit-org-configuration"
+    },
+    {
+      "folder": "skills/manage-named-credentials"
+    },
+    {
+      "folder": "skills/build-event-integration"
+    },
+    {
+      "folder": "skills/manage-apex-triggers"
+    }
+  ]
+}

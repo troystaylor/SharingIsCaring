@@ -1,0 +1,857 @@
+{
+  "tools": [
+    {
+      "name": "get_cms_workspace",
+      "description": "Gets the details of one CMS workspace: name, type and default language.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentSpaceId": {
+            "type": "string",
+            "description": "The Id of the CMS workspace."
+          }
+        },
+        "required": [
+          "contentSpaceId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms workspace",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_workspaces",
+      "description": "Lists enhanced CMS workspaces the user can access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "nameFragment": {
+            "type": "string",
+            "description": "Filter workspaces whose name contains this value."
+          },
+          "spaceType": {
+            "type": "string",
+            "description": "Workspace type, for example Content, Marketing or Experience."
+          },
+          "businessUnitId": {
+            "type": "string",
+            "description": "Filter by Marketing business unit Id."
+          },
+          "businessUnitStatus": {
+            "type": "string",
+            "description": "Filter by business unit status."
+          },
+          "hasBusinessUnit": {
+            "type": "boolean",
+            "description": "Filter by whether a business unit is associated."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starting at 0."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page, 1 to 250. Default 25."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get cms workspaces",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_channels_for_workspace",
+      "description": "Lists the channels associated with a CMS workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentSpaceId": {
+            "type": "string",
+            "description": "The Id of the CMS workspace."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starting at 0."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page, 1 to 250. Default 25."
+          }
+        },
+        "required": [
+          "contentSpaceId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms channels for workspace",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_content_cms_workspaces",
+      "description": "Searches CMS content in enhanced workspaces and folders by keyword.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "queryTerm": {
+            "type": "string",
+            "description": "Up to 50 search terms separated by spaces."
+          },
+          "contentSpaceOrFolderIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Workspace or folder Ids to search in."
+          },
+          "contentTypeFQN": {
+            "type": "string",
+            "description": "Restrict to this content type."
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 10 languages, or All."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "All",
+              "TitleOnly"
+            ],
+            "description": "Text search scope. Default All."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starting at 0."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page, 1 to 250. Default 25."
+          }
+        },
+        "required": [
+          "queryTerm",
+          "contentSpaceOrFolderIds"
+        ]
+      },
+      "annotations": {
+        "title": "Search content cms workspaces",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_content_item",
+      "description": "Gets one CMS content item by content key or Id, with its translated variants.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentKeyOrId": {
+            "type": "string",
+            "description": "The content key or Id."
+          },
+          "contentVersion": {
+            "type": "string",
+            "description": "The content version."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language locale, for example en_US."
+          },
+          "variantVersion": {
+            "type": "string",
+            "description": "The variant version."
+          }
+        },
+        "required": [
+          "contentKeyOrId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms content item",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_content_variant",
+      "description": "Gets one CMS content variant (a language rendition) by variant Id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "description": "The Id of the content variant."
+          }
+        },
+        "required": [
+          "variantId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms content variant",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_folder",
+      "description": "Gets the details of one CMS folder: name, creation date, permissions and parent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "The Id of the CMS folder."
+          },
+          "contextContentSpaceId": {
+            "type": "string",
+            "description": "Context workspace Id for folder hierarchy information."
+          }
+        },
+        "required": [
+          "folderId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms folder",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_folder_sharing_details",
+      "description": "Gets sharing and permission settings for a CMS folder.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "The Id of the CMS folder."
+          }
+        },
+        "required": [
+          "folderId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms folder sharing details",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_channels",
+      "description": "Lists CMS channels the user can access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "showDetails": {
+            "type": "boolean",
+            "description": "Return detailed channel information when true."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starting at 0."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page, 1 to 250. Default 25."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get cms channels",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_channel",
+      "description": "Gets a CMS channel authoring and configuration record by Id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The Id of the CMS channel."
+          }
+        },
+        "required": [
+          "channelId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms channel",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_cms_channel_delivery_detail",
+      "description": "Gets the delivery details of a CMS channel as content consumers see it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The Id of the CMS channel."
+          }
+        },
+        "required": [
+          "channelId"
+        ]
+      },
+      "annotations": {
+        "title": "Get cms channel delivery detail",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_content_cms_channels",
+      "description": "Searches published non-media content in public CMS channels by keyword or taxonomy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "searchKeyword": {
+            "type": "string",
+            "description": "Up to 10 OR-separated concrete nouns from the request."
+          },
+          "searchLanguage": {
+            "type": "string",
+            "description": "Locale such as en_US. Default en_US."
+          },
+          "channelIds": {
+            "type": "string",
+            "description": "One or more CMS channel Ids to search."
+          },
+          "channelType": {
+            "type": "string",
+            "description": "Limit to channels of this type."
+          },
+          "contentAccessScope": {
+            "type": "string",
+            "enum": [
+              "Public"
+            ],
+            "description": "Limit to channels with this access scope."
+          },
+          "taxonomyExpression": {
+            "type": "string",
+            "description": "Stringified JSON taxonomy filter, for example {\"OR\":[\"term1\"]}. Use {} if none."
+          },
+          "contentTypeFqn": {
+            "type": "string",
+            "description": "One or more content type fully qualified names."
+          },
+          "pageOffset": {
+            "type": "integer",
+            "description": "Results page offset."
+          },
+          "searchLimit": {
+            "type": "integer",
+            "description": "Maximum items per page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Search content cms channels",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_media_cms_channels",
+      "description": "Searches published media assets (images, video, documents, audio) in public CMS channels.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "searchKeyword": {
+            "type": "string",
+            "description": "Up to 10 OR-separated concrete nouns from the request."
+          },
+          "searchLanguage": {
+            "type": "string",
+            "description": "Locale such as en_US. Default en_US."
+          },
+          "channelIds": {
+            "type": "string",
+            "description": "One or more CMS channel Ids to search."
+          },
+          "channelType": {
+            "type": "string",
+            "description": "Limit to channels of this type."
+          },
+          "contentAccessScope": {
+            "type": "string",
+            "enum": [
+              "Public"
+            ],
+            "description": "Limit to channels with this access scope."
+          },
+          "taxonomyExpression": {
+            "type": "string",
+            "description": "Stringified JSON taxonomy filter, for example {\"OR\":[\"term1\"]}. Use {} if none."
+          },
+          "contentTypeFqn": {
+            "type": "string",
+            "description": "One or more content type fully qualified names."
+          },
+          "pageOffset": {
+            "type": "integer",
+            "description": "Results page offset."
+          },
+          "searchLimit": {
+            "type": "integer",
+            "description": "Maximum items per page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Search media cms channels",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_published_cms_content_from_channel",
+      "description": "Lists published CMS content in a channel with optional filters and paging.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The Id of the CMS channel."
+          },
+          "contentKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 50 content keys."
+          },
+          "contentTypeFQN": {
+            "type": "string",
+            "description": "Fully qualified name of the managed content type."
+          },
+          "expandReferences": {
+            "type": "boolean",
+            "description": "Include reference details when true."
+          },
+          "includeContentBody": {
+            "type": "boolean",
+            "description": "Return the content body when true."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language locale, for example en_US."
+          },
+          "managedContentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 100 managed content Ids."
+          },
+          "publishEndDate": {
+            "type": "string",
+            "description": "ISO 8601 publish end date."
+          },
+          "publishStartDate": {
+            "type": "string",
+            "description": "ISO 8601 publish start date."
+          },
+          "referenceDepth": {
+            "type": "integer",
+            "description": "Reference depth, 0 to 3."
+          },
+          "referencesAsList": {
+            "type": "boolean",
+            "description": "Return references as a list when true."
+          },
+          "showAbsoluteUrl": {
+            "type": "boolean",
+            "description": "Return absolute URLs when true."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starting at 0."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page, 1 to 250. Default 25."
+          }
+        },
+        "required": [
+          "channelId"
+        ]
+      },
+      "annotations": {
+        "title": "Get published cms content from channel",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_published_cms_content_from_site",
+      "description": "Lists published CMS content on an Experience Cloud site with optional filters and paging.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "description": "The Id of the Experience Cloud site."
+          },
+          "contentKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 50 content keys."
+          },
+          "contentTypeFQN": {
+            "type": "string",
+            "description": "Fully qualified name of the managed content type."
+          },
+          "expandReferences": {
+            "type": "boolean",
+            "description": "Include reference details when true."
+          },
+          "includeContentBody": {
+            "type": "boolean",
+            "description": "Return the content body when true."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language locale, for example en_US."
+          },
+          "managedContentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 100 managed content Ids."
+          },
+          "publishEndDate": {
+            "type": "string",
+            "description": "ISO 8601 publish end date."
+          },
+          "publishStartDate": {
+            "type": "string",
+            "description": "ISO 8601 publish start date."
+          },
+          "referenceDepth": {
+            "type": "integer",
+            "description": "Reference depth, 0 to 3."
+          },
+          "referencesAsList": {
+            "type": "boolean",
+            "description": "Return references as a list when true."
+          },
+          "showAbsoluteUrl": {
+            "type": "boolean",
+            "description": "Return absolute URLs when true."
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number, starting at 0."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page, 1 to 250. Default 25."
+          }
+        },
+        "required": [
+          "siteId"
+        ]
+      },
+      "annotations": {
+        "title": "Get published cms content from site",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_published_cms_content_item_from_site",
+      "description": "Gets one published CMS content item from an Experience Cloud site.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "description": "The Id of the Experience Cloud site."
+          },
+          "contentKeyOrId": {
+            "type": "string",
+            "description": "The content key or Id."
+          }
+        },
+        "required": [
+          "siteId",
+          "contentKeyOrId"
+        ]
+      },
+      "annotations": {
+        "title": "Get published cms content item from site",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_published_cms_collection_from_site",
+      "description": "Gets a published CMS collection and its items from an Experience Cloud site.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "description": "The Id of the Experience Cloud site."
+          },
+          "collectionKeyOrId": {
+            "type": "string",
+            "description": "The collection key or Id."
+          }
+        },
+        "required": [
+          "siteId",
+          "collectionKeyOrId"
+        ]
+      },
+      "annotations": {
+        "title": "Get published cms collection from site",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_published_cms_content_item_from_channel",
+      "description": "Gets one published CMS content item from a channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The Id of the CMS channel."
+          },
+          "contentKeyOrId": {
+            "type": "string",
+            "description": "The content key or Id."
+          },
+          "contentVersion": {
+            "type": "integer",
+            "description": "The content version."
+          },
+          "expandReferences": {
+            "type": "boolean",
+            "description": "Include reference details when true."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language locale, for example en_US."
+          },
+          "referenceDepth": {
+            "type": "integer",
+            "description": "Reference depth, 0 to 3."
+          },
+          "referencesAsList": {
+            "type": "boolean",
+            "description": "Return references as a list when true."
+          },
+          "showAbsoluteUrl": {
+            "type": "boolean",
+            "description": "Return absolute URLs when true."
+          }
+        },
+        "required": [
+          "channelId",
+          "contentKeyOrId"
+        ]
+      },
+      "annotations": {
+        "title": "Get published cms content item from channel",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_published_cms_collection_from_channel",
+      "description": "Gets a published CMS collection and its items from a channel.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The Id of the CMS channel."
+          },
+          "collectionKeyOrId": {
+            "type": "string",
+            "description": "The collection key or Id."
+          },
+          "language": {
+            "type": "string",
+            "description": "Language locale, for example en_US."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Items per page. Default 50."
+          },
+          "pageToken": {
+            "type": "integer",
+            "description": "The page of items to fetch."
+          }
+        },
+        "required": [
+          "channelId",
+          "collectionKeyOrId"
+        ]
+      },
+      "annotations": {
+        "title": "Get published cms collection from channel",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_electronic_media",
+      "description": "Searches media assets across Salesforce CMS and connected third-party CMS or DAM systems using Data 360 hybrid search. Requires the CMS Base Data Kit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "searchQuery": {
+            "type": "string",
+            "description": "Natural-language query for the media to find."
+          },
+          "channelType": {
+            "type": "string",
+            "enum": [
+              "PublicUnauthenticated"
+            ],
+            "description": "Channel type to search. Only PublicUnauthenticated is supported."
+          },
+          "contentAccessScope": {
+            "type": "string",
+            "enum": [
+              "Public"
+            ],
+            "description": "Limit to channels with this access scope."
+          }
+        },
+        "required": [
+          "searchQuery",
+          "channelType"
+        ]
+      },
+      "annotations": {
+        "title": "Search electronic media",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_brand_instructions",
+      "description": "Gets instructions for extracting and applying a brand from Salesforce CMS. Call before other brand tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "Get brand instructions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_content_types_for_workspace",
+      "description": "Lists the content types supported by a CMS workspace. Supply exactly one of baseType, spaceId or folderId.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "baseType": {
+            "type": "string",
+            "description": "Base type developer name, for example content, marketing or fragment_space."
+          },
+          "spaceId": {
+            "type": "string",
+            "description": "The Id of a content space."
+          },
+          "folderId": {
+            "type": "string",
+            "description": "The Id of a CMS folder."
+          },
+          "typeClassFullyQualifiedNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Type-class names or Ids to scope results."
+          },
+          "mixinTypeFullyQualifiedNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Mixin-type names or Ids to scope results."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get content types for workspace",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

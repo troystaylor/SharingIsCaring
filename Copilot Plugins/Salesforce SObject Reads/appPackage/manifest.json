@@ -1,0 +1,68 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce SObject Reads${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce SObject Reads (Read-only)"
+  },
+  "description": {
+    "short": "Ask questions about Salesforce accounts, pipeline, cases and contacts.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted SObject Reads MCP server so you can search and query Salesforce data, traverse related records and get briefings, with skills for account briefings, pipeline reviews, a personal work queue and cross-object lookup. Read-only: no records are created, changed or deleted. Every call runs as you, so Salesforce permissions and sharing rules apply."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-sobject-reads",
+      "displayName": "Salesforce SObject Reads",
+      "description": "Read-only access to Salesforce records through the hosted SObject Reads MCP server: schema, SOQL queries, cross-object search and related records.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/sobject-reads",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/account-briefing"
+    },
+    {
+      "folder": "skills/pipeline-review"
+    },
+    {
+      "folder": "skills/my-salesforce-queue"
+    },
+    {
+      "folder": "skills/find-anything-in-salesforce"
+    },
+    {
+      "folder": "skills/triage-cases"
+    },
+    {
+      "folder": "skills/renewal-review"
+    }
+  ]
+}

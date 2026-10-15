@@ -1,0 +1,169 @@
+{
+  "tools": [
+    {
+      "name": "getObjectSchema",
+      "description": "Returns Salesforce schema information optimized for LLM consumption. Call with no parameters for a compact index of queryable business objects, then with an object name for field-level detail (types, required flags, picklist values, relationships) plus admin-authored guidance.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "object-name": {
+            "type": "string",
+            "description": "API name of the object. Omit to get the compact index of all objects."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get object schema",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "soqlQuery",
+      "description": "Executes a SOQL query to retrieve Salesforce records. Always include a WHERE and a LIMIT clause. Supports relationship queries and subqueries. Maximum 50,000 records per transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A valid SOQL query string, for example SELECT Id, Name FROM Account WHERE Industry = 'Technology' LIMIT 100."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Soql query",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "find",
+      "description": "Executes a SOSL text search across multiple Salesforce objects at once. Use when the object is unknown or the term could appear in several objects. Returns at most 2,000 records.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "A valid SOSL search string, for example FIND {Acme} IN NAME FIELDS RETURNING Account(Id, Name), Contact(Id, Name, Email)."
+          }
+        },
+        "required": [
+          "search"
+        ]
+      },
+      "annotations": {
+        "title": "Find",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "createSobjectRecord",
+      "description": "Creates a new Salesforce record. Call getObjectSchema first to learn required fields and valid values. Respects the user permissions and field-level security. Returns the new record Id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the object to create a record for."
+          },
+          "body": {
+            "type": "object",
+            "description": "Field-value pairs for the new record."
+          }
+        },
+        "required": [
+          "sobject-name",
+          "body"
+        ]
+      },
+      "annotations": {
+        "title": "Create sobject record",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "updateSobjectRecord",
+      "description": "Updates an existing record by Id. Include only the fields to change; omitted fields keep their values. Fails if the record is missing, the user lacks edit permission, or validation fails.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the object."
+          },
+          "id": {
+            "type": "string",
+            "description": "Salesforce record Id of the record to update."
+          },
+          "body": {
+            "type": "object",
+            "description": "Field-value pairs to update."
+          }
+        },
+        "required": [
+          "sobject-name",
+          "id",
+          "body"
+        ]
+      },
+      "annotations": {
+        "title": "Update sobject record",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "updateRelatedRecord",
+      "description": "Updates a parent record by traversing a child-to-parent relationship from a child record, up to five levels deep. If the parent Id is known, use updateSobjectRecord instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the child object to start from, for example Contact."
+          },
+          "id": {
+            "type": "string",
+            "description": "Salesforce record Id of the child record."
+          },
+          "relationship-path": {
+            "type": "string",
+            "description": "Child-to-parent relationship field that points to the parent, for example Account."
+          },
+          "body": {
+            "type": "object",
+            "description": "Field-value pairs to update on the parent record."
+          }
+        },
+        "required": [
+          "sobject-name",
+          "id",
+          "relationship-path",
+          "body"
+        ]
+      },
+      "annotations": {
+        "title": "Update related record",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

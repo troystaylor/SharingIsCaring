@@ -1,0 +1,141 @@
+{
+  "tools": [
+    {
+      "name": "getObjectSchema",
+      "description": "Returns Salesforce schema information optimized for LLM consumption. Call with no parameters for a compact index of queryable business objects, then with an object name for field-level detail (types, required flags, picklist values, relationships) plus admin-authored guidance.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "object-name": {
+            "type": "string",
+            "description": "API name of the object. Omit to get the compact index of all objects."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get object schema",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "soqlQuery",
+      "description": "Executes a SOQL query to retrieve Salesforce records. Always include a WHERE and a LIMIT clause. Supports relationship queries and subqueries. Maximum 50,000 records per transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A valid SOQL query string, for example SELECT Id, Name FROM Account WHERE Industry = 'Technology' LIMIT 100."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Soql query",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "find",
+      "description": "Executes a SOSL text search across multiple Salesforce objects at once. Use when the object is unknown or the term could appear in several objects. Returns at most 2,000 records.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "A valid SOSL search string, for example FIND {Acme} IN NAME FIELDS RETURNING Account(Id, Name), Contact(Id, Name, Email)."
+          }
+        },
+        "required": [
+          "search"
+        ]
+      },
+      "annotations": {
+        "title": "Find",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "getUserInfo",
+      "description": "Returns the signed-in user identity and context: user Id, name, email, role, profile, manager, local time and timezone.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "Get user info",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "listRecentSobjectRecords",
+      "description": "Returns records of a given type the user recently viewed or modified, ordered by last viewed date.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the object, for example Account, Case or Opportunity."
+          }
+        },
+        "required": [
+          "sobject-name"
+        ]
+      },
+      "annotations": {
+        "title": "List recent sobject records",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "getRelatedRecords",
+      "description": "Retrieves child records related to a parent record by traversing a relationship, for example Contacts of an Account. Supports multi-level traversal.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the parent object."
+          },
+          "id": {
+            "type": "string",
+            "description": "Salesforce record Id of the parent record."
+          },
+          "relationship-path": {
+            "type": "string",
+            "description": "Relationship name, for example Contacts or OpportunityLineItems."
+          }
+        },
+        "required": [
+          "sobject-name",
+          "id",
+          "relationship-path"
+        ]
+      },
+      "annotations": {
+        "title": "Get related records",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

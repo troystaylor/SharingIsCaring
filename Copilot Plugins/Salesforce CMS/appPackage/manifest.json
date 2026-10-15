@@ -1,0 +1,85 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce CMS${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce CMS"
+  },
+  "description": {
+    "short": "Find, draft, publish and organize Salesforce CMS content.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted Content Read-Only and Content Write MCP servers so you can search and read CMS workspaces, channels, folders and content, draft new content and translations, publish or unpublish to channels, and set up workspaces, channels and folder sharing. The skills confirm before any write or publish. Salesforce currently lists Agentforce Vibes as the only supported client for these servers, so verify support before rolling out. Requires Digital Experiences and CMS access."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-cms-read",
+      "displayName": "Salesforce CMS Read",
+      "description": "Read Salesforce CMS workspaces, channels, folders and content.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/content-readonly",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    },
+    {
+      "id": "salesforce-cms-write",
+      "displayName": "Salesforce CMS Write",
+      "description": "Create, edit, publish and organize Salesforce CMS content, folders and channels.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/content-write",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/find-cms-content"
+    },
+    {
+      "folder": "skills/draft-cms-article"
+    },
+    {
+      "folder": "skills/publish-or-unpublish-content"
+    },
+    {
+      "folder": "skills/set-up-cms-workspace"
+    },
+    {
+      "folder": "skills/find-brand-assets"
+    },
+    {
+      "folder": "skills/update-and-translate-content"
+    },
+    {
+      "folder": "skills/audit-cms-access"
+    }
+  ]
+}

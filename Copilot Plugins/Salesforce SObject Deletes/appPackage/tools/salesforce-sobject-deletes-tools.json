@@ -1,0 +1,131 @@
+{
+  "tools": [
+    {
+      "name": "getObjectSchema",
+      "description": "Returns Salesforce schema information optimized for LLM consumption. Call with no parameters for a compact index of queryable business objects, then with an object name for field-level detail (types, required flags, picklist values, relationships) plus admin-authored guidance.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "object-name": {
+            "type": "string",
+            "description": "API name of the object. Omit to get the compact index of all objects."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get object schema",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "soqlQuery",
+      "description": "Executes a SOQL query to retrieve Salesforce records. Always include a WHERE and a LIMIT clause. Supports relationship queries and subqueries. Maximum 50,000 records per transaction.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A valid SOQL query string, for example SELECT Id, Name FROM Account WHERE Industry = 'Technology' LIMIT 100."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Soql query",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "find",
+      "description": "Executes a SOSL text search across multiple Salesforce objects at once. Use when the object is unknown or the term could appear in several objects. Returns at most 2,000 records.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "A valid SOSL search string, for example FIND {Acme} IN NAME FIELDS RETURNING Account(Id, Name), Contact(Id, Name, Email)."
+          }
+        },
+        "required": [
+          "search"
+        ]
+      },
+      "annotations": {
+        "title": "Find",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "deleteSobjectRecord",
+      "description": "Permanently deletes a record by Id. Confirm with the user first. Deleted records go to the Recycle Bin and are recoverable in the Salesforce UI for up to 15 days; there is no undelete tool through MCP. Fails if the user lacks delete permission or the delete would violate relationship rules.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the object."
+          },
+          "id": {
+            "type": "string",
+            "description": "Salesforce record Id of the record to delete."
+          }
+        },
+        "required": [
+          "sobject-name",
+          "id"
+        ]
+      },
+      "annotations": {
+        "title": "Delete sobject record",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "deleteRelatedRecord",
+      "description": "Deletes a parent record by traversing a child-to-parent relationship from a child record. Deleting a master record in a master-detail relationship also deletes all of its detail records, including the child you started from. Confirm with the user first. If the parent Id is known, use deleteSobjectRecord.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject-name": {
+            "type": "string",
+            "description": "API name of the child object to start from."
+          },
+          "id": {
+            "type": "string",
+            "description": "Salesforce record Id of the child record."
+          },
+          "relationship-path": {
+            "type": "string",
+            "description": "Child-to-parent relationship field that points to the parent record to delete."
+          }
+        },
+        "required": [
+          "sobject-name",
+          "id",
+          "relationship-path"
+        ]
+      },
+      "annotations": {
+        "title": "Delete related record",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

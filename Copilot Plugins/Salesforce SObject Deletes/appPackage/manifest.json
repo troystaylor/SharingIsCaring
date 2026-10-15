@@ -1,0 +1,59 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce SObject Deletes${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce SObject Deletes (Delete Only)"
+  },
+  "description": {
+    "short": "Find and delete Salesforce records after a reviewed preview.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted SObject Deletes MCP server for data hygiene: it can find records and delete them, but cannot create or update. Skills cover safe deletion, duplicate removal and test data purges, each with a preview and explicit approval. Deleted records go to the Salesforce Recycle Bin for 15 days and cannot be restored through this plugin. Every call runs as you, so Salesforce delete permissions and sharing rules apply."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-sobject-deletes",
+      "displayName": "Salesforce SObject Deletes",
+      "description": "Find and delete Salesforce records, with schema lookup, SOQL and search to identify the exact set first.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/sobject-deletes",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/delete-records-safely"
+    },
+    {
+      "folder": "skills/find-and-remove-duplicates"
+    },
+    {
+      "folder": "skills/purge-test-data"
+    }
+  ]
+}

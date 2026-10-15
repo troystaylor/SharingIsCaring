@@ -1,0 +1,76 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce Analytics${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce Analytics (Tableau Next and CRM Analytics)"
+  },
+  "description": {
+    "short": "Ask governed analytics questions from Tableau Next and CRM Analytics.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted Tableau Next and CRM Analytics MCP servers so you can ask natural-language questions against semantic models, explore KPIs and definitions, find dashboards, and run SAQL against CRM Analytics datasets. Read-only. CRM Analytics is a Beta server. Every call runs as you, so Salesforce permissions apply."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "tableau-next",
+      "displayName": "Tableau Next",
+      "description": "Tableau Next semantic models, KPIs, dashboards and natural-language analytics questions.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/analytics/tableau-next",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    },
+    {
+      "id": "crm-analytics",
+      "displayName": "CRM Analytics",
+      "description": "CRM Analytics apps, datasets, dashboards, lenses and SAQL queries (read-only, Beta).",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/analytics/crma-beta",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/ask-analytics-question"
+    },
+    {
+      "folder": "skills/explain-metric-or-kpi"
+    },
+    {
+      "folder": "skills/query-crm-analytics-dataset"
+    },
+    {
+      "folder": "skills/find-dashboards"
+    }
+  ]
+}

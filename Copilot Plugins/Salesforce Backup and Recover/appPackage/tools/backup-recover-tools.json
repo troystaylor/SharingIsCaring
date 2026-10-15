@@ -1,0 +1,624 @@
+{
+  "tools": [
+    {
+      "name": "get_backups",
+      "description": "Lists backups for the org with optional pagination and sort. Use first to discover backup Ids.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort field, for example startTimestamp."
+          },
+          "sortDir": {
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ],
+            "description": "Sort direction."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get backups",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_backup_by_id",
+      "description": "Returns the current state of one backup: status, counts and per-object detail. Use to poll after starting a backup.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "backupId": {
+            "type": "string",
+            "description": "The Id of the backup."
+          }
+        },
+        "required": [
+          "backupId"
+        ]
+      },
+      "annotations": {
+        "title": "Get backup by id",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_backup_objects",
+      "description": "Returns the per-object breakdown of a backup with an optional object type filter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "backupId": {
+            "type": "string",
+            "description": "The Id of the backup."
+          },
+          "objectType": {
+            "type": "string",
+            "description": "Filter by object type, for example Account."
+          },
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          }
+        },
+        "required": [
+          "backupId"
+        ]
+      },
+      "annotations": {
+        "title": "Get backup objects",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_latest_policy",
+      "description": "Returns the current backup ingestion policy: schedules, exclusions and file and attachment inclusion.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "Get latest policy",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_retention_rules",
+      "description": "Returns the retention rules mapping backup cadence to retention years.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "Get retention rules",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_audit_events",
+      "description": "Returns Backup and Recover audit events, most recent first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get audit events",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "enqueue_backup",
+      "description": "Starts a new on-demand backup of the configured policy. Asynchronous: returns a backupId, then poll get_backup_by_id. Limited to three on-demand backups per day.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "Enqueue backup",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_activities",
+      "description": "Lists recover activities (compare, restore, download), most recent first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get activities",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_with_hierarchy",
+      "description": "Returns the state of one restore-with-hierarchy activity. Use to poll.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore with hierarchy",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_compare_activity",
+      "description": "Returns the state of one compare activity: from and to backups and objects in scope. Use to poll after creating a compare.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get compare activity",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_compare_activity_summaries",
+      "description": "Returns per-object change counts for a compare activity.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "searchTerm": {
+            "type": "string",
+            "description": "Filter objects by name."
+          },
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get compare activity summaries",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_activity_record_selection_metadata",
+      "description": "Returns record-selection metadata and preview for a restore activity.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore activity record selection metadata",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_selection_counts_by_type",
+      "description": "Returns selected-for-restore counts split by changed and deleted, for one object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "objectName": {
+            "type": "string",
+            "description": "API name of the object."
+          }
+        },
+        "required": [
+          "activityId",
+          "objectName"
+        ]
+      },
+      "annotations": {
+        "title": "Get selection counts by type",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_result_counts",
+      "description": "Returns per-status insert and update result counts for one object on a restore activity.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "objectName": {
+            "type": "string",
+            "description": "API name of the object."
+          }
+        },
+        "required": [
+          "activityId",
+          "objectName"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore result counts",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_activity",
+      "description": "Returns the flat (non-hierarchy) restore rollup plus per-object breakdown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore activity",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_activity",
+      "description": "Generic single-activity lookup of any type, for when the activity type is unknown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get activity",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_hierarchy_summary",
+      "description": "Returns per-node-path deleted and modified counts and preview or restore status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "nodePaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Node paths to summarize, for example Account and Account:Contact."
+          }
+        },
+        "required": [
+          "activityId",
+          "nodePaths"
+        ]
+      },
+      "annotations": {
+        "title": "Get hierarchy summary",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_activity_summary",
+      "description": "Returns the per-object restore summary (updated, inserted, failed), paginated and filterable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "searchTerm": {
+            "type": "string",
+            "description": "Filter objects by name."
+          },
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          }
+        },
+        "required": [
+          "activityId"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore activity summary",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_activity_object_results",
+      "description": "Returns per-record restore results for one object: new and old Ids, status, insert or update.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "objectName": {
+            "type": "string",
+            "description": "API name of the object."
+          },
+          "searchTerm": {
+            "type": "string",
+            "description": "Filter results by text."
+          },
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          }
+        },
+        "required": [
+          "activityId",
+          "objectName"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore activity object results",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_restore_with_hierarchy_results",
+      "description": "Returns per-record results for one node path in a restore-with-hierarchy activity.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the activity."
+          },
+          "nodePath": {
+            "type": "string",
+            "description": "Node path, for example Account:Contact."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "inserted",
+              "updated"
+            ],
+            "description": "inserted for the hierarchy-tree view, updated for the flat view."
+          },
+          "pageNumber": {
+            "type": "integer",
+            "description": "Page number, starting at 1."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of items per page."
+          }
+        },
+        "required": [
+          "activityId",
+          "nodePath",
+          "type"
+        ]
+      },
+      "annotations": {
+        "title": "Get restore with hierarchy results",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_compare_activity",
+      "description": "Creates a compare that diffs two backups. Asynchronous: returns an activityId, then poll get_compare_activity.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fromBackupId": {
+            "type": "string",
+            "description": "The Id of the older backup."
+          },
+          "toBackupId": {
+            "type": "string",
+            "description": "The Id of the newer backup."
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Objects to compare, or [\"all\"] for every object present in both backups."
+          },
+          "activityType": {
+            "type": "string",
+            "enum": [
+              "COMPARE",
+              "COMPARE_METADATA"
+            ],
+            "description": "COMPARE for data (default) or COMPARE_METADATA for metadata."
+          }
+        },
+        "required": [
+          "fromBackupId",
+          "toBackupId",
+          "objects"
+        ]
+      },
+      "annotations": {
+        "title": "Create compare activity",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_selection_records",
+      "description": "Updates which records are selected for restore on a COMPARE activity using batch filter and change expressions. Overwrites the prior selection; last matching batch wins. Not valid for RESTORE activities.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "description": "The Id of the COMPARE activity."
+          },
+          "objectName": {
+            "type": "string",
+            "description": "API name of the object."
+          },
+          "batches": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Batches of {filterExp:[{fieldName,operator,value}], changeExp:[{fieldName:\"selectedForRestore\", value:\"true\"|\"false\"}]}."
+          }
+        },
+        "required": [
+          "activityId",
+          "objectName",
+          "batches"
+        ]
+      },
+      "annotations": {
+        "title": "Update selection records",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

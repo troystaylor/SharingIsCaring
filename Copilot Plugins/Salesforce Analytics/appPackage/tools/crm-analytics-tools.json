@@ -1,0 +1,406 @@
+{
+  "tools": [
+    {
+      "name": "list_folders",
+      "description": "Lists analytics apps (folders) the user can access.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Search terms separated by spaces."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "CreatedByMe",
+              "Mru",
+              "SharedWithMe"
+            ],
+            "description": "Filter by scope."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "Name",
+              "Mru",
+              "LastModified",
+              "LastModifiedBy"
+            ],
+            "description": "Sort order."
+          },
+          "isPinned": {
+            "type": "boolean",
+            "description": "Return only pinned folders when true."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Results per page, 1 to 200. Default 25."
+          },
+          "page": {
+            "type": "string",
+            "description": "Pagination token for the next page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List folders",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_folder",
+      "description": "Gets full metadata for one analytics app (folder).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "The Id of the folder."
+          }
+        },
+        "required": [
+          "folderId"
+        ]
+      },
+      "annotations": {
+        "title": "Get folder",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_datasets",
+      "description": "Lists datasets in an app or across the org with names, Ids and last-modified dates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Search terms separated by spaces."
+          },
+          "folderId": {
+            "type": "string",
+            "description": "Limit to datasets in this folder (app)."
+          },
+          "datasetTypes": {
+            "type": "string",
+            "description": "Dataset type: Default, Live, StagedData or Trended."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "CreatedByMe",
+              "Mru",
+              "SharedWithMe"
+            ],
+            "description": "Filter by scope."
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort order, for example Name, LastModified, TotalRows or LastRefreshed."
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "Ascending",
+              "Descending"
+            ],
+            "description": "Sort direction."
+          },
+          "includeCurrentVersion": {
+            "type": "boolean",
+            "description": "Include current version metadata when true."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Results per page, 1 to 200. Default 25."
+          },
+          "page": {
+            "type": "string",
+            "description": "Pagination token for the next page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List datasets",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_dataset",
+      "description": "Gets full dataset metadata including fields and the currentVersionId required by get_xmd and execute_query.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "datasetIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the dataset."
+          }
+        },
+        "required": [
+          "datasetIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get dataset",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_xmd",
+      "description": "Gets extended metadata (field API names, types, labels, formatting) for a dataset version. Use before writing SAQL.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "datasetIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the dataset."
+          },
+          "versionId": {
+            "type": "string",
+            "description": "18-character dataset version Id starting with 0Fc, from get_dataset."
+          },
+          "xmdType": {
+            "type": "string",
+            "enum": [
+              "main",
+              "system",
+              "user"
+            ],
+            "description": "XMD type. Default main."
+          }
+        },
+        "required": [
+          "datasetIdOrApiName",
+          "versionId"
+        ]
+      },
+      "annotations": {
+        "title": "Get xmd",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "execute_query",
+      "description": "Executes a SAQL query against a CRM Analytics dataset and returns structured rows and column metadata. The load stage must use \"<datasetId>/<currentVersionId>\" and the query must end with a limit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "SAQL pipeline ending with a limit statement, for example q = limit q 100;"
+          },
+          "queryLanguage": {
+            "type": "string",
+            "enum": [
+              "Saql"
+            ],
+            "description": "Query language. Locked to Saql."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone, for example America/Los_Angeles."
+          },
+          "version": {
+            "type": "number",
+            "description": "SAQL version. Omit for latest."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Execute query",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_dashboards",
+      "description": "Lists CRM Analytics dashboards in an app or across the org.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Search terms."
+          },
+          "folderId": {
+            "type": "string",
+            "description": "Limit to dashboards in this folder (app)."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "Dashboard",
+              "DashboardSnapshot",
+              "Component"
+            ],
+            "description": "Asset type. Default Dashboard."
+          },
+          "templateApiName": {
+            "type": "string",
+            "description": "Limit to dashboards created from this application template."
+          },
+          "mobileOnly": {
+            "type": "boolean",
+            "description": "Return only dashboards enabled for the Analytics mobile app."
+          },
+          "ids": {
+            "type": "string",
+            "description": "Limit to dashboards with these Ids."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "CreatedByMe",
+              "SharedWithMe",
+              "Mru"
+            ],
+            "description": "Filter by scope."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "Name",
+              "Mru",
+              "LastModified",
+              "LastModifiedBy"
+            ],
+            "description": "Sort order."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Results per page, 1 to 200. Default 25."
+          },
+          "page": {
+            "type": "string",
+            "description": "Pagination token for the next page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List dashboards",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_dashboard",
+      "description": "Gets full dashboard metadata: widgets, steps, filters and layout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dashboardIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the dashboard."
+          }
+        },
+        "required": [
+          "dashboardIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get dashboard",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_lenses",
+      "description": "Lists saved explorations (lenses) the user can access, with the datasets they reference.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Search terms."
+          },
+          "folderId": {
+            "type": "string",
+            "description": "Limit to lenses in this folder (app)."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "CreatedByMe",
+              "SharedWithMe",
+              "Mru"
+            ],
+            "description": "Filter by scope."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "Name",
+              "Mru",
+              "LastModified",
+              "LastModifiedBy"
+            ],
+            "description": "Sort order."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Results per page, 1 to 200. Default 25."
+          },
+          "page": {
+            "type": "string",
+            "description": "Pagination token for the next page."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List lenses",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_lens",
+      "description": "Gets full lens metadata including the query definition and dataset reference.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "lensIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the lens."
+          }
+        },
+        "required": [
+          "lensIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get lens",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

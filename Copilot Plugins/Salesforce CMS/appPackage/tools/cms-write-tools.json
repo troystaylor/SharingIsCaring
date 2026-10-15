@@ -1,0 +1,719 @@
+{
+  "tools": [
+    {
+      "name": "update_cms_workspace_channels",
+      "description": "Adds or removes channels associated with an enhanced CMS workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentSpaceId": {
+            "type": "string",
+            "description": "The Id of the CMS workspace."
+          },
+          "spaceChannels": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Items of {channelId, operation} where operation is Add or Remove."
+          }
+        },
+        "required": [
+          "contentSpaceId",
+          "spaceChannels"
+        ]
+      },
+      "annotations": {
+        "title": "Update cms workspace channels",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_cms_workspace",
+      "description": "Creates a CMS workspace (managed content space).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Workspace name."
+          },
+          "defaultLanguage": {
+            "type": "string",
+            "description": "Default language."
+          },
+          "spaceType": {
+            "type": "string",
+            "enum": [
+              "App_Dev",
+              "Content",
+              "Enablement",
+              "Experience",
+              "ExperienceContainer",
+              "Fragment_Space",
+              "Gen_AI",
+              "Library",
+              "Marketing",
+              "SalesEngagement",
+              "Web_App"
+            ],
+            "description": "Workspace type."
+          },
+          "isUndeletable": {
+            "type": "boolean",
+            "description": "Prevent deletion when true."
+          },
+          "apiName": {
+            "type": "string",
+            "description": "Workspace API name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Workspace description."
+          },
+          "channelsList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Channel Ids to add."
+          },
+          "collaboratorsList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Contributors as {memberId, roleId}."
+          },
+          "supportedLanguagesList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Supported languages."
+          },
+          "isFlowOrchestrationEnabled": {
+            "type": "boolean",
+            "description": "Install the orchestrator module when true."
+          },
+          "isSpaceV2": {
+            "type": "boolean",
+            "description": "Whether this is an enhanced (2.0) workspace."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "annotations": {
+        "title": "Create cms workspace",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_cms_workspace",
+      "description": "Updates properties of an existing CMS workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentSpaceId": {
+            "type": "string",
+            "description": "The Id of the CMS workspace."
+          },
+          "name": {
+            "type": "string",
+            "description": "Workspace name."
+          },
+          "apiName": {
+            "type": "string",
+            "description": "Workspace API name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Workspace description."
+          },
+          "channelsList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Channel Ids to add."
+          },
+          "collaboratorsList": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Contributors as {memberId, roleId}."
+          },
+          "supportedLanguagesList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Supported languages."
+          },
+          "isFlowOrchestrationEnabled": {
+            "type": "boolean",
+            "description": "Install the orchestrator module when true."
+          },
+          "isSpaceV2": {
+            "type": "boolean",
+            "description": "Whether this is an enhanced (2.0) workspace."
+          }
+        },
+        "required": [
+          "contentSpaceId"
+        ]
+      },
+      "annotations": {
+        "title": "Update cms workspace",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_cms_content",
+      "description": "Creates a CMS content item in an enhanced workspace or folder. Does not publish it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "description": "Fully qualified content type name, for example sfdc_cms__news."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the content item."
+          },
+          "contentBody": {
+            "type": "string",
+            "description": "Content body as a JSON object string matching the content type schema."
+          },
+          "contentSpaceOrFolderId": {
+            "type": "string",
+            "description": "Id of the workspace or folder to create the content in."
+          },
+          "apiName": {
+            "type": "string",
+            "description": "API name of the content item."
+          },
+          "contentKey": {
+            "type": "string",
+            "description": "Content key (UUID) to assign."
+          },
+          "externalId": {
+            "type": "string",
+            "description": "External Id of the content."
+          },
+          "urlName": {
+            "type": "string",
+            "description": "URL-friendly identifier."
+          }
+        },
+        "required": [
+          "contentType",
+          "title",
+          "contentBody",
+          "contentSpaceOrFolderId"
+        ]
+      },
+      "annotations": {
+        "title": "Create cms content",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_cms_content_variant",
+      "description": "Creates a language- or channel-specific variant of an existing content item.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "managedContentKeyOrId": {
+            "type": "string",
+            "description": "Id or content key of the content item."
+          },
+          "variantTitle": {
+            "type": "string",
+            "description": "Title of the variant."
+          },
+          "languageCode": {
+            "type": "string",
+            "description": "Language code, for example en_US, fr or de."
+          },
+          "contentBody": {
+            "type": "string",
+            "description": "Content body as a JSON object string matching the content type schema."
+          },
+          "urlName": {
+            "type": "string",
+            "description": "URL-friendly identifier of the variant."
+          }
+        },
+        "required": [
+          "managedContentKeyOrId",
+          "variantTitle",
+          "languageCode",
+          "contentBody"
+        ]
+      },
+      "annotations": {
+        "title": "Create cms content variant",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "clone_cms_content",
+      "description": "Copies a CMS content item within the same enhanced workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentKeyOrId": {
+            "type": "string",
+            "description": "Content key or Id of the item to clone."
+          },
+          "apiName": {
+            "type": "string",
+            "description": "API name of the clone."
+          },
+          "contentSpaceOrFolderId": {
+            "type": "string",
+            "description": "Target folder Id. Defaults to the source folder."
+          },
+          "includeVariants": {
+            "type": "boolean",
+            "description": "Include variants when true. Default false."
+          },
+          "referencesToClone": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Internal references to clone."
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the clone. Defaults to \"clone of\" plus the source title."
+          }
+        },
+        "required": [
+          "contentKeyOrId"
+        ]
+      },
+      "annotations": {
+        "title": "Clone cms content",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_cms_content_variant",
+      "description": "Updates a content variant by replacing its whole body, or by refining it from a natural-language prompt. Specify exactly one of contentBody or prompt.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "description": "The Id of the variant to update."
+          },
+          "contentBody": {
+            "type": "string",
+            "description": "Full replacement body as a JSON object string. Specify this or prompt, not both."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Natural-language instruction for changing the body. Specify this or contentBody, not both."
+          },
+          "title": {
+            "type": "string",
+            "description": "Override for the variant title."
+          },
+          "urlName": {
+            "type": "string",
+            "description": "Override for the variant URL name."
+          },
+          "apiName": {
+            "type": "string",
+            "description": "Override for the variant API name."
+          }
+        },
+        "required": [
+          "variantId"
+        ]
+      },
+      "annotations": {
+        "title": "Update cms content variant",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "publish_cms_content",
+      "description": "Publishes CMS content to the channels connected to its workspace, making it available through those delivery channels. Specify contentIds or variantIds.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Content item Ids to publish (all variants). Required if variantIds is not given."
+          },
+          "variantIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Variant Ids to publish, all from the same workspace. Required if contentIds is not given."
+          },
+          "contextContentSpaceId": {
+            "type": "string",
+            "description": "Workspace to publish from. Required for content shared to a workspace."
+          },
+          "includeContentReferences": {
+            "type": "boolean",
+            "description": "Include content references when true."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description for the publish action."
+          }
+        }
+      },
+      "annotations": {
+        "title": "Publish cms content",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "unpublish_cms_content",
+      "description": "Unpublishes CMS content from its delivery channels, reverting it to draft and making it unavailable to external viewers.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "contentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Content item Ids to unpublish."
+          },
+          "contextContentSpaceId": {
+            "type": "string",
+            "description": "Workspace to unpublish from."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description for the unpublish action."
+          }
+        },
+        "required": [
+          "contentIds"
+        ]
+      },
+      "annotations": {
+        "title": "Unpublish cms content",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_cms_folder",
+      "description": "Creates a folder in an enhanced CMS workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Folder name."
+          },
+          "parentId": {
+            "type": "string",
+            "description": "Id of the parent folder."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "annotations": {
+        "title": "Create cms folder",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_cms_folder",
+      "description": "Updates the name or parent of a CMS folder.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "The Id of the folder."
+          },
+          "name": {
+            "type": "string",
+            "description": "The updated folder name."
+          },
+          "parentFolderId": {
+            "type": "string",
+            "description": "Id of the parent folder."
+          }
+        },
+        "required": [
+          "folderId"
+        ]
+      },
+      "annotations": {
+        "title": "Update cms folder",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_cms_folder_sharing_settings",
+      "description": "Grants, modifies or revokes folder access for users, groups or roles.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": "string",
+            "description": "The Id of the folder."
+          },
+          "shareWith": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Targets to share with, each {targetId}."
+          },
+          "unshareWith": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target Ids to stop sharing with."
+          }
+        },
+        "required": [
+          "folderId"
+        ]
+      },
+      "annotations": {
+        "title": "Update cms folder sharing settings",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_cms_channel",
+      "description": "Creates a CMS channel that controls how and where content is delivered.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Channel name."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CloudToCloud",
+              "Community",
+              "ConnectedApp",
+              "PublicUnauthenticated",
+              "UserPermission",
+              "WebApp"
+            ],
+            "description": "Channel type."
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Target Id associated with the channel."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain Id or name for a public channel."
+          },
+          "isDomainLocked": {
+            "type": "boolean",
+            "description": "Lock the domain when true."
+          },
+          "isEnhanced": {
+            "type": "boolean",
+            "description": "Compatible with enhanced workspaces when true."
+          },
+          "isCrossApi": {
+            "type": "boolean",
+            "description": "Supports both 1.0 and 2.0 content when true."
+          },
+          "isSearchable": {
+            "type": "boolean",
+            "description": "Enable text search of channel content."
+          },
+          "isHighScale": {
+            "type": "boolean",
+            "description": "High scale channel when true."
+          },
+          "isDedicatedContentDelivery": {
+            "type": "boolean",
+            "description": "Enable off-core dedicated content delivery."
+          },
+          "cacheControlMaxAge": {
+            "type": "number",
+            "description": "Cache-Control max age in seconds."
+          },
+          "mediaCacheControlMaxAge": {
+            "type": "number",
+            "description": "Media Cache-Control max age in seconds."
+          },
+          "managedContentOffCoreLocation": {
+            "type": "object",
+            "description": "Off-core location: bucketName, namedCredential, offCoreLocationType."
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "annotations": {
+        "title": "Create cms channel",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "update_cms_channel",
+      "description": "Updates properties of an existing CMS channel such as name, domain and cache settings.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "The Id of the CMS channel."
+          },
+          "name": {
+            "type": "string",
+            "description": "Channel name."
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Target Id associated with the channel."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Domain Id or name for a public channel."
+          },
+          "isDomainLocked": {
+            "type": "boolean",
+            "description": "Lock the domain when true."
+          },
+          "isEnhanced": {
+            "type": "boolean",
+            "description": "Compatible with enhanced workspaces when true."
+          },
+          "isCrossApi": {
+            "type": "boolean",
+            "description": "Supports both 1.0 and 2.0 content when true."
+          },
+          "isSearchable": {
+            "type": "boolean",
+            "description": "Enable text search of channel content."
+          },
+          "isHighScale": {
+            "type": "boolean",
+            "description": "High scale channel when true."
+          },
+          "isDedicatedContentDelivery": {
+            "type": "boolean",
+            "description": "Enable off-core dedicated content delivery."
+          },
+          "cacheControlMaxAge": {
+            "type": "number",
+            "description": "Cache-Control max age in seconds."
+          },
+          "mediaCacheControlMaxAge": {
+            "type": "number",
+            "description": "Media Cache-Control max age in seconds."
+          },
+          "managedContentOffCoreLocation": {
+            "type": "object",
+            "description": "Off-core location: bucketName, namedCredential, offCoreLocationType."
+          }
+        },
+        "required": [
+          "channelId"
+        ]
+      },
+      "annotations": {
+        "title": "Update cms channel",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_or_create_cms_workspace_and_web_app_channel",
+      "description": "Gets or creates an enhanced CMS workspace and a Web App channel for a UI Bundle, reusing them if they exist.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "developerName": {
+            "type": "string",
+            "description": "Developer name of the UI Bundle."
+          },
+          "masterLabel": {
+            "type": "string",
+            "description": "Human-readable name of the UI Bundle."
+          }
+        },
+        "required": [
+          "developerName",
+          "masterLabel"
+        ]
+      },
+      "annotations": {
+        "title": "Get or create cms workspace and web app channel",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

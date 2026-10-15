@@ -1,0 +1,152 @@
+{
+  "tools": [
+    {
+      "name": "discover",
+      "description": "Semantic search across the index of available Salesforce operations. Returns a ranked set of candidate operations for a natural-language request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural-language description of what you want to do."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of results, 1 to 50. Default 10."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Optional domain filter, for example platform, commerce or service."
+          },
+          "resultType": {
+            "type": "string",
+            "enum": [
+              "endpoint",
+              "sor"
+            ],
+            "description": "endpoint for individual API operations, sor for multi-step Setup Operation Recipes."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Discover",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "describe",
+      "description": "Returns the technical contract for an operation: APIs, parameters, dependencies and ordered steps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The qualified operation Id or SOR Id to describe."
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "annotations": {
+        "title": "Describe",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "dispatch",
+      "description": "Invokes the chosen operation. Can change org configuration or data, so confirm changes with the user first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The complete URL to call."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE",
+              "PATCH"
+            ],
+            "description": "HTTP method to use."
+          },
+          "headers": {
+            "type": "object",
+            "description": "Optional HTTP headers as key-value pairs."
+          },
+          "body": {
+            "type": "object",
+            "description": "Optional request body for POST, PUT and PATCH."
+          },
+          "queryParams": {
+            "type": "object",
+            "description": "Optional query parameters as key-value pairs."
+          }
+        },
+        "required": [
+          "url",
+          "method"
+        ]
+      },
+      "annotations": {
+        "title": "Dispatch",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "dispatch_readonly",
+      "description": "Invokes the chosen operation in read-only mode. Never changes data or configuration.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The complete URL to call."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET"
+            ],
+            "description": "HTTP method. Restricted to GET."
+          },
+          "headers": {
+            "type": "object",
+            "description": "Optional HTTP headers as key-value pairs."
+          },
+          "queryParams": {
+            "type": "object",
+            "description": "Optional query parameters as key-value pairs."
+          }
+        },
+        "required": [
+          "url",
+          "method"
+        ]
+      },
+      "annotations": {
+        "title": "Dispatch readonly",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce Data 360${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce Data 360"
+  },
+  "description": {
+    "short": "Query and manage Data 360 unified profiles, segments and data model.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted Data 360 MCP server so you can query unified customer data with Data Cloud SQL, build and size segments, and inventory data lake objects, data model objects, streams and calculated insights. The server discovers the right Connect API at runtime. Some tools create, change or delete configuration, and the skills confirm those first. Requires a Data 360 license; calls count toward Connect API limits and Flex Credit usage."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-data-360",
+      "displayName": "Salesforce Data 360",
+      "description": "Query and manage Data 360 unified profiles, segments, calculated insights and data model objects.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/data/data360",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/explore-unified-profile"
+    },
+    {
+      "folder": "skills/build-segment"
+    },
+    {
+      "folder": "skills/inventory-data-model"
+    },
+    {
+      "folder": "skills/manage-calculated-insights"
+    },
+    {
+      "folder": "skills/map-data-to-model"
+    },
+    {
+      "folder": "skills/configure-activation"
+    }
+  ]
+}

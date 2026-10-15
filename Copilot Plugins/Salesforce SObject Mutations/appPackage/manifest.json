@@ -1,0 +1,65 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce SObject Mutate${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce SObject Mutations (Create and Update)"
+  },
+  "description": {
+    "short": "Log notes, create records and update Salesforce, with confirmation first.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted SObject Mutations MCP server so you can create and update Salesforce records, with skills for logging meeting notes, updating opportunities, creating leads and contacts, and previewing bulk updates. Records cannot be deleted through this plugin, and the skills confirm every change before writing. Every call runs as you, so Salesforce permissions, validation rules and field-level security apply."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-sobject-mutations",
+      "displayName": "Salesforce SObject Mutations",
+      "description": "Create and update Salesforce records (no delete), with schema lookup, SOQL and search to resolve IDs first.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/sobject-mutations",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/log-meeting-notes"
+    },
+    {
+      "folder": "skills/update-opportunity"
+    },
+    {
+      "folder": "skills/create-lead-or-contact"
+    },
+    {
+      "folder": "skills/preview-bulk-update"
+    },
+    {
+      "folder": "skills/create-or-update-case"
+    }
+  ]
+}

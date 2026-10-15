@@ -1,0 +1,62 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.2",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/overview",
+    "privacyUrl": "https://www.salesforce.com/company/privacy/",
+    "termsOfUseUrl": "https://www.salesforce.com/company/legal/program-agreement/"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce Backup${{APP_NAME_SUFFIX}}",
+    "full": "Salesforce Backup and Recover"
+  },
+  "description": {
+    "short": "Check backup health, compare backups and prepare guided restores.",
+    "full": "Connects Microsoft 365 Copilot to the Salesforce hosted Backup and Recover MCP server so you can review backups, policy, retention and audit history, start on-demand backups, compare two backups and prepare a restore selection. Destructive operations and restore execution are intentionally not available through MCP; the restore itself runs in Salesforce. Requires the Backup and Recover add-on licenses and appropriate permissions."
+  },
+  "accentColor": "#00A1E0",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "api.salesforce.com"
+  ],
+  "agentConnectors": [
+    {
+      "id": "salesforce-backup-and-recover",
+      "displayName": "Salesforce Backup and Recover",
+      "description": "Inspect backups, policy and retention, start on-demand backups and prepare guided restores.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://api.salesforce.com/platform/mcp/v1/platform/backup-and-recover",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/backup-health-check"
+    },
+    {
+      "folder": "skills/compare-backups-and-plan-restore"
+    },
+    {
+      "folder": "skills/run-on-demand-backup"
+    },
+    {
+      "folder": "skills/review-restore-results"
+    }
+  ]
+}

@@ -1,0 +1,451 @@
+{
+  "tools": [
+    {
+      "name": "analyze_data",
+      "description": "Runs a natural-language question through the Tableau Analytics Agent against a semantic model and returns the interpreted question, data used, results and a narrative summary.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "utterance": {
+            "type": "string",
+            "description": "The natural-language question to analyze."
+          },
+          "target_entity_type": {
+            "type": "string",
+            "enum": [
+              "sdm"
+            ],
+            "description": "Must be sdm."
+          },
+          "target_entity_name_or_id": {
+            "type": "string",
+            "description": "API name or Id of the target semantic model."
+          }
+        },
+        "required": [
+          "utterance",
+          "target_entity_type",
+          "target_entity_name_or_id"
+        ]
+      },
+      "annotations": {
+        "title": "Analyze data",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_dashboards",
+      "description": "Lists Tableau Next dashboards available to the user (metadata only).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "List dashboards",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_dashboard",
+      "description": "Gets details of one Tableau Next dashboard, including contained visualizations.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dashboardIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the dashboard."
+          }
+        },
+        "required": [
+          "dashboardIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get dashboard",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_visualizations",
+      "description": "Lists visualizations (worksheets) available across Tableau Next (metadata only).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "List visualizations",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_visualization",
+      "description": "Gets details of one Tableau Next visualization: name, type, data source and configuration.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "visualisationIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the visualization."
+          }
+        },
+        "required": [
+          "visualisationIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get visualization",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_models",
+      "description": "Lists semantic data models available to the user. Call this first to discover analytical topics.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "List semantic models",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_semantic_model",
+      "description": "Gets the full profile of one semantic model, including business preferences and configuration.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          }
+        },
+        "required": [
+          "modelIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get semantic model",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_data_objects",
+      "description": "Lists the data objects (entities) defined in a semantic model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          }
+        },
+        "required": [
+          "modelIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model data objects",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_relationships",
+      "description": "Lists relationships between data objects in a semantic model: from, to, join type and cardinality.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          }
+        },
+        "required": [
+          "modelIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model relationships",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_semantic_model_logical_view",
+      "description": "Gets the structure of one logical view in a semantic model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          },
+          "logicalViewIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the logical view."
+          }
+        },
+        "required": [
+          "modelIdOrApiName",
+          "logicalViewIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get semantic model logical view",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_measures",
+      "description": "Lists numeric measures for a data object in a semantic model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          },
+          "dataObjectIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the data object."
+          }
+        },
+        "required": [
+          "modelIdOrApiName",
+          "dataObjectIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model measures",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_dimensions",
+      "description": "Lists dimensions for a data object in a semantic model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          },
+          "dataObjectIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the data object."
+          }
+        },
+        "required": [
+          "modelIdOrApiName",
+          "dataObjectIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model dimensions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_metrics",
+      "description": "Lists governed business metrics and KPIs defined in a semantic model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          }
+        },
+        "required": [
+          "modelIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model metrics",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_semantic_model_metric",
+      "description": "Gets the full definition of one metric or KPI: calculation, data source, thresholds and targets.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          },
+          "metricIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the metric."
+          }
+        },
+        "required": [
+          "modelIdOrApiName",
+          "metricIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "Get semantic model metric",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_calculated_dimensions",
+      "description": "Lists calculated dimensions in a semantic model with their expressions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          }
+        },
+        "required": [
+          "modelIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model calculated dimensions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_semantic_model_calculated_measures",
+      "description": "Lists calculated measures in a semantic model with their formulas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "modelIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the semantic model."
+          }
+        },
+        "required": [
+          "modelIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List semantic model calculated measures",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_workspaces",
+      "description": "Lists Tableau Next workspaces available to the user, or returns one workspace by Id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceIdOrApiName": {
+            "type": "string",
+            "description": "If provided, returns only this workspace."
+          }
+        }
+      },
+      "annotations": {
+        "title": "List workspaces",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_workspace_assets",
+      "description": "Lists dashboards, visualizations and other assets in a workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspaceIdOrApiName": {
+            "type": "string",
+            "description": "The Id or API name of the workspace."
+          }
+        },
+        "required": [
+          "workspaceIdOrApiName"
+        ]
+      },
+      "annotations": {
+        "title": "List workspace assets",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_assets",
+      "description": "Searches dashboards, visualizations and semantic models by keyword with an optional type filter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search keyword or phrase."
+          },
+          "type": {
+            "type": "string",
+            "description": "Optional asset type filter, for example dashboard, visualization or semanticModel."
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Search assets",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}
