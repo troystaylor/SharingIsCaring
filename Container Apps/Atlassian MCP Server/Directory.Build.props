@@ -1,0 +1,21 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!--
+    On Windows, build output is redirected to %LOCALAPPDATA% so a synced folder (OneDrive, Dropbox) does not
+    churn on bin/ and obj/. Skipped when LOCALAPPDATA is unset, which keeps Linux container builds working.
+  -->
+  <PropertyGroup Condition="'$(LOCALAPPDATA)' != ''">
+    <BaseOutputPath>$(LOCALAPPDATA)\AtlassianMcp\build\$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\AtlassianMcp\build\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+</Project>
