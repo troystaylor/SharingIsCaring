@@ -1,0 +1,803 @@
+{
+  "tools": [
+    {
+      "name": "update_record",
+      "title": "Update Record",
+      "description": "Changes fields on one existing Salesforce record. Only the fields you pass are changed, and each one overwrites its current value. Read the record with get_record first if you need the old value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account or Opportunity.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The 15 or 18 character record ID.",
+            "type": "string"
+          },
+          "fields": {
+            "description": "New field values keyed by field API name, such as {\"StageName\":\"Closed Won\"}.",
+            "type": "object"
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "id",
+          "fields"
+        ]
+      },
+      "annotations": {
+        "title": "Update Record",
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "get_field_metadata",
+      "title": "Get Field Metadata",
+      "description": "Returns one field's setup metadata: label, type, description, inline help text, and for a custom field its formula, default value, and whether it is required, unique, or an external ID. Use it to explain how a formula field is calculated or what a field is meant to hold.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Demo__c or Account.",
+            "type": "string"
+          },
+          "field": {
+            "description": "The field API name, such as Region__c or Industry.",
+            "type": "string"
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "field"
+        ]
+      },
+      "annotations": {
+        "title": "Get Field Metadata",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "delete_record",
+      "title": "Delete Record",
+      "description": "Deletes one Salesforce record. Salesforce moves most records to the Recycle Bin, where an admin can restore them for 15 days, but related records can be deleted with it. Confirm with the user before calling this.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Contact or Case.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The 15 or 18 character record ID.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sobject",
+          "id"
+        ]
+      },
+      "annotations": {
+        "title": "Delete Record",
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "get_picklist_values",
+      "title": "Get Picklist Values",
+      "description": "Lists the allowed values of one picklist field, with each value's label, which is the default, and for a dependent picklist which values of the controlling field make it valid. Pass recordTypeId (from get_record_types) to get only the values that record type allows. Use it before creating or updating a record, because a value outside the list is rejected.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Case or Demo__c.",
+            "type": "string"
+          },
+          "field": {
+            "description": "The picklist field API name, such as Status or Region__c.",
+            "type": "string"
+          },
+          "recordTypeId": {
+            "description": "Optional record type ID, from get_record_types.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "field"
+        ]
+      },
+      "annotations": {
+        "title": "Get Picklist Values",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "create_record",
+      "title": "Create Record",
+      "description": "Creates one Salesforce record and returns its new ID and a recordUrl. Call describe_object first to get the exact field API names and which fields are required. Do not call this twice for the same record: it creates a duplicate each time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account, Contact, or Invoice__c.",
+            "type": "string"
+          },
+          "fields": {
+            "description": "Field values keyed by field API name, such as {\"Name\":\"Acme\",\"Industry\":\"Retail\"}.",
+            "type": "object"
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "fields"
+        ]
+      },
+      "annotations": {
+        "title": "Create Record",
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      }
+    },
+    {
+      "name": "sosl_search",
+      "title": "Search Across Objects",
+      "description": "Runs a SOSL full-text search that looks across several objects at once, for example FIND {Acme} IN NAME FIELDS RETURNING Account(Id, Name), Contact(Id, Name, Email) LIMIT 10. Use it when you have a name or keyword but do not know which object holds it. Use soql_query when you know the object and the filter.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "description": "A SOSL statement that starts with FIND. Wrap the search text in braces.",
+            "type": "string"
+          },
+          "maxRecords": {
+            "description": "Most records to return in this response, from 1 to 200. Defaults to 50.",
+            "type": "integer",
+            "default": 50
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "search"
+        ]
+      },
+      "annotations": {
+        "title": "Search Across Objects",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_page_layout",
+      "title": "Get Page Layout",
+      "description": "Shows the page layout for an object: the sections and fields a user sees when editing a record, which fields are required on the layout, which are read-only, and the related lists. Pass recordTypeId (from get_record_types) to get the layout for one record type. Without it, an object with several layouts returns the record-type-to-layout mapping instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Opportunity or Demo__c.",
+            "type": "string"
+          },
+          "recordTypeId": {
+            "description": "Optional record type ID, from get_record_types.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "Get Page Layout",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "query_more",
+      "title": "Get Next Page of Query Results",
+      "description": "Fetches the next batch of a SOQL query that returned done: false. Pass the nextRecordsUrl exactly as the previous soql_query or query_more call returned it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "nextRecordsUrl": {
+            "description": "The nextRecordsUrl value from the previous result, such as /services/data/v66.0/query/01gxx0000000001AAA-2000.",
+            "type": "string"
+          },
+          "maxRecords": {
+            "description": "Most records to return in this response, from 1 to 200. Defaults to 50.",
+            "type": "integer",
+            "default": 50
+          }
+        },
+        "required": [
+          "nextRecordsUrl"
+        ]
+      },
+      "annotations": {
+        "title": "Get Next Page of Query Results",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list_custom_fields",
+      "title": "List Field Definitions",
+      "description": "Lists an object's fields with the description and inline help text an admin wrote for each. Use it to learn what a field means, not just its type. Custom fields only by default. Use nameContains to find a field by name or label.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Demo__c or Account.",
+            "type": "string"
+          },
+          "nameContains": {
+            "description": "Optional text to match against field API names and labels, case-insensitive.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "includeStandard": {
+            "description": "When true, standard fields are included as well. Defaults to false.",
+            "type": "boolean",
+            "default": false
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "List Field Definitions",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_connection_info",
+      "title": "Get Connection Info",
+      "description": "Shows which Salesforce org and which signed-in user this request runs as, and whether the org is a sandbox. Every other tool runs with that user's permissions, so use it to explain why a record or field is not visible to them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "Get Connection Info",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_record_types",
+      "title": "Get Record Types",
+      "description": "Lists an object's record types with their IDs and whether each is active, available to the signed-in user, and the default. Record types decide which picklist values and page layout apply, so call this before get_picklist_values or get_page_layout, and before creating a record on an object that has them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Case or Demo__c.",
+            "type": "string"
+          },
+          "includeInactive": {
+            "description": "When true, inactive record types are included. Defaults to false.",
+            "type": "boolean",
+            "default": false
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "Get Record Types",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_object_metadata",
+      "title": "Get Object Metadata",
+      "description": "Returns an object's setup metadata: its label, whether it is custom, its description from Setup, and field and record type counts. Use it to learn what an object is for. Descriptions exist only for custom objects, and only if an admin wrote one.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Demo__c or Account.",
+            "type": "string"
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "Get Object Metadata",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "compare_api_versions",
+      "title": "Compare Object Across API Versions",
+      "description": "Compares one object's fields as two API versions describe them, and reports fields that appear, disappear, or change between them. Use it to see what moving an integration from an older API version to a newer one would expose, or why a field is missing under an older version.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account or Demo__c.",
+            "type": "string"
+          },
+          "fromApiVersion": {
+            "description": "The version to compare from, such as v52.0.",
+            "type": "string"
+          },
+          "toApiVersion": {
+            "description": "The version to compare to. Leave it empty to use the server default.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "fromApiVersion"
+        ]
+      },
+      "annotations": {
+        "title": "Compare Object Across API Versions",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list_api_versions",
+      "title": "List API Versions",
+      "description": "Lists the Salesforce REST API versions this org supports, the server's default version, and the latest version. Use it before passing an apiVersion to another tool, or to check that the org is on the release you expect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "title": "List API Versions",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_schema_snapshot",
+      "title": "Get Schema Snapshot",
+      "description": "Captures a compact snapshot of an object's fields: one short signature per field (type, size, required, writable, lookups, picklist hash) and a fingerprint of the whole set. Keep the result. Later, pass its fields and fingerprint to compare_schema to learn what changed. The server does not store snapshots.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account or Demo__c.",
+            "type": "string"
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "Get Schema Snapshot",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list_objects",
+      "title": "List Salesforce Objects",
+      "description": "Lists the Salesforce objects (tables) the signed-in user can see, with API name, label, and whether each is custom. Use nameContains to find an object, for example 'invoice'. Call this before querying an object you are not sure exists.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "nameContains": {
+            "description": "Optional text to match against object API names and labels, case-insensitive.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "queryableOnly": {
+            "description": "When true (the default), only objects that can be queried with SOQL are returned.",
+            "type": "boolean",
+            "default": true
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        }
+      },
+      "annotations": {
+        "title": "List Salesforce Objects",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "soql_query",
+      "title": "Run SOQL Query",
+      "description": "Runs a read-only SOQL query against Salesforce and returns the matching records, each with a recordUrl that opens it in Salesforce. Use it to find and read records, for example SELECT Id, Name, StageName, Amount FROM Opportunity WHERE IsClosed = false ORDER BY Amount DESC LIMIT 20. Always select specific fields and add a LIMIT. If you do not know the object or field names, call list_objects and describe_object first. If done is false and nextRecordsUrl is present, pass it to query_more for the next batch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "A SOQL statement that starts with SELECT. Use API names for objects and fields, such as Account or Region__c.",
+            "type": "string"
+          },
+          "maxRecords": {
+            "description": "Most records to return in this response, from 1 to 200. Defaults to 50.",
+            "type": "integer",
+            "default": 50
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "annotations": {
+        "title": "Run SOQL Query",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list_validation_rules",
+      "title": "List Validation Rules",
+      "description": "Lists an object's validation rules: name, whether it is active, its description, the error message users see, and the field the error shows on. Use it to explain why a create or update was rejected. Set includeFormulas to true to also get each rule's formula, which costs one extra API call per rule, up to 25.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Opportunity or Demo__c.",
+            "type": "string"
+          },
+          "includeFormulas": {
+            "description": "When true, each rule's formula is included. Defaults to false.",
+            "type": "boolean",
+            "default": false
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "List Validation Rules",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "describe_object",
+      "title": "Describe Object",
+      "description": "Returns the fields of one Salesforce object: API name, label, type, length, picklist values, and which object a lookup points to. Use it to learn the exact field names before writing a SOQL query. Use fieldNameContains to look for a specific field on objects with many fields.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account or Invoice__c.",
+            "type": "string"
+          },
+          "fieldNameContains": {
+            "description": "Optional text to match against field API names and labels, case-insensitive.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "Describe Object",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_object_info",
+      "title": "Get Object Info",
+      "description": "Returns an object's basic properties and the records the signed-in user viewed most recently, from the Salesforce /sobjects/{Object} resource. Use describe_object for fields. Recent items only reflect what that user opened, so a user who has not opened any records has none.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account or Demo__c.",
+            "type": "string"
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject"
+        ]
+      },
+      "annotations": {
+        "title": "Get Object Info",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "compare_schema",
+      "title": "Compare Schema to a Snapshot",
+      "description": "Compares an object's current fields with a snapshot you took earlier with get_schema_snapshot, and reports fields that were added, removed, or changed. Pass the snapshot's fields. Passing its fingerprint as well lets an unchanged object be confirmed immediately.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account or Demo__c.",
+            "type": "string"
+          },
+          "baselineFields": {
+            "description": "The fields object from an earlier get_schema_snapshot result: field API name to signature.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "baselineFingerprint": {
+            "description": "Optional fingerprint from the same snapshot.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "baselineFields"
+        ]
+      },
+      "annotations": {
+        "title": "Compare Schema to a Snapshot",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_limits",
+      "title": "Get API Limits",
+      "description": "Returns the Salesforce org's API limits and how much of each remains, such as DailyApiRequests. Use it when calls fail with a limit error, or before a large batch of queries.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        }
+      },
+      "annotations": {
+        "title": "Get API Limits",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get_record",
+      "title": "Get Record",
+      "description": "Reads one Salesforce record by its ID. Pass fields to limit which fields come back. Without fields, every field the signed-in user can see is returned, which can be large.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sobject": {
+            "description": "The sObject API name, such as Account, Contact, Opportunity, or Invoice__c.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The 15 or 18 character record ID.",
+            "type": "string"
+          },
+          "fields": {
+            "description": "Optional field API names to return, such as [\"Name\",\"Industry\"].",
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default": null
+          },
+          "apiVersion": {
+            "description": "Optional Salesforce API version such as v52.0. Leave it empty to use the server default. Use it to see an object the way an older or newer release sees it. Call list_api_versions to see which versions the org supports.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "sobject",
+          "id"
+        ]
+      },
+      "annotations": {
+        "title": "Get Record",
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    }
+  ]
+}

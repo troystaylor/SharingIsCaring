@@ -1,0 +1,51 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.0",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Salesforce MCP Server",
+    "full": "Salesforce MCP Server for Microsoft 365 Copilot"
+  },
+  "description": {
+    "short": "Find, read, and update Salesforce data and understand its schema from Copilot",
+    "full": "Connects Microsoft 365 Copilot to your Salesforce org through your own MCP server, which calls the Salesforce REST API directly. Each person signs in to Salesforce as themselves, so Copilot only ever sees the records and fields that person is allowed to see. Ask for accounts, opportunities, cases, or any custom object and get records back with links that open them in Salesforce. Explore how an object is built: its fields, record types, page layouts, picklist values, validation rules, and formulas. Compare an object across API versions or against an earlier snapshot to see what changed. When write tools are enabled on the server, create, update, and delete records as the signed-in person, with Copilot checking required fields and valid picklist values first."
+  },
+  "accentColor": "#00A1E0",
+  "agentConnectors": [
+    {
+      "id": "salesforce-mcp-server",
+      "displayName": "Salesforce MCP Server",
+      "description": "Reads Salesforce data and schema, and optionally creates, updates, and deletes records, through the Salesforce REST API",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "${{SALESFORCE_MCP_URL}}",
+          "mcpToolDescription": {
+            "file": "mcp-tools.json"
+          },
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{SALESFORCE_MCP_AUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    { "folder": "skills/find-salesforce-records" },
+    { "folder": "skills/understand-salesforce-schema" },
+    { "folder": "skills/change-salesforce-records" },
+    { "folder": "skills/compare-salesforce-schema" },
+    { "folder": "skills/diagnose-salesforce-errors" }
+  ]
+}

@@ -1,0 +1,21 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!--
+    OneDrive ignores .gitignore and thrashes on bin/ and obj/, so build output is redirected out of a
+    synced tree. Skipped when LOCALAPPDATA is unset, which keeps Linux container builds working.
+  -->
+  <PropertyGroup Condition="'$(LOCALAPPDATA)' != ''">
+    <BaseOutputPath>$(LOCALAPPDATA)\SalesforceMcp\build\$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(LOCALAPPDATA)\SalesforceMcp\build\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+</Project>
