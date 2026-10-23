@@ -1,0 +1,51 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "api_key": {
+                "type": "securestring",
+                "uiDefinition": {
+                    "displayName": "API Key",
+                    "description": "Your Cohere API key from the Cohere dashboard (API keys).",
+                    "tooltip": "Paste your Cohere API key. Do not include the word Bearer.",
+                    "constraints": {
+                        "required": "true",
+                        "clearText": false,
+                        "tabIndex": 1
+                    }
+                }
+            }
+        },
+        "iconBrandColor": "#39594D",
+        "capabilities": [],
+        "publisher": "Troy Taylor",
+        "stackOwner": "Cohere",
+        "scriptOperations": [
+            "InvokeMCP",
+            "Chat",
+            "Ask",
+            "Rerank"
+        ],
+        "policyTemplateInstances": [
+            {
+                "templateId": "setheader",
+                "title": "Set Authorization Header",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "Authorization",
+                    "x-ms-apimTemplateParameter.value": "Bearer @connectionParameters('api_key')",
+                    "x-ms-apimTemplateParameter.existsAction": "override",
+                    "x-ms-apimTemplate-policySection": "Request"
+                }
+            },
+            {
+                "templateId": "setheader",
+                "title": "Set Client Name Header",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "X-Client-Name",
+                    "x-ms-apimTemplateParameter.value": "power-platform-custom-connector",
+                    "x-ms-apimTemplateParameter.existsAction": "skip",
+                    "x-ms-apimTemplate-policySection": "Request"
+                }
+            }
+        ]
+    }
+}

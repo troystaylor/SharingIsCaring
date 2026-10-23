@@ -1,0 +1,3041 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Cohere",
+    "description": "Cohere Command, Embed, Rerank, Parse and Transcribe models as Power Automate and Power Apps actions, plus an MCP endpoint for Copilot Studio.",
+    "version": "2.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "api.cohere.com",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "operationId": "InvokeMCP",
+        "summary": "Invoke Cohere MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio. Exposes Cohere chat, embed, rerank, parse, transcribe, tokenize, model, batch and dataset tools.",
+        "x-ms-agentic-protocol": "mcp-streamable-1.0",
+        "tags": [
+          "MCP"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "MCP response"
+          }
+        }
+      }
+    },
+    "/v2/chat": {
+      "post": {
+        "operationId": "Chat",
+        "summary": "Chat",
+        "description": "Generate a response from a Cohere Command model. Streaming is not supported; the response includes a convenience text field.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "$ref": "#/definitions/ChatRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ChatResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/ask": {
+      "post": {
+        "operationId": "Ask",
+        "summary": "Ask a model",
+        "description": "Send a single prompt (with an optional system prompt and grounding documents) and get the answer back as text.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "$ref": "#/definitions/AskRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/AskResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/v2/embed": {
+      "post": {
+        "operationId": "Embed",
+        "summary": "Create embeddings",
+        "description": "Turn text or images into embeddings for search, classification and clustering.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "$ref": "#/definitions/EmbedRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/EmbedResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Embeddings"
+        ]
+      }
+    },
+    "/v2/rerank": {
+      "post": {
+        "operationId": "Rerank",
+        "summary": "Rerank documents",
+        "description": "Order documents by relevance to a query. Rerank v5 models can also return the most relevant passages in each document.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "$ref": "#/definitions/RerankRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/RerankResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Rerank"
+        ]
+      }
+    },
+    "/v2/parse": {
+      "post": {
+        "operationId": "ParseDocument",
+        "summary": "Parse a document image",
+        "description": "Extract structured markdown or blocks from a document page image.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "$ref": "#/definitions/ParseRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ParseResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Parse"
+        ]
+      }
+    },
+    "/v2/audio/transcriptions": {
+      "post": {
+        "operationId": "TranscribeAudio",
+        "summary": "Transcribe audio",
+        "description": "Transcribe an audio file (flac, mp3, mpeg, mpga, ogg or wav).",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Model",
+            "description": "Transcription model, for example cohere-transcribe-03-2026.",
+            "x-ms-visibility": "important"
+          },
+          {
+            "name": "language",
+            "in": "formData",
+            "type": "string",
+            "required": true,
+            "x-ms-summary": "Language",
+            "description": "Language of the audio in ISO-639-1 format, for example en."
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "type": "file",
+            "required": true,
+            "x-ms-summary": "Audio file",
+            "description": "The audio file to transcribe."
+          },
+          {
+            "name": "temperature",
+            "in": "formData",
+            "type": "number",
+            "required": false,
+            "x-ms-summary": "Temperature",
+            "description": "Sampling temperature from 0 to 1.",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/TranscribeResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Audio"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ]
+      }
+    },
+    "/v1/tokenize": {
+      "post": {
+        "operationId": "Tokenize",
+        "summary": "Tokenize text",
+        "description": "Split text into tokens using a model's tokenizer.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "1 to 65,536 characters.",
+                  "x-ms-summary": "Text",
+                  "x-ms-visibility": "important"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Model whose tokenizer is used.",
+                  "x-ms-summary": "Model",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListModels",
+                    "value-collection": "models",
+                    "value-path": "name",
+                    "value-title": "name",
+                    "parameters": {
+                      "page_size": 100
+                    }
+                  }
+                }
+              },
+              "required": [
+                "text",
+                "model"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/TokenizeResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Tokenization"
+        ]
+      }
+    },
+    "/v1/detokenize": {
+      "post": {
+        "operationId": "Detokenize",
+        "summary": "Detokenize tokens",
+        "description": "Turn token IDs back into text.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "tokens": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "description": "Token IDs to convert.",
+                  "x-ms-summary": "Tokens",
+                  "x-ms-visibility": "important"
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Model whose tokenizer is used.",
+                  "x-ms-summary": "Model",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListModels",
+                    "value-collection": "models",
+                    "value-path": "name",
+                    "value-title": "name",
+                    "parameters": {
+                      "page_size": 100
+                    }
+                  }
+                }
+              },
+              "required": [
+                "tokens",
+                "model"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DetokenizeResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Tokenization"
+        ]
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "operationId": "ListModels",
+        "summary": "List models",
+        "description": "List the models available to your API key.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "endpoint",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Only models compatible with this endpoint.",
+            "x-ms-summary": "Endpoint",
+            "enum": [
+              "chat",
+              "embed",
+              "classify",
+              "summarize",
+              "rerank",
+              "rate",
+              "generate"
+            ]
+          },
+          {
+            "name": "default_only",
+            "in": "query",
+            "type": "boolean",
+            "required": false,
+            "description": "Only the default model for the endpoint. Requires endpoint.",
+            "x-ms-summary": "Default only",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "type": "number",
+            "required": false,
+            "description": "Models per page, 1 to 1000. Default 20.",
+            "x-ms-summary": "Page size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Token from a previous response's next_page_token.",
+            "x-ms-summary": "Page token",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ListModelsResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/v1/models/{model}": {
+      "get": {
+        "operationId": "GetModel",
+        "summary": "Get a model",
+        "description": "Get details for one model.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "Model name.",
+            "x-ms-summary": "Model",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListModels",
+              "value-collection": "models",
+              "value-path": "name",
+              "value-title": "name",
+              "parameters": {
+                "page_size": 100
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ModelInfo"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/v1/check-api-key": {
+      "post": {
+        "operationId": "CheckApiKey",
+        "summary": "Check API key",
+        "description": "Check whether your API key is valid.",
+        "x-ms-visibility": "important",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CheckApiKeyResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/v2/batches": {
+      "get": {
+        "operationId": "ListBatches",
+        "summary": "List batches",
+        "description": "List your batch jobs.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "page_size",
+            "in": "query",
+            "type": "integer",
+            "required": false,
+            "description": "Batches per page, up to 100. Default 50.",
+            "x-ms-summary": "Page size",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "page_token",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Token from a previous response's next_page_token.",
+            "x-ms-summary": "Page token",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "created_at or updated_at.",
+            "x-ms-summary": "Order by",
+            "x-ms-visibility": "advanced"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ListBatchesResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Batches"
+        ]
+      },
+      "post": {
+        "operationId": "CreateBatch",
+        "summary": "Create a batch",
+        "description": "Run a model over an uploaded dataset of requests.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Batch name.",
+                  "x-ms-summary": "Name",
+                  "x-ms-visibility": "important"
+                },
+                "input_dataset_id": {
+                  "type": "string",
+                  "description": "Dataset the batch reads from.",
+                  "x-ms-summary": "Input dataset ID",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListDatasets",
+                    "value-collection": "datasets",
+                    "value-path": "id",
+                    "value-title": "name"
+                  }
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Model the batch uses.",
+                  "x-ms-summary": "Model",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListModels",
+                    "value-collection": "models",
+                    "value-path": "name",
+                    "value-title": "name",
+                    "parameters": {
+                      "page_size": 100,
+                      "endpoint": "chat"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "input_dataset_id",
+                "model"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/BatchResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Batches"
+        ]
+      }
+    },
+    "/v2/batches/{id}": {
+      "get": {
+        "operationId": "GetBatch",
+        "summary": "Get a batch",
+        "description": "Get a batch job and its status.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The batch ID.",
+            "x-ms-summary": "Batch ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListBatches",
+              "value-collection": "batches",
+              "value-path": "id",
+              "value-title": "name",
+              "parameters": {
+                "page_size": 100
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/BatchResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Batches"
+        ]
+      }
+    },
+    "/v2/batches/{id}:cancel": {
+      "post": {
+        "operationId": "CancelBatch",
+        "summary": "Cancel a batch",
+        "description": "Cancel a running batch job.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The batch ID.",
+            "x-ms-summary": "Batch ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListBatches",
+              "value-collection": "batches",
+              "value-path": "id",
+              "value-title": "name",
+              "parameters": {
+                "page_size": 100
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Batches"
+        ]
+      }
+    },
+    "/v1/datasets": {
+      "get": {
+        "operationId": "ListDatasets",
+        "summary": "List datasets",
+        "description": "List your datasets.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "datasetType",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Filter by dataset type.",
+            "x-ms-summary": "Dataset type",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Only datasets created before this date-time.",
+            "x-ms-summary": "Before",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Only datasets created after this date-time.",
+            "x-ms-summary": "After",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "number",
+            "required": false,
+            "description": "Maximum number of results.",
+            "x-ms-summary": "Limit",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "number",
+            "required": false,
+            "description": "Offset to start from.",
+            "x-ms-summary": "Offset",
+            "x-ms-visibility": "advanced"
+          },
+          {
+            "name": "validationStatus",
+            "in": "query",
+            "type": "string",
+            "required": false,
+            "description": "Filter by validation status.",
+            "x-ms-summary": "Validation status",
+            "x-ms-visibility": "advanced",
+            "enum": [
+              "unknown",
+              "queued",
+              "processing",
+              "failed",
+              "validated",
+              "skipped"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ListDatasetsResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Datasets"
+        ]
+      }
+    },
+    "/v1/datasets/{id}": {
+      "get": {
+        "operationId": "GetDataset",
+        "summary": "Get a dataset",
+        "description": "Get one dataset.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The dataset ID.",
+            "x-ms-summary": "Dataset ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListDatasets",
+              "value-collection": "datasets",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/GetDatasetResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Datasets"
+        ]
+      },
+      "delete": {
+        "operationId": "DeleteDataset",
+        "summary": "Delete a dataset",
+        "description": "Permanently delete a dataset.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The dataset ID.",
+            "x-ms-summary": "Dataset ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListDatasets",
+              "value-collection": "datasets",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Datasets"
+        ]
+      }
+    },
+    "/v1/embed-jobs": {
+      "get": {
+        "operationId": "ListEmbedJobs",
+        "summary": "List embed jobs",
+        "description": "List your embed jobs.",
+        "x-ms-visibility": "important",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/ListEmbedJobsResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Embed jobs"
+        ]
+      },
+      "post": {
+        "operationId": "CreateEmbedJob",
+        "summary": "Create an embed job",
+        "description": "Embed a whole dataset asynchronously.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Request body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "description": "Embedding model, for example embed-english-v3.0.",
+                  "x-ms-summary": "Model",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListModels",
+                    "value-collection": "models",
+                    "value-path": "name",
+                    "value-title": "name",
+                    "parameters": {
+                      "page_size": 100,
+                      "endpoint": "embed"
+                    }
+                  }
+                },
+                "dataset_id": {
+                  "type": "string",
+                  "description": "A validated dataset of type embed-input.",
+                  "x-ms-summary": "Dataset ID",
+                  "x-ms-visibility": "important",
+                  "x-ms-dynamic-values": {
+                    "operationId": "ListDatasets",
+                    "value-collection": "datasets",
+                    "value-path": "id",
+                    "value-title": "name"
+                  }
+                },
+                "input_type": {
+                  "type": "string",
+                  "description": "What the embeddings will be used for.",
+                  "x-ms-summary": "Input type",
+                  "x-ms-visibility": "important",
+                  "enum": [
+                    "search_document",
+                    "search_query",
+                    "classification",
+                    "clustering",
+                    "image"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the embed job.",
+                  "x-ms-summary": "Name",
+                  "x-ms-visibility": "advanced"
+                },
+                "embedding_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "float",
+                      "int8",
+                      "uint8",
+                      "binary",
+                      "ubinary",
+                      "base64"
+                    ]
+                  },
+                  "description": "Types to return.",
+                  "x-ms-summary": "Embedding types",
+                  "x-ms-visibility": "advanced"
+                },
+                "truncate": {
+                  "type": "string",
+                  "description": "How to handle over-long input.",
+                  "x-ms-summary": "Truncate",
+                  "x-ms-visibility": "advanced",
+                  "enum": [
+                    "START",
+                    "END"
+                  ]
+                }
+              },
+              "required": [
+                "model",
+                "dataset_id",
+                "input_type"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/CreateEmbedJobResponse"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Embed jobs"
+        ]
+      }
+    },
+    "/v1/embed-jobs/{id}": {
+      "get": {
+        "operationId": "GetEmbedJob",
+        "summary": "Get an embed job",
+        "description": "Get an embed job and its status.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The embed job ID.",
+            "x-ms-summary": "Embed job ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListEmbedJobs",
+              "value-collection": "embed_jobs",
+              "value-path": "job_id",
+              "value-title": "job_id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/EmbedJob"
+            }
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Embed jobs"
+        ]
+      }
+    },
+    "/v1/embed-jobs/{id}/cancel": {
+      "post": {
+        "operationId": "CancelEmbedJob",
+        "summary": "Cancel an embed job",
+        "description": "Cancel a running embed job.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "type": "string",
+            "required": true,
+            "description": "The embed job ID.",
+            "x-ms-summary": "Embed job ID",
+            "x-ms-url-encoding": "single",
+            "x-ms-dynamic-values": {
+              "operationId": "ListEmbedJobs",
+              "value-collection": "embed_jobs",
+              "value-path": "job_id",
+              "value-title": "job_id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "default": {
+            "description": "Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "tags": [
+          "Embed jobs"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-ms-summary": "Message"
+        },
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        }
+      }
+    },
+    "ApiMeta": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string",
+              "x-ms-summary": "Version"
+            },
+            "is_deprecated": {
+              "type": "boolean",
+              "x-ms-summary": "Is deprecated"
+            },
+            "is_experimental": {
+              "type": "boolean",
+              "x-ms-summary": "Is experimental"
+            }
+          },
+          "x-ms-summary": "API version"
+        },
+        "billed_units": {
+          "type": "object",
+          "properties": {
+            "input_tokens": {
+              "type": "number",
+              "x-ms-summary": "Billed input tokens"
+            },
+            "output_tokens": {
+              "type": "number",
+              "x-ms-summary": "Billed output tokens"
+            },
+            "image_tokens": {
+              "type": "number",
+              "x-ms-summary": "Billed image tokens"
+            },
+            "images": {
+              "type": "number",
+              "x-ms-summary": "Billed images"
+            },
+            "search_units": {
+              "type": "number",
+              "x-ms-summary": "Billed search units"
+            },
+            "classifications": {
+              "type": "number",
+              "x-ms-summary": "Billed classifications"
+            },
+            "pages": {
+              "type": "number",
+              "x-ms-summary": "Billed pages"
+            }
+          },
+          "x-ms-summary": "Billed units"
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "input_tokens": {
+              "type": "number",
+              "x-ms-summary": "Input tokens"
+            },
+            "output_tokens": {
+              "type": "number",
+              "x-ms-summary": "Output tokens"
+            }
+          },
+          "x-ms-summary": "Tokens"
+        },
+        "cached_tokens": {
+          "type": "number",
+          "x-ms-summary": "Cached tokens"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Warnings"
+        }
+      }
+    },
+    "Usage": {
+      "type": "object",
+      "properties": {
+        "billed_units": {
+          "type": "object",
+          "properties": {
+            "input_tokens": {
+              "type": "number",
+              "x-ms-summary": "Billed input tokens"
+            },
+            "output_tokens": {
+              "type": "number",
+              "x-ms-summary": "Billed output tokens"
+            },
+            "search_units": {
+              "type": "number",
+              "x-ms-summary": "Billed search units"
+            },
+            "classifications": {
+              "type": "number",
+              "x-ms-summary": "Billed classifications"
+            }
+          },
+          "x-ms-summary": "Billed units"
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "input_tokens": {
+              "type": "number",
+              "x-ms-summary": "Input tokens"
+            },
+            "output_tokens": {
+              "type": "number",
+              "x-ms-summary": "Output tokens"
+            }
+          },
+          "x-ms-summary": "Tokens"
+        },
+        "cached_tokens": {
+          "type": "number",
+          "x-ms-summary": "Cached tokens"
+        }
+      }
+    },
+    "ToolCall": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "Tool call ID"
+        },
+        "type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "x-ms-summary": "Name"
+            },
+            "arguments": {
+              "type": "string",
+              "x-ms-summary": "Arguments (JSON string)"
+            }
+          },
+          "x-ms-summary": "Function"
+        }
+      }
+    },
+    "Citation": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "x-ms-summary": "Start"
+        },
+        "end": {
+          "type": "integer",
+          "x-ms-summary": "End"
+        },
+        "text": {
+          "type": "string",
+          "x-ms-summary": "Cited text"
+        },
+        "content_index": {
+          "type": "integer",
+          "x-ms-summary": "Content index"
+        },
+        "type": {
+          "type": "string",
+          "x-ms-summary": "Type"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "x-ms-summary": "Source type"
+              },
+              "id": {
+                "type": "string",
+                "x-ms-summary": "Source ID"
+              },
+              "document": {
+                "type": "object",
+                "x-ms-summary": "Document"
+              },
+              "tool_output": {
+                "type": "object",
+                "x-ms-summary": "Tool output"
+              }
+            }
+          },
+          "x-ms-summary": "Sources"
+        }
+      }
+    },
+    "ChatRequest": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Cohere model to use, for example command-a-plus-05-2026.",
+          "x-ms-summary": "Model",
+          "x-ms-visibility": "important",
+          "x-ms-dynamic-values": {
+            "operationId": "ListModels",
+            "value-collection": "models",
+            "value-path": "name",
+            "value-title": "name",
+            "parameters": {
+              "page_size": 100,
+              "endpoint": "chat"
+            }
+          }
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "description": "user, assistant, system or tool.",
+                "x-ms-summary": "Role",
+                "enum": [
+                  "user",
+                  "assistant",
+                  "system",
+                  "tool"
+                ]
+              },
+              "content": {
+                "type": "string",
+                "description": "Message text. For tool messages, the tool output as a JSON string.",
+                "x-ms-summary": "Content"
+              },
+              "tool_call_id": {
+                "type": "string",
+                "description": "Required for tool messages: the ID of the tool call being answered.",
+                "x-ms-summary": "Tool call ID",
+                "x-ms-visibility": "advanced"
+              },
+              "tool_plan": {
+                "type": "string",
+                "description": "Assistant messages only.",
+                "x-ms-summary": "Tool plan",
+                "x-ms-visibility": "advanced"
+              },
+              "tool_calls": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ToolCall"
+                },
+                "description": "Assistant messages only.",
+                "x-ms-summary": "Tool calls",
+                "x-ms-visibility": "advanced"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          },
+          "description": "Conversation in chronological order.",
+          "x-ms-summary": "Messages",
+          "x-ms-visibility": "important"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Identifier used to reference the document in citations.",
+                "x-ms-summary": "ID"
+              },
+              "data": {
+                "type": "object",
+                "description": "Key-value fields of the document, for example title and text.",
+                "x-ms-summary": "Data"
+              }
+            },
+            "required": [
+              "data"
+            ]
+          },
+          "description": "Documents the model can cite.",
+          "x-ms-summary": "Documents",
+          "x-ms-visibility": "advanced"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Always function.",
+                "x-ms-summary": "Type",
+                "enum": [
+                  "function"
+                ]
+              },
+              "function": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "x-ms-summary": "Name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "x-ms-summary": "Description"
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "description": "JSON Schema describing the function arguments.",
+                    "x-ms-summary": "Parameters"
+                  }
+                },
+                "required": [
+                  "name",
+                  "parameters"
+                ],
+                "x-ms-summary": "Function"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "description": "Functions the model may call.",
+          "x-ms-summary": "Tools",
+          "x-ms-visibility": "advanced"
+        },
+        "strict_tools": {
+          "type": "boolean",
+          "description": "Force tool calls to follow the tool definition strictly.",
+          "x-ms-summary": "Strict tools",
+          "x-ms-visibility": "advanced"
+        },
+        "tool_choice": {
+          "type": "string",
+          "description": "REQUIRED forces a tool call; NONE forbids one.",
+          "x-ms-summary": "Tool choice",
+          "x-ms-visibility": "advanced",
+          "enum": [
+            "REQUIRED",
+            "NONE"
+          ]
+        },
+        "citation_options": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "description": "Citation mode.",
+              "x-ms-summary": "Mode",
+              "enum": [
+                "ENABLED",
+                "DISABLED",
+                "FAST",
+                "ACCURATE",
+                "OFF"
+              ]
+            }
+          },
+          "x-ms-summary": "Citation options",
+          "x-ms-visibility": "advanced"
+        },
+        "response_format": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "text or json_object.",
+              "x-ms-summary": "Type",
+              "enum": [
+                "text",
+                "json_object"
+              ]
+            },
+            "json_schema": {
+              "type": "object",
+              "description": "Optional JSON Schema the output must follow.",
+              "x-ms-summary": "JSON schema"
+            }
+          },
+          "description": "Force the output format. Not supported together with documents or tools.",
+          "x-ms-summary": "Response format",
+          "x-ms-visibility": "advanced"
+        },
+        "safety_mode": {
+          "type": "string",
+          "description": "Safety instruction inserted into the prompt.",
+          "x-ms-summary": "Safety mode",
+          "x-ms-visibility": "advanced",
+          "enum": [
+            "CONTEXTUAL",
+            "STRICT",
+            "OFF"
+          ]
+        },
+        "thinking": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "enabled or disabled.",
+              "x-ms-summary": "Type",
+              "enum": [
+                "enabled",
+                "disabled"
+              ]
+            },
+            "token_budget": {
+              "type": "integer",
+              "description": "Maximum tokens the model can spend thinking.",
+              "x-ms-summary": "Token budget"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "description": "Reasoning configuration.",
+          "x-ms-summary": "Thinking",
+          "x-ms-visibility": "advanced"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "description": "Maximum output tokens.",
+          "x-ms-summary": "Max tokens",
+          "x-ms-visibility": "advanced"
+        },
+        "stop_sequences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 5 strings that stop generation.",
+          "x-ms-summary": "Stop sequences",
+          "x-ms-visibility": "advanced"
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Randomness, default 0.3.",
+          "x-ms-summary": "Temperature",
+          "x-ms-visibility": "advanced"
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Best-effort deterministic sampling.",
+          "x-ms-summary": "Seed",
+          "x-ms-visibility": "advanced"
+        },
+        "frequency_penalty": {
+          "type": "number",
+          "description": "0.0 to 1.0.",
+          "x-ms-summary": "Frequency penalty",
+          "x-ms-visibility": "advanced"
+        },
+        "presence_penalty": {
+          "type": "number",
+          "description": "0.0 to 1.0.",
+          "x-ms-summary": "Presence penalty",
+          "x-ms-visibility": "advanced"
+        },
+        "k": {
+          "type": "integer",
+          "description": "0 to 500; 0 disables.",
+          "x-ms-summary": "Top K",
+          "x-ms-visibility": "advanced"
+        },
+        "p": {
+          "type": "number",
+          "description": "0.01 to 0.99; default 0.75.",
+          "x-ms-summary": "Top P",
+          "x-ms-visibility": "advanced"
+        },
+        "logprobs": {
+          "type": "boolean",
+          "description": "Return token log probabilities.",
+          "x-ms-summary": "Log probabilities",
+          "x-ms-visibility": "advanced"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Lower numbers are handled first; default 0.",
+          "x-ms-summary": "Priority",
+          "x-ms-visibility": "advanced"
+        }
+      },
+      "required": [
+        "model",
+        "messages"
+      ]
+    },
+    "ChatResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "text": {
+          "type": "string",
+          "description": "The assistant's text reply, with all text content blocks joined.",
+          "x-ms-summary": "Text"
+        },
+        "finish_reason": {
+          "type": "string",
+          "description": "COMPLETE, STOP_SEQUENCE, MAX_TOKENS, TOOL_CALL, ERROR or TIMEOUT.",
+          "x-ms-summary": "Finish reason"
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "x-ms-summary": "Role"
+            },
+            "content": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "x-ms-summary": "Type"
+                  },
+                  "text": {
+                    "type": "string",
+                    "x-ms-summary": "Text"
+                  },
+                  "thinking": {
+                    "type": "string",
+                    "x-ms-summary": "Thinking"
+                  }
+                }
+              },
+              "x-ms-summary": "Content"
+            },
+            "tool_plan": {
+              "type": "string",
+              "x-ms-summary": "Tool plan"
+            },
+            "tool_calls": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ToolCall"
+              },
+              "x-ms-summary": "Tool calls"
+            },
+            "citations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Citation"
+              },
+              "x-ms-summary": "Citations"
+            }
+          },
+          "x-ms-summary": "Message"
+        },
+        "usage": {
+          "$ref": "#/definitions/Usage"
+        },
+        "logprobs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "token_ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "text": {
+                "type": "string"
+              },
+              "logprobs": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "x-ms-summary": "Log probabilities"
+        }
+      }
+    },
+    "AskRequest": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "What you want the model to do or answer.",
+          "x-ms-summary": "Prompt",
+          "x-ms-visibility": "important"
+        },
+        "model": {
+          "type": "string",
+          "description": "Chat model. Defaults to command-a-plus-05-2026.",
+          "x-ms-summary": "Model",
+          "x-ms-visibility": "important",
+          "x-ms-dynamic-values": {
+            "operationId": "ListModels",
+            "value-collection": "models",
+            "value-path": "name",
+            "value-title": "name",
+            "parameters": {
+              "page_size": 100,
+              "endpoint": "chat"
+            }
+          }
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "Instructions that set the model's behavior.",
+          "x-ms-summary": "System prompt",
+          "x-ms-visibility": "advanced"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Text passages the model can ground its answer in and cite.",
+          "x-ms-summary": "Documents",
+          "x-ms-visibility": "advanced"
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Randomness, default 0.3.",
+          "x-ms-summary": "Temperature",
+          "x-ms-visibility": "advanced"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "description": "Maximum output tokens.",
+          "x-ms-summary": "Max tokens",
+          "x-ms-visibility": "advanced"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    },
+    "AskResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "text": {
+          "type": "string",
+          "description": "The assistant's text reply.",
+          "x-ms-summary": "Text"
+        },
+        "finish_reason": {
+          "type": "string",
+          "x-ms-summary": "Finish reason"
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Citation"
+          },
+          "x-ms-summary": "Citations"
+        },
+        "usage": {
+          "$ref": "#/definitions/Usage"
+        }
+      }
+    },
+    "EmbedRequest": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Embedding model, for example embed-v5.0-pro.",
+          "x-ms-summary": "Model",
+          "x-ms-visibility": "important",
+          "x-ms-dynamic-values": {
+            "operationId": "ListModels",
+            "value-collection": "models",
+            "value-path": "name",
+            "value-title": "name",
+            "parameters": {
+              "page_size": 100,
+              "endpoint": "embed"
+            }
+          }
+        },
+        "input_type": {
+          "type": "string",
+          "description": "What the embeddings will be used for.",
+          "x-ms-summary": "Input type",
+          "x-ms-visibility": "important",
+          "enum": [
+            "search_document",
+            "search_query",
+            "classification",
+            "clustering",
+            "image"
+          ]
+        },
+        "texts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 96 strings to embed.",
+          "x-ms-summary": "Texts",
+          "x-ms-visibility": "important"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Image data URIs (jpeg, png, webp, gif).",
+          "x-ms-summary": "Images",
+          "x-ms-visibility": "advanced"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "text or image_url.",
+                      "x-ms-summary": "Type",
+                      "enum": [
+                        "text",
+                        "image_url"
+                      ]
+                    },
+                    "text": {
+                      "type": "string",
+                      "x-ms-summary": "Text"
+                    },
+                    "image_url": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string",
+                          "description": "Image URL or data URI.",
+                          "x-ms-summary": "URL"
+                        }
+                      },
+                      "required": [
+                        "url"
+                      ],
+                      "x-ms-summary": "Image URL"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                "x-ms-summary": "Content"
+              }
+            },
+            "required": [
+              "content"
+            ]
+          },
+          "description": "Mixed text and image inputs, up to 96.",
+          "x-ms-summary": "Inputs",
+          "x-ms-visibility": "advanced"
+        },
+        "output_dimension": {
+          "type": "integer",
+          "description": "256, 512, 768, 1024, 1536 or 2048 for embed-v5.0 models.",
+          "x-ms-summary": "Output dimension",
+          "x-ms-visibility": "advanced"
+        },
+        "embedding_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "float",
+              "int8",
+              "uint8",
+              "binary",
+              "ubinary",
+              "base64"
+            ]
+          },
+          "description": "Types to return. Defaults to float.",
+          "x-ms-summary": "Embedding types",
+          "x-ms-visibility": "advanced"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "description": "Maximum tokens to embed per input.",
+          "x-ms-summary": "Max tokens",
+          "x-ms-visibility": "advanced"
+        },
+        "truncate": {
+          "type": "string",
+          "description": "How to handle over-long input.",
+          "x-ms-summary": "Truncate",
+          "x-ms-visibility": "advanced",
+          "enum": [
+            "NONE",
+            "START",
+            "END"
+          ]
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Lower numbers are handled first; default 0.",
+          "x-ms-summary": "Priority",
+          "x-ms-visibility": "advanced"
+        }
+      },
+      "required": [
+        "model",
+        "input_type"
+      ]
+    },
+    "EmbedResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "embeddings": {
+          "type": "object",
+          "properties": {
+            "float": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "x-ms-summary": "Float embeddings"
+            },
+            "int8": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "x-ms-summary": "Int8 embeddings"
+            },
+            "uint8": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "x-ms-summary": "Uint8 embeddings"
+            },
+            "binary": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "x-ms-summary": "Binary embeddings"
+            },
+            "ubinary": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "x-ms-summary": "Ubinary embeddings"
+            },
+            "base64": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "x-ms-summary": "Base64 embeddings"
+            }
+          }
+        },
+        "texts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Texts"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer",
+                "x-ms-summary": "Width"
+              },
+              "height": {
+                "type": "integer",
+                "x-ms-summary": "Height"
+              },
+              "format": {
+                "type": "string",
+                "x-ms-summary": "Format"
+              },
+              "bit_depth": {
+                "type": "integer",
+                "x-ms-summary": "Bit depth"
+              }
+            }
+          },
+          "x-ms-summary": "Images"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    },
+    "RerankRequest": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Rerank model, for example rerank-v5.0-pro.",
+          "x-ms-summary": "Model",
+          "x-ms-visibility": "important",
+          "x-ms-dynamic-values": {
+            "operationId": "ListModels",
+            "value-collection": "models",
+            "value-path": "name",
+            "value-title": "name",
+            "parameters": {
+              "page_size": 100,
+              "endpoint": "rerank"
+            }
+          }
+        },
+        "query": {
+          "type": "string",
+          "description": "The search query.",
+          "x-ms-summary": "Query",
+          "x-ms-visibility": "important"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Texts to compare to the query. Up to 1,000 recommended. Format structured data as YAML strings.",
+          "x-ms-summary": "Documents",
+          "x-ms-visibility": "important"
+        },
+        "top_n": {
+          "type": "integer",
+          "description": "Return only the top N results.",
+          "x-ms-summary": "Top N",
+          "x-ms-visibility": "advanced"
+        },
+        "max_tokens_per_doc": {
+          "type": "integer",
+          "description": "Defaults to 4096. Longer documents are truncated.",
+          "x-ms-summary": "Max tokens per document",
+          "x-ms-visibility": "advanced"
+        },
+        "relevant_spans": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "description": "enabled returns the most relevant passages of each document.",
+              "x-ms-summary": "Mode",
+              "enum": [
+                "enabled",
+                "disabled"
+              ]
+            },
+            "threshold": {
+              "type": "number",
+              "description": "Only spans scoring above this are returned. Default 0.1.",
+              "x-ms-summary": "Threshold"
+            },
+            "max_spans": {
+              "type": "integer",
+              "description": "Maximum spans per document.",
+              "x-ms-summary": "Max spans"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "description": "Context Focus. Rerank v5 models only.",
+          "x-ms-summary": "Relevant spans",
+          "x-ms-visibility": "advanced"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Lower numbers are handled first; default 0.",
+          "x-ms-summary": "Priority",
+          "x-ms-visibility": "advanced"
+        }
+      },
+      "required": [
+        "model",
+        "query",
+        "documents"
+      ]
+    },
+    "RerankResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "description": "Position of the document in the request.",
+                "x-ms-summary": "Index"
+              },
+              "relevance_score": {
+                "type": "number",
+                "description": "0 to 1; higher is more relevant.",
+                "x-ms-summary": "Relevance score"
+              },
+              "document": {
+                "type": "string",
+                "description": "The original document text, added by the connector.",
+                "x-ms-summary": "Document"
+              },
+              "relevant_spans": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "description": "First character of the span.",
+                      "x-ms-summary": "Start"
+                    },
+                    "end": {
+                      "type": "integer",
+                      "description": "Position just past the last character of the span.",
+                      "x-ms-summary": "End"
+                    },
+                    "score": {
+                      "type": "number",
+                      "x-ms-summary": "Score"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "The span text, added by the connector.",
+                      "x-ms-summary": "Text"
+                    }
+                  }
+                },
+                "x-ms-summary": "Relevant spans"
+              }
+            }
+          },
+          "x-ms-summary": "Results"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    },
+    "ParseRequest": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Parse model, for example parse-v5.0.",
+          "x-ms-summary": "Model",
+          "x-ms-visibility": "important"
+        },
+        "document": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "x-ms-summary": "Type",
+              "x-ms-visibility": "internal",
+              "default": "image_url",
+              "title": ""
+            },
+            "image_url": {
+              "type": "string",
+              "description": "Public http(s) image URL or base64 data URI. Max 20 MB.",
+              "x-ms-summary": "Image URL",
+              "x-ms-visibility": "important"
+            }
+          },
+          "required": [
+            "type",
+            "image_url"
+          ],
+          "description": "The page image to parse. PDFs are not supported yet.",
+          "x-ms-summary": "Document"
+        },
+        "output_format": {
+          "type": "string",
+          "description": "markdown (default) or blocks.",
+          "x-ms-summary": "Output format",
+          "x-ms-visibility": "advanced",
+          "enum": [
+            "markdown",
+            "blocks"
+          ]
+        }
+      },
+      "required": [
+        "model",
+        "document"
+      ]
+    },
+    "ParseResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "finish_reason": {
+          "type": "string",
+          "x-ms-summary": "Finish reason"
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "markdown or blocks.",
+                "x-ms-summary": "Type"
+              },
+              "index": {
+                "type": "integer",
+                "x-ms-summary": "Page index"
+              },
+              "markdown": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Page content as markdown. Tables are inline HTML.",
+                    "x-ms-summary": "Markdown"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "x-ms-summary": "ID"
+                        },
+                        "description": {
+                          "type": "string",
+                          "x-ms-summary": "Description"
+                        },
+                        "category": {
+                          "type": "string",
+                          "x-ms-summary": "Category"
+                        },
+                        "bounding_box": {
+                          "type": "object",
+                          "properties": {
+                            "top_left_x": {
+                              "type": "integer"
+                            },
+                            "top_left_y": {
+                              "type": "integer"
+                            },
+                            "bottom_right_x": {
+                              "type": "integer"
+                            },
+                            "bottom_right_y": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "bounding_box_normalized": {
+                          "type": "object",
+                          "properties": {
+                            "top_left_x": {
+                              "type": "number"
+                            },
+                            "top_left_y": {
+                              "type": "number"
+                            },
+                            "bottom_right_x": {
+                              "type": "number"
+                            },
+                            "bottom_right_y": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "x-ms-summary": "Images"
+                  }
+                },
+                "x-ms-summary": "Markdown"
+              },
+              "blocks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "text, image or table.",
+                      "x-ms-summary": "Block type"
+                    },
+                    "text": {
+                      "type": "object",
+                      "properties": {
+                        "content": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "image": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "x-ms-summary": "ID"
+                        },
+                        "description": {
+                          "type": "string",
+                          "x-ms-summary": "Description"
+                        },
+                        "category": {
+                          "type": "string",
+                          "x-ms-summary": "Category"
+                        },
+                        "bounding_box": {
+                          "type": "object",
+                          "properties": {
+                            "top_left_x": {
+                              "type": "integer"
+                            },
+                            "top_left_y": {
+                              "type": "integer"
+                            },
+                            "bottom_right_x": {
+                              "type": "integer"
+                            },
+                            "bottom_right_y": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "bounding_box_normalized": {
+                          "type": "object",
+                          "properties": {
+                            "top_left_x": {
+                              "type": "number"
+                            },
+                            "top_left_y": {
+                              "type": "number"
+                            },
+                            "bottom_right_x": {
+                              "type": "number"
+                            },
+                            "bottom_right_y": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "table": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "html": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "bounding_box": {
+                          "type": "object",
+                          "properties": {
+                            "top_left_x": {
+                              "type": "integer"
+                            },
+                            "top_left_y": {
+                              "type": "integer"
+                            },
+                            "bottom_right_x": {
+                              "type": "integer"
+                            },
+                            "bottom_right_y": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "bounding_box_normalized": {
+                          "type": "object",
+                          "properties": {
+                            "top_left_x": {
+                              "type": "number"
+                            },
+                            "top_left_y": {
+                              "type": "number"
+                            },
+                            "bottom_right_x": {
+                              "type": "number"
+                            },
+                            "bottom_right_y": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "x-ms-summary": "Blocks"
+              }
+            }
+          },
+          "x-ms-summary": "Pages"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    },
+    "Batch": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "name": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "model": {
+          "type": "string",
+          "x-ms-summary": "Model"
+        },
+        "input_dataset_id": {
+          "type": "string",
+          "x-ms-summary": "Input dataset ID"
+        },
+        "output_dataset_id": {
+          "type": "string",
+          "x-ms-summary": "Output dataset ID"
+        },
+        "status": {
+          "type": "string",
+          "description": "BATCH_STATUS_QUEUED, _IN_PROGRESS, _CANCELING, _COMPLETED, _FAILED or _CANCELED.",
+          "x-ms-summary": "Status"
+        },
+        "status_reason": {
+          "type": "string",
+          "x-ms-summary": "Status reason"
+        },
+        "creator_id": {
+          "type": "string",
+          "x-ms-summary": "Creator ID"
+        },
+        "org_id": {
+          "type": "string",
+          "x-ms-summary": "Organization ID"
+        },
+        "created_at": {
+          "type": "string",
+          "x-ms-summary": "Created at"
+        },
+        "updated_at": {
+          "type": "string",
+          "x-ms-summary": "Updated at"
+        },
+        "input_tokens": {
+          "type": "string",
+          "x-ms-summary": "Input tokens"
+        },
+        "output_tokens": {
+          "type": "string",
+          "x-ms-summary": "Output tokens"
+        },
+        "num_records": {
+          "type": "integer",
+          "x-ms-summary": "Records"
+        },
+        "num_successful_records": {
+          "type": "integer",
+          "x-ms-summary": "Successful records"
+        },
+        "num_failed_records": {
+          "type": "integer",
+          "x-ms-summary": "Failed records"
+        }
+      }
+    },
+    "Dataset": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "ID"
+        },
+        "name": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "created_at": {
+          "type": "string",
+          "x-ms-summary": "Created at"
+        },
+        "updated_at": {
+          "type": "string",
+          "x-ms-summary": "Updated at"
+        },
+        "dataset_type": {
+          "type": "string",
+          "x-ms-summary": "Dataset type"
+        },
+        "validation_status": {
+          "type": "string",
+          "x-ms-summary": "Validation status"
+        },
+        "validation_error": {
+          "type": "string",
+          "x-ms-summary": "Validation error"
+        },
+        "schema": {
+          "type": "string",
+          "x-ms-summary": "Schema"
+        },
+        "required_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Required fields"
+        },
+        "preserve_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Preserve fields"
+        },
+        "validation_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Validation warnings"
+        },
+        "dataset_parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "x-ms-summary": "ID"
+              },
+              "name": {
+                "type": "string",
+                "x-ms-summary": "Name"
+              },
+              "url": {
+                "type": "string",
+                "x-ms-summary": "URL"
+              },
+              "index": {
+                "type": "integer",
+                "x-ms-summary": "Index"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "x-ms-summary": "Size in bytes"
+              },
+              "num_rows": {
+                "type": "integer",
+                "x-ms-summary": "Rows"
+              },
+              "original_url": {
+                "type": "string",
+                "x-ms-summary": "Original URL"
+              },
+              "samples": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "x-ms-summary": "Samples"
+              }
+            }
+          },
+          "x-ms-summary": "Dataset parts"
+        }
+      }
+    },
+    "EmbedJob": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "x-ms-summary": "Job ID"
+        },
+        "name": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "status": {
+          "type": "string",
+          "x-ms-summary": "Status"
+        },
+        "created_at": {
+          "type": "string",
+          "x-ms-summary": "Created at"
+        },
+        "input_dataset_id": {
+          "type": "string",
+          "x-ms-summary": "Input dataset ID"
+        },
+        "output_dataset_id": {
+          "type": "string",
+          "x-ms-summary": "Output dataset ID"
+        },
+        "model": {
+          "type": "string",
+          "x-ms-summary": "Model"
+        },
+        "truncate": {
+          "type": "string",
+          "x-ms-summary": "Truncate"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    },
+    "ModelInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-ms-summary": "Name"
+        },
+        "is_deprecated": {
+          "type": "boolean",
+          "x-ms-summary": "Is deprecated"
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Endpoints"
+        },
+        "default_endpoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Default endpoints"
+        },
+        "finetuned": {
+          "type": "boolean",
+          "x-ms-summary": "Fine-tuned"
+        },
+        "context_length": {
+          "type": "number",
+          "x-ms-summary": "Context length"
+        },
+        "tokenizer_url": {
+          "type": "string",
+          "x-ms-summary": "Tokenizer URL"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Features"
+        },
+        "sampling_defaults": {
+          "type": "object",
+          "properties": {
+            "temperature": {
+              "type": "number"
+            },
+            "k": {
+              "type": "integer"
+            },
+            "p": {
+              "type": "number"
+            },
+            "frequency_penalty": {
+              "type": "number"
+            },
+            "presence_penalty": {
+              "type": "number"
+            },
+            "max_tokens_per_doc": {
+              "type": "integer"
+            }
+          },
+          "x-ms-summary": "Sampling defaults"
+        }
+      }
+    },
+    "TranscribeResponse": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The transcribed text.",
+          "x-ms-summary": "Text"
+        }
+      }
+    },
+    "TokenizeResponse": {
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "x-ms-summary": "Tokens"
+        },
+        "token_strings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-ms-summary": "Token strings"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    },
+    "DetokenizeResponse": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "x-ms-summary": "Text"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    },
+    "ListModelsResponse": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ModelInfo"
+          },
+          "x-ms-summary": "Models"
+        },
+        "next_page_token": {
+          "type": "string",
+          "x-ms-summary": "Next page token"
+        }
+      }
+    },
+    "CheckApiKeyResponse": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean",
+          "x-ms-summary": "Valid"
+        },
+        "organization_id": {
+          "type": "string",
+          "x-ms-summary": "Organization ID"
+        },
+        "owner_id": {
+          "type": "string",
+          "x-ms-summary": "Owner ID"
+        }
+      }
+    },
+    "ListBatchesResponse": {
+      "type": "object",
+      "properties": {
+        "batches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Batch"
+          },
+          "x-ms-summary": "Batches"
+        },
+        "next_page_token": {
+          "type": "string",
+          "x-ms-summary": "Next page token"
+        }
+      }
+    },
+    "BatchResponse": {
+      "type": "object",
+      "properties": {
+        "batch": {
+          "$ref": "#/definitions/Batch"
+        }
+      }
+    },
+    "ListDatasetsResponse": {
+      "type": "object",
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Dataset"
+          },
+          "x-ms-summary": "Datasets"
+        }
+      }
+    },
+    "GetDatasetResponse": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "$ref": "#/definitions/Dataset"
+        }
+      }
+    },
+    "ListEmbedJobsResponse": {
+      "type": "object",
+      "properties": {
+        "embed_jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EmbedJob"
+          },
+          "x-ms-summary": "Embed jobs"
+        }
+      }
+    },
+    "CreateEmbedJobResponse": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "x-ms-summary": "Job ID"
+        },
+        "meta": {
+          "$ref": "#/definitions/ApiMeta"
+        }
+      }
+    }
+  },
+  "parameters": {},
+  "responses": {},
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "Authorization"
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://cohere.com/"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://cohere.com/privacy"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "AI;Data"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Chat"
+    },
+    {
+      "name": "Embeddings"
+    },
+    {
+      "name": "Rerank"
+    },
+    {
+      "name": "Parse"
+    },
+    {
+      "name": "Audio"
+    },
+    {
+      "name": "Tokenization"
+    },
+    {
+      "name": "Models"
+    },
+    {
+      "name": "Batches"
+    },
+    {
+      "name": "Datasets"
+    },
+    {
+      "name": "Embed jobs"
+    },
+    {
+      "name": "MCP"
+    }
+  ]
+}
