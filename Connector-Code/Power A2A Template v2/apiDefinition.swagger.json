@@ -1,0 +1,661 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Power A2A Template v2",
+        "description": "Hosts an Agent2Agent (A2A) agent for a REST API that has no A2A support. Copilot Studio adds it as an A2A agent, and Power Automate calls its skills directly. Skills, routing, and the API calls are defined in the connector's script.",
+        "version": "2.0.0",
+        "contact": {
+            "name": "Troy Taylor",
+            "email": "troy@troystaylor.com"
+        }
+    },
+    "host": "api.example.com",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/a2a/agent-card": {
+            "get": {
+                "operationId": "GetAgentCard",
+                "summary": "Get Agent Card",
+                "description": "Returns the agent card that the connector serves: the agent's name, description, and skills. Copilot Studio and other A2A clients read the same information.",
+                "x-ms-summary": "Get Agent Card",
+                "responses": {
+                    "200": {
+                        "description": "Agent card retrieved successfully.",
+                        "schema": {
+                            "$ref": "#/definitions/AgentCardResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/send-message": {
+            "post": {
+                "operationId": "SendMessage",
+                "summary": "Send Message",
+                "description": "Send a natural language message to the agent. The agent picks a skill, calls the API, and answers. If it needs more information or a confirmation, State is input_required and Status Message holds the question. Send the answer with the same Context ID and Task ID.",
+                "x-ms-summary": "Send Message",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The agent answered, or asked a question.",
+                        "schema": {
+                            "$ref": "#/definitions/TaskResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/list-skills": {
+            "get": {
+                "operationId": "ListSkills",
+                "summary": "List Skills",
+                "description": "List the skills the agent offers, with their inputs.",
+                "x-ms-summary": "List Skills",
+                "responses": {
+                    "200": {
+                        "description": "The agent's skills.",
+                        "schema": {
+                            "$ref": "#/definitions/ListSkillsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/skill-schema": {
+            "get": {
+                "operationId": "GetSkillSchema",
+                "summary": "Get Skill Schema",
+                "description": "Returns the input form for a skill. Run Skill uses it to show the skill's inputs.",
+                "x-ms-summary": "Get Skill Schema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "skill",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the skill.",
+                        "x-ms-summary": "Skill"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The skill's input schema.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "A JSON schema for the skill's inputs."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/run-skill": {
+            "post": {
+                "operationId": "RunSkill",
+                "summary": "Run Skill",
+                "description": "Run one skill with exact inputs, without natural-language routing. A skill that fails makes the action fail, and skills that ask for confirmation in a conversation run without asking.",
+                "x-ms-summary": "Run Skill",
+                "parameters": [
+                    {
+                        "name": "skill",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The skill to run.",
+                        "x-ms-summary": "Skill",
+                        "x-ms-dynamic-values": {
+                            "operationId": "ListSkills",
+                            "value-path": "id",
+                            "value-title": "name",
+                            "value-collection": "skills"
+                        }
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RunSkillRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The skill ran. The fields under Data change with the skill you choose.",
+                        "schema": {
+                            "type": "object",
+                            "x-ms-dynamic-schema": {
+                                "operationId": "GetSkillOutputSchema",
+                                "parameters": {
+                                    "skill": {
+                                        "parameter": "skill"
+                                    }
+                                },
+                                "value-path": "schema"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/skill-output-schema": {
+            "get": {
+                "operationId": "GetSkillOutputSchema",
+                "summary": "Get Skill Output Schema",
+                "description": "Returns the shape of a skill's result. Run Skill uses it to show the fields of Data as dynamic content.",
+                "x-ms-summary": "Get Skill Output Schema",
+                "x-ms-visibility": "internal",
+                "parameters": [
+                    {
+                        "name": "skill",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "description": "The ID of the skill.",
+                        "x-ms-summary": "Skill"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The skill's output schema.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "A JSON schema for the skill's result."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a/test-routing": {
+            "post": {
+                "operationId": "TestRouting",
+                "summary": "Test Routing",
+                "description": "Shows which skill and argument values a message would get, without calling your API. Use it to tune skill patterns.",
+                "x-ms-summary": "Test Routing",
+                "x-ms-visibility": "advanced",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TestRoutingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The routing result.",
+                        "schema": {
+                            "$ref": "#/definitions/TestRoutingResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/a2a": {
+            "post": {
+                "operationId": "InvokeA2A",
+                "summary": "Power A2A Template v2",
+                "description": "Describe what the agent does and which requests it should handle. Copilot Studio uses this text as the agent's description, and the orchestrator reads it to decide when to delegate to this agent.",
+                "x-ms-agentic-protocol": "a2a-1.0",
+                "x-ms-a2a-card-json": "null",
+                "tags": [
+                    "A2A"
+                ],
+                "responses": {
+                    "default": {
+                        "description": "default",
+                        "schema": {}
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "SkillSummary": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The skill's ID. Pass it to Run Skill.",
+                    "x-ms-summary": "Skill ID"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "The skill's display name.",
+                    "x-ms-summary": "Name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "What the skill does.",
+                    "x-ms-summary": "Description"
+                },
+                "examples": {
+                    "type": "array",
+                    "description": "Example requests for the skill.",
+                    "x-ms-summary": "Examples",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "requiresConfirmation": {
+                    "type": "boolean",
+                    "description": "True when the skill asks for confirmation in a conversation. Run Skill doesn't ask.",
+                    "x-ms-summary": "Requires Confirmation"
+                },
+                "arguments": {
+                    "type": "array",
+                    "description": "The inputs the skill accepts.",
+                    "x-ms-summary": "Arguments",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The argument's name."
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "A readable label."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "What the argument is."
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "string, integer, number, or boolean."
+                            },
+                            "required": {
+                                "type": "boolean",
+                                "description": "True when the caller must provide a value."
+                            },
+                            "default": {
+                                "type": "string",
+                                "description": "The value used when none is given."
+                            },
+                            "choices": {
+                                "type": "array",
+                                "description": "The allowed values, when the argument is limited to a set.",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "ListSkillsResponse": {
+            "type": "object",
+            "properties": {
+                "skills": {
+                    "type": "array",
+                    "description": "The skills the agent offers.",
+                    "x-ms-summary": "Skills",
+                    "items": {
+                        "$ref": "#/definitions/SkillSummary"
+                    }
+                }
+            }
+        },
+        "RunSkillRequest": {
+            "type": "object",
+            "properties": {
+                "input": {
+                    "type": "object",
+                    "title": "Inputs",
+                    "description": "The skill's inputs. The fields change with the skill you choose.",
+                    "x-ms-summary": "Inputs",
+                    "x-ms-dynamic-schema": {
+                        "operationId": "GetSkillSchema",
+                        "parameters": {
+                            "skill": {
+                                "parameter": "skill"
+                            }
+                        },
+                        "value-path": "schema"
+                    }
+                }
+            }
+        },
+        "TestRoutingRequest": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "The message to test, as a user would write it.",
+                    "x-ms-summary": "Message"
+                }
+            }
+        },
+        "TestRoutingResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "The message you tested.",
+                    "x-ms-summary": "Message"
+                },
+                "routedBy": {
+                    "type": "string",
+                    "description": "How the skill was chosen: pattern, llm, default, or none.",
+                    "x-ms-summary": "Routed By"
+                },
+                "skill": {
+                    "type": "string",
+                    "description": "The ID of the skill that would run.",
+                    "x-ms-summary": "Skill ID"
+                },
+                "skillName": {
+                    "type": "string",
+                    "description": "The skill's display name.",
+                    "x-ms-summary": "Skill Name"
+                },
+                "arguments": {
+                    "type": "object",
+                    "description": "The argument values the skill would receive, after defaults and type checks.",
+                    "x-ms-summary": "Arguments"
+                },
+                "missing": {
+                    "type": "array",
+                    "description": "Required arguments with no value. The agent would ask for them.",
+                    "x-ms-summary": "Missing",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "problem": {
+                    "type": "string",
+                    "description": "Why a value was rejected, such as a value outside the allowed choices.",
+                    "x-ms-summary": "Problem"
+                },
+                "confirmationRequired": {
+                    "type": "boolean",
+                    "description": "True when the agent would ask for confirmation before running the skill.",
+                    "x-ms-summary": "Confirmation Required"
+                },
+                "reply": {
+                    "type": "string",
+                    "description": "What the agent would say when no skill matches.",
+                    "x-ms-summary": "Reply"
+                }
+            }
+        },
+        "SendMessageRequest": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "The natural language message to send to the agent.",
+                    "x-ms-summary": "Message"
+                },
+                "contextId": {
+                    "type": "string",
+                    "description": "Context ID for multi-turn conversations. Pass the contextId from a previous response to continue the conversation.",
+                    "x-ms-summary": "Context ID"
+                },
+                "taskId": {
+                    "type": "string",
+                    "description": "Task ID of a task whose state is input_required. Pass it with your answer so the agent continues that task. Leave empty to start a new request.",
+                    "x-ms-summary": "Task ID",
+                    "x-ms-visibility": "advanced"
+                }
+            }
+        },
+        "TaskResponse": {
+            "type": "object",
+            "properties": {
+                "taskId": {
+                    "type": "string",
+                    "description": "Unique identifier for the task.",
+                    "x-ms-summary": "Task ID"
+                },
+                "contextId": {
+                    "type": "string",
+                    "description": "Context ID for multi-turn conversation continuity. Pass this to the next Send Message call.",
+                    "x-ms-summary": "Context ID"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Current task state: submitted, working, completed, failed, canceled, input_required, auth_required, rejected.",
+                    "x-ms-summary": "State"
+                },
+                "responseText": {
+                    "type": "string",
+                    "description": "Extracted text content from the agent's response artifacts.",
+                    "x-ms-summary": "Response Text"
+                },
+                "artifacts": {
+                    "type": "array",
+                    "description": "Structured output artifacts from the agent.",
+                    "x-ms-summary": "Artifacts",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "artifactId": {
+                                "type": "string",
+                                "description": "Unique artifact identifier.",
+                                "x-ms-summary": "Artifact ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Human-readable artifact name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "parts": {
+                                "type": "array",
+                                "description": "Content parts of the artifact.",
+                                "x-ms-summary": "Parts",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "text": {
+                                            "type": "string",
+                                            "description": "Text content.",
+                                            "x-ms-summary": "Text"
+                                        },
+                                        "url": {
+                                            "type": "string",
+                                            "description": "URL reference to content.",
+                                            "x-ms-summary": "URL"
+                                        },
+                                        "mediaType": {
+                                            "type": "string",
+                                            "description": "MIME type of the content.",
+                                            "x-ms-summary": "Media Type"
+                                        },
+                                        "filename": {
+                                            "type": "string",
+                                            "description": "Optional filename.",
+                                            "x-ms-summary": "Filename"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "description": "Structured JSON data content.",
+                                            "x-ms-summary": "Data"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "statusMessage": {
+                    "type": "string",
+                    "description": "Status message from the agent, if any.",
+                    "x-ms-summary": "Status Message"
+                },
+                "data": {
+                    "description": "The first structured data part from the agent's artifacts, such as a record or a list of rows. Use Parse JSON to read its fields.",
+                    "x-ms-summary": "Data"
+                }
+            }
+        },
+        "AgentCardResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Agent display name.",
+                    "x-ms-summary": "Name"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Agent description.",
+                    "x-ms-summary": "Description"
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Agent version.",
+                    "x-ms-summary": "Version"
+                },
+                "provider": {
+                    "type": "object",
+                    "description": "Agent provider information.",
+                    "x-ms-summary": "Provider",
+                    "properties": {
+                        "organization": {
+                            "type": "string",
+                            "description": "Provider organization name.",
+                            "x-ms-summary": "Organization"
+                        },
+                        "url": {
+                            "type": "string",
+                            "description": "Provider URL.",
+                            "x-ms-summary": "URL"
+                        }
+                    }
+                },
+                "skills": {
+                    "type": "array",
+                    "description": "Skills the agent can perform.",
+                    "x-ms-summary": "Skills",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Skill identifier.",
+                                "x-ms-summary": "ID"
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "Skill name.",
+                                "x-ms-summary": "Name"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Skill description.",
+                                "x-ms-summary": "Description"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "description": "Skill tags.",
+                                "x-ms-summary": "Tags",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "examples": {
+                                "type": "array",
+                                "description": "Example prompts for this skill.",
+                                "x-ms-summary": "Examples",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "capabilities": {
+                    "type": "object",
+                    "description": "Agent capability flags.",
+                    "x-ms-summary": "Capabilities",
+                    "properties": {
+                        "streaming": {
+                            "type": "boolean",
+                            "description": "Whether the agent supports streaming.",
+                            "x-ms-summary": "Streaming"
+                        },
+                        "pushNotifications": {
+                            "type": "boolean",
+                            "description": "Whether the agent supports push notifications.",
+                            "x-ms-summary": "Push Notifications"
+                        }
+                    }
+                },
+                "defaultInputModes": {
+                    "type": "array",
+                    "description": "Supported input media types.",
+                    "x-ms-summary": "Default Input Modes",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "defaultOutputModes": {
+                    "type": "array",
+                    "description": "Supported output media types.",
+                    "x-ms-summary": "Default Output Modes",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {},
+    "responses": {},
+    "securityDefinitions": {},
+    "security": [],
+    "tags": [],
+    "x-ms-connector-metadata": [
+        {
+            "propertyName": "Website",
+            "propertyValue": "https://a2a-protocol.org"
+        },
+        {
+            "propertyName": "Privacy policy",
+            "propertyValue": "https://troystaylor.com/privacy"
+        },
+        {
+            "propertyName": "Categories",
+            "propertyValue": "AI;Productivity"
+        }
+    ]
+}

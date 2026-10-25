@@ -1,0 +1,109 @@
+// DEMO: DummyJSON product catalog
+//
+// This file is not part of the connector. It replaces RegisterHostedSkills with skills that call DummyJSON
+// (https://dummyjson.com), a free public demo API with no sign-in, so you can try the connector with no backend.
+// DummyJSON simulates writes and saves nothing, so every skill is safe to run.
+//
+// Run-Tests.ps1 splices this in to test the framework, and Deploy-PowerA2A.ps1 -Demo DummyJson deploys with it.
+// The shipped script.csx keeps its own generic skills.
+//
+// DEMO SETTINGS
+// HOST_AGENT_NAME = Product Catalog Agent
+// HOST_AGENT_DESCRIPTION = Looks up, searches, creates, updates, and deletes products in the product catalog. Use it for questions about products and their prices.
+// HOST_API_BASE_URL = https://dummyjson.com
+// DEMO SKILLS
+    private void RegisterHostedSkills()
+    {
+        // ── Change data. Each one confirms first. ────────────────────────────
+
+        _skills.Add(new HostedSkill("update_product_price", "Update product price")
+            .Describe("Changes the price of one product.", "Set the price of product 12 to 19.99", "Change product 7's price to 5")
+            .Match(@"\b(?:set|change|update)\s+(?:the\s+)?price\s+of\s+product\s+#?(?<productId>\d+)\s+to\s+\$?(?<price>\d+(?:\.\d+)?)")
+            .Match(@"\b(?:set|change|update)\s+product\s+#?(?<productId>\d+)(?:'s)?\s+price\s+to\s+\$?(?<price>\d+(?:\.\d+)?)")
+            .Arg("productId", "The product ID", a => a.OfType("integer").Between(1, null).Ask("Which product should I update?"))
+            .Arg("price", "The new price", a => a.OfType("number").Between(0, 100000).Ask("What should the new price be?"))
+            .Confirm("Change the price of product {productId} to {price}?")
+            .Returns(@"{ ""id"": 1, ""title"": ""Essence Mascara Lash Princess"", ""price"": 19.99, ""stock"": 99 }")
+            .Handle(async call =>
+            {
+                var product = await HostCallApiAsync(new HttpMethod("PATCH"),
+                    HOST_API_BASE_URL + "/products/" + call.Arg("productId"),
+                    new JObject { ["price"] = call.Number("price") }).ConfigureAwait(false);
+                return HostResult.FromRecord(product, new[] { "id", "title", "price", "stock" },
+                    "Product " + call.Arg("productId") + " now costs " + call.Arg("price") + ".");
+            }));
+
+        _skills.Add(new HostedSkill("create_product", "Create product")
+            .Describe("Creates a new product.", "Create a product called Desk lamp")
+            .Match(@"^\s*(?:create|add|new)\s+(?:a\s+)?product\s+(?:called|named)\s+(?<title>.+?)\s*$")
+            .Arg("title", "The product's name", a => a.MaxChars(100).Ask("What should the product be called?"))
+            .Confirm("Create a product called \"{title}\"?")
+            .Returns(@"{ ""id"": 195, ""title"": ""Desk lamp"" }")
+            .Handle(async call =>
+            {
+                var product = await HostCallApiAsync(HttpMethod.Post, HOST_API_BASE_URL + "/products/add",
+                    new JObject { ["title"] = call.Arg("title") }).ConfigureAwait(false);
+                return HostResult.FromRecord(product, new[] { "id", "title" }, "Created product");
+            }));
+
+        _skills.Add(new HostedSkill("delete_product", "Delete product")
+            .Describe("Permanently deletes one product.", "Delete product 12")
+            .Match(@"\b(?:delete|remove)\s+product\s+#?(?<productId>\d+)")
+            .Arg("productId", "The product ID", a => a.OfType("integer").Between(1, null).Ask("Which product should I delete?"))
+            .Confirm("Permanently delete product {productId}? This can't be undone.")
+            .Returns(@"{ ""id"": 1, ""title"": ""Essence Mascara Lash Princess"", ""isDeleted"": true }")
+            .Handle(async call =>
+            {
+                var result = await HostCallApiAsync(HttpMethod.Delete,
+                    HOST_API_BASE_URL + "/products/" + call.Arg("productId")).ConfigureAwait(false);
+                return HostResult.FromRecord(result, new[] { "id", "title", "isDeleted" },
+                    "Deleted product " + call.Arg("productId") + ".");
+            }));
+
+        // ── Read data. No confirmation needed. ───────────────────────────────
+
+        _skills.Add(new HostedSkill("get_product", "Get product")
+            .Describe("Looks up one product by its ID.", "Get product 12", "Show me product 7")
+            .Match(@"^\s*(?:get|show|look up)\s+(?:me\s+)?(?:the\s+)?product\s+#?(?<productId>\d+)\s*$")
+            .Match(@"^\s*(?:get|show|look up)\s+(?:a\s+)?product\s*$")
+            .Arg("productId", "The product ID", a => a.OfType("integer").Between(1, null).Ask("Which product ID should I look up?"))
+            .Returns(@"{ ""id"": 1, ""title"": ""Essence Mascara Lash Princess"", ""category"": ""beauty"", ""price"": 9.99, ""stock"": 99 }")
+            .Handle(async call =>
+            {
+                var product = await HostCallApiAsync(HttpMethod.Get,
+                    HOST_API_BASE_URL + "/products/" + call.Arg("productId")).ConfigureAwait(false);
+                return HostResult.FromRecord(product, new[] { "id", "title", "category", "price", "stock" },
+                    "Product " + call.Arg("productId"));
+            }));
+
+        _skills.Add(new HostedSkill("check_connection", "Check connection")
+            .Describe("Checks that the connector can reach the API and that the sign-in works.", "Is the API working?", "Check the connection")
+            .Match(@"^\s*(?:check|test)\s+(?:the\s+)?(?:api|connection)\b|\bis\s+the\s+api\s+(?:up|working|available)\b")
+            .Handle(async call =>
+            {
+                await HostCallApiAsync(HttpMethod.Get, HOST_API_BASE_URL + "/test").ConfigureAwait(false);
+                return HostResult.FromText("The API responded, and the connection is working.");
+            }));
+
+        // The default skill takes any message that no pattern matched, so keep it last.
+        _skills.Add(new HostedSkill("search_products", "Search products")
+            .Describe("Searches products by keyword, and can sort by price or title.", "Find phones", "Search for laptops")
+            .Arg("query", "The words to search for", true, "What should I search for?")
+            .Arg("limit", "How many results to return", a => a.OfType("integer").Between(1, 25).DefaultTo("10").Optional())
+            .Arg("sortBy", "What to sort by", a => a.OneOf("title", "price").Optional())
+            .Arg("order", "Sort order", a => a.OneOf("asc", "desc").DefaultTo("asc").Optional())
+            .FromText("query")
+            .Default()
+            .Returns(@"[{ ""id"": 123, ""title"": ""iPhone 13 Pro"", ""category"": ""smartphones"", ""price"": 1099.99 }]")
+            .Handle(async call =>
+            {
+                var limit = (int)(call.Int("limit") ?? 10);
+                var url = HOST_API_BASE_URL + "/products/search?q=" + Uri.EscapeDataString(call.Arg("query")) + "&limit=" + limit;
+                if (call.Arg("sortBy") != null)
+                    url += "&sortBy=" + Uri.EscapeDataString(call.Arg("sortBy")) + "&order=" + Uri.EscapeDataString(call.Arg("order") ?? "asc");
+
+                var results = await HostCallApiAsync(HttpMethod.Get, url).ConfigureAwait(false);
+                return HostResult.FromRows(results, new[] { "id", "title", "category", "price" },
+                    maxRows: limit, title: "Results for \"" + call.Arg("query") + "\"", rowsPath: "products");
+            }));
+    }

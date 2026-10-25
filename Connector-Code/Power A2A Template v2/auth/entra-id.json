@@ -1,0 +1,46 @@
+{
+  "description": "Microsoft Entra ID sign-in for an API that Entra ID protects. Replace [YOUR_CLIENT_ID], [YOUR_RESOURCE_URI], and [YOUR_SCOPE], or pass -ClientId, -ResourceUri, and -Scope to Deploy-PowerA2A.ps1. Leave [YOUR_REDIRECT_URL] as it is: Power Platform generates it when you deploy.",
+  "connectionParameters": {
+    "token": {
+      "type": "oauthSetting",
+      "oAuthSettings": {
+        "identityProvider": "aad",
+        "clientId": "[YOUR_CLIENT_ID]",
+        "scopes": [
+          "[YOUR_RESOURCE_URI]/[YOUR_SCOPE]"
+        ],
+        "redirectMode": "Global",
+        "redirectUrl": "[YOUR_REDIRECT_URL]",
+        "properties": {
+          "IsFirstParty": "False",
+          "AzureActiveDirectoryResourceId": "[YOUR_RESOURCE_URI]"
+        },
+        "customParameters": {
+          "loginUri": {
+            "value": "https://login.microsoftonline.com"
+          },
+          "loginUriAAD": {
+            "value": "https://login.microsoftonline.com"
+          },
+          "resourceUri": {
+            "value": "[YOUR_RESOURCE_URI]"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2_auth": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/authorize",
+      "scopes": {}
+    }
+  },
+  "security": [
+    {
+      "oauth2_auth": []
+    }
+  ]
+}
