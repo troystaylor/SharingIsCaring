@@ -1,0 +1,71 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.1",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Copilot Studio${{APP_NAME_SUFFIX}}",
+    "full": "Copilot Studio agent and workflow builder"
+  },
+  "description": {
+    "short": "Build, test and manage Copilot Studio agents and workflows.",
+    "full": "Connects Microsoft 365 Copilot to the Copilot Studio agentic builder MCP server for your Power Platform environment. Skills cover authoring agents, building and diagnosing workflows, running agent evaluations, discovering connectors and connections, and reviewing credit consumption, all built on shared rules for confirming the environment, reading Copilot Studio guidance first, and previewing every change before it is made. Requests run as you under your Copilot Studio and Power Platform permissions."
+  },
+  "accentColor": "#0F6CBD",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "${{COPILOT_STUDIO_GATEWAY_HOST}}"
+  ],
+  "agentConnectors": [
+    {
+      "id": "copilot-studio",
+      "displayName": "Copilot Studio",
+      "description": "Create, test, publish and manage Copilot Studio agents and workflows in any Power Platform environment you can access, through a Copilot Studio gateway.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://${{COPILOT_STUDIO_GATEWAY_HOST}}/mcp",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{COPILOT_STUDIO_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/copilot-studio-access"
+    },
+    {
+      "folder": "skills/write-safety"
+    },
+    {
+      "folder": "skills/agent-authoring"
+    },
+    {
+      "folder": "skills/workflow-authoring-and-diagnostics"
+    },
+    {
+      "folder": "skills/agent-evaluation"
+    },
+    {
+      "folder": "skills/consumption-review"
+    },
+    {
+      "folder": "skills/connector-discovery"
+    }
+  ]
+}
