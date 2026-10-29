@@ -19,7 +19,7 @@ Comprehensive Power Platform custom connector for Salesforce REST API v66.0. Pro
 ### Connected App Setup
 
 This connector is validated with a provider-based OAuth configuration in `apiProperties.json`:
-- `identityProvider`: `SalesforceV2`
+- `identityProvider`: `salesforcev2`
 - `customParameters.LoginUri`: `https://login.salesforce.com`
 - `redirectMode`: `GlobalPerConnector`
 
@@ -88,20 +88,20 @@ pac connector update --connector-id <CONNECTOR_ID> --api-definition-file apiDefi
 Use the following OAuth properties pattern (validated in Power Platform Demo):
 
 1. In `apiProperties.json` set:
-  - `connectionParameters.token.type` = `oauthSetting`
-  - `connectionParameters.token.oAuthSettings.identityProvider` = `SalesforceV2`
+  - `connectionParameters.token.type` = `oAuthSetting`
+  - `connectionParameters.token.oAuthSettings.identityProvider` = `salesforcev2`
   - `connectionParameters.token.oAuthSettings.customParameters.LoginUri.value` = `https://login.salesforce.com`
   - `connectionParameters.token.oAuthSettings.redirectMode` = `GlobalPerConnector`
 2. In `apiDefinition.swagger.json` set OAuth security endpoints to:
   - `authorizationUrl`: `https://login.salesforce.com/services/oauth2/authorize`
   - `tokenUrl`: `https://login.salesforce.com/services/oauth2/token`
-3. Ensure scopes are aligned across both files (`api`, `refresh_token`).
+3. Ensure scopes are aligned across both files (`api`). Don't request `refresh_token` in the connector: the `salesforcev2` identity provider already asks Salesforce for it. Your Salesforce app must still allow the **Perform requests at any time (refresh_token, offline_access)** scope.
 
-In validation testing, OAuth sign-in launched Salesforce successfully even with a placeholder `clientId` and no explicit `clientSecret` in `apiProperties.json`. This suggests `SalesforceV2` may use provider-managed auth behavior. For production, still prefer a real Salesforce app registration and verify behavior in your target tenant.
+In validation testing, OAuth sign-in launched Salesforce successfully even with a placeholder `clientId` and no explicit `clientSecret` in `apiProperties.json`. This suggests `salesforcev2` may use provider-managed auth behavior. For production, still prefer a real Salesforce app registration and verify behavior in your target tenant.
 
 ### Security Tab Behavior
 
-When using `SalesforceV2`, the custom connector **Security** tab can display **No Authentication** even though OAuth works at runtime in the **Test** tab. Treat PAC-deployed `apiProperties.json` as source of truth for this provider pattern.
+When using `salesforcev2`, the custom connector **Security** tab can display **No Authentication** even though OAuth works at runtime in the **Test** tab. Treat PAC-deployed `apiProperties.json` as source of truth for this provider pattern.
 
 ## API Coverage
 
@@ -437,7 +437,7 @@ private const string APP_INSIGHTS_CONNECTION_STRING = "InstrumentationKey=xxx;In
    - If you recently changed OAuth settings, **delete the existing connection and create a new one** — stale tokens are not automatically refreshed
 
 2. **Security tab shows "No Authentication"**
-  - Expected with the `SalesforceV2` provider pattern in some custom connector editor experiences
+  - Expected with the `salesforcev2` provider pattern in some custom connector editor experiences
   - Verify actual auth configuration by downloading the connector with `pac connector download`
   - If Test tab connection works, runtime auth is configured even if the editor view is blank
 
