@@ -1,0 +1,62 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.0",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Azure Maps Route${{APP_NAME_SUFFIX}}",
+    "full": "Azure Maps Route (GeoJSON)"
+  },
+  "description": {
+    "short": "Plan routes, compare travel times and map reachable areas with Azure Maps.",
+    "full": "Connects Microsoft 365 Copilot to the Azure Maps Route MCP server so you can get driving, truck and walking directions, compare travel times between many places, find the area reachable within a time or distance, and snap GPS traces to roads. Every result is a GeoJSON FeatureCollection you can pass to a map or another tool."
+  },
+  "accentColor": "#0078D4",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "${{AZURE_MAPS_MCP_SERVER_DOMAIN}}"
+  ],
+  "agentConnectors": [
+    {
+      "id": "azure-maps-route",
+      "displayName": "Azure Maps Route",
+      "description": "Route directions, route matrix, route range (isochrone) and snap to roads from Azure Maps, returned as GeoJSON.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "${{AZURE_MAPS_MCP_SERVER_URL}}",
+          "authorization": {
+            "type": "ApiKeyPluginVault",
+            "referenceId": "${{AZURE_MAPS_API_KEY_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/plan-a-route"
+    },
+    {
+      "folder": "skills/compare-travel-times"
+    },
+    {
+      "folder": "skills/find-service-area"
+    },
+    {
+      "folder": "skills/clean-gps-trace"
+    }
+  ]
+}
