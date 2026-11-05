@@ -129,6 +129,16 @@ public class Script : ScriptBase
         {
             if (part.StartsWith("format=", StringComparison.OrdinalIgnoreCase))
                 format = Uri.UnescapeDataString(part.Substring(7));
+            else if (part.StartsWith("pins=", StringComparison.OrdinalIgnoreCase) || part.StartsWith("path=", StringComparison.OrdinalIgnoreCase))
+            {
+                // Azure Maps needs one repeated parameter per item, so split the semicolon-separated value.
+                var name = part.Substring(0, 4);
+                var value = Uri.UnescapeDataString(part.Substring(5).Replace("+", "%20"));
+                foreach (var item in value.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (item.Trim().Length > 0) kept.Add(name + "=" + Uri.EscapeDataString(item.Trim()));
+                }
+            }
             else
                 kept.Add(part);
         }
@@ -188,7 +198,7 @@ public class Script : ScriptBase
     }
 
     /// <summary>Builds a Render API query from the tool arguments and returns the image as MCP content.</summary>
-    private async Task<HttpResponseMessage> HandleStaticMapToolAsync(JToken requestId, JObject args)
+    private async Task<HttpResponseMessage> HandleStaticMapToolAsync(JToken requestId, JObject args, string extraText = null)
     {
         var width = args["width"]?.Value<int?>() ?? 512;
         var height = args["height"]?.Value<int?>() ?? 512;
@@ -205,7 +215,17 @@ public class Script : ScriptBase
         string placement;
         var route = new List<double[]>();
         FlattenPositions(args["routeCoordinates"], route);
-        var bbox = args["bbox"] as JArray;
+
+        var bboxValues = new List<double>();
+        if (args["bbox"] is JArray bboxArray)
+            bboxValues.AddRange(bboxArray.Select(b => b.Value<double>()));
+        else if (args["bbox"] != null)
+            foreach (var part in args["bbox"].ToString().Split(','))
+            {
+                double value;
+                if (double.TryParse(part.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value))
+                    bboxValues.Add(value);
+            }
 
         if (route.Count > 0)
         {
@@ -217,7 +237,7 @@ public class Script : ScriptBase
             }
 
             var color = (args["routeColor"]?.ToString() ?? "0078D4").TrimStart('#');
-            var lineWidth = args["routeWidth"]?.Value<int?>() ?? 5;
+            var lineWidth = Math.Max(1, Math.Min(50, args["routeWidth"]?.Value<int?>() ?? 5));
             paths.Add("lc" + color + "|lw" + lineWidth + "||" + string.Join("|", points.Select(p => Pos(p[0], p[1]))));
 
             if (args["markEndpoints"] == null || args["markEndpoints"].Value<bool>())
@@ -238,9 +258,9 @@ public class Script : ScriptBase
 
         if (route.Count == 0 || args["centerLongitude"] != null)
         {
-            if (bbox != null && bbox.Count == 4)
+            if (bboxValues.Count == 4)
             {
-                query.Add(new KeyValuePair<string, string>("bbox", string.Join(",", bbox.Select(b => b.Value<double>().ToString(System.Globalization.CultureInfo.InvariantCulture)))));
+                query.Add(new KeyValuePair<string, string>("bbox", string.Join(",", bboxValues.Select(b => b.ToString(System.Globalization.CultureInfo.InvariantCulture)))));
                 width = 0; height = 0;
             }
             else
@@ -288,10 +308,96 @@ public class Script : ScriptBase
             ["content"] = new JArray
             {
                 new JObject { ["type"] = "image", ["data"] = Convert.ToBase64String(bytes), ["mimeType"] = mimeType },
-                new JObject { ["type"] = "text", ["text"] = "Static map (" + mimeType + ", " + bytes.Length + " bytes), placement " + placement + "." }
+                new JObject { ["type"] = "text", ["text"] = (extraText != null ? extraText + " " : string.Empty) + "Static map (" + mimeType + ", " + bytes.Length + " bytes), placement " + placement + "." + (extraText == null ? BingCenterHint(placement, query) : string.Empty) }
             },
             ["isError"] = false
         });
+    }
+
+    /// <summary>For center based maps, suggests a Bing Maps link so the user can open the same area when the image doesn't display.</summary>
+    private static string BingCenterHint(string placement, List<KeyValuePair<string, string>> query)
+    {
+        var parts = placement.Split(',');
+        double longitude, latitude;
+        if (parts.Length != 2
+            || !double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out longitude)
+            || !double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out latitude))
+            return string.Empty;
+
+        var zoom = query.FirstOrDefault(q => q.Key == "zoom").Value ?? "12";
+        return " The map image may not display in every client. Share this link so the user can open the area: https://www.bing.com/maps?cp="
+            + latitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture) + "~"
+            + longitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture) + "&lvl=" + zoom;
+    }
+
+    /// <summary>Gets a route and draws it on a map in one step, so agents don't have to pass route coordinates between tools.</summary>
+    private async Task<HttpResponseMessage> HandleRouteMapToolAsync(JToken requestId, JObject args)
+    {
+        var directionsArgs = (JObject)args.DeepClone();
+        directionsArgs["routeOutputOptions"] = new JArray("routeSummary", "routePath");
+
+        var json = await CallMapsAsync("/route/directions", BuildDirectionsBody(directionsArgs), args["language"]?.ToString()).ConfigureAwait(false);
+        var routeFeature = JObject.Parse(json)["features"]?.FirstOrDefault(f => f["properties"]?["type"]?.ToString() == "RoutePath");
+        if (routeFeature == null)
+            throw new InvalidOperationException("No route was found between those points.");
+
+        var mapArgs = new JObject { ["routeCoordinates"] = routeFeature["geometry"]["coordinates"] };
+        CopyIfPresent(args, mapArgs, "routeColor", "routeWidth", "markEndpoints", "width", "height", "zoom", "tilesetId", "trafficLayer", "language", "view", "format");
+
+        var meters = routeFeature["properties"]?["distanceInMeters"]?.Value<double>() ?? 0;
+        var seconds = routeFeature["properties"]?["durationInSeconds"]?.Value<double>() ?? 0;
+        var summary = "Route: " + (meters / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
+            + " km, about " + Math.Round(seconds / 60.0) + " minutes. "
+            + "The map image may not display in every client. Always share this link so the user can open the route on a map: "
+            + BingRouteUrl(args);
+
+        return await HandleStaticMapToolAsync(requestId, mapArgs, summary).ConfigureAwait(false);
+    }
+
+    private static string BingPos(double latitude, double longitude)
+    {
+        return "pos." + latitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)
+            + "_" + longitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Builds a Bing Maps directions link (origin, stops, destination) that opens in any browser without a key.</summary>
+    private static string BingRouteUrl(JObject args)
+    {
+        var input = NormalizeInput(args);
+        var stops = new List<string> { BingPos(RequireNumber(input, "originLatitude"), RequireNumber(input, "originLongitude")) };
+
+        if (input["waypoints"] is JArray via)
+            foreach (var stop in via.OfType<JObject>())
+                stops.Add(BingPos(RequireNumber(stop, "latitude"), RequireNumber(stop, "longitude")));
+
+        stops.Add(BingPos(RequireNumber(input, "destinationLatitude"), RequireNumber(input, "destinationLongitude")));
+
+        var mode = input["travelMode"]?.ToString() == "walking" ? "W" : "D";
+        return "https://www.bing.com/maps?rtp=" + string.Join("~", stops) + "&mode=" + mode;
+    }
+
+    /// <summary>
+    /// Copilot Studio sends every optional tool input, with null, empty text, or empty lists for the ones the
+    /// agent left blank. Drop those so they behave as "not provided".
+    /// </summary>
+    private static JObject RemoveBlankArguments(JObject args)
+    {
+        var zeroMeansBlank = new HashSet<string> { "maxRouteCount", "routeWidth", "width", "height", "timeBudgetInSec", "distanceBudgetInMeters" };
+        var cleaned = new JObject();
+
+        foreach (var property in args.Properties())
+        {
+            var value = property.Value;
+            if (value == null || value.Type == JTokenType.Null) continue;
+            if (value.Type == JTokenType.String && string.IsNullOrWhiteSpace(value.ToString())) continue;
+            if (value.Type == JTokenType.Array && !value.HasValues) continue;
+            if ((value.Type == JTokenType.Integer || value.Type == JTokenType.Float)
+                && zeroMeansBlank.Contains(property.Name) && value.Value<double>() == 0) continue;
+
+            cleaned[property.Name] = value;
+        }
+
+        return cleaned;
     }
 
     // ───────────────────────────────────────────────────────────────
@@ -551,8 +657,6 @@ public class Script : ScriptBase
 
     private HttpResponseMessage HandleToolsList(JToken requestId)
     {
-        var lonLat = LonLatSchema();
-
         var tools = new JArray
         {
             CreateTool("get_route_directions",
@@ -563,14 +667,14 @@ public class Script : ScriptBase
                     ["originLatitude"] = JP("number", "Latitude of the origin (-90 to 90)."),
                     ["destinationLongitude"] = JP("number", "Longitude of the destination (-180 to 180)."),
                     ["destinationLatitude"] = JP("number", "Latitude of the destination (-90 to 90)."),
-                    ["waypoints"] = new JObject { ["type"] = "array", ["description"] = "Optional stops between origin and destination, in order.", ["items"] = lonLat },
+                    ["waypoints"] = JP("string", "Optional stops between origin and destination, in order, as longitude,latitude pairs separated by semicolons, for example -122.2,47.62;-122.15,47.65."),
                     ["travelMode"] = EnumProp("Mode of travel. Default: driving.", TravelModes),
                     ["optimizeRoute"] = EnumProp("Route optimization. Default: fastestWithoutTraffic.", OptimizeModes),
                     ["optimizeWaypointOrder"] = JP("boolean", "Reorder intermediate waypoints to reduce route cost."),
                     ["departAt"] = JP("string", "Departure time, ISO 8601. Cannot be combined with arriveAt."),
                     ["arriveAt"] = JP("string", "Arrival time, ISO 8601. Cannot be combined with departAt."),
-                    ["avoid"] = EnumArrayProp("Road features to avoid.", AvoidValues),
-                    ["routeOutputOptions"] = EnumArrayProp("Data to return. Default: routeSummary and routePath. Add itinerary for turn-by-turn instructions.", new[] { "routeSummary", "routePath", "itinerary" }),
+                    ["avoid"] = JP("string", "Road features to avoid, comma-separated. Values: " + string.Join(", ", AvoidValues) + "."),
+                    ["routeOutputOptions"] = JP("string", "Data to return, comma-separated. Default: routeSummary,routePath. Add itinerary for turn-by-turn instructions."),
                     ["maxRouteCount"] = JP("integer", "Maximum number of routes to return, including alternatives."),
                     ["language"] = JP("string", "Language for instructions, for example en-US.")
                 },
@@ -580,13 +684,13 @@ public class Script : ScriptBase
                 "Calculate travel time and distance between every origin and every destination. Origins multiplied by destinations must not exceed 2,500, and larger matrices have extra restrictions (see the Azure Maps Route Matrix documentation). Returns a GeoJSON FeatureCollection with a summary per origin and destination pair.",
                 new JObject
                 {
-                    ["origins"] = new JObject { ["type"] = "array", ["description"] = "Origin points.", ["items"] = lonLat },
-                    ["destinations"] = new JObject { ["type"] = "array", ["description"] = "Destination points.", ["items"] = lonLat },
+                    ["origins"] = JP("string", "Origin points as longitude,latitude pairs separated by semicolons, for example -122.33,47.6;-122.2,47.5."),
+                    ["destinations"] = JP("string", "Destination points as longitude,latitude pairs separated by semicolons."),
                     ["travelMode"] = EnumProp("Mode of travel. Default: driving.", TravelModes),
                     ["traffic"] = EnumProp("Traffic model. Default: historical.", new[] { "historical", "live" }),
                     ["departAt"] = JP("string", "Departure time, ISO 8601."),
                     ["arriveAt"] = JP("string", "Arrival time, ISO 8601."),
-                    ["avoid"] = EnumArrayProp("Road features to avoid.", new[] { "tollRoads", "unpavedRoads" })
+                    ["avoid"] = JP("string", "Road features to avoid, comma-separated. Values: tollRoads, unpavedRoads.")
                 },
                 new[] { "origins", "destinations" }),
 
@@ -601,7 +705,7 @@ public class Script : ScriptBase
                     ["travelMode"] = EnumProp("Mode of travel. Default: driving.", new[] { "driving", "truck" }),
                     ["optimizeRoute"] = EnumProp("Route optimization. Default: fastestWithoutTraffic.", new[] { "shortest", "fastestWithoutTraffic", "fastestWithTraffic" }),
                     ["departAt"] = JP("string", "Departure time, ISO 8601."),
-                    ["avoid"] = EnumArrayProp("Road features to avoid.", AvoidValues)
+                    ["avoid"] = JP("string", "Road features to avoid, comma-separated. Values: " + string.Join(", ", AvoidValues) + ".")
                 },
                 new[] { "originLongitude", "originLatitude" }),
 
@@ -609,7 +713,7 @@ public class Script : ScriptBase
                 "Snap GPS points to the road network and return the matched route as a GeoJSON FeatureCollection. Optionally interpolate between points and include speed limits.",
                 new JObject
                 {
-                    ["points"] = new JObject { ["type"] = "array", ["description"] = "GPS points in travel order.", ["items"] = lonLat },
+                    ["points"] = JP("string", "GPS points in travel order as longitude,latitude pairs separated by semicolons, for example -122.335,47.608;-122.332,47.606."),
                     ["travelMode"] = EnumProp("Mode of travel. Default: driving.", new[] { "driving", "truck" }),
                     ["interpolate"] = JP("boolean", "Add points along the road between the snapped points."),
                     ["includeSpeedLimit"] = JP("boolean", "Include speed limits in kilometers per hour."),
@@ -617,18 +721,39 @@ public class Script : ScriptBase
                 },
                 new[] { "points" }),
 
-            CreateTool("get_static_map",
-                "Render a static map image (PNG or JPEG) with optional pushpins, lines, polygons, and live traffic. To map a route, pass the route line coordinates from get_route_directions as routeCoordinates; the map is framed to fit the route and long routes are simplified to 100 points. Otherwise give a center point and zoom, or a bbox.",
+            CreateTool("get_route_map",
+                "Get driving, truck, or walking directions and draw the route on a map image in one step. Returns the map image plus the distance and travel time. Use this when the user asks to see a route on a map. Coordinates are longitude and latitude.",
                 new JObject
                 {
-                    ["routeCoordinates"] = new JObject { ["type"] = "array", ["description"] = "Route line to draw, as [longitude, latitude] positions. The coordinates array of the RoutePath MultiLineString from get_route_directions can be passed as is.", ["items"] = new JObject { ["type"] = "array" } },
+                    ["originLongitude"] = JP("number", "Longitude of the origin (-180 to 180)."),
+                    ["originLatitude"] = JP("number", "Latitude of the origin (-90 to 90)."),
+                    ["destinationLongitude"] = JP("number", "Longitude of the destination (-180 to 180)."),
+                    ["destinationLatitude"] = JP("number", "Latitude of the destination (-90 to 90)."),
+                    ["waypoints"] = JP("string", "Optional stops between origin and destination, in order, as longitude,latitude pairs separated by semicolons."),
+                    ["travelMode"] = EnumProp("Mode of travel. Default: driving.", TravelModes),
+                    ["optimizeRoute"] = EnumProp("Route optimization. Default: fastestWithoutTraffic.", OptimizeModes),
+                    ["avoid"] = JP("string", "Road features to avoid, comma-separated. Values: " + string.Join(", ", AvoidValues) + "."),
+                    ["departAt"] = JP("string", "Departure time, ISO 8601."),
                     ["routeColor"] = JP("string", "Route line color as six hex digits without #. Default: 0078D4."),
                     ["routeWidth"] = JP("integer", "Route line width in pixels, 1 to 50. Default: 5."),
-                    ["markEndpoints"] = JP("boolean", "Add pins labeled A and B at the start and end of the route. Default: true."),
-                    ["centerLongitude"] = JP("number", "Longitude of the map center (-180 to 180). Required unless routeCoordinates or bbox is given."),
+                    ["markEndpoints"] = JP("boolean", "Add pins labeled A and B at the start and end. Default: true."),
+                    ["width"] = JP("integer", "Image width in pixels, 80 to 2000. Default: 512."),
+                    ["height"] = JP("integer", "Image height in pixels, 80 to 1500. Default: 512."),
+                    ["tilesetId"] = EnumProp("Map style. Default: microsoft.base.road.", new[] { "microsoft.base.road", "microsoft.base.darkgrey", "microsoft.imagery" }),
+                    ["trafficLayer"] = EnumProp("Show live traffic. Default: none.", new[] { "microsoft.traffic.relative.main", "none" }),
+                    ["format"] = EnumProp("Image format. Default: png.", new[] { "png", "jpeg" }),
+                    ["language"] = JP("string", "Language for map labels, for example en-US.")
+                },
+                new[] { "originLongitude", "originLatitude", "destinationLongitude", "destinationLatitude" }),
+
+            CreateTool("get_static_map",
+                "Render a static map image (PNG or JPEG) with optional pushpins, lines, polygons, and live traffic. Give a center point and zoom, or a bbox. To show a route, use get_route_map instead.",
+                new JObject
+                {
+                    ["centerLongitude"] = JP("number", "Longitude of the map center (-180 to 180). Required unless bbox is given."),
                     ["centerLatitude"] = JP("number", "Latitude of the map center (-90 to 90)."),
-                    ["zoom"] = JP("integer", "Zoom level 0 (world) to 20 (street). Default: 12 with a center, fitted automatically for a route."),
-                    ["bbox"] = new JObject { ["type"] = "array", ["description"] = "Area to show as [minLon, minLat, maxLon, maxLat]. Image size is then set by the service.", ["items"] = new JObject { ["type"] = "number" } },
+                    ["zoom"] = JP("integer", "Zoom level 0 (world) to 20 (street). Default: 12."),
+                    ["bbox"] = JP("string", "Area to show as minLon,minLat,maxLon,maxLat. Image size is then set by the service."),
                     ["width"] = JP("integer", "Image width in pixels, 80 to 2000. Default: 512."),
                     ["height"] = JP("integer", "Image height in pixels, 80 to 1500. Default: 512."),
                     ["tilesetId"] = EnumProp("Map style. Default: microsoft.base.road.", new[] { "microsoft.base.road", "microsoft.base.darkgrey", "microsoft.imagery" }),
@@ -647,7 +772,7 @@ public class Script : ScriptBase
     private async Task<HttpResponseMessage> HandleToolsCall(JObject @params, JToken requestId, string correlationId)
     {
         var toolName = @params["name"]?.ToString();
-        var arguments = @params["arguments"] as JObject ?? new JObject();
+        var arguments = RemoveBlankArguments(@params["arguments"] as JObject ?? new JObject());
 
         await LogToAppInsightsAsync("MCP_ToolCall", new Dictionary<string, string>
         {
@@ -664,7 +789,15 @@ public class Script : ScriptBase
             {
                 case "get_route_directions":
                     resultText = await CallMapsAsync("/route/directions", BuildDirectionsBody(arguments), language).ConfigureAwait(false);
-                    break;
+                    return CreateJsonRpcSuccessResponse(requestId, new JObject
+                    {
+                        ["content"] = new JArray
+                        {
+                            new JObject { ["type"] = "text", ["text"] = resultText },
+                            new JObject { ["type"] = "text", ["text"] = "To let the user see this route on a map, share this link: " + BingRouteUrl(arguments) }
+                        },
+                        ["isError"] = false
+                    });
                 case "get_route_matrix":
                     resultText = await CallMapsAsync("/route/matrix", BuildMatrixBody(arguments), null).ConfigureAwait(false);
                     break;
@@ -676,6 +809,8 @@ public class Script : ScriptBase
                     break;
                 case "get_static_map":
                     return await HandleStaticMapToolAsync(requestId, arguments).ConfigureAwait(false);
+                case "get_route_map":
+                    return await HandleRouteMapToolAsync(requestId, arguments).ConfigureAwait(false);
                 default:
                     return CreateJsonRpcErrorResponse(requestId, -32601, "Unknown tool", toolName);
             }

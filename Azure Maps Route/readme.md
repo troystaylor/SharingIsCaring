@@ -7,7 +7,7 @@ Custom connector for the [Azure Maps Route API](https://learn.microsoft.com/rest
 
 Azure Maps Route (version `2025-01-01`) reads and returns `application/geo+json`. Power Platform connectors expect `application/json`, so this connector's script sends your request as GeoJSON and returns the response as JSON with the GeoJSON unchanged. You get a standard FeatureCollection you can pass to a map control, a Parse JSON action, or another service.
 
-A matching Copilot plugin is in [Copilot Plugins/Azure Maps Route](../Copilot%20Plugins/Azure%20Maps%20Route/README.md).
+A matching Copilot plugin is in [Copilot Plugins/Azure Maps Route](../Copilot%20Plugins/Azure%20Maps%20Route/README.md). Plugins connect to an MCP server by URL and can't use a custom connector, so [hosted-mcp](hosted-mcp/README.md) provides the same six tools as a small server you can deploy to Azure Container Apps.
 
 ## Operations
 
@@ -110,7 +110,7 @@ Example query values:
 | `pins` | `default\|co0078D4\|\|'A'-122.335 47.608` |
 | `path` | `lcFF0000\|lw4\|\|-122.335 47.608\|-122.12 47.674` |
 
-Longitude comes before latitude in pins and paths. Add one `pins` or `path` item per definition. A request supports up to 25 pin definitions and 10 paths, and a path takes up to 100 locations, so simplify long routes before drawing them. The image uses the Azure Maps Render API version `2024-04-01`; the Route operations use `2025-01-01`.
+Longitude comes before latitude in pins and paths. To send more than one pin or path, separate the definitions with a semicolon (`;`) in the `pins` or `path` field. A request supports up to 25 pin definitions and 10 paths, and a path takes up to 100 locations, so simplify long routes before drawing them. The image uses the Azure Maps Render API version `2024-04-01`; the Route operations use `2025-01-01`.
 
 In a flow, the response is the image content, which you can attach to an email or post to Teams. The `get_static_map` MCP tool takes the same `format` option, and also accepts `jpg`.
 
@@ -124,9 +124,14 @@ Add the connector to a Copilot Studio agent as a tool. The MCP endpoint exposes:
 | `get_route_matrix` | Travel times and distances between origins and destinations |
 | `get_route_range` | Area reachable within a time or distance budget |
 | `snap_to_roads` | Match GPS points to roads |
-| `get_static_map` | Map image, or a route drawn on a map |
+| `get_static_map` | Map image for a center point and zoom, or a bounding box |
+| `get_route_map` | Directions drawn on a map image in one step, with distance and travel time |
 
-To draw a route, pass the route line coordinates from `get_route_directions` to `get_static_map` as `routeCoordinates`. The map is framed to fit the route, long routes are reduced to 100 points, and pins A and B mark the start and end. `get_static_map` returns the image as MCP image content, so how it displays depends on the client.
+To show a route on a map, use `get_route_map`. It gets the route and draws it, so the agent doesn't have to pass route coordinates between tools. The map is framed to fit the route, long routes are reduced to 100 points, and pins A and B mark the start and end. The map tools return the image as MCP image content, so how it displays depends on the client. A large PNG can be several hundred KB; set `format` to `jpeg` for a smaller image.
+
+The MCP tools take only flat inputs, so Copilot Studio agents can fill them in. Points are text, `longitude,latitude` pairs separated by semicolons, and lists such as `avoid` are comma-separated. Inputs an agent leaves blank are ignored.
+
+Not every client displays MCP image content. For that reason `get_route_map` and `get_route_directions` also return a Bing Maps link that opens the route (origin, stops, and destination) in any browser, and `get_static_map` returns one that opens the same area. The tool text tells the agent to share the link. The link needs no key or extra resource.
 
 The tools take plain longitude and latitude values and don't look up addresses. Give your agent coordinates, or add a geocoding tool alongside this one.
 
