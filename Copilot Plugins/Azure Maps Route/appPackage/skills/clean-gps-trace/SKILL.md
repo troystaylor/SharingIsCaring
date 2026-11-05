@@ -13,7 +13,7 @@ description: Snap noisy GPS points to the road network and return the matched ro
 ## How to do it
 
 1. Make sure the points are in travel order, each as longitude and latitude.
-2. Call `snap_to_roads` with `points`.
+2. Call `snap_to_roads` with `points`, written as text: `longitude,latitude` pairs separated by semicolons.
    - Set `interpolate` to `true` to add points along the road between the snapped points, which gives a smoother line.
    - Set `includeSpeedLimit` to `true` to get speed limits in kilometers per hour.
    - Set `travelMode` to `truck` for commercial vehicles.

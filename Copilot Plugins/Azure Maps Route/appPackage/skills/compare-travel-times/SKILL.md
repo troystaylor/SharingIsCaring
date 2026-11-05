@@ -14,7 +14,7 @@ description: Compare travel time and distance from several origins to several de
 
 1. Collect coordinates (longitude, latitude) for every origin and every destination. The tool does not geocode, so ask for coordinates or use another tool to look them up.
 2. Check the size. Origins multiplied by destinations must not exceed 2,500, and matrices over 100 pairs have extra restrictions. If the call is rejected for size, split into batches and tell the user.
-3. Call `get_route_matrix` with `origins` and `destinations`.
+3. Call `get_route_matrix` with `origins` and `destinations`, each written as text: `longitude,latitude` pairs separated by semicolons.
    - Set `travelMode` to `truck` or `walking` when it is not driving.
    - Set `traffic` to `live` for current conditions or leave it as `historical`.
    - Set `departAt` or `arriveAt` (ISO 8601) for a specific time. Use only one.
