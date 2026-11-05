@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map</title>
+<style>
+  /* Fluent 2 (web) design tokens. Values follow webLightTheme and webDarkTheme. */
+  :root {
+    color-scheme: light;
+    --font-family: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+    --font-size-base200: 12px;
+    --font-size-base300: 14px;
+    --line-height-base200: 16px;
+    --line-height-base300: 20px;
+    --font-weight-regular: 400;
+    --font-weight-semibold: 600;
+
+    --space-xs: 4px;
+    --space-s: 8px;
+    --space-m: 12px;
+    --space-l: 16px;
+
+    --radius-medium: 4px;
+    --duration-fast: 150ms;
+    --curve-easy-ease: cubic-bezier(0.33, 0, 0.67, 1);
+
+    --fg1: #242424;
+    --fg2: #424242;
+    --fg3: #616161;
+    --bg1: #ffffff;
+    --bg1-hover: #f5f5f5;
+    --bg1-pressed: #e0e0e0;
+    --bg3: #f5f5f5;
+    --bg-skeleton-a: #f0f0f0;
+    --bg-skeleton-b: #fafafa;
+    --stroke1: #d1d1d1;
+    --stroke1-hover: #c7c7c7;
+    --stroke1-pressed: #b3b3b3;
+    --stroke2: #e0e0e0;
+    --stroke-focus1: #ffffff;
+    --stroke-focus2: #000000;
+    --brand-fg-link: #115ea3;
+    --shadow4: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --fg1: #ffffff;
+    --fg2: #d6d6d6;
+    --fg3: #adadad;
+    --bg1: #292929;
+    --bg1-hover: #3d3d3d;
+    --bg1-pressed: #1f1f1f;
+    --bg3: #141414;
+    --bg-skeleton-a: #333333;
+    --bg-skeleton-b: #424242;
+    --stroke1: #666666;
+    --stroke1-hover: #757575;
+    --stroke1-pressed: #6b6b6b;
+    --stroke2: #525252;
+    --stroke-focus1: #000000;
+    --stroke-focus2: #ffffff;
+    --brand-fg-link: #479ef5;
+    --shadow4: 0 0 2px rgba(0, 0, 0, 0.24), 0 2px 4px rgba(0, 0, 0, 0.28);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: transparent; }
+  body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base300);
+    line-height: var(--line-height-base300);
+    font-weight: var(--font-weight-regular);
+    color: var(--fg1);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Card */
+  .card {
+    margin: var(--space-xs);
+    padding: var(--space-m);
+    background: var(--bg1);
+    border: 1px solid var(--stroke2);
+    border-radius: var(--radius-medium);
+    box-shadow: var(--shadow4);
+  }
+
+  .title {
+    margin: 0 0 var(--space-s);
+    font-size: var(--font-size-base300);
+    line-height: var(--line-height-base300);
+    font-weight: var(--font-weight-semibold);
+    color: var(--fg1);
+  }
+
+  /* Image frame and skeleton loader */
+  .frame {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-medium);
+    background: var(--bg3);
+  }
+  .frame img { display: block; width: 100%; height: auto; }
+
+  .skeleton {
+    width: 100%;
+    aspect-ratio: 8 / 5;
+    background: linear-gradient(to right, var(--bg-skeleton-a) 0%, var(--bg-skeleton-b) 50%, var(--bg-skeleton-a) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s var(--curve-easy-ease) infinite;
+  }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+  /* Message bar */
+  .message {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-s);
+    padding: var(--space-s) var(--space-m);
+    background: var(--bg3);
+    border: 1px solid var(--stroke1);
+    border-radius: var(--radius-medium);
+    color: var(--fg1);
+  }
+  .message svg { flex: none; margin-top: 2px; fill: var(--fg2); }
+
+  /* Actions */
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-s); margin-top: var(--space-m); }
+
+  /* Fluent secondary (default) button, medium size */
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 96px;
+    padding: 5px var(--space-m);
+    font-family: inherit;
+    font-size: var(--font-size-base300);
+    line-height: var(--line-height-base300);
+    font-weight: var(--font-weight-semibold);
+    color: var(--fg1);
+    background: var(--bg1);
+    border: 1px solid var(--stroke1);
+    border-radius: var(--radius-medium);
+    cursor: pointer;
+    transition-property: background, border, color;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--curve-easy-ease);
+  }
+  .button:hover { background: var(--bg1-hover); border-color: var(--stroke1-hover); }
+  .button:active { background: var(--bg1-pressed); border-color: var(--stroke1-pressed); }
+  .button:focus-visible {
+    outline: 2px solid var(--stroke-focus2);
+    outline-offset: 0;
+    box-shadow: inset 0 0 0 1px var(--stroke-focus1);
+  }
+
+  .hidden { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton { animation: none; }
+    .button { transition: none; }
+  }
+
+  @media (forced-colors: active) {
+    .card, .frame, .message, .button { border: 1px solid CanvasText; box-shadow: none; }
+    .button:focus-visible { outline-color: Highlight; }
+  }
+</style>
+</head>
+<body>
+<main class="card" id="card" aria-labelledby="title">
+  <h1 class="title" id="title">Map</h1>
+
+  <div class="frame" id="frame">
+    <div class="skeleton" id="skeleton" role="progressbar" aria-label="Loading map"></div>
+    <img id="map" class="hidden" alt="Map" decoding="async">
+  </div>
+
+  <div class="message hidden" id="message" role="status" aria-live="polite">
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm0 1a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 9.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5ZM10 6a.5.5 0 0 1 .5.41V11a.5.5 0 0 1-1 .09V6.5A.5.5 0 0 1 10 6Z"/></svg>
+    <span id="messageText"></span>
+  </div>
+
+  <div class="actions hidden" id="actions">
+    <button class="button" id="open" type="button">Open in Bing Maps</button>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var nextId = 1;
+  var pending = {};
+  var bingUrl = null;
+
+  function post(message) { window.parent.postMessage(message, '*'); }
+  function notify(method, params) { post({ jsonrpc: '2.0', method: method, params: params || {} }); }
+  function request(method, params, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var id = nextId++;
+      pending[id] = { resolve: resolve, reject: reject };
+      post({ jsonrpc: '2.0', id: id, method: method, params: params || {} });
+      setTimeout(function () {
+        if (pending[id]) { delete pending[id]; reject(new Error('Timed out waiting for ' + method)); }
+      }, timeoutMs || 8000);
+    });
+  }
+
+  var root = document.documentElement;
+  var titleEl = document.getElementById('title');
+  var skeletonEl = document.getElementById('skeleton');
+  var imgEl = document.getElementById('map');
+  var messageEl = document.getElementById('message');
+  var messageTextEl = document.getElementById('messageText');
+  var actionsEl = document.getElementById('actions');
+
+  // Start from the system theme, then follow the host.
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+
+  function reportSize() {
+    var rect = document.getElementById('card').getBoundingClientRect();
+    notify('ui/notifications/size-changed', {
+      width: Math.ceil(rect.width + 8),
+      height: Math.ceil(rect.height + 8)
+    });
+  }
+
+  function showMessage(text) {
+    messageTextEl.textContent = text;
+    messageEl.classList.remove('hidden');
+    skeletonEl.classList.add('hidden');
+    imgEl.classList.add('hidden');
+    reportSize();
+  }
+
+  function applyHostContext(context) {
+    if (!context) return;
+    if (context.theme === 'dark' || context.theme === 'light') root.setAttribute('data-theme', context.theme);
+    if (context.locale) root.lang = context.locale;
+  }
+
+  // Reads the map request and summary from the tool result's structuredContent. If the result already carries an
+  // image (embedImage), that is used instead.
+  function readResult(result) {
+    var data = (result && result.structuredContent) || {};
+    var embedded = ((result && result.content) || []).filter(function (p) { return p.type === 'image'; })[0];
+    return {
+      mapArgs: data.mapArgs,
+      embeddedUrl: embedded ? 'data:' + embedded.mimeType + ';base64,' + embedded.data : null,
+      summary: data.summary,
+      bingUrl: data.bingUrl,
+      alt: data.alt
+    };
+  }
+
+  function showImage(url, info) {
+    imgEl.alt = info.alt || info.summary || 'Map';
+    imgEl.onload = function () { skeletonEl.classList.add('hidden'); imgEl.classList.remove('hidden'); reportSize(); };
+    imgEl.onerror = function () { showMessage('The map image could not be displayed.'); };
+    imgEl.src = url;
+  }
+
+  function render(result) {
+    if (result && result.isError) { showMessage('The map could not be created.'); return; }
+    var info = readResult(result);
+    if (!info.mapArgs && !info.embeddedUrl) { showMessage('No map was returned.'); return; }
+
+    if (info.summary) titleEl.textContent = info.summary;
+    if (info.bingUrl) { bingUrl = info.bingUrl; actionsEl.classList.remove('hidden'); }
+    reportSize();
+
+    if (info.embeddedUrl) { showImage(info.embeddedUrl, info); return; }
+
+    // The image comes from the server through the host, which signs the user in. No image link is exposed.
+    request('tools/call', { name: 'render_map_image', arguments: info.mapArgs }, 45000).then(function (response) {
+      if (response && response.isError) throw new Error('render failed');
+      var image = ((response && response.content) || []).filter(function (p) { return p.type === 'image'; })[0];
+      if (!image) throw new Error('no image');
+      showImage('data:' + image.mimeType + ';base64,' + image.data, info);
+    }).catch(function () {
+      showMessage('The map image could not be loaded. Use the button to open the map in Bing Maps.');
+    });
+  }
+
+  document.getElementById('open').addEventListener('click', function () {
+    if (bingUrl) request('ui/open-link', { url: bingUrl }).catch(function () {});
+  });
+
+  window.addEventListener('message', function (event) {
+    var m = event.data;
+    if (!m || m.jsonrpc !== '2.0') return;
+
+    if (m.id !== undefined && !m.method) {
+      var waiting = pending[m.id];
+      if (waiting) {
+        delete pending[m.id];
+        if (m.error) waiting.reject(new Error(m.error.message || 'Request failed')); else waiting.resolve(m.result);
+      }
+      return;
+    }
+
+    if (m.method === 'ui/notifications/tool-result') render(m.params);
+    else if (m.method === 'ui/notifications/tool-cancelled') showMessage('The map request was cancelled.');
+    else if (m.method === 'ui/notifications/host-context-changed') applyHostContext(m.params);
+    else if (m.method === 'ui/resource-teardown' && m.id !== undefined) post({ jsonrpc: '2.0', id: m.id, result: {} });
+    else if (m.method === 'ping' && m.id !== undefined) post({ jsonrpc: '2.0', id: m.id, result: {} });
+  });
+
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(reportSize).observe(document.getElementById('card'));
+
+  request('ui/initialize', {
+    protocolVersion: '2026-01-26',
+    appInfo: { name: 'azure-maps-route-map', version: '1.2.0' },
+    appCapabilities: { availableDisplayModes: ['inline'] }
+  }).then(function (result) {
+    applyHostContext(result && result.hostContext);
+    notify('ui/notifications/initialized');
+    reportSize();
+  }).catch(function () {
+    showMessage('The map view could not start.');
+  });
+})();
+</script>
+</body>
+</html>
