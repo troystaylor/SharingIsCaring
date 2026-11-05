@@ -16,12 +16,17 @@ A matching Copilot plugin is in [Copilot Plugins/Azure Maps Route](../Copilot%20
 | Get Route Directions (GeoJSON) | `POST /route/directions` | Route line, summary, and optional turn-by-turn itinerary |
 | Get Route (simple inputs) | `POST /route/directions` | Same result, from plain longitude and latitude values |
 | Get Route Matrix (GeoJSON) | `POST /route/matrix` | Travel time and distance for every origin and destination pair |
+| Get Route Matrix (simple inputs) | `POST /route/matrix` | Same result, from text lists of points |
 | Get Route Range (GeoJSON) | `POST /route/range` | Polygon reachable within a time or distance budget |
+| Get Route Range (simple inputs) | `POST /route/range` | Same result, from plain fields |
 | Snap Points to Roads (GeoJSON) | `POST /route/snapToRoads` | Points matched to the road network, optionally with speed limits |
+| Snap Points to Roads (simple inputs) | `POST /route/snapToRoads` | Same result, from a text list of points |
 | Get Static Map Image | `GET /map/static` | PNG or JPEG map image with optional pins, lines, polygons, and traffic |
 | Invoke Azure Maps Route MCP | Handled by the connector script | JSON-RPC 2.0 for Copilot Studio |
 
-Use **Get Route (simple inputs)** when you have coordinates in separate fields. Use **Get Route Directions (GeoJSON)** when you already have a GeoJSON FeatureCollection of waypoints, or need vehicle specifications for truck routes.
+Use the **(GeoJSON)** operations in flows and apps when you already have GeoJSON, or need vehicle specifications for truck routes. Use the **(simple inputs)** operations from Copilot Studio agents: agents can't pass the nested arrays of objects the GeoJSON operations take, and fail with a `ConnectorPowerFxError`. The simple operations return the same GeoJSON.
+
+The simple operations take points as text, `longitude,latitude` pairs separated by semicolons, for example `-122.33,47.6;-122.12,47.67`, and lists such as `avoid` and `routeOutputOptions` as comma-separated values.
 
 Coordinates are always **longitude first, then latitude**.
 
@@ -142,6 +147,7 @@ The tools take plain longitude and latitude values and don't look up addresses. 
 | 400 Bad Request on directions | Check that coordinates are longitude then latitude, that `departAt` and `arriveAt` aren't both set, and that at least an origin and destination are present. |
 | 400 Bad Request on matrix | Origins multiplied by destinations is over 2,500, a larger matrix doesn't meet the extra restrictions in the Route Matrix documentation, or a feature is missing its `pointType`. |
 | Response has no route line | Add `routePath` to `routeOutputOptions`. |
+| Copilot Studio agent fails with `ConnectorPowerFxError` ("Not supported type ... RecordsOnlyTableValue") | The agent called a **(GeoJSON)** operation, which takes nested arrays of objects. Use the **(simple inputs)** operation, or turn off the GeoJSON operations for that agent. |
 | Static map returns 400 | Provide either `center` or `bbox`, not both, and don't combine `bbox` with `width` or `height`. Check that pin and path coordinates are longitude then latitude. |
 | MCP tool returns "Missing required argument" | Supply the named longitude, latitude, or list argument. |
 

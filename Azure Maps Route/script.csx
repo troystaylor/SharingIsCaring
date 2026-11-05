@@ -30,7 +30,13 @@ public class Script : ScriptBase
             case "InvokeMCP":
                 return await HandleMcpAsync().ConfigureAwait(false);
             case "GetRouteDirectionsSimple":
-                return await HandleSimpleDirectionsAsync().ConfigureAwait(false);
+                return await HandleFlatAsync("/route/directions", BuildDirectionsBody).ConfigureAwait(false);
+            case "GetRouteMatrixSimple":
+                return await HandleFlatAsync("/route/matrix", BuildMatrixBody).ConfigureAwait(false);
+            case "GetRouteRangeSimple":
+                return await HandleFlatAsync("/route/range", BuildRangeBody).ConfigureAwait(false);
+            case "SnapToRoadsSimple":
+                return await HandleFlatAsync("/route/snapToRoads", BuildSnapBody).ConfigureAwait(false);
             case "GetStaticMapImage":
                 return await ForwardStaticMapAsync().ConfigureAwait(false);
             case "GetRouteDirections":
@@ -70,12 +76,16 @@ public class Script : ScriptBase
         return response;
     }
 
-    private async Task<HttpResponseMessage> HandleSimpleDirectionsAsync()
+    /// <summary>
+    /// Handles the flat "simple inputs" operations: builds the GeoJSON request body from plain fields
+    /// and forwards it to the real Azure Maps path.
+    /// </summary>
+    private async Task<HttpResponseMessage> HandleFlatAsync(string upstreamPath, Func<JObject, JObject> build)
     {
         var input = JObject.Parse(await Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false));
-        var geoJsonBody = BuildDirectionsBody(input);
+        var geoJsonBody = build(input);
 
-        var builder = new UriBuilder(Context.Request.RequestUri) { Path = "/route/directions" };
+        var builder = new UriBuilder(Context.Request.RequestUri) { Path = upstreamPath };
         Context.Request.RequestUri = builder.Uri;
         Context.Request.Content = CreateGeoJsonContent(geoJsonBody.ToString(Newtonsoft.Json.Formatting.None));
 
@@ -325,8 +335,50 @@ public class Script : ScriptBase
         }
     }
 
+    /// <summary>
+    /// Copilot Studio agents can't pass arrays of objects to connector operations, so the simple operations
+    /// take text instead: points as "longitude,latitude;longitude,latitude" and lists as comma-separated values.
+    /// Real arrays (from MCP clients) are left as they are.
+    /// </summary>
+    private static JObject NormalizeInput(JObject input)
+    {
+        var result = (JObject)input.DeepClone();
+
+        foreach (var name in new[] { "waypoints", "origins", "destinations", "points" })
+        {
+            var text = result[name] as JValue;
+            if (text == null || text.Type != JTokenType.String) continue;
+
+            var positions = new JArray();
+            foreach (var pair in text.ToString().Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = pair.Split(',');
+                double longitude, latitude;
+                if (parts.Length != 2
+                    || !double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out longitude)
+                    || !double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out latitude))
+                    throw new ArgumentException(name + " must be longitude,latitude pairs separated by semicolons, for example -122.33,47.6;-122.12,47.67. Got: " + pair);
+
+                positions.Add(new JObject { ["longitude"] = longitude, ["latitude"] = latitude });
+            }
+            result[name] = positions;
+        }
+
+        foreach (var name in new[] { "avoid", "routeOutputOptions" })
+        {
+            var text = result[name] as JValue;
+            if (text == null || text.Type != JTokenType.String) continue;
+
+            var items = text.ToString().Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).Where(s => s.Length > 0);
+            result[name] = new JArray(items);
+        }
+
+        return result;
+    }
+
     private static JObject BuildDirectionsBody(JObject input)
     {
+        input = NormalizeInput(input);
         var features = new JArray();
         var index = 0;
         features.Add(WaypointFeature(RequireNumber(input, "originLongitude"), RequireNumber(input, "originLatitude"), index++));
@@ -363,6 +415,7 @@ public class Script : ScriptBase
 
     private static JObject BuildMatrixBody(JObject input)
     {
+        input = NormalizeInput(input);
         var features = new JArray();
         foreach (var kind in new[] { "origins", "destinations" })
         {
@@ -381,6 +434,7 @@ public class Script : ScriptBase
 
     private static JObject BuildRangeBody(JObject input)
     {
+        input = NormalizeInput(input);
         var properties = new JObject();
         CopyIfPresent(input, properties, "timeBudgetInSec", "distanceBudgetInMeters", "travelMode", "optimizeRoute", "departAt", "avoid");
         if (properties["timeBudgetInSec"] == null && properties["distanceBudgetInMeters"] == null)
@@ -391,6 +445,7 @@ public class Script : ScriptBase
 
     private static JObject BuildSnapBody(JObject input)
     {
+        input = NormalizeInput(input);
         var features = new JArray();
         foreach (var position in ToPositions(input["points"], "points"))
             features.Add(PointFeature(position[0].Value<double>(), position[1].Value<double>()));
