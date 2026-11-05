@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "Azure Maps Route",
-        "description": "Azure Maps Route API (atlas.microsoft.com) with GeoJSON request and response handling. Includes route directions, route matrix, route range, and snap to roads, plus an MCP endpoint for Copilot Studio.",
+        "description": "Azure Maps Route API (atlas.microsoft.com) with GeoJSON request and response handling, plus static map images. Includes route directions, route matrix, route range, snap to roads, and static map, plus an MCP endpoint for Copilot Studio.",
         "version": "1.0.0",
         "contact": {
             "name": "Troy Taylor",
@@ -3874,10 +3874,207 @@
                 }
             }
         },
+        "/map/static": {
+            "get": {
+                "summary": "Get Static Map Image",
+                "description": "Returns a static map image (PNG or JPEG) for a center point or bounding box, with optional pushpins, lines, polygons, circles, and a live traffic layer. Provide either center or bbox.",
+                "operationId": "GetStaticMapImage",
+                "x-ms-summary": "Get Static Map Image",
+                "produces": [
+                    "image/png",
+                    "image/jpeg"
+                ],
+                "parameters": [
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "required": true,
+                        "type": "string",
+                        "default": "2024-04-01",
+                        "description": "Azure Maps Render API version.",
+                        "x-ms-summary": "API Version",
+                        "x-ms-visibility": "internal",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "center",
+                        "in": "query",
+                        "required": false,
+                        "description": "Center of the map as longitude,latitude, for example -122.33,47.6. Provide either center or bbox, not both.",
+                        "x-ms-summary": "Center",
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "bbox",
+                        "in": "query",
+                        "required": false,
+                        "description": "Area to show as minLon,minLat,maxLon,maxLat. Provide either bbox or center, not both. Do not combine with width or height.",
+                        "x-ms-summary": "Bounding Box",
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "zoom",
+                        "in": "query",
+                        "required": false,
+                        "description": "Zoom level from 0 (world) to 20 (street). Used with center.",
+                        "x-ms-summary": "Zoom",
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 0,
+                        "maximum": 20
+                    },
+                    {
+                        "name": "width",
+                        "in": "query",
+                        "required": false,
+                        "description": "Image width in pixels, 80 to 2000. Default 512. Do not use with bbox.",
+                        "x-ms-summary": "Width",
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 80,
+                        "maximum": 2000
+                    },
+                    {
+                        "name": "height",
+                        "in": "query",
+                        "required": false,
+                        "description": "Image height in pixels, 80 to 1500. Default 512. Do not use with bbox.",
+                        "x-ms-summary": "Height",
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 80,
+                        "maximum": 1500
+                    },
+                    {
+                        "name": "tilesetId",
+                        "in": "query",
+                        "required": false,
+                        "description": "Map style.",
+                        "x-ms-summary": "Map Style",
+                        "type": "string",
+                        "default": "microsoft.base.road",
+                        "enum": [
+                            "microsoft.base.road",
+                            "microsoft.base.darkgrey",
+                            "microsoft.imagery"
+                        ],
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "trafficLayer",
+                        "in": "query",
+                        "required": false,
+                        "description": "Show live traffic on the map.",
+                        "x-ms-summary": "Traffic Layer",
+                        "type": "string",
+                        "default": "none",
+                        "enum": [
+                            "microsoft.traffic.relative.main",
+                            "none"
+                        ],
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "language",
+                        "in": "query",
+                        "required": false,
+                        "description": "Language for map labels as an IETF language tag, for example en-US.",
+                        "x-ms-summary": "Language",
+                        "type": "string",
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "view",
+                        "in": "query",
+                        "required": false,
+                        "description": "Geopolitical view for disputed borders and labels.",
+                        "x-ms-summary": "View",
+                        "type": "string",
+                        "enum": [
+                            "AE",
+                            "AR",
+                            "BH",
+                            "IN",
+                            "IQ",
+                            "JO",
+                            "KW",
+                            "LB",
+                            "MA",
+                            "OM",
+                            "PK",
+                            "PS",
+                            "QA",
+                            "SA",
+                            "SY",
+                            "US",
+                            "YE",
+                            "Auto",
+                            "Unified"
+                        ],
+                        "x-ms-url-encoding": "single"
+                    },
+                    {
+                        "name": "pins",
+                        "in": "query",
+                        "required": false,
+                        "description": "Pushpin definitions, one per item, for example default|coFF1493||-122.33 47.6. Longitude comes before latitude. Up to 25 items, each with up to 50 locations.",
+                        "x-ms-summary": "Pins",
+                        "type": "array",
+                        "collectionFormat": "multi",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "path",
+                        "in": "query",
+                        "required": false,
+                        "description": "Line, polygon, or circle definitions, one per item, for example lc0000FF|lw4||-122.33 47.6|-122.12 47.67. Up to 10 items, each with up to 100 locations.",
+                        "x-ms-summary": "Paths",
+                        "type": "array",
+                        "collectionFormat": "multi",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "description": "Image format returned. Default png.",
+                        "x-ms-summary": "Image Format",
+                        "type": "string",
+                        "default": "png",
+                        "enum": [
+                            "png",
+                            "jpeg"
+                        ],
+                        "x-ms-url-encoding": "single"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Map image.",
+                        "schema": {
+                            "type": "string",
+                            "format": "binary"
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/": {
             "post": {
                 "summary": "Invoke Azure Maps Route MCP",
-                "description": "Model Context Protocol endpoint for Copilot Studio. Provides GeoJSON route directions, route matrix, route range, and snap-to-roads tools.",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Provides GeoJSON route directions, route matrix, route range, snap-to-roads, and static map image tools.",
                 "operationId": "InvokeMCP",
                 "x-ms-agentic-protocol": "mcp-streamable-1.0",
                 "parameters": [],

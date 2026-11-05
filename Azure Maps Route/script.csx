@@ -20,6 +20,7 @@ public class Script : ScriptBase
 
     private const string MAPS_HOST = "https://atlas.microsoft.com";
     private const string MAPS_API_VERSION = "2025-01-01";
+    private const string RENDER_API_VERSION = "2024-04-01";
     private const string GEOJSON_MEDIA_TYPE = "application/geo+json";
 
     public override async Task<HttpResponseMessage> ExecuteAsync()
@@ -30,6 +31,8 @@ public class Script : ScriptBase
                 return await HandleMcpAsync().ConfigureAwait(false);
             case "GetRouteDirectionsSimple":
                 return await HandleSimpleDirectionsAsync().ConfigureAwait(false);
+            case "GetStaticMapImage":
+                return await ForwardStaticMapAsync().ConfigureAwait(false);
             case "GetRouteDirections":
             case "GetRouteMatrix":
             case "GetRouteRange":
@@ -95,6 +98,190 @@ public class Script : ScriptBase
         var json = new StringContent(text ?? string.Empty, Encoding.UTF8);
         json.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         response.Content = json;
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    //  Static map image (Render API)
+    // ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Passes the static map request through and translates the friendly format query parameter
+    /// into the Accept header that Azure Maps uses to choose PNG or JPEG. The image is returned unchanged.
+    /// </summary>
+    private async Task<HttpResponseMessage> ForwardStaticMapAsync()
+    {
+        var request = Context.Request;
+        var uri = request.RequestUri;
+
+        string format = null;
+        var kept = new List<string>();
+        foreach (var part in uri.Query.TrimStart('?').Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (part.StartsWith("format=", StringComparison.OrdinalIgnoreCase))
+                format = Uri.UnescapeDataString(part.Substring(7));
+            else
+                kept.Add(part);
+        }
+
+        request.RequestUri = new Uri(uri.GetLeftPart(UriPartial.Path) + (kept.Count > 0 ? "?" + string.Join("&", kept) : string.Empty));
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(
+            IsJpeg(format) ? "image/jpeg" : "image/png"));
+
+        return await Context.SendAsync(request, CancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsJpeg(string format)
+    {
+        return string.Equals(format, "jpeg", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(format, "jpg", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void FlattenPositions(JToken token, List<double[]> positions)
+    {
+        var array = token as JArray;
+        if (array == null || array.Count == 0) return;
+
+        if (array[0].Type == JTokenType.Integer || array[0].Type == JTokenType.Float)
+        {
+            if (array.Count >= 2) positions.Add(new[] { array[0].Value<double>(), array[1].Value<double>() });
+            return;
+        }
+
+        foreach (var child in array) FlattenPositions(child, positions);
+    }
+
+    private static double MercatorY(double latitude)
+    {
+        var clamped = Math.Max(-85.0, Math.Min(85.0, latitude)) * Math.PI / 180.0;
+        return Math.Log(Math.Tan(Math.PI / 4.0 + clamped / 2.0));
+    }
+
+    /// <summary>Picks the highest zoom at which the bounds fit the image (Azure Maps uses 512 pixel tiles).</summary>
+    private static int FitZoom(double minLon, double minLat, double maxLon, double maxLat, int width, int height)
+    {
+        const double padding = 1.2;
+        var lonSpan = (maxLon - minLon) * padding;
+        var ySpan = (MercatorY(maxLat) - MercatorY(minLat)) * padding;
+        if (lonSpan <= 0 && ySpan <= 0) return 14;
+
+        var zoom = 20.0;
+        if (lonSpan > 0) zoom = Math.Min(zoom, Math.Log(width * 360.0 / (512.0 * lonSpan), 2));
+        if (ySpan > 0) zoom = Math.Min(zoom, Math.Log(height * 2.0 * Math.PI / (512.0 * ySpan), 2));
+        return (int)Math.Max(0, Math.Min(20, Math.Floor(zoom)));
+    }
+
+    private static string Pos(double longitude, double latitude)
+    {
+        return longitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture) + " " +
+               latitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Builds a Render API query from the tool arguments and returns the image as MCP content.</summary>
+    private async Task<HttpResponseMessage> HandleStaticMapToolAsync(JToken requestId, JObject args)
+    {
+        var width = args["width"]?.Value<int?>() ?? 512;
+        var height = args["height"]?.Value<int?>() ?? 512;
+        var pins = new List<string>();
+        var paths = new List<string>();
+        foreach (var pin in (args["pins"] as JArray ?? new JArray())) pins.Add(pin.ToString());
+        foreach (var path in (args["path"] as JArray ?? new JArray())) paths.Add(path.ToString());
+
+        var query = new List<KeyValuePair<string, string>>
+        {
+            new KeyValuePair<string, string>("api-version", RENDER_API_VERSION)
+        };
+
+        string placement;
+        var route = new List<double[]>();
+        FlattenPositions(args["routeCoordinates"], route);
+        var bbox = args["bbox"] as JArray;
+
+        if (route.Count > 0)
+        {
+            var points = route;
+            if (points.Count > 100)
+            {
+                points = new List<double[]>();
+                for (var i = 0; i < 100; i++) points.Add(route[(int)Math.Round(i * (route.Count - 1) / 99.0)]);
+            }
+
+            var color = (args["routeColor"]?.ToString() ?? "0078D4").TrimStart('#');
+            var lineWidth = args["routeWidth"]?.Value<int?>() ?? 5;
+            paths.Add("lc" + color + "|lw" + lineWidth + "||" + string.Join("|", points.Select(p => Pos(p[0], p[1]))));
+
+            if (args["markEndpoints"] == null || args["markEndpoints"].Value<bool>())
+            {
+                pins.Add("default|co2E7D32||'A'" + Pos(route[0][0], route[0][1]));
+                pins.Add("default|coC62828||'B'" + Pos(route[route.Count - 1][0], route[route.Count - 1][1]));
+            }
+
+            if (args["centerLongitude"] == null)
+            {
+                var minLon = route.Min(p => p[0]); var maxLon = route.Max(p => p[0]);
+                var minLat = route.Min(p => p[1]); var maxLat = route.Max(p => p[1]);
+                var zoom = args["zoom"]?.Value<int?>() ?? FitZoom(minLon, minLat, maxLon, maxLat, width, height);
+                query.Add(new KeyValuePair<string, string>("center", Pos((minLon + maxLon) / 2, (minLat + maxLat) / 2).Replace(' ', ',')));
+                query.Add(new KeyValuePair<string, string>("zoom", zoom.ToString()));
+            }
+        }
+
+        if (route.Count == 0 || args["centerLongitude"] != null)
+        {
+            if (bbox != null && bbox.Count == 4)
+            {
+                query.Add(new KeyValuePair<string, string>("bbox", string.Join(",", bbox.Select(b => b.Value<double>().ToString(System.Globalization.CultureInfo.InvariantCulture)))));
+                width = 0; height = 0;
+            }
+            else
+            {
+                var lon = RequireNumber(args, "centerLongitude");
+                var lat = RequireNumber(args, "centerLatitude");
+                query.Add(new KeyValuePair<string, string>("center", Pos(lon, lat).Replace(' ', ',')));
+                query.Add(new KeyValuePair<string, string>("zoom", (args["zoom"]?.Value<int?>() ?? 12).ToString()));
+            }
+        }
+
+        placement = query.First(q => q.Key == "center" || q.Key == "bbox").Value;
+
+        if (width > 0) query.Add(new KeyValuePair<string, string>("width", width.ToString()));
+        if (height > 0) query.Add(new KeyValuePair<string, string>("height", height.ToString()));
+        foreach (var name in new[] { "tilesetId", "trafficLayer", "language", "view" })
+        {
+            var value = args[name]?.ToString();
+            if (!string.IsNullOrEmpty(value)) query.Add(new KeyValuePair<string, string>(name, value));
+        }
+        foreach (var pin in pins) query.Add(new KeyValuePair<string, string>("pins", pin));
+        foreach (var path in paths) query.Add(new KeyValuePair<string, string>("path", path));
+
+        var url = MAPS_HOST + "/map/static?" + string.Join("&", query.Select(q => q.Key + "=" + Uri.EscapeDataString(q.Value)));
+        var jpeg = IsJpeg(args["format"]?.ToString());
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(jpeg ? "image/jpeg" : "image/png"));
+        IEnumerable<string> keys;
+        if (Context.Request.Headers.TryGetValues("subscription-key", out keys))
+            request.Headers.TryAddWithoutValidation("subscription-key", keys.First());
+
+        var response = await Context.SendAsync(request, CancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            throw new InvalidOperationException("Azure Maps returned " + (int)response.StatusCode + " " + response.ReasonPhrase + ": " + error);
+        }
+
+        var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+        var mimeType = response.Content.Headers.ContentType?.MediaType ?? (jpeg ? "image/jpeg" : "image/png");
+
+        return CreateJsonRpcSuccessResponse(requestId, new JObject
+        {
+            ["content"] = new JArray
+            {
+                new JObject { ["type"] = "image", ["data"] = Convert.ToBase64String(bytes), ["mimeType"] = mimeType },
+                new JObject { ["type"] = "text", ["text"] = "Static map (" + mimeType + ", " + bytes.Length + " bytes), placement " + placement + "." }
+            },
+            ["isError"] = false
+        });
     }
 
     // ───────────────────────────────────────────────────────────────
@@ -373,7 +560,30 @@ public class Script : ScriptBase
                     ["includeSpeedLimit"] = JP("boolean", "Include speed limits in kilometers per hour."),
                     ["language"] = JP("string", "Language for road names, for example en-US.")
                 },
-                new[] { "points" })
+                new[] { "points" }),
+
+            CreateTool("get_static_map",
+                "Render a static map image (PNG or JPEG) with optional pushpins, lines, polygons, and live traffic. To map a route, pass the route line coordinates from get_route_directions as routeCoordinates; the map is framed to fit the route and long routes are simplified to 100 points. Otherwise give a center point and zoom, or a bbox.",
+                new JObject
+                {
+                    ["routeCoordinates"] = new JObject { ["type"] = "array", ["description"] = "Route line to draw, as [longitude, latitude] positions. The coordinates array of the RoutePath MultiLineString from get_route_directions can be passed as is.", ["items"] = new JObject { ["type"] = "array" } },
+                    ["routeColor"] = JP("string", "Route line color as six hex digits without #. Default: 0078D4."),
+                    ["routeWidth"] = JP("integer", "Route line width in pixels, 1 to 50. Default: 5."),
+                    ["markEndpoints"] = JP("boolean", "Add pins labeled A and B at the start and end of the route. Default: true."),
+                    ["centerLongitude"] = JP("number", "Longitude of the map center (-180 to 180). Required unless routeCoordinates or bbox is given."),
+                    ["centerLatitude"] = JP("number", "Latitude of the map center (-90 to 90)."),
+                    ["zoom"] = JP("integer", "Zoom level 0 (world) to 20 (street). Default: 12 with a center, fitted automatically for a route."),
+                    ["bbox"] = new JObject { ["type"] = "array", ["description"] = "Area to show as [minLon, minLat, maxLon, maxLat]. Image size is then set by the service.", ["items"] = new JObject { ["type"] = "number" } },
+                    ["width"] = JP("integer", "Image width in pixels, 80 to 2000. Default: 512."),
+                    ["height"] = JP("integer", "Image height in pixels, 80 to 1500. Default: 512."),
+                    ["tilesetId"] = EnumProp("Map style. Default: microsoft.base.road.", new[] { "microsoft.base.road", "microsoft.base.darkgrey", "microsoft.imagery" }),
+                    ["trafficLayer"] = EnumProp("Show live traffic. Default: none.", new[] { "microsoft.traffic.relative.main", "none" }),
+                    ["pins"] = new JObject { ["type"] = "array", ["description"] = "Pushpin definitions, for example default|co0078D4||'1'-122.33 47.6. Longitude comes before latitude.", ["items"] = new JObject { ["type"] = "string" } },
+                    ["path"] = new JObject { ["type"] = "array", ["description"] = "Line, polygon, or circle definitions, for example lcFF0000|lw3||-122.33 47.6|-122.12 47.67.", ["items"] = new JObject { ["type"] = "string" } },
+                    ["language"] = JP("string", "Language for map labels, for example en-US."),
+                    ["format"] = EnumProp("Image format. Default: png.", new[] { "png", "jpeg" })
+                },
+                new string[0])
         };
 
         return CreateJsonRpcSuccessResponse(requestId, new JObject { ["tools"] = tools });
@@ -409,6 +619,8 @@ public class Script : ScriptBase
                 case "snap_to_roads":
                     resultText = await CallMapsAsync("/route/snapToRoads", BuildSnapBody(arguments), language).ConfigureAwait(false);
                     break;
+                case "get_static_map":
+                    return await HandleStaticMapToolAsync(requestId, arguments).ConfigureAwait(false);
                 default:
                     return CreateJsonRpcErrorResponse(requestId, -32601, "Unknown tool", toolName);
             }
