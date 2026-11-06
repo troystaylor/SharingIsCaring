@@ -39,6 +39,8 @@ public class Script : ScriptBase
                 return await HandleFlatAsync("/route/snapToRoads", BuildSnapBody).ConfigureAwait(false);
             case "GetStaticMapImage":
                 return await ForwardStaticMapAsync().ConfigureAwait(false);
+            case "GetRoutesMapSimple":
+                return await HandleRoutesMapOperationAsync().ConfigureAwait(false);
             case "GetRouteDirections":
             case "GetRouteMatrix":
             case "GetRouteRange":
@@ -197,8 +199,33 @@ public class Script : ScriptBase
                latitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
     }
 
+    /// <summary>A rendered static map image plus the details the MCP tool reports about it.</summary>
+    private class RenderedMap
+    {
+        public byte[] Bytes;
+        public string MimeType;
+        public string Placement;
+        public List<KeyValuePair<string, string>> Query;
+    }
+
     /// <summary>Builds a Render API query from the tool arguments and returns the image as MCP content.</summary>
     private async Task<HttpResponseMessage> HandleStaticMapToolAsync(JToken requestId, JObject args, string extraText = null)
+    {
+        var map = await RenderStaticMapAsync(args).ConfigureAwait(false);
+
+        return CreateJsonRpcSuccessResponse(requestId, new JObject
+        {
+            ["content"] = new JArray
+            {
+                new JObject { ["type"] = "image", ["data"] = Convert.ToBase64String(map.Bytes), ["mimeType"] = map.MimeType },
+                new JObject { ["type"] = "text", ["text"] = (extraText != null ? extraText + " " : string.Empty) + "Static map (" + map.MimeType + ", " + map.Bytes.Length + " bytes), placement " + map.Placement + "." + (extraText == null ? BingCenterHint(map.Placement, map.Query) : string.Empty) }
+            },
+            ["isError"] = false
+        });
+    }
+
+    /// <summary>Builds a Render API query from the arguments and fetches the map image.</summary>
+    private async Task<RenderedMap> RenderStaticMapAsync(JObject args)
     {
         var width = args["width"]?.Value<int?>() ?? 512;
         var height = args["height"]?.Value<int?>() ?? 512;
@@ -303,15 +330,7 @@ public class Script : ScriptBase
         var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
         var mimeType = response.Content.Headers.ContentType?.MediaType ?? (jpeg ? "image/jpeg" : "image/png");
 
-        return CreateJsonRpcSuccessResponse(requestId, new JObject
-        {
-            ["content"] = new JArray
-            {
-                new JObject { ["type"] = "image", ["data"] = Convert.ToBase64String(bytes), ["mimeType"] = mimeType },
-                new JObject { ["type"] = "text", ["text"] = (extraText != null ? extraText + " " : string.Empty) + "Static map (" + mimeType + ", " + bytes.Length + " bytes), placement " + placement + "." + (extraText == null ? BingCenterHint(placement, query) : string.Empty) }
-            },
-            ["isError"] = false
-        });
+        return new RenderedMap { Bytes = bytes, MimeType = mimeType, Placement = placement, Query = query };
     }
 
     /// <summary>For center based maps, suggests a Bing Maps link so the user can open the same area when the image doesn't display.</summary>
@@ -352,6 +371,402 @@ public class Script : ScriptBase
             + BingRouteUrl(args);
 
         return await HandleStaticMapToolAsync(requestId, mapArgs, summary).ConfigureAwait(false);
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    //  Several independent routes on one map
+    // ───────────────────────────────────────────────────────────────
+
+    private const int MAX_MAP_ROUTES = 10;
+
+    // The Render API reads the whole request from the URL and returns 404 above roughly 8,100 characters,
+    // so the route lines are simplified until the request fits under this budget.
+    private const int MAX_RENDER_URL_CHARS = 7600;
+
+    private static readonly string[] RouteColors = { "0078D4", "F7630C", "8764B8", "038387", "C239B3", "986F0B", "D13438", "498205", "004E8C", "69797E" };
+    private static readonly string[] RouteColorNames = { "blue", "orange", "purple", "teal", "magenta", "brown", "red", "green", "navy", "gray" };
+
+    private class RouteRequest
+    {
+        public int Number;
+        public double OriginLongitude;
+        public double OriginLatitude;
+        public double DestinationLongitude;
+        public double DestinationLatitude;
+    }
+
+    private class RouteResult
+    {
+        public RouteRequest Request;
+        public int ColorIndex;
+        public List<double[]> Line;
+        public double Meters;
+        public double Seconds;
+        public string Error;
+        public bool Ok { get { return Error == null; } }
+    }
+
+    private class RoutesMap
+    {
+        public RenderedMap Image;
+        public List<RouteResult> Routes;
+        public int PointsPerRoute;
+        public bool Simplified;
+    }
+
+    /// <summary>
+    /// Reads routes written as origin>destination pairs separated by semicolons, each point as longitude,latitude,
+    /// for example -122.33,47.6>-122.12,47.67;-122.3,47.55>-122.2,47.62.
+    /// </summary>
+    private static List<RouteRequest> ParseRouteRequests(JToken token)
+    {
+        const string example = "for example -122.33,47.6>-122.12,47.67;-122.3,47.55>-122.2,47.62";
+        var items = new List<string>();
+        if (token is JArray array) items.AddRange(array.Select(t => t.ToString()));
+        else if (token != null) items.AddRange(token.ToString().Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+
+        items = items.Select(i => i.Trim()).Where(i => i.Length > 0).ToList();
+        if (items.Count == 0)
+            throw new ArgumentException("Missing required argument: routes. Write each route as origin>destination with longitude,latitude points, separated by semicolons, " + example + ".");
+        if (items.Count > MAX_MAP_ROUTES)
+            throw new ArgumentException("A map can show at most " + MAX_MAP_ROUTES + " routes. Got " + items.Count + ".");
+
+        var requests = new List<RouteRequest>();
+        foreach (var item in items)
+        {
+            var ends = item.Split('>');
+            var origin = ends.Length == 2 ? ParseLonLat(ends[0]) : null;
+            var destination = ends.Length == 2 ? ParseLonLat(ends[1]) : null;
+            if (origin == null || destination == null)
+                throw new ArgumentException("Each route must be origin>destination with longitude,latitude points, " + example + ". Got: " + item);
+
+            requests.Add(new RouteRequest
+            {
+                Number = requests.Count + 1,
+                OriginLongitude = origin[0],
+                OriginLatitude = origin[1],
+                DestinationLongitude = destination[0],
+                DestinationLatitude = destination[1]
+            });
+        }
+
+        return requests;
+    }
+
+    private static double[] ParseLonLat(string text)
+    {
+        var parts = text.Split(',');
+        double longitude, latitude;
+        if (parts.Length != 2
+            || !double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out longitude)
+            || !double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out latitude)
+            || longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90)
+            return null;
+
+        return new[] { longitude, latitude };
+    }
+
+    /// <summary>Gets one route. A failure is recorded on the result so the other routes can still be drawn.</summary>
+    private async Task<RouteResult> GetRouteForMapAsync(RouteRequest request, JObject shared)
+    {
+        var result = new RouteResult { Request = request, ColorIndex = (request.Number - 1) % RouteColors.Length };
+
+        try
+        {
+            var args = new JObject
+            {
+                ["originLongitude"] = request.OriginLongitude,
+                ["originLatitude"] = request.OriginLatitude,
+                ["destinationLongitude"] = request.DestinationLongitude,
+                ["destinationLatitude"] = request.DestinationLatitude,
+                ["routeOutputOptions"] = new JArray("routeSummary", "routePath")
+            };
+            CopyIfPresent(shared, args, "travelMode", "optimizeRoute", "avoid", "departAt", "arriveAt");
+
+            var json = await CallMapsAsync("/route/directions", BuildDirectionsBody(args), shared["language"]?.ToString()).ConfigureAwait(false);
+            var feature = JObject.Parse(json)["features"]?.FirstOrDefault(f => f["properties"]?["type"]?.ToString() == "RoutePath");
+            if (feature == null)
+            {
+                result.Error = "No route was found between those points.";
+                return result;
+            }
+
+            result.Line = new List<double[]>();
+            FlattenPositions(feature["geometry"]["coordinates"], result.Line);
+            result.Meters = feature["properties"]?["distanceInMeters"]?.Value<double>() ?? 0;
+            result.Seconds = feature["properties"]?["durationInSeconds"]?.Value<double>() ?? 0;
+            if (result.Line.Count < 2) result.Error = "The route has no line to draw.";
+        }
+        catch (Exception ex)
+        {
+            result.Error = ex.Message.Length > 240 ? ex.Message.Substring(0, 240) + "..." : ex.Message;
+        }
+
+        return result;
+    }
+
+    private static double DistanceToSegment(double[] point, double[] a, double[] b, double lonScale)
+    {
+        double ax = a[0] * lonScale, ay = a[1], bx = b[0] * lonScale, by = b[1], px = point[0] * lonScale, py = point[1];
+        double dx = bx - ax, dy = by - ay;
+        var lengthSquared = dx * dx + dy * dy;
+        var t = lengthSquared == 0 ? 0 : Math.Max(0, Math.Min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSquared));
+        var cx = ax + t * dx - px;
+        var cy = ay + t * dy - py;
+        return Math.Sqrt(cx * cx + cy * cy);
+    }
+
+    /// <summary>
+    /// Reduces a line to at most maxPoints, keeping the points that matter most for its shape (Douglas-Peucker order)
+    /// and always keeping both ends. Even sampling would cut corners; this keeps the turns.
+    /// </summary>
+    private static List<double[]> SimplifyLine(List<double[]> line, int maxPoints)
+    {
+        if (line.Count <= maxPoints) return line;
+        if (maxPoints < 2) maxPoints = 2;
+
+        var lonScale = Math.Cos(line.Average(p => p[1]) * Math.PI / 180.0);
+        var importance = new double[line.Count];
+        importance[0] = double.MaxValue;
+        importance[line.Count - 1] = double.MaxValue;
+
+        var segments = new Stack<int[]>();
+        segments.Push(new[] { 0, line.Count - 1 });
+        while (segments.Count > 0)
+        {
+            var segment = segments.Pop();
+            int first = segment[0], last = segment[1];
+            if (last - first < 2) continue;
+
+            var farthest = first + 1;
+            var farthestDistance = -1.0;
+            for (var i = first + 1; i < last; i++)
+            {
+                var distance = DistanceToSegment(line[i], line[first], line[last], lonScale);
+                if (distance > farthestDistance) { farthestDistance = distance; farthest = i; }
+            }
+
+            importance[farthest] = farthestDistance;
+            segments.Push(new[] { first, farthest });
+            segments.Push(new[] { farthest, last });
+        }
+
+        return Enumerable.Range(0, line.Count)
+            .OrderByDescending(i => importance[i])
+            .Take(maxPoints)
+            .OrderBy(i => i)
+            .Select(i => line[i])
+            .ToList();
+    }
+
+    private static string Pos5(double longitude, double latitude)
+    {
+        return longitude.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture) + " " +
+               latitude.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string PlaceKey(double[] position)
+    {
+        return position[0].ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + "," +
+               position[1].ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Builds the pins. A start or end that several routes share gets one neutral A or B pin. Otherwise each route
+    /// gets a pin in its own color, labeled A or B plus its route number.
+    /// </summary>
+    private static JArray BuildRoutePins(List<RouteResult> routes)
+    {
+        var pins = new JArray();
+
+        foreach (var end in new[] { "A", "B" })
+        {
+            Func<RouteResult, double[]> place = r => end == "A" ? r.Line[0] : r.Line[r.Line.Count - 1];
+            var neutral = end == "A" ? "2E7D32" : "C62828";
+
+            foreach (var group in routes.GroupBy(r => PlaceKey(place(r))))
+            {
+                var members = group.ToList();
+                var position = place(members[0]);
+                if (members.Count > 1)
+                    pins.Add("default|co" + neutral + "||'" + end + "'" + Pos(position[0], position[1]));
+                else
+                    pins.Add("default|co" + RouteColors[members[0].ColorIndex] + "||'" + end + members[0].Request.Number + "'" + Pos(position[0], position[1]));
+            }
+        }
+
+        return pins;
+    }
+
+    private static int EstimateRenderUrlLength(JObject mapArgs)
+    {
+        var length = 320;
+        foreach (var name in new[] { "pins", "path" })
+            foreach (var item in (mapArgs[name] as JArray ?? new JArray()))
+                length += Uri.EscapeDataString(item.ToString()).Length + name.Length + 2;
+        return length;
+    }
+
+    private static JObject BuildRoutesMapArgs(List<RouteResult> drawn, JObject args, int pointsPerRoute)
+    {
+        var lineWidth = Math.Max(1, Math.Min(50, args["routeWidth"]?.Value<int?>() ?? 4));
+        var paths = new JArray();
+        foreach (var route in drawn)
+        {
+            var points = SimplifyLine(route.Line, pointsPerRoute);
+            paths.Add("lc" + RouteColors[route.ColorIndex] + "|lw" + lineWidth + "||" + string.Join("|", points.Select(p => Pos5(p[0], p[1]))));
+        }
+
+        var width = args["width"]?.Value<int?>() ?? 800;
+        var height = args["height"]?.Value<int?>() ?? 500;
+        var all = drawn.SelectMany(r => r.Line).ToList();
+        double minLon = all.Min(p => p[0]), maxLon = all.Max(p => p[0]), minLat = all.Min(p => p[1]), maxLat = all.Max(p => p[1]);
+
+        var mapArgs = new JObject
+        {
+            ["path"] = paths,
+            ["pins"] = args["markEndpoints"] == null || args["markEndpoints"].Value<bool>() ? BuildRoutePins(drawn) : new JArray(),
+            ["centerLongitude"] = (minLon + maxLon) / 2,
+            ["centerLatitude"] = (minLat + maxLat) / 2,
+            ["zoom"] = args["zoom"]?.Value<int?>() ?? FitZoom(minLon, minLat, maxLon, maxLat, width, height),
+            ["width"] = width,
+            ["height"] = height,
+            ["format"] = args["format"]?.ToString() ?? "jpeg"
+        };
+        CopyIfPresent(args, mapArgs, "tilesetId", "trafficLayer", "language", "view");
+        return mapArgs;
+    }
+
+    /// <summary>Gets every route in parallel and draws the ones that succeed on one map.</summary>
+    private async Task<RoutesMap> BuildRoutesMapAsync(JObject args)
+    {
+        var requests = ParseRouteRequests(args["routes"]);
+        var results = (await Task.WhenAll(requests.Select(r => GetRouteForMapAsync(r, args))).ConfigureAwait(false)).ToList();
+        var drawn = results.Where(r => r.Ok).ToList();
+
+        if (drawn.Count == 0)
+            throw new InvalidOperationException("No routes could be drawn. " + string.Join(" ", results.Select(r => "Route " + r.Request.Number + ": " + r.Error)));
+
+        var pointsPerRoute = 100;
+        var mapArgs = BuildRoutesMapArgs(drawn, args, pointsPerRoute);
+        while (pointsPerRoute > 8 && EstimateRenderUrlLength(mapArgs) > MAX_RENDER_URL_CHARS)
+        {
+            pointsPerRoute = (int)(pointsPerRoute * 0.85);
+            mapArgs = BuildRoutesMapArgs(drawn, args, pointsPerRoute);
+        }
+
+        var image = await RenderStaticMapAsync(mapArgs).ConfigureAwait(false);
+        return new RoutesMap
+        {
+            Image = image,
+            Routes = results,
+            PointsPerRoute = pointsPerRoute,
+            Simplified = drawn.Any(r => r.Line.Count > pointsPerRoute)
+        };
+    }
+
+    private static string RouteBingUrl(RouteRequest request, string travelMode)
+    {
+        return "https://www.bing.com/maps?rtp=" + BingPos(request.OriginLatitude, request.OriginLongitude)
+            + "~" + BingPos(request.DestinationLatitude, request.DestinationLongitude)
+            + "&mode=" + (travelMode == "walking" ? "W" : "D");
+    }
+
+    private static string DescribeRoutesMap(RoutesMap map, string travelMode)
+    {
+        var lines = new List<string>();
+        var drawn = map.Routes.Count(r => r.Ok);
+        lines.Add("Drew " + drawn + " of " + map.Routes.Count + " route" + (map.Routes.Count == 1 ? string.Empty : "s") + " on one map.");
+
+        foreach (var route in map.Routes)
+        {
+            var label = "Route " + route.Request.Number + " (" + RouteColorNames[route.ColorIndex] + ")";
+            if (route.Ok)
+                lines.Add(label + ": " + (route.Meters / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
+                    + " km, about " + Math.Round(route.Seconds / 60.0) + " minutes. Bing Maps link: " + RouteBingUrl(route.Request, travelMode));
+            else
+                lines.Add(label + " could not be drawn: " + route.Error);
+        }
+
+        lines.Add("Pins are labeled A and B where routes share a start or end, and A1, B1 and so on by route number otherwise.");
+        if (map.Simplified)
+            lines.Add("Route lines are simplified to about " + map.PointsPerRoute + " points each to fit the map request, so the drawn lines follow the routes closely but not exactly.");
+        lines.Add("The map image may not display in every client. Share the Bing Maps links so the user can open each route.");
+        return string.Join(" ", lines);
+    }
+
+    /// <summary>MCP tool: several independent routes on one map.</summary>
+    private async Task<HttpResponseMessage> HandleRoutesMapToolAsync(JToken requestId, JObject args)
+    {
+        var map = await BuildRoutesMapAsync(args).ConfigureAwait(false);
+
+        return CreateJsonRpcSuccessResponse(requestId, new JObject
+        {
+            ["content"] = new JArray
+            {
+                new JObject { ["type"] = "image", ["data"] = Convert.ToBase64String(map.Image.Bytes), ["mimeType"] = map.Image.MimeType },
+                new JObject { ["type"] = "text", ["text"] = DescribeRoutesMap(map, args["travelMode"]?.ToString()) }
+            },
+            ["isError"] = false
+        });
+    }
+
+    /// <summary>Flat operation: several independent routes on one map, returned as JSON with the image as base64.</summary>
+    private async Task<HttpResponseMessage> HandleRoutesMapOperationAsync()
+    {
+        try
+        {
+            var body = await Context.Request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var input = RemoveBlankArguments(string.IsNullOrWhiteSpace(body) ? new JObject() : JObject.Parse(body));
+            var travelMode = input["travelMode"]?.ToString();
+            var map = await BuildRoutesMapAsync(input).ConfigureAwait(false);
+
+            var routes = new JArray(map.Routes.Select(r =>
+            {
+                var item = new JObject
+                {
+                    ["routeNumber"] = r.Request.Number,
+                    ["color"] = RouteColorNames[r.ColorIndex],
+                    ["origin"] = r.Request.OriginLongitude.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + r.Request.OriginLatitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    ["destination"] = r.Request.DestinationLongitude.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + r.Request.DestinationLatitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    ["drawn"] = r.Ok,
+                    ["bingMapsUrl"] = RouteBingUrl(r.Request, travelMode)
+                };
+                if (r.Ok)
+                {
+                    item["distanceInMeters"] = r.Meters;
+                    item["durationInSeconds"] = r.Seconds;
+                }
+                else
+                {
+                    item["error"] = r.Error;
+                }
+                return item;
+            }));
+
+            var result = new JObject
+            {
+                ["imageContentType"] = map.Image.MimeType,
+                ["imageBase64"] = Convert.ToBase64String(map.Image.Bytes),
+                ["routesRequested"] = map.Routes.Count,
+                ["routesDrawn"] = map.Routes.Count(r => r.Ok),
+                ["pointsPerRoute"] = map.PointsPerRoute,
+                ["routes"] = routes
+            };
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(result.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
+            };
+        }
+        catch (Exception ex)
+        {
+            var error = new JObject { ["error"] = new JObject { ["code"] = ex is ArgumentException ? "BadRequest" : "RoutesMapFailed", ["message"] = ex.Message } };
+            return new HttpResponseMessage(ex is ArgumentException ? HttpStatusCode.BadRequest : HttpStatusCode.BadGateway)
+            {
+                Content = new StringContent(error.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json")
+            };
+        }
     }
 
     private static string BingPos(double latitude, double longitude)
@@ -722,7 +1137,7 @@ public class Script : ScriptBase
                 new[] { "points" }),
 
             CreateTool("get_route_map",
-                "Get driving, truck, or walking directions and draw the route on a map image in one step. Returns the map image plus the distance and travel time. Use this when the user asks to see a route on a map. Coordinates are longitude and latitude.",
+                "Get driving, truck, or walking directions and draw the route on a map image in one step. Returns the map image plus the distance and travel time. Use this when the user asks to see a route on a map. Coordinates are longitude and latitude. For several separate routes on one map, use get_routes_map instead.",
                 new JObject
                 {
                     ["originLongitude"] = JP("number", "Longitude of the origin (-180 to 180)."),
@@ -745,6 +1160,26 @@ public class Script : ScriptBase
                     ["language"] = JP("string", "Language for map labels, for example en-US.")
                 },
                 new[] { "originLongitude", "originLatitude", "destinationLongitude", "destinationLatitude" }),
+
+            CreateTool("get_routes_map",
+                "Get several independent routes, each with its own start and end, and draw them together on one map in different colors. Returns the map image plus the distance, travel time and a Bing Maps link for each route. Use this to compare routes or show many starts to one destination, or one start to many destinations. For one route, including one with stops, use get_route_map. Up to 10 routes.",
+                new JObject
+                {
+                    ["routes"] = JP("string", "Routes to draw, written as origin>destination pairs separated by semicolons, each point as longitude,latitude. For example -122.33,47.6>-122.12,47.67;-122.3,47.55>-122.2,47.62 draws two routes. For many starts to one destination, repeat the destination in every pair."),
+                    ["travelMode"] = EnumProp("Mode of travel for every route. Default: driving.", TravelModes),
+                    ["optimizeRoute"] = EnumProp("Route optimization. Default: fastestWithoutTraffic.", OptimizeModes),
+                    ["avoid"] = JP("string", "Road features to avoid, comma-separated. Values: " + string.Join(", ", AvoidValues) + "."),
+                    ["departAt"] = JP("string", "Departure time, ISO 8601."),
+                    ["routeWidth"] = JP("integer", "Route line width in pixels, 1 to 50. Default: 4."),
+                    ["markEndpoints"] = JP("boolean", "Add pins at the start and end of each route. Default: true."),
+                    ["width"] = JP("integer", "Image width in pixels, 80 to 2000. Default: 800."),
+                    ["height"] = JP("integer", "Image height in pixels, 80 to 1500. Default: 500."),
+                    ["tilesetId"] = EnumProp("Map style. Default: microsoft.base.road.", new[] { "microsoft.base.road", "microsoft.base.darkgrey", "microsoft.imagery" }),
+                    ["trafficLayer"] = EnumProp("Show live traffic. Default: none.", new[] { "microsoft.traffic.relative.main", "none" }),
+                    ["format"] = EnumProp("Image format. Default: jpeg.", new[] { "png", "jpeg" }),
+                    ["language"] = JP("string", "Language for map labels, for example en-US.")
+                },
+                new[] { "routes" }),
 
             CreateTool("get_static_map",
                 "Render a static map image (PNG or JPEG) with optional pushpins, lines, polygons, and live traffic. Give a center point and zoom, or a bbox. To show a route, use get_route_map instead.",
@@ -811,6 +1246,8 @@ public class Script : ScriptBase
                     return await HandleStaticMapToolAsync(requestId, arguments).ConfigureAwait(false);
                 case "get_route_map":
                     return await HandleRouteMapToolAsync(requestId, arguments).ConfigureAwait(false);
+                case "get_routes_map":
+                    return await HandleRoutesMapToolAsync(requestId, arguments).ConfigureAwait(false);
                 default:
                     return CreateJsonRpcErrorResponse(requestId, -32601, "Unknown tool", toolName);
             }

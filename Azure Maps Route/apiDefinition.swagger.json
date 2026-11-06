@@ -4661,10 +4661,242 @@
                 }
             }
         },
+        "/map/routes": {
+            "post": {
+                "summary": "Get Routes Map (several routes on one map)",
+                "description": "Gets several independent routes, each with its own start and end, and draws them together on one map in different colors. Returns the map image as base64 plus the distance, travel time, and a Bing Maps link for each route. Takes plain fields, so it works in flows, apps, and agents. Up to 10 routes. Route lines are simplified to fit the map request.",
+                "operationId": "GetRoutesMapSimple",
+                "x-ms-summary": "Get Routes Map (several routes on one map)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "description": "Request body.",
+                        "x-ms-summary": "Request body",
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "routes"
+                            ],
+                            "properties": {
+                                "routes": {
+                                    "type": "string",
+                                    "description": "Routes to draw, written as origin>destination pairs separated by semicolons, each point as longitude,latitude. For example -122.33,47.6>-122.12,47.67;-122.3,47.55>-122.2,47.62 draws two routes. For many starts to one destination, repeat the destination in every pair. Up to 10 routes.",
+                                    "x-ms-summary": "Routes"
+                                },
+                                "travelMode": {
+                                    "type": "string",
+                                    "description": "Mode of travel for every route.",
+                                    "x-ms-summary": "Travel Mode",
+                                    "default": "driving",
+                                    "enum": [
+                                        "driving",
+                                        "truck",
+                                        "walking"
+                                    ]
+                                },
+                                "optimizeRoute": {
+                                    "type": "string",
+                                    "description": "How to optimize each route.",
+                                    "x-ms-summary": "Optimize Route",
+                                    "default": "fastestWithoutTraffic",
+                                    "enum": [
+                                        "short",
+                                        "shortest",
+                                        "fastestWithoutTraffic",
+                                        "fastestWithTraffic"
+                                    ]
+                                },
+                                "avoid": {
+                                    "type": "string",
+                                    "description": "Road features to avoid, comma-separated. Values: limitedAccessHighways, tollRoads, ferries, tunnels, borderCrossings, lowEmissionZones, unpavedRoads.",
+                                    "x-ms-summary": "Avoid"
+                                },
+                                "departAt": {
+                                    "type": "string",
+                                    "description": "Departure time (ISO 8601).",
+                                    "x-ms-summary": "Depart At",
+                                    "format": "date-time"
+                                },
+                                "routeWidth": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Route line width in pixels, 1 to 50. Default 4.",
+                                    "x-ms-summary": "Line Width"
+                                },
+                                "markEndpoints": {
+                                    "type": "boolean",
+                                    "description": "Add pins at the start and end of each route. Default true.",
+                                    "x-ms-summary": "Mark Start and End"
+                                },
+                                "width": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Image width in pixels, 80 to 2000. Default 800.",
+                                    "x-ms-summary": "Width"
+                                },
+                                "height": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Image height in pixels, 80 to 1500. Default 500.",
+                                    "x-ms-summary": "Height"
+                                },
+                                "tilesetId": {
+                                    "type": "string",
+                                    "description": "Map style.",
+                                    "x-ms-summary": "Map Style",
+                                    "default": "microsoft.base.road",
+                                    "enum": [
+                                        "microsoft.base.road",
+                                        "microsoft.base.darkgrey",
+                                        "microsoft.imagery"
+                                    ]
+                                },
+                                "trafficLayer": {
+                                    "type": "string",
+                                    "description": "Show live traffic on the map.",
+                                    "x-ms-summary": "Traffic Layer",
+                                    "default": "none",
+                                    "enum": [
+                                        "microsoft.traffic.relative.main",
+                                        "none"
+                                    ]
+                                },
+                                "format": {
+                                    "type": "string",
+                                    "description": "Image format returned.",
+                                    "x-ms-summary": "Image Format",
+                                    "default": "jpeg",
+                                    "enum": [
+                                        "jpeg",
+                                        "png"
+                                    ]
+                                },
+                                "language": {
+                                    "type": "string",
+                                    "description": "Language for map labels as an IETF language tag, for example en-US.",
+                                    "x-ms-summary": "Language"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Map image and a summary of each route.",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "imageContentType": {
+                                    "type": "string",
+                                    "description": "Content type of the image, image/jpeg or image/png.",
+                                    "x-ms-summary": "Image Content Type"
+                                },
+                                "imageBase64": {
+                                    "type": "string",
+                                    "format": "byte",
+                                    "description": "The map image, base64 encoded.",
+                                    "x-ms-summary": "Image"
+                                },
+                                "routesRequested": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of routes requested.",
+                                    "x-ms-summary": "Routes Requested"
+                                },
+                                "routesDrawn": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Number of routes found and drawn. A route that can't be found is left off the map and reported in routes.",
+                                    "x-ms-summary": "Routes Drawn"
+                                },
+                                "pointsPerRoute": {
+                                    "type": "integer",
+                                    "format": "int32",
+                                    "description": "Most points used to draw each route line. Lower when many routes share one map.",
+                                    "x-ms-summary": "Points Per Route"
+                                },
+                                "routes": {
+                                    "type": "array",
+                                    "description": "One entry per requested route, in the order given.",
+                                    "x-ms-summary": "Routes",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "routeNumber": {
+                                                "type": "integer",
+                                                "format": "int32",
+                                                "description": "Position of the route in the request, starting at 1. Matches the number on its pins.",
+                                                "x-ms-summary": "Route Number"
+                                            },
+                                            "color": {
+                                                "type": "string",
+                                                "description": "Color of the route line on the map.",
+                                                "x-ms-summary": "Color"
+                                            },
+                                            "origin": {
+                                                "type": "string",
+                                                "description": "Start as longitude,latitude.",
+                                                "x-ms-summary": "Origin"
+                                            },
+                                            "destination": {
+                                                "type": "string",
+                                                "description": "End as longitude,latitude.",
+                                                "x-ms-summary": "Destination"
+                                            },
+                                            "drawn": {
+                                                "type": "boolean",
+                                                "description": "True if the route was found and drawn.",
+                                                "x-ms-summary": "Drawn"
+                                            },
+                                            "distanceInMeters": {
+                                                "type": "number",
+                                                "format": "double",
+                                                "description": "Route distance in meters. Not set if the route wasn't found.",
+                                                "x-ms-summary": "Distance (meters)"
+                                            },
+                                            "durationInSeconds": {
+                                                "type": "number",
+                                                "format": "double",
+                                                "description": "Travel time in seconds. Not set if the route wasn't found.",
+                                                "x-ms-summary": "Duration (seconds)"
+                                            },
+                                            "bingMapsUrl": {
+                                                "type": "string",
+                                                "description": "Link that opens this route in Bing Maps.",
+                                                "x-ms-summary": "Bing Maps Link"
+                                            },
+                                            "error": {
+                                                "type": "string",
+                                                "description": "Why the route couldn't be drawn. Only set when drawn is false.",
+                                                "x-ms-summary": "Error"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Error response.",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/mcp": {
             "post": {
                 "summary": "Invoke Azure Maps Route MCP",
-                "description": "Model Context Protocol endpoint for Copilot Studio. Provides GeoJSON route directions, route matrix, route range, snap-to-roads, and static map image tools.",
+                "description": "Model Context Protocol endpoint for Copilot Studio. Provides GeoJSON route directions, route matrix, route range, snap-to-roads, static map image, and route map tools, including several routes on one map.",
                 "operationId": "InvokeMCP",
                 "x-ms-agentic-protocol": "mcp-streamable-1.0",
                 "responses": {
