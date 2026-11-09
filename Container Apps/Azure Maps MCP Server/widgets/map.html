@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map</title>
+<style>
+/*@shared-css*/
+.speed-legend { margin-top: var(--sp-xs); }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Map</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="seg no-print" id="styles" role="group" aria-label="Map style"></div>
+  </div>
+  <div class="chips no-print" id="toggles" style="margin-bottom:8px"></div>
+  <div id="stage"><div class="skeleton" style="height:320px" role="progressbar" aria-label="Loading map"></div></div>
+  <div class="row no-print hidden" id="radarBar" style="margin-top:8px">
+    <button class="btn subtle" id="play" type="button" aria-label="Play radar animation"></button>
+    <input id="scrub" type="range" min="0" max="12" value="6" aria-label="Radar time">
+    <span class="nowrap small" id="frameLabel" style="min-width:84px;text-align:right"></span>
+  </div>
+  <div class="small muted hidden" id="radarProgress" style="margin-top:4px"></div>
+  <div class="legend" id="legend" style="margin-top:8px"></div>
+  <div class="speed-legend legend hidden" id="speeds" aria-label="Speed limits"></div>
+  <div class="stats hidden" id="facts" style="margin-top:8px"></div>
+  <div class="small muted hidden" id="credit" style="margin-top:4px"></div>
+  <div id="message" style="margin-top:8px"></div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var map = null;
+  var data = null;
+  var radarTimer = null;
+  var STYLE_LABELS = { road: 'Road', dark: 'Dark', satellite: 'Satellite', hybrid: 'Hybrid', terrain: 'Terrain' };
+  var hidden = {};
+
+  function showMessage(kind, text) {
+    UI.clear($('message')).appendChild(UI.message(kind, text));
+  }
+
+  // ───────────── radar frames ─────────────
+
+  function isoZ(ms) { return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z'); }
+
+  function radarFrames(kind) {
+    var now = Math.floor(Date.now() / 300000) * 300000;
+    var frames = [];
+    var from = kind === 'infrared' ? -90 : -60;
+    var to = kind === 'infrared' ? 0 : 60;
+    for (var m = from; m <= to; m += 10) frames.push({ stamp: isoZ(now + m * 60000), minutes: m });
+    return frames;
+  }
+
+  var radar = null; // { kind, frames, index, playing }
+
+  function frameText(f) {
+    if (f.minutes === 0) return 'Now';
+    return (f.minutes > 0 ? '+' : '−') + Math.abs(f.minutes) + ' min';
+  }
+
+  function applyFrame(i) {
+    if (!radar) return;
+    radar.index = i;
+    var o = map.overlays[radar.kind];
+    if (o) { o.frameIndex = i; map.schedule(); }
+    $('scrub').value = String(i);
+    $('frameLabel').textContent = frameText(radar.frames[i]);
+  }
+
+  function stopRadar() {
+    if (radarTimer) { clearInterval(radarTimer); radarTimer = null; }
+    if (radar) radar.playing = false;
+    $('play').innerHTML = UI.icon('play');
+    $('play').setAttribute('aria-label', 'Play radar animation');
+  }
+
+  function playRadar() {
+    if (!radar) return;
+    radar.playing = true;
+    $('play').innerHTML = UI.icon('pause');
+    $('play').setAttribute('aria-label', 'Pause radar animation');
+    radarTimer = setInterval(function () {
+      if (map.frameProgress(radar.kind) < 0.5) return;
+      applyFrame((radar.index + 1) % radar.frames.length);
+    }, 700);
+  }
+
+  function enableRadar(kind, animate) {
+    disableRadar();
+    var frames = radarFrames(kind);
+    var nowIndex = frames.findIndex(function (f) { return f.minutes === 0; });
+    radar = { kind: kind, frames: frames, index: nowIndex, playing: false };
+    map.setOverlay(kind, { frames: frames.map(function (f) { return f.stamp; }), frameIndex: nowIndex });
+    $('scrub').max = String(frames.length - 1);
+    $('radarBar').classList.remove('hidden');
+    applyFrame(nowIndex);
+    map.prefetchOverlay(kind);
+    watchProgress();
+    if (animate) playRadar(); else stopRadar();
+    renderToggles();
+  }
+
+  function disableRadar() {
+    if (!radar) return;
+    stopRadar();
+    map.setOverlay(radar.kind, null);
+    radar = null;
+    $('radarBar').classList.add('hidden');
+    $('radarProgress').classList.add('hidden');
+    renderToggles();
+  }
+
+  function watchProgress() {
+    var node = $('radarProgress');
+    var tick = function () {
+      if (!radar) return;
+      var p = map.frameProgress(radar.kind);
+      if (p >= 0.99) { node.classList.add('hidden'); return; }
+      node.classList.remove('hidden');
+      node.textContent = 'Loading ' + (radar.kind === 'infrared' ? 'infrared' : 'radar') + ' frames… ' + Math.round(p * 100) + '%';
+      setTimeout(tick, 500);
+    };
+    tick();
+  }
+
+  // ───────────── toggles and style ─────────────
+
+  function renderStyles() {
+    var box = UI.clear($('styles'));
+    Object.keys(STYLE_LABELS).forEach(function (name) {
+      var b = UI.el('button', { type: 'button', text: STYLE_LABELS[name], 'aria-pressed': String(map.styleName === name), on: { click: function () { map.setStyle(name); renderStyles(); } } });
+      box.appendChild(b);
+    });
+  }
+
+  function chip(label, pressed, fn) {
+    return UI.el('button', { class: 'chip', type: 'button', text: label, 'aria-pressed': String(!!pressed), on: { click: fn } });
+  }
+
+  function renderToggles() {
+    var box = UI.clear($('toggles'));
+    box.appendChild(chip('Traffic', !!map.overlays.traffic, function () {
+      map.setOverlay('traffic', map.overlays.traffic ? null : true);
+      renderToggles();
+    }));
+    box.appendChild(chip('Weather radar', radar && radar.kind === 'radar', function () {
+      if (radar && radar.kind === 'radar') disableRadar(); else enableRadar('radar', true);
+    }));
+    box.appendChild(chip('Infrared', radar && radar.kind === 'infrared', function () {
+      if (radar && radar.kind === 'infrared') disableRadar(); else enableRadar('infrared', true);
+    }));
+    box.appendChild(UI.el('button', { class: 'chip', type: 'button', text: 'Fit all', on: { click: function () { map.fitContent(); } } }));
+  }
+
+  // ───────────── speed-limit coloring (snap to roads) ─────────────
+
+  function speedColor(kmh) {
+    if (kmh <= 30) return '#107c10';
+    if (kmh <= 50) return '#9fb600';
+    if (kmh <= 70) return '#ffb900';
+    if (kmh <= 90) return '#f7630c';
+    return '#c50f1f';
+  }
+
+  function colorBySpeed(layers, limits) {
+    var withSpeed = (limits || []).filter(function (p) { return p.kmh; });
+    if (withSpeed.length < 2) return { layers: layers, used: [] };
+    var out = layers.filter(function (l) { return l.id !== 'snapped'; });
+    var used = {};
+    var run = null;
+    function flush() { if (run && run.coordinates.length > 1) out.push(run); run = null; }
+    for (var i = 0; i < limits.length; i++) {
+      var p = limits[i];
+      var kmh = p.kmh || (run && run.kmh);
+      if (!kmh) continue;
+      if (!run || run.kmh !== kmh) {
+        var prev = run && run.coordinates[run.coordinates.length - 1];
+        flush();
+        run = { id: 'speed' + i, type: 'line', name: kmh + ' km/h', color: speedColor(kmh), width: 6, kmh: kmh, coordinates: prev ? [prev] : [] };
+        used[kmh] = true;
+      }
+      run.coordinates.push([p.longitude, p.latitude]);
+    }
+    flush();
+    return { layers: out, used: Object.keys(used).map(Number).sort(function (a, b) { return a - b; }) };
+  }
+
+  // ───────────── render ─────────────
+
+  function renderLegend() {
+    var legend = UI.clear($('legend'));
+    var seen = {};
+    (data.layers || []).forEach(function (l) {
+      if (!l.name || l.kmh || seen[l.id]) return;
+      seen[l.id] = true;
+      var item = UI.el('button', { class: 'link item', type: 'button', style: 'display:inline-flex;align-items:center;gap:6px;color:inherit;font-weight:400', 'aria-pressed': String(!hidden[l.id]), title: 'Show or hide ' + l.name, on: { click: function () { hidden[l.id] = !hidden[l.id]; l.hidden = !!hidden[l.id]; map.schedule(); renderLegend(); } } }, [
+        UI.el('span', { class: 'sw', style: 'background:' + l.color + ';' + (hidden[l.id] ? 'opacity:.3' : '') }),
+        UI.el('span', { text: l.name, style: hidden[l.id] ? 'opacity:.5;text-decoration:line-through' : '' })
+      ]);
+      legend.appendChild(item);
+    });
+  }
+
+  function renderSpeeds(used) {
+    var box = UI.clear($('speeds'));
+    if (!used || !used.length) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    box.appendChild(UI.el('span', { class: 'muted', text: 'Speed limit:' }));
+    used.forEach(function (kmh) {
+      box.appendChild(UI.el('span', { class: 'item' }, [UI.el('span', { class: 'sw', style: 'background:' + speedColor(kmh) }), UI.el('span', { text: kmh + ' km/h' })]));
+    });
+  }
+
+  function markerPopup(m) {
+    var node = UI.el('div', {});
+    node.appendChild(UI.el('div', { class: 't', text: m.label && m.label.length > 3 ? m.label : (m.description || m.label || 'Pin') }));
+    if (m.description && m.description !== m.label) node.appendChild(UI.el('div', { class: 'small muted', text: m.description }));
+    node.appendChild(UI.el('div', { class: 'small muted', text: m.latitude.toFixed(5) + ', ' + m.longitude.toFixed(5) }));
+    var row = UI.el('div', { class: 'row', style: 'margin-top:6px' });
+    row.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Open in Bing Maps', on: { click: function () { App.openLink('https://www.bing.com/maps?cp=' + m.latitude + '~' + m.longitude + '&lvl=16&sp=point.' + m.latitude + '_' + m.longitude + '_' + encodeURIComponent(m.description || m.label || '')); } } }));
+    row.appendChild(UI.el('button', { class: 'btn small subtle', type: 'button', text: 'Copy', on: { click: function () { UI.copyText(m.latitude.toFixed(6) + ', ' + m.longitude.toFixed(6)).then(function () { UI.tempHint('Coordinates copied'); }); } } }));
+    node.appendChild(row);
+    return node;
+  }
+
+  function render(result) {
+    var d = App.dataOf(result);
+    if (!d || d.kind !== 'map') {
+      if (result && result.isError) showMessage('error', App.textOf(result) || 'The map could not be created.');
+      else showMessage('info', 'No map data was returned.');
+      return;
+    }
+    data = d;
+    UI.clear($('message'));
+    $('title').textContent = d.title || 'Map';
+    var sub = [];
+    if (d.markers && d.markers.length) sub.push(d.markers.length + ' pin' + (d.markers.length === 1 ? '' : 's'));
+    if (d.layers && d.layers.length) sub.push(d.layers.length + ' shape' + (d.layers.length === 1 ? '' : 's'));
+    $('subtitle').textContent = sub.join(' · ');
+
+    var layers = (d.layers || []).map(function (l) { return Object.assign({}, l); });
+    var speedInfo = null;
+    if (d.speedLimits) {
+      speedInfo = colorBySpeed(layers, d.speedLimits);
+      layers = speedInfo.layers;
+    }
+
+    var stage = UI.clear($('stage'));
+    var mapEl = UI.el('div', { class: 'tall' });
+    stage.appendChild(mapEl);
+    if (map) { disableRadar(); }
+    map = new MapView(mapEl, { style: d.style || 'road', language: d.language });
+    map.on('markerclick', function (m) {
+      map.select(m.id);
+      map.setPopup(m.id, markerPopup(m));
+      App.updateModelContext('The user selected the map pin "' + (m.description || m.label) + '" at ' + m.latitude.toFixed(5) + ', ' + m.longitude.toFixed(5) + '.');
+    });
+    map.on('click', function () { map.select(null); map.setPopup(null, null); });
+    map.on('tileerror', function () { /* the engine shows its own notice */ });
+
+    var markers = (d.markers || []).map(function (m, i) { return Object.assign({ id: 'm' + i }, m); });
+    map.setMarkers(markers);
+    map.setLayers(layers);
+    if (d.bbox && !d.zoom) map.fitBounds(d.bbox);
+    else if (d.center) map.setView(d.center.longitude, d.center.latitude, d.zoom || 12);
+    else map.fitContent();
+    if (d.zoom && d.center) map.setView(d.center.longitude, d.center.latitude, d.zoom);
+
+    renderStyles();
+    if (d.traffic) map.setOverlay('traffic', true);
+    renderToggles();
+    if (d.radar) enableRadar(d.radar, !!d.animate);
+    renderLegend();
+    renderSpeeds(speedInfo && speedInfo.used);
+
+    var facts = UI.clear($('facts'));
+    (d.facts || []).forEach(function (f) { facts.appendChild(UI.el('div', { class: 'stat' }, [UI.el('div', { class: 'v', text: f.value }), UI.el('div', { class: 'l', text: f.label })])); });
+    facts.classList.toggle('hidden', !(d.facts && d.facts.length));
+    $('credit').textContent = d.attribution || '';
+    $('credit').classList.toggle('hidden', !d.attribution);
+    App.reportSize();
+  }
+
+  $('play').innerHTML = UI.icon('play');
+  $('play').addEventListener('click', function () { if (radar && radar.playing) stopRadar(); else playRadar(); });
+  $('scrub').addEventListener('input', function (e) { stopRadar(); applyFrame(Number(e.target.value)); });
+
+  App.on('result', render);
+  App.on('cancelled', function () { showMessage('warning', 'The request was cancelled.'); });
+  App.init({ name: 'map' }).catch(function () { showMessage('error', 'The map could not start.'); });
+})();
+</script>
+</body>
+</html>

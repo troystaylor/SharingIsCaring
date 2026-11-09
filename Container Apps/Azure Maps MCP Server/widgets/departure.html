@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Best time to leave</title>
+<style>
+/*@shared-css*/
+.ctl { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-s) var(--sp-m); margin-bottom: var(--sp-s); }
+.ctl label { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.ctl .input { color: var(--fg1); min-height: 30px; padding: 0 var(--sp-s); }
+.ctl .grp { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.headline { margin: var(--sp-s) 0; font-size: var(--fs-400); line-height: var(--lh-400); }
+.headline b { font-weight: var(--fw-semibold); }
+.chart-box { position: relative; }
+.chart-box.busy svg { opacity: 0.45; }
+.busy-pill { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: var(--sp-s); padding: 2px var(--sp-m); border-radius: 999px; background: var(--bg1); border: 1px solid var(--stroke2); box-shadow: var(--shadow4); font-size: var(--fs-200); z-index: 2; }
+.busy-pill .spin { width: 12px; height: 12px; border: 2px solid var(--stroke1); border-top-color: var(--brand); border-radius: var(--radius-circle); animation: spin 0.8s linear infinite; }
+svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+svg.chart text { fill: var(--fg2); font-family: var(--font-family); font-size: 11px; }
+svg.chart .grid-line { stroke: var(--stroke2); stroke-width: 1; }
+svg.chart .axis-line { stroke: var(--stroke1); stroke-width: 1; }
+svg.chart .free-line { stroke: var(--fg3); stroke-width: 1.5; stroke-dasharray: 2 4; stroke-linecap: round; }
+svg.chart .halo { paint-order: stroke; stroke: var(--bg1); stroke-width: 3px; stroke-linejoin: round; }
+svg.chart .bar { cursor: pointer; outline: none; }
+svg.chart .bar rect.fill { fill: var(--brand-link); opacity: 0.8; }
+svg.chart .bar.best rect.fill { fill: var(--success); opacity: 1; }
+svg.chart .bar.worst rect.fill { fill: var(--danger); opacity: 1; }
+svg.chart .bar:hover rect.fill, svg.chart .bar:focus rect.fill, svg.chart .bar.sel rect.fill { opacity: 1; stroke: var(--fg1); stroke-width: 1.5; }
+svg.chart .bar:focus-visible rect.hit { stroke: var(--focus-outer); stroke-width: 2; }
+svg.chart .bar rect.hit { fill: transparent; }
+svg.chart .bar.gap rect.fill { fill: var(--bg3); stroke: var(--fg3); stroke-dasharray: 3 2; opacity: 1; }
+svg.chart .val { font-weight: var(--fw-semibold); fill: var(--fg1); }
+svg.chart .bar.best .val { fill: var(--success); }
+svg.chart .bar.worst .val { fill: var(--danger); }
+.tip { position: absolute; z-index: 3; pointer-events: none; padding: var(--sp-xs) var(--sp-s); background: var(--bg1); color: var(--fg1); border: 1px solid var(--stroke1); border-radius: var(--radius-m); box-shadow: var(--shadow8); font-size: var(--fs-200); line-height: var(--lh-200); white-space: nowrap; transform: translate(-50%, -100%); }
+.tip .t { font-weight: var(--fw-semibold); }
+.key-row { display: flex; flex-wrap: wrap; gap: var(--sp-xs) var(--sp-m); font-size: var(--fs-200); color: var(--fg2); margin: 4px 0 var(--sp-s); }
+.key-row .k { display: inline-flex; align-items: center; gap: 6px; }
+.key-row .sq { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.key-row .dots { width: 18px; border-top: 2px dotted var(--fg3); display: inline-block; }
+.tz { margin: 0; }
+table.slots td.num, table.slots th.num { text-align: right; white-space: nowrap; }
+@media (forced-colors: active) {
+  svg.chart .bar rect.fill { fill: CanvasText; forced-color-adjust: none; opacity: 1; }
+  svg.chart .bar.best rect.fill { fill: Highlight; }
+  svg.chart .bar.worst rect.fill { fill: LinkText; }
+  .key-row .sq { forced-color-adjust: none; }
+}
+@media (prefers-reduced-motion: reduce) { .busy-pill .spin { animation: none; } }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title" aria-busy="false">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Best time to leave</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="row no-print" id="actions"></div>
+  </div>
+  <div id="controls" class="no-print"></div>
+  <div id="message" aria-live="polite"></div>
+  <div id="body"><div class="skeleton" style="height:240px" role="progressbar" aria-label="Loading travel times"></div></div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  const STEPS = [30, 60, 90, 120];
+  const MAX_SLOTS = 24;
+  const MODES = [['driving', 'Drive'], ['truck', 'Truck']];
+
+  const S = { d: null, C: null, busy: false, showTable: false, sel: null, seq: 0 };
+  let refs = {};
+  let bars = [];
+
+  const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+  const hhmm = (m) => { const x = ((Math.round(m) % 1440) + 1440) % 1440; return UI.pad(Math.floor(x / 60)) + ':' + UI.pad(x % 60); };
+  const num = (v) => typeof v === 'number' && isFinite(v);
+  const modeLabel = (m) => (MODES.find((x) => x[0] === m) || [0, String(m || 'Drive')])[1];
+
+  function el(tag, attrs, children) {
+    const n = document.createElementNS(SVG, tag);
+    for (const k in attrs || {}) n.setAttribute(k, attrs[k]);
+    (children || []).forEach((c) => c && n.appendChild(c));
+    return n;
+  }
+
+  function showMessage(kind, text, retry) {
+    const box = UI.clear($('message'));
+    if (!text) return;
+    const msg = UI.message(kind, text);
+    msg.style.marginBottom = '8px';
+    if (retry) msg.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Retry', style: 'margin-left:auto', on: { click: apply } }));
+    box.appendChild(msg);
+  }
+
+  // ───────────── analysis ─────────────
+
+  function analyse(d) {
+    const good = d.slots.filter((s) => s.ok && num(s.seconds));
+    if (!good.length) return null;
+    const best = good.reduce((a, b) => (b.seconds < a.seconds ? b : a));
+    const worst = good.reduce((a, b) => (b.seconds > a.seconds ? b : a));
+    const avg = good.reduce((t, s) => t + s.seconds, 0) / good.length;
+    const free = Math.min(...good.map((s) => (num(s.freeFlowSeconds) ? s.freeFlowSeconds : s.seconds)));
+    return { good, best, worst, avg, free, meters: (best.meters || good[0].meters || 0) };
+  }
+
+  function headline(a) {
+    const d = S.d;
+    const arrive = d.timeMode === 'arriveAt';
+    const node = UI.el('p', { class: 'headline' });
+    const b = (t) => UI.el('b', { text: t });
+    const saved = a.worst.seconds - a.best.seconds;
+    const pct = a.worst.seconds ? Math.round((saved / a.worst.seconds) * 100) : 0;
+    if (a.good.length === 1) {
+      node.append((arrive ? 'Arriving at ' : 'Leaving at '), b(a.best.time), ' takes ', b(UI.fmtDuration(a.best.seconds)), '. Only one time could be calculated.');
+    } else if (saved < 60 || pct < 5) {
+      node.append('Traffic barely changes this trip on this day: ', b(UI.fmtDuration(a.avg)), ' at any time, and ', b(a.best.time), ' is the quickest by only ', UI.fmtDuration(Math.max(60, saved)), '.');
+    } else if (arrive) {
+      const leave = toMin(a.best.time) - Math.round(a.best.seconds / 60);
+      node.append('Arrive at ', b(a.best.time), ' for the shortest trip: ', b(UI.fmtDuration(a.best.seconds)), ' (leave about ', hhmm(leave), ') — ', b(UI.fmtDuration(saved) + ' (' + pct + '%) faster'), ' than arriving at ' + a.worst.time + '.');
+    } else {
+      node.append('Leave at ', b(a.best.time), ' to arrive in ', b(UI.fmtDuration(a.best.seconds)), ' — ', b(UI.fmtDuration(saved) + ' (' + pct + '%) faster'), ' than leaving at ' + a.worst.time + '.');
+    }
+    return node;
+  }
+
+  function plainHeadline(a) {
+    return headline(a).textContent;
+  }
+
+  // ───────────── chart ─────────────
+
+  function niceStep(maxMin) {
+    const steps = [1, 2, 5, 10, 15, 20, 30, 60, 120, 240, 480];
+    return steps.find((s) => maxMin / s <= 5) || 480;
+  }
+
+  function slotLabel(s) {
+    const v = s.ok && num(s.seconds) ? UI.fmtDuration(s.seconds) : 'no route';
+    return s.time + ', ' + v;
+  }
+
+  function tipNode(s, a) {
+    const arrive = S.d.timeMode === 'arriveAt';
+    const node = UI.el('div', {}, [UI.el('div', { class: 't', text: (arrive ? 'Arrive ' : 'Leave ') + s.time })]);
+    if (!(s.ok && num(s.seconds))) { node.appendChild(UI.el('div', { text: 'No route found' })); return node; }
+    node.appendChild(UI.el('div', { text: UI.fmtDuration(s.seconds) + (s === a.best ? ' · best' : s === a.worst && a.worst !== a.best ? ' · worst' : '') }));
+    if (num(s.freeFlowSeconds)) {
+      const delay = s.seconds - s.freeFlowSeconds;
+      node.appendChild(UI.el('div', { class: 'muted', text: Math.abs(delay) < 30 ? 'No traffic delay' : (delay > 0 ? '+' : '−') + UI.fmtDuration(Math.abs(delay)) + ' vs free-flow' }));
+    }
+    if (s.congestion && s.congestion !== 'None') node.appendChild(UI.el('div', { class: 'muted', text: 'Congestion: ' + s.congestion }));
+    if (num(s.meters)) node.appendChild(UI.el('div', { class: 'muted', text: UI.fmtDistance(s.meters, S.d.units) }));
+    return node;
+  }
+
+  function drawChart() {
+    const a = S.a;
+    const box = refs.chart;
+    if (!box || !a) return;
+    const slots = S.d.slots;
+    const n = slots.length;
+    const W = Math.max(280, Math.floor(box.clientWidth || 600));
+    const H = W < 420 ? 210 : 250;
+    const m = { l: 38, r: 8, t: 26, b: 28 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const maxSec = Math.max(...a.good.map((s) => s.seconds), a.free);
+    const minSec = Math.min(...a.good.map((s) => s.seconds), a.free);
+    const stepMin = niceStep(maxSec / 60);
+    const yMaxMin = Math.max(stepMin, Math.ceil(maxSec / 60 / stepMin) * stepMin);
+    // When every time is close to the others, start the axis near the fastest one so the differences are visible.
+    let yMinMin = 0;
+    let step = stepMin;
+    if (minSec > maxSec * 0.5) {
+      step = niceStep((maxSec - minSec) / 60 * 3);
+      yMinMin = Math.max(0, Math.floor((minSec / 60 - Math.max(1, (maxSec - minSec) / 60)) / step) * step);
+    }
+    const yTop = Math.max(yMinMin + step, Math.ceil(maxSec / 60 / step) * step);
+    const y = (sec) => m.t + ph - Math.max(0.04, (sec / 60 - yMinMin) / (yTop - yMinMin)) * ph;
+    const band = pw / n;
+    const barW = Math.max(4, Math.min(44, band * 0.7));
+    const svg = el('svg', { class: 'chart', viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'group', 'aria-label': 'Travel time for each ' + (S.d.timeMode === 'arriveAt' ? 'arrival' : 'departure') + ' time. Use the left and right arrow keys to move between bars.' });
+
+    for (let v = yMinMin; v <= yTop; v += step) {
+      const yy = y(v * 60);
+      svg.appendChild(el('line', { class: v === yMinMin ? 'axis-line' : 'grid-line', x1: m.l, x2: W - m.r, y1: yy, y2: yy }));
+      const t = el('text', { x: m.l - 6, y: yy + 4, 'text-anchor': 'end' });
+      t.textContent = v === 0 ? '0' : v >= 60 && v % 60 === 0 ? v / 60 + ' h' : String(v);
+      svg.appendChild(t);
+    }
+    const unit = el('text', { x: 4, y: m.t - 12, 'text-anchor': 'start' });
+    unit.textContent = yMinMin > 0 ? 'min (axis starts at ' + yMinMin + ')' : 'min';
+    svg.appendChild(unit);
+
+    const every = Math.max(1, Math.ceil(36 / band));
+    bars = [];
+    slots.forEach((s, i) => {
+      const cx = m.l + band * i + band / 2;
+      const ok = s.ok && num(s.seconds);
+      const cls = 'bar' + (ok && s === a.best ? ' best' : '') + (ok && s === a.worst && a.worst !== a.best ? ' worst' : '') + (ok ? '' : ' gap') + (S.sel === i ? ' sel' : '');
+      const top = ok ? y(s.seconds) : m.t + ph - 16;
+      const g = el('g', { class: cls, tabindex: i === 0 ? '0' : '-1', role: 'img', 'aria-label': slotLabel(s) + (ok && s === a.best ? '. Best time' : ok && s === a.worst && a.worst !== a.best ? '. Slowest time' : '') });
+      g.appendChild(el('rect', { class: 'hit', x: cx - band / 2, y: m.t, width: band, height: ph }));
+      g.appendChild(el('rect', { class: 'fill', x: cx - barW / 2, y: top, width: barW, height: m.t + ph - top, rx: 2 }));
+      if (ok && (s === a.best || (s === a.worst && a.worst !== a.best))) {
+        const t = el('text', { class: 'val halo', x: cx, y: top - 5, 'text-anchor': 'middle' });
+        t.textContent = String(Math.round(s.seconds / 60));
+        g.appendChild(t);
+      }
+      if (!ok) {
+        const t = el('text', { x: cx, y: top - 4, 'text-anchor': 'middle' });
+        t.textContent = '–';
+        g.appendChild(t);
+      }
+      svg.appendChild(g);
+      bars.push(g);
+      if (i % every === 0 || i === n - 1 && every === 1) {
+        const t = el('text', { x: cx, y: H - 8, 'text-anchor': 'middle' });
+        t.textContent = s.time;
+        svg.appendChild(t);
+      }
+      const show = () => { showTip(i, cx, top); };
+      g.addEventListener('pointerenter', show);
+      g.addEventListener('focus', () => { show(); });
+      g.addEventListener('pointerleave', hideTip);
+      g.addEventListener('blur', hideTip);
+      g.addEventListener('click', () => select(i));
+      g.addEventListener('keydown', (e) => {
+        let to = -1;
+        if (e.key === 'ArrowRight') to = Math.min(n - 1, i + 1);
+        else if (e.key === 'ArrowLeft') to = Math.max(0, i - 1);
+        else if (e.key === 'Home') to = 0;
+        else if (e.key === 'End') to = n - 1;
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(i); return; }
+        if (to < 0) return;
+        e.preventDefault();
+        bars[i].setAttribute('tabindex', '-1');
+        bars[to].setAttribute('tabindex', '0');
+        bars[to].focus();
+      });
+    });
+
+    // Drawn after the bars so the label sits on top of them.
+    const fy = y(a.free);
+    svg.appendChild(el('line', { class: 'free-line', x1: m.l, x2: W - m.r, y1: fy, y2: fy }));
+    const fl = el('text', { class: 'halo', x: W - m.r - 2, y: fy - 5, 'text-anchor': 'end' });
+    fl.textContent = 'Free-flow ' + UI.fmtDuration(a.free);
+    svg.appendChild(fl);
+
+    UI.clear(refs.svgHost).appendChild(svg);
+    refs.svg = svg;
+    refs.geom = { m, W };
+  }
+
+  function showTip(i, cx, top) {
+    const s = S.d.slots[i];
+    const tip = UI.clear(refs.tip);
+    tip.appendChild(tipNode(s, S.a));
+    tip.classList.remove('hidden');
+    const w = refs.chart.clientWidth;
+    const half = (tip.offsetWidth || 120) / 2;
+    tip.style.left = Math.max(half + 2, Math.min(w - half - 2, cx)) + 'px';
+    tip.style.top = Math.max(tip.offsetHeight + 4, top - 6) + 'px';
+  }
+
+  function hideTip() { if (refs.tip) refs.tip.classList.add('hidden'); }
+
+  function select(i) {
+    S.sel = S.sel === i ? null : i;
+    bars.forEach((g, k) => g.classList.toggle('sel', S.sel === k));
+    if (S.sel !== null) {
+      const s = S.d.slots[i];
+      const arrive = S.d.timeMode === 'arriveAt';
+      App.updateModelContext('The user is looking at ' + (arrive ? 'arriving' : 'leaving') + ' at ' + s.time + ' on ' + S.d.date + (s.ok && num(s.seconds) ? ': the trip takes ' + UI.fmtDuration(s.seconds) + '.' : ': no route was found.'));
+    }
+  }
+
+  // ───────────── table, summary ─────────────
+
+  function renderTable() {
+    const a = S.a;
+    const box = UI.clear(refs.table);
+    refs.table.classList.toggle('hidden', !S.showTable);
+    refs.toggle.setAttribute('aria-expanded', String(S.showTable));
+    refs.toggle.textContent = S.showTable ? 'Hide table' : 'Show table';
+    if (!S.showTable) return;
+    const arrive = S.d.timeMode === 'arriveAt';
+    const t = UI.el('table', { class: 'grid slots' });
+    t.appendChild(UI.el('caption', { class: 'sr-only', text: 'Travel time for each ' + (arrive ? 'arrival' : 'departure') + ' time' }));
+    t.appendChild(UI.el('thead', {}, UI.el('tr', {}, [
+      UI.el('th', { scope: 'col', text: arrive ? 'Arrive' : 'Leave' }), UI.el('th', { scope: 'col', class: 'num', text: 'Travel time' }),
+      UI.el('th', { scope: 'col', class: 'num', text: 'vs best' }), UI.el('th', { scope: 'col', class: 'num', text: 'Free-flow' }), UI.el('th', { scope: 'col', class: 'num', text: 'Distance' })
+    ])));
+    const body = UI.el('tbody');
+    S.d.slots.forEach((s) => {
+      const ok = s.ok && num(s.seconds);
+      const tr = UI.el('tr');
+      tr.appendChild(UI.el('th', { scope: 'row', style: 'position:static;background:transparent;font-weight:600;color:inherit' }, [s.time, ok && s === a.best ? UI.el('span', { class: 'badge good', text: 'Best', style: 'margin-left:6px' }) : null, ok && s === a.worst && a.worst !== a.best ? UI.el('span', { class: 'badge bad', text: 'Slowest', style: 'margin-left:6px' }) : null]));
+      if (!ok) {
+        tr.appendChild(UI.el('td', { class: 'muted', colspan: '4', text: s.error ? 'No route: ' + s.error : 'No route found' }));
+      } else {
+        const diff = s.seconds - a.best.seconds;
+        tr.appendChild(UI.el('td', { class: 'num', text: UI.fmtDuration(s.seconds) }));
+        tr.appendChild(UI.el('td', { class: 'num', text: diff < 30 ? '–' : '+' + UI.fmtDuration(diff) }));
+        tr.appendChild(UI.el('td', { class: 'num', text: num(s.freeFlowSeconds) ? UI.fmtDuration(s.freeFlowSeconds) : '–' }));
+        tr.appendChild(UI.el('td', { class: 'num', text: num(s.meters) ? UI.fmtDistance(s.meters, S.d.units) : '–' }));
+      }
+      body.appendChild(tr);
+    });
+    t.appendChild(body);
+    box.appendChild(UI.el('div', { class: 'scroll', style: 'max-height:300px;margin-top:8px' }, t));
+  }
+
+  function zoneNote() {
+    const z = S.d.zone || {};
+    const name = z.name || z.id;
+    if (!name) return 'Times are local to the starting point.';
+    return 'Times are local to ' + name + (z.offset ? ' (UTC' + z.offset + ')' : '') + '.';
+  }
+
+  function dateText() {
+    const d = S.d.date;
+    return d ? UI.weekdayOf(d) + ', ' + UI.monthDayOf(d) + ' ' + d.slice(0, 4) : '';
+  }
+
+  function summaryText() {
+    const a = S.a;
+    const d = S.d;
+    const arrive = d.timeMode === 'arriveAt';
+    const lines = [(arrive ? 'Best time to arrive: ' : 'Best time to leave: ') + (d.origin.name || 'Start') + ' to ' + (d.destination.name || 'destination') + ', ' + dateText() + ' · ' + modeLabel(d.travelMode), plainHeadline(a), zoneNote(), ''];
+    d.slots.forEach((s) => lines.push(s.time + ': ' + (s.ok && num(s.seconds) ? UI.fmtDuration(s.seconds) : 'no route')));
+    return lines.join('\n');
+  }
+
+  function renderBody() {
+    const d = S.d;
+    const a = S.a;
+    const arrive = d.timeMode === 'arriveAt';
+    $('title').textContent = arrive ? 'Best time to arrive' : 'Best time to leave';
+    $('subtitle').textContent = (d.origin.name || 'Start') + ' → ' + (d.destination.name || 'Destination') + ' · ' + dateText() + ' · ' + modeLabel(d.travelMode);
+
+    const root = UI.clear($('body'));
+    root.appendChild(headline(a));
+    const stats = UI.el('div', { class: 'stats' });
+    const stat = (v, l) => stats.appendChild(UI.el('div', { class: 'stat' }, [UI.el('div', { class: 'v', text: v }), UI.el('div', { class: 'l', text: l })]));
+    stat(UI.fmtDuration(a.best.seconds), 'Best · ' + a.best.time);
+    stat(UI.fmtDuration(a.worst.seconds), 'Slowest · ' + a.worst.time);
+    stat(UI.fmtDuration(a.avg), 'Average');
+    stat(UI.fmtDistance(a.meters, d.units), 'Distance');
+    root.appendChild(stats);
+
+    refs.chart = UI.el('div', { class: 'chart-box', style: 'margin-top:12px' });
+    refs.svgHost = UI.el('div');
+    refs.tip = UI.el('div', { class: 'tip hidden', 'aria-hidden': 'true' });
+    refs.chart.appendChild(refs.svgHost);
+    refs.chart.appendChild(refs.tip);
+    root.appendChild(refs.chart);
+    root.appendChild(UI.el('div', { class: 'key-row' }, [
+      UI.el('span', { class: 'k' }, [UI.el('span', { class: 'sq', style: 'background:var(--success)' }), 'Best']),
+      UI.el('span', { class: 'k' }, [UI.el('span', { class: 'sq', style: 'background:var(--danger)' }), 'Slowest']),
+      UI.el('span', { class: 'k' }, [UI.el('span', { class: 'sq', style: 'background:var(--brand-link);opacity:.8' }), 'Other times']),
+      UI.el('span', { class: 'k' }, [UI.el('span', { class: 'dots' }), 'Free-flow (no traffic)'])
+    ]));
+
+    refs.toggle = UI.el('button', { class: 'btn small', type: 'button', 'aria-controls': 'slotTable', 'aria-expanded': 'false', text: 'Show table', on: { click: () => { S.showTable = !S.showTable; renderTable(); } } });
+    refs.table = UI.el('div', { id: 'slotTable', class: 'hidden' });
+    root.appendChild(UI.el('div', { class: 'row no-print', style: 'justify-content:space-between;flex-wrap:wrap' }, [UI.el('p', { class: 'small muted tz', text: zoneNote() }), refs.toggle]));
+    root.appendChild(refs.table);
+    drawChart();
+    renderTable();
+    if (!refs.ro && typeof ResizeObserver !== 'undefined') {
+      let last = 0;
+      refs.ro = new ResizeObserver(() => {
+        const w = refs.chart ? refs.chart.clientWidth : 0;
+        if (w && Math.abs(w - last) > 1) { last = w; drawChart(); }
+      });
+    }
+    if (refs.ro) { refs.ro.disconnect(); refs.ro.observe(refs.chart); }
+
+    const bar = UI.clear($('actions'));
+    bar.appendChild(UI.el('button', { class: 'btn small', type: 'button', html: UI.icon('copy', 16), 'aria-label': 'Copy summary', title: 'Copy a text summary', on: { click: () => UI.copyText(summaryText()).then((ok) => UI.tempHint(ok ? 'Summary copied' : 'Copy is not available here')) } }, UI.el('span', { text: 'Copy summary' })));
+  }
+
+  // ───────────── controls ─────────────
+
+  function timeOptions(extra) {
+    const set = new Set();
+    for (let m = 0; m < 1440; m += 30) set.add(hhmm(m));
+    extra.forEach((t) => { if (t) set.add(t); });
+    return Array.from(set).sort();
+  }
+
+  function select_(label, id, options, value, onChange) {
+    const sel = UI.el('select', { class: 'input', id });
+    options.forEach(([v, t]) => { const o = UI.el('option', { value: v, text: t }); if (v === value) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener('change', () => onChange(sel.value));
+    return UI.el('label', { for: id }, [label, sel]);
+  }
+
+  function seg(label, items, value, onChange) {
+    const g = UI.el('div', { class: 'grp' }, [UI.el('span', { text: label })]);
+    const box = UI.el('div', { class: 'seg', role: 'group', 'aria-label': label });
+    items.forEach(([v, t]) => {
+      const b = UI.el('button', { type: 'button', text: t, 'aria-pressed': String(v === value), on: { click: () => { onChange(v); Array.from(box.children).forEach((c, k) => c.setAttribute('aria-pressed', String(items[k][0] === v))); } } });
+      box.appendChild(b);
+    });
+    g.appendChild(box);
+    return g;
+  }
+
+  function buildControls(d) {
+    const slots = d.slots;
+    const first = toMin(slots[0] && slots[0].time), second = toMin(slots[1] && slots[1].time);
+    const step = first !== null && second !== null && second > first ? second - first : 60;
+    const C = S.C = { date: d.date || '', start: slots[0] ? slots[0].time : '06:00', end: slots.length ? slots[slots.length - 1].time : '20:00', step, mode: d.timeMode === 'arriveAt' ? 'arriveAt' : 'departAt', travel: d.travelMode === 'truck' ? 'truck' : 'driving' };
+    const box = UI.clear($('controls'));
+    const times = timeOptions([C.start, C.end]).map((t) => [t, t]);
+    const steps = Array.from(new Set(STEPS.concat(C.step))).sort((a, b) => a - b).map((s) => [String(s), s + ' min']);
+
+    const dateInput = UI.el('input', { class: 'input', type: 'date', id: 'f-date', value: C.date, required: '' });
+    dateInput.addEventListener('change', () => { C.date = dateInput.value; validate(); });
+    const row = UI.el('div', { class: 'ctl' }, [
+      UI.el('label', { for: 'f-date' }, ['Date', dateInput]),
+      select_('From', 'f-start', times, C.start, (v) => { C.start = v; validate(); }),
+      select_('To', 'f-end', times, C.end, (v) => { C.end = v; validate(); }),
+      select_('Every', 'f-step', steps, String(C.step), (v) => { C.step = Number(v); validate(); }),
+      seg('Times are', [['departAt', 'Depart'], ['arriveAt', 'Arrive']], C.mode, (v) => { C.mode = v; }),
+      seg('Mode', MODES, C.travel, (v) => { C.travel = v; })
+    ]);
+    refs.apply = UI.el('button', { class: 'btn primary', type: 'button', text: 'Compare', on: { click: () => apply() } });
+    row.appendChild(refs.apply);
+    refs.hint = UI.el('div', { class: 'small muted', style: 'margin:-2px 0 8px', role: 'status' });
+    const form = UI.el('div', { role: 'group', 'aria-label': 'Comparison settings' }, [row, refs.hint]);
+    form.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !refs.apply.disabled) { e.preventDefault(); apply(); } });
+    box.appendChild(form);
+    validate();
+  }
+
+  function validate() {
+    const C = S.C;
+    const s = toMin(C.start), e = toMin(C.end);
+    let msg = '';
+    let bad = false;
+    if (!C.date) { msg = 'Choose a date.'; bad = true; }
+    else if (s === null || e === null || e < s) { msg = 'The last time must not be before the first time.'; bad = true; }
+    else {
+      const count = Math.floor((e - s) / C.step) + 1;
+      msg = count > MAX_SLOTS ? 'At most ' + MAX_SLOTS + ' times are compared, so times after ' + hhmm(s + (MAX_SLOTS - 1) * C.step) + ' are left out.' : count + ' time' + (count === 1 ? '' : 's') + ' will be compared.';
+    }
+    refs.hint.textContent = msg;
+    refs.apply.disabled = bad || S.busy;
+  }
+
+  // ───────────── run ─────────────
+
+  async function apply() {
+    const C = S.C;
+    const d = S.d;
+    if (!C || !d || S.busy) return;
+    const seq = ++S.seq;
+    S.busy = true;
+    refs.apply.disabled = true;
+    refs.apply.textContent = 'Comparing…';
+    $('app').setAttribute('aria-busy', 'true');
+    refs.chart.classList.add('busy');
+    const pill = UI.el('div', { class: 'busy-pill', role: 'status' }, [UI.el('span', { class: 'spin', 'aria-hidden': 'true' }), 'Comparing traffic…']);
+    refs.chart.appendChild(pill);
+    showMessage();
+    const args = {
+      origin: { longitude: d.origin.longitude, latitude: d.origin.latitude, name: d.origin.name },
+      destination: { longitude: d.destination.longitude, latitude: d.destination.latitude, name: d.destination.name },
+      date: C.date, startTime: C.start, endTime: C.end, stepMinutes: C.step, timeMode: C.mode, travelMode: C.travel, units: d.units
+    };
+    try {
+      const res = await App.callTool('compare_departure_times', args, 120000);
+      const next = App.dataOf(res);
+      if (seq !== S.seq) return;
+      if (!next || next.kind !== 'departure' || !Array.isArray(next.slots)) throw new Error('The comparison could not be updated.');
+      const a = analyse(next);
+      if (!a) throw new Error('No route was found for those times.');
+      S.d = next;
+      S.a = a;
+      S.sel = null;
+      renderBody();
+      App.updateModelContext('The user compared ' + (next.timeMode === 'arriveAt' ? 'arrival' : 'departure') + ' times on ' + next.date + '. ' + plainHeadline(a));
+    } catch (err) {
+      if (seq !== S.seq) return;
+      refs.chart.classList.remove('busy');
+      if (pill.parentNode) pill.parentNode.removeChild(pill);
+      showMessage('error', (err && err.message) || 'The comparison could not be updated.', true);
+    } finally {
+      if (seq === S.seq) {
+        S.busy = false;
+        $('app').setAttribute('aria-busy', 'false');
+        refs.apply.textContent = 'Compare';
+        validate();
+      }
+    }
+  }
+
+  function render(result) {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'departure' || !Array.isArray(d.slots) || !d.origin || !d.destination) {
+      UI.clear($('body'));
+      UI.clear($('controls'));
+      UI.clear($('actions'));
+      showMessage(result && result.isError ? 'error' : 'info', (result && App.textOf(result)) || 'No travel time data was returned.');
+      return;
+    }
+    const a = analyse(d);
+    if (!a) {
+      UI.clear($('body'));
+      showMessage('warning', 'No route was found for any of those times.');
+      return;
+    }
+    showMessage();
+    S.d = d;
+    S.a = a;
+    S.sel = null;
+    S.seq++;
+    S.busy = false;
+    buildControls(d);
+    renderBody();
+    App.reportSize();
+  }
+
+  App.on('result', render);
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'departure' }).catch(() => showMessage('error', 'The departure comparison could not start.'));
+})();
+</script>
+</body>
+</html>

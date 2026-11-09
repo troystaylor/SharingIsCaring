@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Batch geocoding</title>
+<style>
+/*@shared-css*/
+.stats { margin-bottom: var(--sp-s); }
+.pbar { display: flex; height: 18px; border-radius: 9px; overflow: hidden; background: var(--bg4); border: 1px solid var(--stroke2); }
+.pbar > span { display: flex; align-items: center; justify-content: center; min-width: 0; font-size: 11px; line-height: 16px; font-weight: var(--fw-semibold); overflow: hidden; }
+.pbar > span + span { border-left: 2px solid var(--bg1); }
+.key { display: flex; flex-wrap: wrap; gap: var(--sp-xs) var(--sp-m); margin: var(--sp-xs) 0 var(--sp-s); font-size: var(--fs-200); line-height: var(--lh-200); }
+.key .item { display: inline-flex; align-items: center; gap: 6px; }
+.dot.sq { border-radius: 2px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-s); align-items: center; margin-bottom: var(--sp-s); }
+.toolbar .spacer { flex: 1 1 auto; }
+.chip .n { color: var(--fg3); font-weight: var(--fw-regular); }
+.chip[aria-pressed="true"] .n { color: inherit; }
+.tbl { max-height: 380px; overflow: auto; margin-top: var(--sp-s); border: 1px solid var(--stroke2); border-radius: var(--radius-m); }
+table.grid { min-width: 640px; font-size: var(--fs-200); line-height: var(--lh-200); }
+table.grid.rev { min-width: 420px; }
+table.grid th { padding: 0; white-space: nowrap; }
+table.grid th button { display: flex; align-items: center; gap: 4px; width: 100%; padding: 5px var(--sp-s); background: none; border: none; font-weight: var(--fw-semibold); color: inherit; cursor: pointer; text-align: left; }
+table.grid th button:focus-visible { outline: 2px solid var(--focus-outer); outline-offset: -2px; }
+table.grid th .plain { display: block; padding: 5px var(--sp-s); }
+table.grid td { overflow-wrap: anywhere; vertical-align: top; }
+table.grid td.num { width: 36px; font-variant-numeric: tabular-nums; color: var(--fg3); }
+table.grid td.coord { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.grid td.type { overflow-wrap: normal; min-width: 84px; }
+table.grid tbody tr { cursor: pointer; }
+table.grid tbody tr:hover { background: var(--bg1-hover); }
+table.grid tbody tr.sel { background: var(--brand-bg-subtle); }
+table.grid tbody tr:focus-visible { outline: 2px solid var(--focus-outer); outline-offset: -2px; }
+table.grid .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.conf { display: inline-flex; align-items: center; gap: 5px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--stroke1); background: var(--bg1); white-space: nowrap; font-weight: var(--fw-semibold); }
+.conf .dot { width: 8px; height: 8px; }
+.edit { display: flex; flex-wrap: wrap; gap: var(--sp-xs); align-items: center; }
+.edit .input { flex: 1 1 140px; min-width: 0; min-height: 28px; font-size: var(--fs-200); }
+.rowerr { margin-top: 2px; color: var(--danger); }
+.sub { color: var(--fg3); }
+.mapwrap { margin-top: var(--sp-s); }
+.pop .t { font-weight: var(--fw-semibold); }
+@media (max-width: 420px) { .stat .v { font-size: var(--fs-400); line-height: var(--lh-400); } }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Batch geocoding</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+  </div>
+  <div id="stage"><div class="skeleton" style="height:260px" role="progressbar" aria-label="Loading results"></div></div>
+  <div id="message" style="margin-top:8px" aria-live="polite"></div>
+</main>
+<script>
+/*@shared-js*/
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = UI.el;
+  const COLORS = { High: '#107c10', Medium: '#e8a200', Low: '#f7630c', none: '#6e6e6e', ok: '#0f6cbd' };
+  const INK = { High: '#ffffff', Medium: '#242424', Low: '#242424', none: '#ffffff', ok: '#ffffff' };
+  const RANK = { High: 3, Medium: 2, Low: 1 };
+
+  const state = { mode: 'geocode', rows: [], filter: 'all', sort: { key: 'index', dir: 1 }, selected: null, editing: null, editText: '', busy: {}, rowError: {}, bulkBusy: false, fixed: 0, focusEdit: false };
+  let map = null;
+  let refs = {};
+
+  const reverse = () => state.mode === 'reverse';
+  const bucketOf = (r) => (!r.matched ? 'none' : reverse() || !RANK[r.confidence] ? 'ok' : r.confidence);
+  const showMessage = (kind, text) => UI.clear($('message')).appendChild(UI.message(kind, text));
+  const clearMessage = () => UI.clear($('message'));
+  const hasCoords = (r) => typeof r.longitude === 'number' && typeof r.latitude === 'number';
+  const addressOf = (r) => (r.matched ? r.address || r.name || '' : '');
+  const coordText = (r) => (hasCoords(r) ? r.latitude.toFixed(5) + ', ' + r.longitude.toFixed(5) : '');
+
+  function counts() {
+    const c = { High: 0, Medium: 0, Low: 0, ok: 0, none: 0 };
+    state.rows.forEach((r) => { c[bucketOf(r)]++; });
+    return c;
+  }
+
+  // ───────────── summary ─────────────
+
+  function renderSummary() {
+    const c = counts();
+    const total = state.rows.length;
+    const matched = total - c.none;
+    const tiles = reverse()
+      ? [['Points', total], ['With address', matched], ['No address', c.none]]
+      : [['Matched', matched], ['High', c.High], ['Medium', c.Medium], ['Low', c.Low], ['No match', c.none]].concat(c.ok ? [['Unrated', c.ok]] : []);
+    const box = UI.clear(refs.stats);
+    tiles.forEach(([label, v]) => box.appendChild(el('div', { class: 'stat' }, [el('div', { class: 'v', text: String(v) }), el('div', { class: 'l', text: label + (total && label === 'Matched' ? ' of ' + total : '') })])));
+
+    const segs = (reverse() ? [['ok', 'With address'], ['none', 'No address']] : [['High', 'High'], ['Medium', 'Medium'], ['Low', 'Low'], ['ok', 'Unrated'], ['none', 'No match']]).filter(([k]) => c[k] > 0);
+    const bar = UI.clear(refs.bar);
+    bar.setAttribute('aria-label', segs.map(([k, l]) => l + ' ' + c[k]).join(', ') + ' out of ' + total);
+    segs.forEach(([k, l]) => {
+      const pct = (c[k] / total) * 100;
+      bar.appendChild(el('span', { style: 'width:' + pct + '%;background:' + COLORS[k] + ';color:' + INK[k], 'aria-hidden': 'true', text: pct >= 9 ? String(c[k]) : '' }));
+    });
+    const key = UI.clear(refs.key);
+    segs.forEach(([k, l]) => key.appendChild(el('span', { class: 'item' }, [el('span', { class: 'dot sq', style: 'background:' + COLORS[k], 'aria-hidden': 'true' }), el('span', { text: l + ' ' + c[k] + (total ? ' (' + Math.round((c[k] / total) * 100) + '%)' : '') })])));
+
+    const sub = total + (reverse() ? ' point' : ' address') + (total === 1 ? '' : (reverse() ? 's' : 'es')) + ' · ' + matched + (reverse() ? ' with an address' : ' matched');
+    $('subtitle').textContent = sub;
+  }
+
+  // ───────────── filters and actions ─────────────
+
+  function visibleRows() {
+    const f = state.filter;
+    const list = state.rows.filter((r) => f === 'all' || bucketOf(r) === f);
+    const { key, dir } = state.sort;
+    const val = (r) => {
+      switch (key) {
+        case 'input': return String(r.input || '').toLowerCase();
+        case 'address': return addressOf(r).toLowerCase();
+        case 'confidence': return r.matched ? (RANK[r.confidence] || 0.5) : 0;
+        case 'type': return String(r.type || '').toLowerCase();
+        default: return r.index;
+      }
+    };
+    return list.slice().sort((a, b) => {
+      const x = val(a), y = val(b);
+      return (x < y ? -1 : x > y ? 1 : 0) * dir || a.index - b.index;
+    });
+  }
+
+  function renderFilters() {
+    const c = counts();
+    const total = state.rows.length;
+    const defs = reverse()
+      ? [['all', 'All', total], ['ok', 'With address', c.ok], ['none', 'No address', c.none]]
+      : [['all', 'All', total], ['High', 'High', c.High], ['Medium', 'Medium', c.Medium], ['Low', 'Low', c.Low]].concat(c.ok ? [['ok', 'Unrated', c.ok]] : [], [['none', 'No match', c.none]]);
+    if (!defs.some((d) => d[0] === state.filter)) state.filter = 'all';
+    const box = UI.clear(refs.chips);
+    defs.forEach(([k, label, n]) => {
+      const attrs = { class: 'chip', type: 'button', 'aria-pressed': String(state.filter === k), on: { click: () => { state.filter = k; renderFilters(); renderTable(); syncMap(true); } } };
+      if (k !== 'all' && k !== 'ok') attrs.title = 'Show ' + label.toLowerCase() + ' rows';
+      box.appendChild(el('button', attrs, [el('span', { text: label }), el('span', { class: 'n', text: String(n) })]));
+    });
+    renderActions();
+  }
+
+  const unmatchedRows = () => state.rows.filter((r) => !r.matched);
+
+  function renderActions() {
+    const n = unmatchedRows().length;
+    const retry = refs.retryAll;
+    retry.classList.toggle('hidden', reverse() || n === 0);
+    retry.querySelector('span').textContent = state.bulkBusy ? 'Retrying…' : 'Retry all unmatched (' + n + ')';
+    if (state.bulkBusy) retry.setAttribute('disabled', ''); else retry.removeAttribute('disabled');
+  }
+
+  const CSV_COLUMNS = [
+    { label: 'input', key: 'input' }, { label: 'matched address', get: (r) => addressOf(r) }, { label: 'confidence', get: (r) => (r.matched ? r.confidence || '' : 'No match') },
+    { label: 'type', get: (r) => (r.matched ? r.type || '' : '') }, { label: 'latitude', get: (r) => (hasCoords(r) ? r.latitude : '') }, { label: 'longitude', get: (r) => (hasCoords(r) ? r.longitude : '') },
+    { label: 'locality', get: (r) => r.locality || '' }, { label: 'region', get: (r) => r.region || '' }, { label: 'postal code', get: (r) => r.postalCode || '' }, { label: 'country', get: (r) => r.country || '' }
+  ];
+
+  async function downloadCsv() {
+    const csv = UI.toCsv(state.rows, CSV_COLUMNS);
+    if (App.canDownload()) {
+      try { await App.download(reverse() ? 'reverse-geocoded-points.csv' : 'geocoded-addresses.csv', 'text/csv', csv); UI.tempHint('CSV download started'); return; } catch (e) { /* fall back to the clipboard */ }
+    }
+    const okay = await UI.copyText(csv);
+    UI.tempHint(okay ? 'CSV copied to the clipboard' : 'Download and copy are not available here');
+  }
+
+  function copyTable() {
+    const clean = (v) => String(v === undefined || v === null ? '' : v).replace(/[\t\r\n]+/g, ' ');
+    const head = ['#', 'Input', 'Matched address', 'Confidence', 'Type', 'Latitude', 'Longitude'];
+    const lines = [head.join('\t')].concat(state.rows.map((r) => [r.index, r.input, addressOf(r), r.matched ? r.confidence || '' : 'No match', r.matched ? r.type || '' : '', hasCoords(r) ? r.latitude : '', hasCoords(r) ? r.longitude : ''].map(clean).join('\t')));
+    UI.copyText(lines.join('\n')).then((okay) => UI.tempHint(okay ? 'Table copied. Paste it into a spreadsheet.' : 'Copy is not available here'));
+  }
+
+  // ───────────── table ─────────────
+
+  function confPill(r) {
+    if (!r.matched) return el('span', { class: 'conf' }, [el('span', { class: 'dot', style: 'background:' + COLORS.none, 'aria-hidden': 'true' }), el('span', { text: 'No match' })]);
+    const k = bucketOf(r);
+    return el('span', { class: 'conf' }, [el('span', { class: 'dot', style: 'background:' + COLORS[k], 'aria-hidden': 'true' }), el('span', { text: r.confidence || 'Matched' })]);
+  }
+
+  const canFix = (r) => (reverse() ? !r.matched : !r.matched || r.confidence === 'Low');
+
+  function inputCell(r) {
+    const td = el('td');
+    if (state.editing === r.index) {
+      const input = el('input', { class: 'input', type: 'text', value: state.editText, 'aria-label': (reverse() ? 'Corrected coordinates (latitude, longitude) for row ' : 'Corrected address for row ') + r.index });
+      input.addEventListener('input', () => { state.editText = input.value; });
+      input.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); fixRow(r.index); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+      });
+      input.addEventListener('click', (e) => e.stopPropagation());
+      const busy = !!state.busy[r.index];
+      const go = el('button', { class: 'btn small primary', type: 'button', text: busy ? 'Retrying…' : 'Retry', on: { click: (e) => { e.stopPropagation(); fixRow(r.index); } } });
+      const cancel = el('button', { class: 'btn small', type: 'button', text: 'Cancel', on: { click: (e) => { e.stopPropagation(); cancelEdit(); } } });
+      if (busy) { go.setAttribute('disabled', ''); input.setAttribute('disabled', ''); cancel.setAttribute('disabled', ''); }
+      td.appendChild(el('div', { class: 'edit' }, [input, go, cancel]));
+      if (state.rowError[r.index]) td.appendChild(el('div', { class: 'rowerr', role: 'alert', text: state.rowError[r.index] }));
+      refs.editInput = input;
+    } else {
+      td.appendChild(el('div', { class: 'clamp', text: String(r.input || ''), title: String(r.input || '') }));
+    }
+    return td;
+  }
+
+  function renderTable() {
+    const rows = visibleRows();
+    refs.editInput = null;
+    const head = UI.clear(refs.thead);
+    const cols = [['index', '#'], ['input', reverse() ? 'Point' : 'Your input'], ['address', reverse() ? 'Address found' : 'Matched address']].concat(reverse() ? [] : [['confidence', 'Confidence']], [['type', 'Type']], reverse() ? [] : [['coord', 'Coordinates']]);
+    const tr = el('tr');
+    cols.forEach(([key, label]) => {
+      const th = el('th', { scope: 'col' });
+      if (key === 'coord') th.appendChild(el('span', { class: 'plain', text: label }));
+      else {
+        const active = state.sort.key === key;
+        th.setAttribute('aria-sort', active ? (state.sort.dir > 0 ? 'ascending' : 'descending') : 'none');
+        th.appendChild(el('button', { type: 'button', title: 'Sort by ' + label.toLowerCase(), on: { click: () => { state.sort = { key, dir: active ? -state.sort.dir : 1 }; renderTable(); } } }, [el('span', { text: label }), el('span', { 'aria-hidden': 'true', text: active ? (state.sort.dir > 0 ? '▲' : '▼') : '' })]));
+      }
+      tr.appendChild(th);
+    });
+    tr.appendChild(el('th', { scope: 'col' }, [el('span', { class: 'plain', text: 'Fix' })]));
+    head.appendChild(tr);
+
+    const body = UI.clear(refs.tbody);
+    if (!rows.length) {
+      body.appendChild(el('tr', {}, [el('td', { colspan: String(cols.length + 1), text: 'No rows match this filter.' })]));
+    }
+    rows.forEach((r) => {
+      const row = el('tr', { tabindex: '0', 'data-index': String(r.index), class: state.selected === r.index ? 'sel' : '', 'aria-selected': state.selected === r.index ? 'true' : null });
+      row.addEventListener('click', () => selectRow(r.index, false));
+      row.addEventListener('keydown', (e) => { if (e.target === row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); selectRow(r.index, false); } });
+      row.appendChild(el('td', { class: 'num', text: String(r.index) }));
+      row.appendChild(inputCell(r));
+      const addr = el('td');
+      if (r.matched) {
+        addr.appendChild(el('div', { class: 'clamp', text: addressOf(r), title: addressOf(r) }));
+      } else {
+        addr.appendChild(el('span', { class: 'sub', text: reverse() ? 'No address found' : 'No match' }));
+        if (r.error) addr.appendChild(el('div', { class: 'sub small', text: r.error }));
+      }
+      row.appendChild(addr);
+      if (!reverse()) row.appendChild(el('td', {}, [confPill(r)]));
+      row.appendChild(el('td', { class: 'type', text: r.matched ? String(r.type || '').replace(/([a-z])([A-Z])/g, '$1 $2') : '' }));
+      if (!reverse()) row.appendChild(el('td', { class: 'coord', text: coordText(r) }));
+      {
+        const fixCell = el('td');
+        if (canFix(r) && state.editing !== r.index) {
+          fixCell.appendChild(el('button', { class: 'btn small', type: 'button', text: 'Fix', 'aria-label': 'Fix row ' + r.index, on: { click: (e) => { e.stopPropagation(); startEdit(r.index); } } }));
+        }
+        row.appendChild(fixCell);
+      }
+      body.appendChild(row);
+    });
+    if (state.focusEdit && refs.editInput) { refs.editInput.focus(); refs.editInput.select(); }
+    state.focusEdit = false;
+  }
+
+  // ───────────── editing and retries ─────────────
+
+  function startEdit(index) {
+    const r = state.rows.find((x) => x.index === index);
+    state.editing = index;
+    state.editText = r ? String(r.input || '') : '';
+    state.focusEdit = true;
+    delete state.rowError[index];
+    renderTable();
+  }
+
+  function cancelEdit() { state.editing = null; renderTable(); }
+
+  function merge(index, text, fresh) {
+    const i = state.rows.findIndex((r) => r.index === index);
+    if (i < 0) return;
+    state.rows[i] = Object.assign({}, fresh, { index, input: text });
+  }
+
+  async function geocodeTexts(texts) {
+    const res = await App.callTool('batch_geocode', { addresses: texts });
+    const d = App.dataOf(res);
+    if (!d || !Array.isArray(d.rows) || d.rows.length !== texts.length) throw new Error('The service returned an unexpected result.');
+    return d.rows;
+  }
+
+  function summaryText() {
+    const c = counts();
+    if (reverse()) return state.rows.length - c.none + ' of ' + state.rows.length + ' points have an address.';
+    return state.rows.length - c.none + ' of ' + state.rows.length + ' addresses matched (' + c.High + ' high, ' + c.Medium + ' medium, ' + c.Low + ' low confidence).';
+  }
+
+  // "47.6, -122.33" as latitude then longitude, the way the table shows points.
+  function parsePoint(text) {
+    const m = /^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$/.exec(text);
+    if (!m) return null;
+    const latitude = Number(m[1]), longitude = Number(m[2]);
+    return Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180 ? { latitude, longitude } : null;
+  }
+
+  async function fixRow(index) {
+    let text = state.editText.trim();
+    if (!text) { state.rowError[index] = reverse() ? 'Enter latitude and longitude to try again.' : 'Enter an address to try again.'; renderTable(); return; }
+    let point = null;
+    if (reverse()) {
+      point = parsePoint(text);
+      if (!point) { state.rowError[index] = 'Use latitude, then longitude, for example 47.6, -122.33.'; renderTable(); return; }
+      text = point.latitude.toFixed(5) + ', ' + point.longitude.toFixed(5);
+    }
+    state.busy[index] = true; delete state.rowError[index];
+    renderTable();
+    try {
+      let row;
+      if (reverse()) {
+        const res = await App.callTool('batch_reverse_geocode', { points: [{ longitude: point.longitude, latitude: point.latitude }] });
+        const d = App.dataOf(res);
+        if (!d || !Array.isArray(d.rows) || d.rows.length !== 1) throw new Error('The service returned an unexpected result.');
+        row = d.rows[0];
+      } else {
+        row = (await geocodeTexts([text]))[0];
+      }
+      merge(index, text, row);
+      delete state.busy[index];
+      state.editing = null;
+      afterChange('The user corrected row ' + index + ' to "' + text + '". ' + summaryText());
+    } catch (err) {
+      delete state.busy[index];
+      state.rowError[index] = (err && err.message) || 'The retry failed.';
+      renderTable();
+    }
+  }
+
+  async function retryAll() {
+    const pending = unmatchedRows();
+    if (!pending.length || state.bulkBusy) return;
+    state.bulkBusy = true; clearMessage(); renderActions();
+    try {
+      const rows = await geocodeTexts(pending.map((r) => String(r.input || '')));
+      let found = 0;
+      pending.forEach((r, i) => { if (rows[i].matched) found++; merge(r.index, r.input, rows[i]); });
+      state.bulkBusy = false;
+      afterChange('The user retried ' + pending.length + ' unmatched addresses and ' + found + ' now match. ' + summaryText());
+      UI.tempHint(found + ' of ' + pending.length + ' now matched');
+    } catch (err) {
+      state.bulkBusy = false;
+      renderActions();
+      showMessage('error', (err && err.message) || 'The retry failed.');
+    }
+  }
+
+  function afterChange(context) {
+    renderSummary(); renderFilters(); renderTable(); syncMap(false);
+    App.updateModelContext(context);
+  }
+
+  // ───────────── map ─────────────
+
+  function popupFor(r) {
+    const node = el('div', { class: 'pop' });
+    node.appendChild(el('div', { class: 't', text: '#' + r.index + (r.name ? ' · ' + r.name : '') }));
+    if (addressOf(r)) node.appendChild(el('div', { class: 'small', text: addressOf(r) }));
+    node.appendChild(el('div', { class: 'small muted', text: (r.matched && !reverse() ? (r.confidence || 'Matched') + ' confidence · ' : '') + coordText(r) }));
+    return node;
+  }
+
+  function syncMap(fit) {
+    if (!map) return;
+    const pins = visibleRows().filter(hasCoords).map((r) => ({ id: 'r' + r.index, index: r.index, longitude: r.longitude, latitude: r.latitude, label: String(r.index), color: COLORS[bucketOf(r)] }));
+    map.setMarkers(pins);
+    if (fit) { if (pins.length) map.fitContent(); }
+    if (state.selected !== null && pins.some((p) => p.index === state.selected)) { map.select('r' + state.selected); const r = state.rows.find((x) => x.index === state.selected); if (r) map.setPopup('r' + state.selected, popupFor(r)); }
+    else { map.select(null); map.setPopup(null, null); }
+    refs.mapWrap.classList.toggle('hidden', !state.rows.some(hasCoords));
+  }
+
+  function selectRow(index, fromMap) {
+    state.selected = index;
+    const r = state.rows.find((x) => x.index === index);
+    if (!r) return;
+    refs.tbody.querySelectorAll('tr').forEach((tr) => {
+      const on = tr.dataset.index === String(index);
+      tr.classList.toggle('sel', on);
+      if (on) { tr.setAttribute('aria-selected', 'true'); if (fromMap) tr.scrollIntoView({ block: 'nearest' }); } else tr.removeAttribute('aria-selected');
+    });
+    if (map && hasCoords(r)) {
+      map.select('r' + index);
+      map.setView(r.longitude, r.latitude, Math.max(map.view.zoom, 14));
+      map.setPopup('r' + index, popupFor(r));
+    } else if (map) { map.select(null); map.setPopup(null, null); }
+    App.updateModelContext('The user selected row ' + index + ': "' + r.input + '"' + (r.matched ? ' → ' + addressOf(r) + (r.confidence ? ' (' + r.confidence + ' confidence)' : '') : ' (no match)') + '.');
+  }
+
+  // ───────────── page ─────────────
+
+  function build() {
+    const stage = UI.clear($('stage'));
+    refs = {};
+    refs.stats = el('div', { class: 'stats', role: 'group', 'aria-label': 'Summary' });
+    refs.bar = el('div', { class: 'pbar', role: 'img' });
+    refs.key = el('div', { class: 'key' });
+    refs.chips = el('div', { class: 'chips', role: 'group', 'aria-label': 'Filter rows' });
+    refs.retryAll = el('button', { class: 'btn', type: 'button', html: UI.icon('refresh'), on: { click: retryAll } }, [el('span', { text: 'Retry all unmatched' })]);
+    const dl = el('button', { class: 'btn', type: 'button', html: UI.icon('download'), on: { click: downloadCsv } }, [el('span', { text: 'Download CSV' })]);
+    const cp = el('button', { class: 'btn', type: 'button', html: UI.icon('copy'), on: { click: copyTable } }, [el('span', { text: 'Copy as table' })]);
+    refs.toolbar = el('div', { class: 'toolbar no-print' }, [refs.chips, el('span', { class: 'spacer' }), refs.retryAll, dl, cp]);
+    const mapBox = el('div', { style: 'height:280px' });
+    refs.mapWrap = el('div', { class: 'mapwrap' }, [mapBox]);
+    refs.thead = el('thead');
+    refs.tbody = el('tbody');
+    const table = el('table', { class: 'grid' + (reverse() ? ' rev' : ''), 'aria-label': reverse() ? 'Reverse geocoding results' : 'Geocoding results' }, [refs.thead, refs.tbody]);
+    refs.tbl = el('div', { class: 'tbl', tabindex: '-1' }, [table]);
+    stage.append(refs.stats, refs.bar, refs.key, refs.toolbar, refs.mapWrap, refs.tbl);
+
+    map = new MapView(mapBox, { label: 'Map of results. Numbered pins match the table rows. Arrow keys pan, plus and minus zoom.' });
+    map.on('markerclick', (m) => selectRow(m.index, true));
+    map.on('click', () => { map.select(null); map.setPopup(null, null); });
+    map.on('tileerror', () => {});
+  }
+
+  function render(result) {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'batch' || !Array.isArray(d.rows)) {
+      UI.clear($('stage'));
+      showMessage(result && result.isError ? 'error' : 'info', (result && result.isError && App.textOf(result)) || 'No results were returned.');
+      return;
+    }
+    if (!d.rows.length) { UI.clear($('stage')); showMessage('info', 'The batch had no rows.'); return; }
+    clearMessage();
+    state.mode = d.mode === 'reverse' ? 'reverse' : 'geocode';
+    state.rows = d.rows.map((r, i) => Object.assign({}, r, { index: r.index || i + 1 }));
+    state.filter = 'all'; state.sort = { key: 'index', dir: 1 }; state.selected = null; state.editing = null; state.busy = {}; state.rowError = {}; state.bulkBusy = false;
+    build();
+    renderSummary(); renderFilters(); renderTable(); syncMap(true);
+    App.reportSize();
+  }
+
+  App.on('result', render);
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'batch' }).catch(() => showMessage('error', 'The results could not start.'));
+})();
+</script>
+</body>
+</html>

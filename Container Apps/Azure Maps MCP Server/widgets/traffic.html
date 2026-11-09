@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traffic</title>
+<style>
+/*@shared-css*/
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--sp-s); align-items: center; margin-bottom: var(--sp-s); }
+.chip .dot { width: 9px; height: 9px; }
+.chip .n { color: var(--fg3); font-weight: var(--fw-regular); }
+.chip[aria-pressed="false"] { color: var(--fg3); }
+.chip[aria-pressed="false"] .dot { opacity: 0.35; }
+.chip[aria-pressed="false"] .name { text-decoration: line-through; }
+.key { display: flex; flex-wrap: wrap; gap: var(--sp-xs) var(--sp-m); margin-top: var(--sp-s); color: var(--fg3); font-size: var(--fs-200); line-height: var(--lh-200); }
+.key .item { display: inline-flex; align-items: center; gap: 6px; }
+.key svg { flex: none; }
+.panel { margin-top: var(--sp-m); padding: var(--sp-m); background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); }
+.panel h2 { margin: 0; font-size: var(--fs-300); line-height: var(--lh-300); font-weight: var(--fw-semibold); }
+.panel .top { display: flex; align-items: center; gap: var(--sp-s); flex-wrap: wrap; }
+.level { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 999px; font-size: var(--fs-200); line-height: var(--lh-200); font-weight: var(--fw-semibold); background: var(--bg1); border: 1px solid var(--stroke1); }
+.speeds { display: flex; align-items: baseline; gap: var(--sp-s); flex-wrap: wrap; margin-top: var(--sp-s); }
+.speeds .big { font-size: var(--fs-800); line-height: var(--lh-800); font-weight: var(--fw-semibold); }
+.bars { margin-top: var(--sp-xs); display: grid; gap: 4px; }
+.bar { position: relative; height: 10px; border-radius: 5px; background: var(--bg4); border: 1px solid var(--stroke2); overflow: hidden; }
+.bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.bar.free > span { background: var(--fg3); opacity: 0.55; }
+.bar-label { display: flex; justify-content: space-between; gap: var(--sp-s); font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--sp-s); margin-top: var(--sp-s); }
+.facts .l { font-size: var(--fs-200); color: var(--fg3); }
+.inc-list { margin-top: var(--sp-m); max-height: 300px; overflow: auto; }
+.inc { width: 100%; text-align: left; background: transparent; border: none; border-bottom: 1px solid var(--stroke2); color: inherit; font: inherit; display: flex; flex-direction: column; gap: 2px; padding: var(--sp-s) var(--sp-xs); cursor: pointer; }
+.inc:hover { background: var(--bg1-hover); }
+.inc[aria-current="true"] { background: var(--brand-bg-subtle); }
+.inc:focus-visible { outline: 2px solid var(--focus-outer); box-shadow: inset 0 0 0 1px var(--focus-inner); }
+.inc .line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-xs) var(--sp-s); }
+.inc .ttl { font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
+.inc .desc { color: var(--fg2); overflow-wrap: anywhere; }
+.inc .meta { color: var(--fg3); font-size: var(--fs-200); line-height: var(--lh-200); }
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-200); line-height: var(--lh-200); font-weight: var(--fw-semibold); }
+.tag .dot { width: 9px; height: 9px; }
+.pop .t { display: flex; align-items: center; gap: 6px; }
+@media (max-width: 420px) { .speeds .big { font-size: var(--fs-600); line-height: var(--lh-600); } }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Traffic</h1>
+      <p class="subtitle" id="subtitle" aria-live="polite"></p>
+    </div>
+  </div>
+  <div class="toolbar no-print" id="toolbar"></div>
+  <div class="chips no-print" id="filters" role="group" aria-label="Show incident types" style="margin-bottom:8px"></div>
+  <div id="stage"><div class="skeleton" style="height:340px" role="progressbar" aria-label="Loading traffic"></div></div>
+  <div class="key" id="key"></div>
+  <div id="flowCard"></div>
+  <div id="list"></div>
+  <div class="small muted" id="live" style="margin-top:8px"></div>
+  <div id="message" style="margin-top:8px"></div>
+</main>
+<script>
+/*@shared-js*/
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const TYPES = ['Accident', 'Congestion', 'DisabledVehicle', 'Miscellaneous', 'RoadHazard', 'Construction', 'Weather'];
+  const TYPE_LABEL = { Accident: 'Accident', Congestion: 'Congestion', DisabledVehicle: 'Disabled vehicle', Miscellaneous: 'Other', RoadHazard: 'Road hazard', Construction: 'Construction', Weather: 'Weather' };
+  const TYPE_COLOR = { Accident: '#d13438', Congestion: '#f7630c', DisabledVehicle: '#8764b8', Miscellaneous: '#8a8886', RoadHazard: '#c19c00', Construction: '#0f6cbd', Weather: '#00a5b5' };
+  const LEVEL_COLOR = { 'free flowing': '#107c10', moderate: '#e8a200', heavy: '#f7630c', standstill: '#c50f1f', closed: '#6e0811' };
+  const LEVEL_LABEL = { 'free flowing': 'Free flowing', moderate: 'Moderate', heavy: 'Heavy', standstill: 'Standstill', closed: 'Closed' };
+  const SEVERITY = { 1: 'Minor', 2: 'Moderate', 3: 'Major' };
+  const ROAD_CLASS = { FRC0: 'Motorway', FRC1: 'Major road', FRC2: 'Other major road', FRC3: 'Secondary road', FRC4: 'Local connecting road', FRC5: 'Local road, high importance', FRC6: 'Local road' };
+  const state = {
+    incidents: [], hidden: new Set(), selected: null, bbox: null, center: null, searchBbox: null, inputArgs: {},
+    unit: /^en-US\b/i.test(navigator.language || '') ? 'MPH' : 'KMPH', probe: null, flow: null, flowBusy: false, flowError: '', seq: 0, updated: null, busy: false
+  };
+  let map = null;
+
+  const el = UI.el;
+  const typeColor = (t) => TYPE_COLOR[t] || TYPE_COLOR.Miscellaneous;
+  const typeLabel = (t) => TYPE_LABEL[t] || t || 'Incident';
+  const showMessage = (kind, text) => UI.clear($('message')).appendChild(UI.message(kind, text));
+  const clearMessage = () => UI.clear($('message'));
+  const dot = (color) => el('span', { class: 'dot', style: 'background:' + color, 'aria-hidden': 'true' });
+
+  function fmtWhen(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const near = Math.abs(d - Date.now()) < 36 * 36e5;
+    const opts = near ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' } : { month: 'short', day: 'numeric', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' };
+    return d.toLocaleString(undefined, opts);
+  }
+  function whenRange(i) {
+    const a = i.start ? fmtWhen(i.start) : '', b = i.end ? fmtWhen(i.end) : '';
+    if (a && b) return a + ' – ' + b;
+    return a ? 'From ' + a : b ? 'Until ' + b : '';
+  }
+  const delayText = (s) => (s ? '+' + (s < 90 ? Math.round(s) + ' s' : Math.round(s / 60) + ' min') + ' delay' : '');
+  function fmtSeconds(s) {
+    s = Math.max(0, Math.round(Number(s) || 0));
+    if (s < 120) return s + ' s';
+    const m = Math.floor(s / 60), r = s % 60;
+    if (m < 60) return m + ' min' + (r && m < 10 ? ' ' + r + ' s' : '');
+    return Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+  }
+  const incidentTitle = (i) => typeLabel(i.type) + (i.title ? ' on ' + i.title : '');
+
+  // ───────────── map drawing (custom markers) ─────────────
+
+  const radiusOf = (m) => (m.probe ? 8 : 5 + 1.6 * Math.min(4, Math.max(0, m.severity || 0)));
+
+  function installMarkerDrawing(m) {
+    m.drawMarker = (ctx, mk, p, selected) => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      const r = radiusOf(mk);
+      if (mk.probe) {
+        ctx.beginPath(); ctx.arc(0, 0, r + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.strokeStyle = mk.color; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
+        ctx.fillStyle = mk.color; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+        ctx.restore();
+        return;
+      }
+      if (selected) {
+        ctx.beginPath(); ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+        ctx.lineWidth = 3; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--focus-outer').trim() || '#000';
+        ctx.stroke();
+      }
+      if (mk.closed) {
+        ctx.beginPath(); ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
+        ctx.lineWidth = 3; ctx.strokeStyle = '#c50f1f'; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = mk.color; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      if (mk.closed) {
+        ctx.beginPath(); ctx.moveTo(-r * 0.55, 0); ctx.lineTo(r * 0.55, 0);
+        ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      }
+      ctx.restore();
+    };
+    m.hitMarker = (x, y) => {
+      let best = null, bestD = Infinity;
+      for (const mk of m.markers) {
+        if (mk.probe) continue;
+        const p = m.project(mk.longitude, mk.latitude);
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d <= radiusOf(mk) + 6 && d < bestD) { best = mk; bestD = d; }
+      }
+      return best;
+    };
+  }
+
+  // ───────────── map content ─────────────
+
+  const visibleIncidents = () => state.incidents.filter((i) => !state.hidden.has(i.type || 'Miscellaneous'));
+
+  function syncMap() {
+    if (!map) return;
+    const vis = visibleIncidents();
+    const markers = vis.map((i) => ({ id: 'i' + i.id, incidentId: i.id, longitude: i.longitude, latitude: i.latitude, small: true, color: typeColor(i.type), severity: i.severity || 0, closed: !!i.roadClosed }));
+    if (state.probe) markers.push({ id: 'probe', probe: true, longitude: state.probe.longitude, latitude: state.probe.latitude, small: true, color: state.flow ? LEVEL_COLOR[state.flow.level] || '#0f6cbd' : '#616161' });
+    map.setMarkers(markers);
+    const layers = [];
+    vis.forEach((i) => {
+      if (typeof i.endLongitude === 'number' && typeof i.endLatitude === 'number' && (i.endLongitude !== i.longitude || i.endLatitude !== i.latitude)) {
+        layers.push({ id: 'l' + i.id, type: 'line', color: typeColor(i.type), width: 4, dashed: true, coordinates: [[i.longitude, i.latitude], [i.endLongitude, i.endLatitude]] });
+      }
+    });
+    if (state.flow && state.flow.line && state.flow.line.length > 1) {
+      layers.push({ id: 'flow', type: 'line', color: LEVEL_COLOR[state.flow.level] || '#0f6cbd', width: 7, coordinates: state.flow.line });
+    }
+    map.setLayers(layers);
+    if (state.selected && !vis.some((i) => i.id === state.selected)) selectIncident(null);
+  }
+
+  function ensureMap() {
+    if (map) return;
+    const stage = UI.clear($('stage'));
+    const box = el('div', { style: 'height:360px' });
+    stage.appendChild(box);
+    map = new MapView(box, { label: 'Traffic map. Arrow keys pan, plus and minus zoom. Colored lines on roads show live traffic flow.' });
+    installMarkerDrawing(map);
+    map.setOverlay('traffic', true);
+    map.on('markerclick', (mk) => { if (!mk.probe) selectIncident(mk.incidentId, { fromMap: true }); });
+    map.on('click', (pt) => { selectIncident(null); probeRoad(pt.longitude, pt.latitude); });
+    map.on('tileerror', () => {});
+  }
+
+  // ───────────── incidents UI ─────────────
+
+  function popupFor(i) {
+    const node = el('div', { class: 'pop' });
+    node.appendChild(el('div', { class: 't' }, [dot(typeColor(i.type)), el('span', { text: typeLabel(i.type) })]));
+    if (i.title) node.appendChild(el('div', { class: 'semibold', text: i.title }));
+    if (i.description && i.description !== i.title) node.appendChild(el('div', { class: 'small', text: i.description }));
+    const bits = [i.roadClosed ? 'Road closed' : '', delayText(i.delaySeconds), whenRange(i)].filter(Boolean);
+    if (bits.length) node.appendChild(el('div', { class: 'small muted', text: bits.join(' · ') }));
+    return node;
+  }
+
+  function selectIncident(id, opts) {
+    state.selected = id;
+    const inc = id ? state.incidents.find((i) => i.id === id) : null;
+    if (map) {
+      if (inc) { map.select('i' + id, true); map.setPopup('i' + id, popupFor(inc)); }
+      else { map.select(null); map.setPopup(null, null); }
+    }
+    document.querySelectorAll('.inc').forEach((b) => {
+      const on = !!inc && b.dataset.id === id;
+      b.setAttribute('aria-current', on ? 'true' : 'false');
+      if (on && opts && opts.fromMap) b.scrollIntoView({ block: 'nearest' });
+    });
+    if (inc) {
+      App.updateModelContext('The user selected the traffic incident: ' + incidentTitle(inc) + (inc.description ? ' — ' + inc.description : '') + (inc.roadClosed ? ' (road closed)' : '') + (inc.delaySeconds ? ', ' + delayText(inc.delaySeconds) : '') + '.');
+    }
+  }
+
+  function renderFilters() {
+    const box = UI.clear($('filters'));
+    const counts = {};
+    state.incidents.forEach((i) => { const t = i.type || 'Miscellaneous'; counts[t] = (counts[t] || 0) + 1; });
+    const types = Object.keys(counts).sort((a, b) => (TYPES.indexOf(a) + 99) % 99 - (TYPES.indexOf(b) + 99) % 99 || counts[b] - counts[a]);
+    box.classList.toggle('hidden', !types.length);
+    types.forEach((t) => {
+      box.appendChild(el('button', {
+        class: 'chip', type: 'button', 'aria-pressed': String(!state.hidden.has(t)),
+        on: { click: () => { if (state.hidden.has(t)) state.hidden.delete(t); else state.hidden.add(t); renderFilters(); renderList(); syncMap(); } }
+      }, [dot(typeColor(t)), el('span', { class: 'name', text: typeLabel(t) }), el('span', { class: 'n', text: String(counts[t]) })]));
+    });
+  }
+
+  function renderList() {
+    const box = UI.clear($('list'));
+    const vis = visibleIncidents();
+    if (!state.incidents.length) {
+      box.style.marginTop = '12px';
+      box.appendChild(UI.message('info', state.searched ? 'No traffic incidents are reported in this area.' : 'Use "Search this area" to list incidents for the part of the map you are viewing, or tap a road to see its current speed.'));
+      return;
+    }
+    if (!vis.length) { box.style.marginTop = '12px'; box.appendChild(UI.message('info', 'All incident types are hidden. Turn a type back on above.')); return; }
+    box.style.marginTop = '';
+    const list = el('ul', { class: 'list inc-list', 'aria-label': vis.length + ' traffic incidents, most severe first' });
+    vis.forEach((i) => {
+      const line = el('div', { class: 'line' }, [el('span', { class: 'tag' }, [dot(typeColor(i.type)), el('span', { text: typeLabel(i.type) })])]);
+      if (i.roadClosed) line.appendChild(el('span', { class: 'badge bad', text: 'Road closed' }));
+      if (SEVERITY[i.severity]) line.appendChild(el('span', { class: 'badge', text: SEVERITY[i.severity] }));
+      if (i.delaySeconds) line.appendChild(el('span', { class: 'badge warn', text: delayText(i.delaySeconds) }));
+      const btn = el('button', { class: 'inc', type: 'button', 'data-id': i.id, 'aria-current': String(state.selected === i.id), on: { click: () => selectIncident(i.id) } }, [line]);
+      if (i.title) btn.appendChild(el('span', { class: 'ttl', text: i.title }));
+      if (i.description && i.description !== i.title) btn.appendChild(el('span', { class: 'desc small', text: i.description }));
+      const when = whenRange(i);
+      if (when) btn.appendChild(el('span', { class: 'meta', text: when }));
+      list.appendChild(el('li', {}, [btn]));
+    });
+    box.appendChild(list);
+  }
+
+  function renderKey() {
+    const box = UI.clear($('key'));
+    const ring = '<svg width="20" height="20" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="7" fill="none" stroke="#c50f1f" stroke-width="2.5"/><circle r="4.5" fill="#8a8886" stroke="#fff" stroke-width="1.5"/><path d="M-2.5 0H2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    const sizes = '<svg width="38" height="20" viewBox="0 0 38 20" aria-hidden="true"><circle cx="6" cy="10" r="4" fill="#8a8886" stroke="#fff" stroke-width="1.5"/><circle cx="22" cy="10" r="6" fill="#8a8886" stroke="#fff" stroke-width="1.5"/></svg>';
+    box.appendChild(el('span', { class: 'item', html: sizes + '<span>Larger = more severe</span>' }));
+    box.appendChild(el('span', { class: 'item', html: ring + '<span>Road closed</span>' }));
+    box.appendChild(el('span', { class: 'item', html: '<svg width="26" height="8" viewBox="0 0 26 8" aria-hidden="true"><path d="M1 4H25" stroke="#8a8886" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round"/></svg><span>Affected stretch</span>' }));
+    ['#107c10', '#e8a200', '#f7630c', '#c50f1f'].forEach((c, n) => {
+      box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'dot', style: 'background:' + c, 'aria-hidden': 'true' }), el('span', { text: ['Free flow', 'Slowing', 'Heavy', 'Stopped'][n] })]));
+    });
+  }
+
+  function renderToolbar() {
+    const box = UI.clear($('toolbar'));
+    const search = el('button', { class: 'btn primary', type: 'button', html: UI.icon('search'), on: { click: () => search_(false) } }, [el('span', { text: 'Search this area' })]);
+    const refresh = el('button', { class: 'btn', type: 'button', html: UI.icon('refresh'), on: { click: () => search_(true) } }, [el('span', { text: 'Refresh' })]);
+    const center = el('button', { class: 'btn subtle', type: 'button', html: UI.icon('car'), title: 'Check the road at the center of the map', on: { click: () => { const v = map.view; probeRoad(v.lon, v.lat); } } }, [el('span', { text: 'Road at center' })]);
+    [search, refresh].forEach((b) => { if (state.busy) b.setAttribute('disabled', ''); });
+    box.append(search, refresh, center);
+  }
+
+  function renderHeader() {
+    const n = state.incidents.length;
+    const where = state.center && state.center.name;
+    const parts = [];
+    if (state.searched || n) parts.push(n + ' incident' + (n === 1 ? '' : 's'));
+    const closures = state.incidents.filter((i) => i.roadClosed).length;
+    if (closures) parts.push(closures + ' road closure' + (closures === 1 ? '' : 's'));
+    if (where) parts.push(where);
+    $('subtitle').textContent = parts.join(' · ') || 'Live traffic';
+    $('live').textContent = state.updated ? 'Live data, updated ' + state.updated.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + '. Traffic colors on the map are live too.' : '';
+  }
+
+  // ───────────── road speed ─────────────
+
+  function renderFlow() {
+    const box = UI.clear($('flowCard'));
+    if (!state.probe) return;
+    const panel = el('section', { class: 'panel', 'aria-label': 'Road speed', 'aria-live': 'polite' });
+    box.appendChild(panel);
+    const top = el('div', { class: 'top' }, [el('h2', { text: 'Road speed' })]);
+    panel.appendChild(top);
+    const close = el('button', { class: 'btn subtle small', type: 'button', 'aria-label': 'Clear road speed', title: 'Clear', html: UI.icon('close', 16), style: 'margin-left:auto', on: { click: clearFlow } });
+    const f = state.flow;
+    if (state.flowBusy && !f) {
+      top.appendChild(close);
+      panel.appendChild(el('div', { class: 'skeleton', style: 'height:64px;margin-top:8px', role: 'progressbar', 'aria-label': 'Loading road speed' }));
+      return;
+    }
+    if (state.flowError && !f) {
+      top.appendChild(close);
+      panel.appendChild(el('div', { style: 'margin-top:8px' }, [UI.message('error', state.flowError)]));
+      return;
+    }
+    if (!f) return;
+    const color = LEVEL_COLOR[f.level] || '#616161';
+    top.appendChild(el('span', { class: 'level' }, [dot(color), el('span', { text: LEVEL_LABEL[f.level] || f.level })]));
+    if (f.roadClass && ROAD_CLASS[f.roadClass]) top.appendChild(el('span', { class: 'small muted', text: ROAD_CLASS[f.roadClass] }));
+    const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Speed unit', style: 'margin-left:auto' });
+    [['KMPH', 'km/h'], ['MPH', 'mph']].forEach(([val, label]) => seg.appendChild(el('button', { type: 'button', text: label, 'aria-pressed': String(state.unit === val), on: { click: () => { if (state.unit !== val) { state.unit = val; probeRoad(state.probe.longitude, state.probe.latitude, true); } } } })));
+    top.append(seg, close);
+    if (state.probe.name) panel.appendChild(el('div', { class: 'small muted', text: state.probe.name }));
+    const cur = Number(f.currentSpeed) || 0, free = Number(f.freeFlowSpeed) || 0;
+    const max = Math.max(cur, free, 1);
+    const pct = free ? Math.round((cur / free) * 100) : null;
+    panel.appendChild(el('div', { class: 'speeds' }, [
+      el('span', { class: 'big', text: cur + ' ' + f.unit }),
+      el('span', { class: 'muted', text: 'now, vs ' + free + ' ' + f.unit + ' free flow' + (pct !== null ? ' (' + pct + '%)' : '') })
+    ]));
+    const mkBar = (cls, value, fill, label) => el('div', {}, [
+      el('div', { class: 'bar-label' }, [el('span', { text: label }), el('span', { text: value + ' ' + f.unit })]),
+      el('div', { class: 'bar ' + cls, 'aria-hidden': 'true' }, [el('span', { style: 'width:' + Math.max(2, (value / max) * 100) + '%;' + (fill ? 'background:' + fill : '') })])
+    ]);
+    panel.appendChild(el('div', { class: 'bars' }, [mkBar('', cur, color, 'Current speed'), mkBar('free', free, '', 'Free-flow speed')]));
+    const extra = (f.currentTravelTime || 0) - (f.freeFlowTravelTime || 0);
+    const facts = el('div', { class: 'facts' }, [
+      el('div', {}, [el('div', { class: 'semibold', text: fmtSeconds(f.currentTravelTime) }), el('div', { class: 'l', text: 'Travel time now' })]),
+      el('div', {}, [el('div', { class: 'semibold', text: fmtSeconds(f.freeFlowTravelTime) + (extra > 5 ? ' (+' + fmtSeconds(extra) + ' now)' : '') }), el('div', { class: 'l', text: 'Travel time, free flow' })])
+    ]);
+    if (typeof f.confidence === 'number') facts.appendChild(el('div', {}, [el('div', { class: 'semibold', text: Math.round(f.confidence * 100) + '%' }), el('div', { class: 'l', text: 'Confidence' })]));
+    panel.appendChild(facts);
+    if (f.roadClosure) panel.appendChild(el('div', { style: 'margin-top:8px' }, [UI.message('warning', 'This road segment is reported closed.')]));
+  }
+
+  function clearFlow() {
+    state.seq++;
+    state.probe = null; state.flow = null; state.flowBusy = false; state.flowError = '';
+    renderFlow(); syncMap();
+  }
+
+  async function probeRoad(longitude, latitude, keepFlow) {
+    const seq = ++state.seq;
+    state.probe = { longitude, latitude, name: keepFlow && state.probe ? state.probe.name : '' };
+    state.flowBusy = true; state.flowError = '';
+    if (!keepFlow) state.flow = null;
+    renderFlow(); syncMap();
+    try {
+      const zoom = Math.max(8, Math.min(16, Math.round(map.view.zoom)));
+      const res = await App.callTool('get_traffic_flow_segment', { location: { longitude, latitude }, zoom, unit: state.unit });
+      if (seq !== state.seq) return;
+      const d = App.dataOf(res);
+      if (!d || !d.flow) throw new Error('No traffic data is available near that point.');
+      state.flow = d.flow;
+      state.probe = { longitude, latitude, name: state.probe.name };
+      state.flowError = '';
+      App.updateModelContext('The user checked the road speed near ' + latitude.toFixed(5) + ', ' + longitude.toFixed(5) + ': ' + (LEVEL_LABEL[d.flow.level] || d.flow.level).toLowerCase() + ', ' + d.flow.currentSpeed + ' ' + d.flow.unit + ' now versus ' + d.flow.freeFlowSpeed + ' ' + d.flow.unit + ' free flow.');
+    } catch (err) {
+      if (seq !== state.seq) return;
+      state.flow = null;
+      state.flowError = (err && err.message) || 'The road speed could not be loaded.';
+    }
+    state.flowBusy = false;
+    renderFlow(); syncMap();
+  }
+
+  // ───────────── search ─────────────
+
+  async function search_(sameBox) {
+    if (state.busy || !map) return;
+    clearMessage();
+    const b = sameBox && state.searchBbox ? state.searchBbox : map.getBounds().map((n) => Math.round(n * 1e5) / 1e5);
+    const args = { bbox: b.join(',') };
+    if (state.inputArgs.incidentTypes && state.inputArgs.incidentTypes.length) args.incidentTypes = state.inputArgs.incidentTypes;
+    state.busy = true; renderToolbar();
+    try {
+      const res = await App.callTool('get_traffic_incidents', args);
+      const d = App.dataOf(res);
+      if (!d || d.kind !== 'traffic') throw new Error('No incident data was returned.');
+      state.searchBbox = d.bbox || b;
+      state.searched = true;
+      state.selected = null;
+      setIncidents(d.incidents);
+      state.updated = new Date();
+      renderAll();
+      syncMap();
+      App.updateModelContext('The user searched the visible map area for traffic incidents and found ' + state.incidents.length + '.');
+    } catch (err) {
+      showMessage('error', (err && err.message) || 'The search failed.');
+    }
+    state.busy = false; renderToolbar();
+  }
+
+  function setIncidents(list) {
+    state.incidents = (Array.isArray(list) ? list : []).filter((i) => i && typeof i.longitude === 'number' && typeof i.latitude === 'number').map((i, n) => Object.assign({}, i, { id: String(i.id !== undefined ? i.id : 'n' + n) }));
+  }
+
+  function renderAll() { renderHeader(); renderFilters(); renderList(); renderToolbar(); }
+
+  // ───────────── entry ─────────────
+
+  function render(result) {
+    const d = App.dataOf(result);
+    if (!d || (d.kind !== 'traffic' && d.kind !== 'trafficFlow')) {
+      UI.clear($('stage'));
+      UI.clear($('toolbar'));
+      showMessage(result && result.isError ? 'error' : 'info', (result && result.isError && App.textOf(result)) || 'No traffic data was returned.');
+      return;
+    }
+    clearMessage();
+    ensureMap();
+    state.center = d.center || null;
+    state.updated = new Date();
+    state.hidden = new Set();
+    state.selected = null;
+    if (d.kind === 'traffic') {
+      state.bbox = d.bbox; state.searchBbox = d.bbox; state.searched = true;
+      setIncidents(d.incidents);
+      if (d.bbox) map.fitBounds(d.bbox); else if (d.center) map.setView(d.center.longitude, d.center.latitude, 12);
+      state.probe = null; state.flow = null;
+    } else {
+      state.searched = false; state.searchBbox = null;
+      setIncidents([]);
+      if (d.center) map.setView(d.center.longitude, d.center.latitude, 14);
+      if (d.flow && d.flow.unit) state.unit = d.flow.unit === 'mph' ? 'MPH' : 'KMPH';
+      state.probe = d.center ? { longitude: d.center.longitude, latitude: d.center.latitude, name: d.center.name || '' } : null;
+      state.flow = d.flow || null; state.flowBusy = false; state.flowError = '';
+    }
+    renderKey(); renderAll(); renderFlow(); syncMap();
+    App.reportSize();
+  }
+
+  App.on('input', (a) => { state.inputArgs = a || {}; });
+  App.on('result', render);
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'traffic' }).catch(() => showMessage('error', 'The traffic view could not start.'));
+})();
+</script>
+</body>
+</html>

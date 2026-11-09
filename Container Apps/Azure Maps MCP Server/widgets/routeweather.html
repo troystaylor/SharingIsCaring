@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather along the route</title>
+<style>
+/*@shared-css*/
+#app { transition: opacity var(--dur-fast) var(--ease); }
+#app.busy { opacity: 0.6; }
+#app.busy * { cursor: progress; }
+.banner { display: flex; gap: var(--sp-s); align-items: flex-start; padding: var(--sp-s) var(--sp-m); border: 1px solid var(--stroke1); border-left-width: 4px; border-radius: var(--radius-m); background: var(--bg3); margin-bottom: var(--sp-s); }
+.banner svg { flex: none; margin-top: 2px; }
+.banner.ok { border-color: var(--success); background: var(--success-bg); }
+.banner.ok svg { fill: var(--success); }
+.banner.warn { border-color: var(--warning); background: var(--warning-bg); }
+.banner.warn svg { fill: var(--warning); }
+.banner.bad { border-color: var(--danger); background: var(--danger-bg); }
+.banner.bad svg { fill: var(--danger); }
+.banner ul { margin: 2px 0 0; padding-left: 18px; }
+.leave { display: flex; align-items: center; gap: var(--sp-s); flex-wrap: wrap; margin-bottom: var(--sp-s); }
+.leave .lbl { font-weight: var(--fw-semibold); }
+.timeline { display: flex; gap: var(--sp-xs); overflow-x: auto; padding: 2px 0 var(--sp-s); scroll-snap-type: x proximity; }
+.tile { flex: 0 0 92px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 0 0 6px; background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); cursor: pointer; text-align: center; scroll-snap-align: start; overflow: hidden; }
+.tile:hover { background: var(--bg1-hover); }
+.tile[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-bg-subtle); box-shadow: inset 0 0 0 1px var(--brand); }
+.tile:focus-visible { outline: 2px solid var(--focus-outer); box-shadow: inset 0 0 0 1px var(--focus-inner); }
+.tile .bar { align-self: stretch; height: 5px; margin-bottom: 4px; }
+.tile .km { font-weight: var(--fw-semibold); }
+.tile .t { font-size: var(--fs-400); line-height: var(--lh-400); font-weight: var(--fw-semibold); }
+.tile .badge { margin-top: 2px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail { padding: var(--sp-s) var(--sp-m); background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); }
+.detail .head { display: flex; align-items: center; gap: var(--sp-s); }
+.facts { display: flex; flex-wrap: wrap; gap: 2px var(--sp-l); margin-top: 6px; }
+.facts b { font-weight: var(--fw-semibold); }
+.sec { margin-top: var(--sp-m); }
+.sec > h2 { margin: 0 0 var(--sp-xs); font-size: var(--fs-300); font-weight: var(--fw-semibold); }
+.notes { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--stroke2); }
+.notes button { display: flex; width: 100%; align-items: center; gap: var(--sp-s); padding: 6px 4px; background: none; border: none; border-bottom: 1px solid var(--stroke2); text-align: left; cursor: pointer; }
+.notes button:hover { background: var(--bg1-hover); }
+.notes button:focus-visible { outline: 2px solid var(--focus-outer); box-shadow: inset 0 0 0 1px var(--focus-inner); }
+.legend .sw { height: 6px; width: 20px; }
+.legend .sw.dashed { background: repeating-linear-gradient(to right, #8a8886 0 5px, transparent 5px 9px) !important; box-shadow: none; }
+.popup-body .t { font-weight: var(--fw-semibold); }
+@media (prefers-reduced-motion: reduce) { #app { transition: none; } .timeline { scroll-behavior: auto; } }
+@media (forced-colors: active) { .tile .bar, .legend .sw { forced-color-adjust: none; } }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title" aria-busy="false">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Weather along the route</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="seg no-print" id="units" role="group" aria-label="Units"></div>
+  </div>
+  <div id="message" aria-live="polite"></div>
+  <div id="stage"><div class="skeleton" style="height:320px" role="progressbar" aria-label="Loading route weather"></div></div>
+  <div id="content"></div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = UI.el;
+
+  const COLORS = ['#0f6cbd', '#e8b100', '#f7630c', '#c50f1f'];
+  const LEVELS = ['No hazards', 'Low hazard', 'Moderate hazard', 'High hazard'];
+  const TYPES = { RAIN: 'rain', SNOW: 'snow', ICE: 'ice', MIX: 'mixed precipitation' };
+  const LEAVE = [[0, 'Now'], [15, '+15 min'], [30, '+30 min'], [60, '+1 h'], [90, '+1 h 30']];
+
+  const state = { data: null, unit: 'metric', sel: 0, busy: false, line: null };
+  let map = null;
+
+  const imperial = () => state.unit === 'imperial';
+  const hz = (p) => Math.min(3, Math.max(0, Math.round(p.hazardIndex || 0)));
+  const round = (v, d) => { const p = Math.pow(10, d || 0); return Math.round(v * p) / p; };
+
+  function tempText(m) {
+    if (!m || typeof m.value !== 'number') return '–';
+    const c = m.unit === 'F' ? (m.value - 32) * 5 / 9 : m.value;
+    return Math.round(imperial() ? c * 9 / 5 + 32 : c) + '°';
+  }
+  function speedText(m) {
+    if (!m || typeof m.value !== 'number') return '–';
+    const kmh = /mi/.test(m.unit || '') ? m.value * 1.609344 : m.value;
+    return imperial() ? Math.round(kmh / 1.609344) + ' mph' : Math.round(kmh) + ' km/h';
+  }
+  function windText(p) {
+    if (!p.wind || !p.wind.speed) return '–';
+    return speedText(p.wind.speed);
+  }
+  const dist = (km) => (imperial() ? round(km / 1.609344, 1) + ' mi' : round(km, 1) + ' km');
+  const etaText = (min) => (min < 1 ? 'Start' : '+' + UI.fmtDuration(min * 60));
+
+  function precipText(p) {
+    const pr = p.precipitation;
+    if (!pr || !(pr.dbz > 0)) return 'No precipitation';
+    const strength = pr.dbz < 20 ? 'Light' : pr.dbz < 35 ? 'Moderate' : 'Heavy';
+    return strength + ' ' + (TYPES[pr.type] || 'precipitation');
+  }
+
+  const checkIcon = '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm3.35 5.15-4.1 4.1-1.6-1.6a.5.5 0 1 0-.7.7l1.95 1.95c.2.2.5.2.7 0l4.45-4.45a.5.5 0 0 0-.7-.7Z"/></svg>';
+
+  function showMessage(kind, text) { UI.clear($('message')).appendChild(UI.message(kind, text)); }
+  function clearMessage() { UI.clear($('message')); }
+
+  // ───────────── geometry ─────────────
+
+  function hav(a, b) {
+    const r = Math.PI / 180;
+    const dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2;
+    return 12742 * Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+
+  function prepareLine(line) {
+    const cum = [0];
+    for (let i = 1; i < line.length; i++) cum.push(cum[i - 1] + hav(line[i - 1], line[i]));
+    return { line, cum, total: cum[cum.length - 1] || 0 };
+  }
+
+  function pointAt(L, d) {
+    const n = L.line.length;
+    if (d <= 0) return L.line[0];
+    if (d >= L.total) return L.line[n - 1];
+    let i = 1;
+    while (i < n - 1 && L.cum[i] < d) i++;
+    const span = L.cum[i] - L.cum[i - 1] || 1;
+    const t = (d - L.cum[i - 1]) / span;
+    return [L.line[i - 1][0] + (L.line[i][0] - L.line[i - 1][0]) * t, L.line[i - 1][1] + (L.line[i][1] - L.line[i - 1][1]) * t];
+  }
+
+  function slice(L, d0, d1) {
+    const out = [pointAt(L, d0)];
+    for (let i = 0; i < L.line.length; i++) if (L.cum[i] > d0 && L.cum[i] < d1) out.push(L.line[i]);
+    out.push(pointAt(L, d1));
+    return out;
+  }
+
+  function routeLayers(d) {
+    const pts = d.points || [];
+    const line = (d.route && d.route.line) || [];
+    if (line.length < 2) return { layers: [], used: {}, partial: false };
+    const L = prepareLine(line);
+    state.line = L;
+    const km = d.route.meters ? d.route.meters / 1000 : L.total;
+    const scale = km > 0 ? L.total / km : 1;
+    const at = (p) => Math.min(L.total, Math.max(0, p.km * scale));
+    const layers = [];
+    const used = {};
+    let run = null;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const h = Math.max(hz(pts[i]), hz(pts[i + 1]));
+      const seg = slice(L, at(pts[i]), at(pts[i + 1]));
+      if (!run || run.h !== h) {
+        run = { id: 'haz' + layers.length, h, type: 'line', name: LEVELS[h], color: COLORS[h], width: 6, coordinates: seg };
+        layers.push(run);
+        used[h] = true;
+      } else {
+        run.coordinates = run.coordinates.concat(seg.slice(1));
+      }
+    }
+    let partial = false;
+    const last = pts[pts.length - 1];
+    if (last && at(last) < L.total - Math.max(0.3, L.total * 0.005)) {
+      partial = true;
+      layers.unshift({ id: 'rest', type: 'line', name: 'Not forecast', color: '#8a8886', width: 5, dashed: true, coordinates: slice(L, at(last), L.total) });
+    }
+    return { layers, used, partial };
+  }
+
+  // ───────────── map ─────────────
+
+  function mapStyle() { return App.hostContext && App.hostContext.theme === 'dark' ? 'dark' : 'road'; }
+
+  function popupFor(i) {
+    const p = state.data.points[i];
+    const node = el('div', { class: 'popup-body' });
+    node.appendChild(el('div', { class: 't', text: dist(p.km) + ' · ' + etaText(p.eta) }));
+    node.appendChild(el('div', { text: (p.phrase || 'Conditions') + ', ' + tempText(p.temperature) + ' · wind ' + windText(p) }));
+    if (p.precipitation && p.precipitation.dbz > 0) node.appendChild(el('div', { class: 'small', text: precipText(p) }));
+    if (hz(p)) node.appendChild(el('div', { class: 'small', style: 'color:var(--danger);font-weight:600', text: (p.hazards && p.hazards.join(', ')) || LEVELS[hz(p)] }));
+    return node;
+  }
+
+  function pinPopup(stop, label) {
+    return el('div', { class: 'popup-body' }, [el('div', { class: 't', text: label + ': ' + (stop.name || 'Stop') })]);
+  }
+
+  // Draws only as many point markers as fit without overlapping; the selected point and hazards come first.
+  function markersFor(d) {
+    const pts = d.points || [];
+    const kept = [];
+    const rank = (i) => (i === state.sel ? 0 : hz(pts[i]) > 0 ? 1 : 2);
+    const order = pts.map((p, i) => i).sort((a, b) => rank(a) - rank(b) || a - b);
+    const chosen = new Set();
+    order.forEach((i) => {
+      const px = map ? map.project(pts[i].longitude, pts[i].latitude) : { x: i * 30, y: 0 };
+      const gap = rank(i) === 2 ? 26 : 14;
+      if (rank(i) !== 0 && kept.some((k) => Math.hypot(k.x - px.x, k.y - px.y) < gap)) return;
+      kept.push(px);
+      chosen.add(i);
+    });
+    const m = pts.map((p, i) => ({ id: 'p' + i, longitude: p.longitude, latitude: p.latitude, small: true, color: COLORS[hz(p)] })).filter((x, i) => chosen.has(i));
+    const stops = d.stops || [];
+    if (stops.length) {
+      m.push({ id: 'start', longitude: stops[0].longitude, latitude: stops[0].latitude, label: 'A', color: '#107c10' });
+      const e = stops[stops.length - 1];
+      m.push({ id: 'end', longitude: e.longitude, latitude: e.latitude, label: 'B', color: '#242424' });
+    }
+    return m;
+  }
+
+  function buildMap(d, layers) {
+    const stage = UI.clear($('stage'));
+    const mapEl = el('div', {});
+    stage.appendChild(mapEl);
+    map = new MapView(mapEl, { style: mapStyle(), label: 'Route map colored by weather hazard. Use the arrow keys to pan and plus and minus to zoom.' });
+    map.on('markerclick', (m) => {
+      if (/^p\d+$/.test(m.id)) { selectPoint(Number(m.id.slice(1)), { popup: true, fromMap: true }); return; }
+      map.select(m.id);
+      const stops = state.data.stops || [];
+      map.setPopup(m.id, pinPopup(m.id === 'start' ? stops[0] : stops[stops.length - 1], m.id === 'start' ? 'Start' : 'Destination'));
+    });
+    map.on('click', () => { map.setPopup(null, null); });
+    map.on('moveend', () => { if (state.data) map.setMarkers(markersFor(state.data)); });
+    map.setLayers(layers);
+    map.fitContent();
+    map.setMarkers(markersFor(d));
+  }
+
+  // ───────────── views ─────────────
+
+  function summaryBanner(d) {
+    const pts = d.points || [];
+    const s = d.summary || {};
+    const level = Math.min(3, s.maxHazardIndex || 0);
+    if (!level && !(s.hazards && s.hazards.length)) {
+      return el('div', { class: 'banner ok', role: 'status', html: checkIcon }, [el('div', {}, [el('div', { class: 'semibold', text: 'Clear conditions' }), el('div', { class: 'small', text: 'No weather hazards are expected along the part of the route covered by the forecast.' })])]);
+    }
+    const ul = el('ul', {});
+    (s.hazards || []).forEach((name) => {
+      const first = pts.find((p) => (p.hazards || []).indexOf(name) >= 0);
+      ul.appendChild(el('li', { text: name + (first ? ' from ' + dist(first.km) + ' (' + etaText(first.eta) + ')' : '') }));
+    });
+    return el('div', { class: 'banner ' + (level >= 3 ? 'bad' : 'warn'), role: 'status', html: UI.icon('warning') }, [el('div', {}, [el('div', { class: 'semibold', text: 'Hazards ahead · ' + LEVELS[level].toLowerCase() }), ul])]);
+  }
+
+  function leaveBar(d) {
+    const bar = el('div', { class: 'leave no-print', role: 'group', 'aria-label': 'When you leave' });
+    bar.appendChild(el('span', { class: 'lbl', text: 'Leave' }));
+    const chips = el('div', { class: 'chips' });
+    LEAVE.forEach((o) => chips.appendChild(el('button', { class: 'chip', type: 'button', text: o[1], 'aria-pressed': String((d.leaveInMinutes || 0) === o[0]), on: { click: () => { if ((d.leaveInMinutes || 0) !== o[0]) leaveIn(o[0]); } } })));
+    bar.appendChild(chips);
+    bar.appendChild(el('button', { class: 'btn small subtle', type: 'button', text: 'Fit route', style: 'margin-left:auto', on: { click: () => map && map.fitContent() } }));
+    return bar;
+  }
+
+  function legend(used, partial) {
+    const box = el('div', { class: 'legend', 'aria-label': 'Route color key', role: 'group', style: 'margin-bottom:8px' });
+    [0, 1, 2, 3].forEach((h) => { if (used[h]) box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'sw', style: 'background:' + COLORS[h] }), el('span', { text: LEVELS[h] })])); });
+    if (partial) box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'sw dashed', style: 'background:#8a8886' }), el('span', { text: 'Beyond the forecast' })]));
+    return box;
+  }
+
+  function tile(p, i) {
+    const h = hz(p);
+    const precip = p.precipitation && p.precipitation.dbz > 0 ? precipText(p) : '';
+    const label = dist(p.km) + ', ' + etaText(p.eta) + ', ' + (p.phrase || '') + ', ' + tempText(p.temperature) + ', wind ' + windText(p) + (precip ? ', ' + precip : '') + (h ? ', ' + LEVELS[h].toLowerCase() : '') + (p.sunGlare >= 1 ? ', sun glare' : '');
+    return el('button', { class: 'tile', type: 'button', 'data-i': i, 'aria-pressed': String(state.sel === i), tabindex: state.sel === i ? '0' : '-1', 'aria-label': label, on: {
+      click: () => selectPoint(i, { focus: true }),
+      keydown: (e) => {
+        const n = state.data.points.length;
+        const next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null;
+        if (next === null) return;
+        e.preventDefault();
+        selectPoint(Math.max(0, Math.min(n - 1, next)), { focus: true });
+      }
+    } }, [
+      el('span', { class: 'bar', style: 'background:' + COLORS[h], 'aria-hidden': 'true' }),
+      el('span', { class: 'km', text: dist(p.km), 'aria-hidden': 'true' }),
+      el('span', { class: 'small muted', text: etaText(p.eta), 'aria-hidden': 'true' }),
+      el('span', { html: UI.weatherIcon(p.iconCode, p.isDay !== false, 36), 'aria-hidden': 'true' }),
+      el('span', { class: 't', text: tempText(p.temperature), 'aria-hidden': 'true' }),
+      el('span', { class: 'small', text: precip || 'Dry', 'aria-hidden': 'true' }),
+      el('span', { class: 'small muted', text: windText(p), 'aria-hidden': 'true' }),
+      p.sunGlare >= 1 ? el('span', { class: 'badge warn', text: 'Sun glare', 'aria-hidden': 'true' }) : null,
+      h ? el('span', { class: 'badge ' + (h >= 3 ? 'bad' : 'warn'), text: LEVELS[h].split(' ')[0], 'aria-hidden': 'true' }) : null
+    ]);
+  }
+
+  function detailView(p) {
+    const box = el('div', { class: 'detail', 'aria-live': 'polite' });
+    const head = el('div', { class: 'head' });
+    head.appendChild(el('div', { html: UI.weatherIcon(p.iconCode, p.isDay !== false, 40) }));
+    head.appendChild(el('div', { class: 'grow' }, [el('div', { class: 'semibold', text: (p.phrase || 'Conditions') + ' · ' + tempText(p.temperature) }), el('div', { class: 'small muted', text: dist(p.km) + ' along the route · ' + (p.eta < 1 ? 'at the start' : etaText(p.eta) + ' from now') })]));
+    box.appendChild(head);
+    const facts = el('div', { class: 'facts small' });
+    const fact = (k, v) => facts.appendChild(el('span', {}, [k + ' ', el('b', { text: v })]));
+    fact('Wind', windText(p) + (p.gust ? ', gusts ' + speedText(p.gust) : ''));
+    fact('Precipitation', precipText(p));
+    if (typeof p.cloudCover === 'number') fact('Cloud cover', p.cloudCover + '%');
+    if (p.lightning > 0) fact('Lightning strikes', String(p.lightning));
+    if (p.sunGlare >= 1) fact('Sun glare', 'level ' + p.sunGlare);
+    box.appendChild(facts);
+    if (p.hazards && p.hazards.length) {
+      const chips = el('div', { class: 'chips', style: 'margin-top:6px' });
+      p.hazards.forEach((h) => chips.appendChild(el('span', { class: 'badge ' + (hz(p) >= 3 ? 'bad' : 'warn'), text: h })));
+      box.appendChild(chips);
+    }
+    return box;
+  }
+
+  function notificationsView(d) {
+    const pts = d.points || [];
+    const items = [];
+    pts.forEach((p, i) => {
+      (p.notifications || []).forEach((n) => items.push({ i, text: n, p }));
+      if (p.sunGlare >= 1 && !(i > 0 && pts[i - 1].sunGlare >= 1)) items.push({ i, text: 'Onset: Sun glare', p });
+    });
+    if (!items.length) return null;
+    const sec = el('section', { class: 'sec', 'aria-labelledby': 'h-notes' });
+    sec.appendChild(el('h2', { id: 'h-notes', text: 'Heads-up along the way' }));
+    const ul = el('ul', { class: 'notes' });
+    items.forEach((n) => {
+      const m = /^([^:]+):\s*(.*)$/.exec(n.text);
+      ul.appendChild(el('li', {}, [el('button', { type: 'button', on: { click: () => selectPoint(n.i, { focus: true, scrollTile: true }) } }, [
+        m ? el('span', { class: 'badge', text: m[1] }) : null,
+        el('span', { class: 'grow', text: m ? m[2] : n.text }),
+        el('span', { class: 'small muted nowrap', text: dist(n.p.km) + ' · ' + etaText(n.p.eta) })
+      ])]));
+    });
+    sec.appendChild(ul);
+    return sec;
+  }
+
+  function noteView(d, partial) {
+    const pts = d.points || [];
+    const last = pts[pts.length - 1];
+    if (!partial) return null;
+    const text = 'Azure Maps forecasts the weather for the next 120 minutes only' + (last ? ', so this covers the first ' + dist(last.km) + ' of your trip' + ((d.leaveInMinutes || 0) > 0 ? ' when you leave in ' + d.leaveInMinutes + ' min' : '') : '') + '.';
+    return el('p', { class: 'small muted', style: 'margin:12px 0 0', text });
+  }
+
+  function renderUnits() {
+    const box = UI.clear($('units'));
+    [['metric', 'Metric'], ['imperial', 'Imperial']].forEach((u) => box.appendChild(el('button', { type: 'button', text: u[1], 'aria-pressed': String(state.unit === u[0]), title: u[0] === 'metric' ? '°C, km, km/h' : '°F, miles, mph', on: { click: () => { state.unit = u[0]; render(state.data, { keepView: true }); } } })));
+  }
+
+  function renderTimeline() {
+    const d = state.data;
+    const strip = $('timeline');
+    if (!strip) return;
+    UI.clear(strip);
+    d.points.forEach((p, i) => strip.appendChild(tile(p, i)));
+    const old = $('detail');
+    old.replaceWith(Object.assign(detailView(d.points[state.sel]), { id: 'detail' }));
+  }
+
+  function selectPoint(i, opts) {
+    const d = state.data;
+    if (!d || !d.points[i]) return;
+    opts = opts || {};
+    state.sel = i;
+    const tiles = document.querySelectorAll('#timeline .tile');
+    tiles.forEach((t, k) => { t.setAttribute('aria-pressed', String(k === i)); t.tabIndex = k === i ? 0 : -1; });
+    const old = $('detail');
+    if (old) old.replaceWith(Object.assign(detailView(d.points[i]), { id: 'detail' }));
+    const t = tiles[i];
+    if (t && (opts.focus || opts.fromMap || opts.scrollTile)) {
+      if (opts.focus && !opts.fromMap) t.focus({ preventScroll: true });
+      const sc = $('timeline');
+      const left = t.offsetLeft - sc.offsetLeft;
+      if (left < sc.scrollLeft || left + t.offsetWidth > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = Math.max(0, left - sc.clientWidth / 2 + t.offsetWidth / 2);
+    }
+    if (map) {
+      map.setMarkers(markersFor(d));
+      map.select('p' + i, true);
+      map.setPopup(opts.popup ? 'p' + i : null, opts.popup ? popupFor(i) : null);
+    }
+  }
+
+  function render(d, opts) {
+    opts = opts || {};
+    const first = !state.data || !opts.keepView;
+    state.data = d;
+    const pts = d.points || [];
+    renderUnits();
+    const stops = d.stops || [];
+    $('subtitle').textContent = [stops.length ? stops[0].name + ' → ' + stops[stops.length - 1].name : '', d.route && d.route.meters ? UI.fmtDistance(d.route.meters, state.unit) : '', d.route && d.route.seconds ? UI.fmtDuration(d.route.seconds) : ''].filter(Boolean).join(' · ');
+    if (!pts.length) {
+      UI.clear($('content'));
+      showMessage('info', 'No weather points were returned for this route.');
+      return;
+    }
+    if (state.sel >= pts.length || first && !opts.keepSel) state.sel = Math.max(0, pts.findIndex((p) => hz(p) > 0));
+    const geo = routeLayers(d);
+    if (!map || opts.rebuildMap) buildMap(d, geo.layers);
+    else { map.setLayers(geo.layers); map.setMarkers(markersFor(d)); }
+
+    const box = UI.clear($('content'));
+    box.style.marginTop = '8px';
+    box.appendChild(el('div', { style: 'margin-bottom:8px' }, [summaryBanner(d), leaveBar(d)]));
+    box.appendChild(legend(geo.used, geo.partial));
+    box.appendChild(el('div', { class: 'timeline', id: 'timeline', role: 'group', 'aria-label': 'Forecast along the route, one tile per stop. Use the arrow keys to move.', tabindex: '-1' }));
+    box.appendChild(el('div', { id: 'detail' }));
+    const notes = notificationsView(d);
+    if (notes) box.appendChild(notes);
+    const note = noteView(d, geo.partial);
+    if (note) box.appendChild(note);
+    renderTimeline();
+    map.select('p' + state.sel);
+    App.reportSize();
+  }
+
+  // ───────────── loading ─────────────
+
+  function setBusy(on) {
+    state.busy = on;
+    $('app').classList.toggle('busy', on);
+    $('app').setAttribute('aria-busy', String(on));
+    $('app').querySelectorAll('.leave button').forEach((b) => { b.disabled = on; });
+  }
+
+  async function leaveIn(minutes) {
+    const d = state.data;
+    if (!d || state.busy || !d.stops || d.stops.length < 2) return;
+    const o = d.stops[0], e = d.stops[d.stops.length - 1];
+    setBusy(true);
+    try {
+      const res = await App.callTool('get_weather_along_route', {
+        origin: { longitude: o.longitude, latitude: o.latitude, name: o.name },
+        destination: { longitude: e.longitude, latitude: e.latitude, name: e.name },
+        leaveInMinutes: minutes
+      });
+      const next = App.dataOf(res);
+      if (!next || next.kind !== 'routeWeather') throw new Error(App.textOf(res) || 'No route weather was returned.');
+      clearMessage();
+      render(next, { keepView: true, keepSel: true });
+      const s = next.summary || {};
+      App.updateModelContext('The user is checking the weather along the route ' + o.name + ' to ' + e.name + ', leaving ' + (minutes ? 'in ' + minutes + ' min' : 'now') + ': ' + (s.hazards && s.hazards.length ? 'hazards ' + s.hazards.join(', ') + ' (worst level ' + s.maxHazardIndex + ')' : 'no weather hazards') + '.');
+    } catch (err) {
+      showMessage('error', (err && err.message) || 'The route weather could not be loaded.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  App.on('result', (result) => {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'routeWeather') {
+      showMessage(result && result.isError ? 'error' : 'info', (result && App.textOf(result)) || 'No route weather was returned.');
+      if (!state.data) UI.clear($('stage'));
+      return;
+    }
+    clearMessage();
+    render(d, { rebuildMap: true });
+  });
+  App.on('context', (ctx) => { if (map && ctx.theme && map.styleName !== mapStyle()) map.setStyle(mapStyle()); });
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'routeweather' }).catch(() => showMessage('error', 'The route weather could not start.'));
+})();
+</script>
+</body>
+</html>

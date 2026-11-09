@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stand-in MCP Apps host</title>
+<style>
+  body { font: 14px "Segoe UI", sans-serif; margin: 0; background: #f3f3f3; color: #222; }
+  body.dark { background: #1c1c1c; color: #eee; }
+  header { display: flex; gap: 8px; padding: 8px; flex-wrap: wrap; align-items: center; background: #fff; border-bottom: 1px solid #ddd; }
+  body.dark header { background: #252525; border-color: #444; }
+  select, input, textarea, button { font: inherit; }
+  textarea { width: 420px; height: 34px; }
+  #stage { max-width: 760px; margin: 12px auto; }
+  iframe { width: 100%; border: 0; display: block; background: transparent; color-scheme: normal; }
+  #log { max-width: 760px; margin: 0 auto 24px; font: 12px Consolas, monospace; white-space: pre-wrap; color: #555; }
+  body.dark #log { color: #aaa; }
+  body.fullscreen #stage { max-width: none; margin: 0; }
+  body.fullscreen iframe { height: calc(100vh - 60px) !important; }
+</style>
+</head>
+<body>
+<header>
+  <select id="tool"></select>
+  <textarea id="args" spellcheck="false">{}</textarea>
+  <button id="run">Run</button>
+  <label><input type="checkbox" id="dark"> Dark</label>
+  <span id="status"></span>
+</header>
+<div id="stage"><iframe id="frame" sandbox="allow-scripts allow-popups" title="App"></iframe></div>
+<div id="log"></div>
+<script>
+(function () {
+  var frame = document.getElementById('frame');
+  var logEl = document.getElementById('log');
+  var statusEl = document.getElementById('status');
+  var tools = [];
+  var lastResult = null;
+  var displayMode = 'inline';
+  var nextId = 1;
+
+  function log(msg) { logEl.textContent = msg + '\n' + logEl.textContent.slice(0, 4000); }
+
+  function rpc(method, params) {
+    return fetch('/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method: method, params: params }) })
+      .then(function (r) { return r.json(); });
+  }
+
+  function hostContext() {
+    return { theme: document.getElementById('dark').checked ? 'dark' : 'light', displayMode: displayMode, availableDisplayModes: ['inline', 'fullscreen'], locale: 'en-US' };
+  }
+
+  function send(msg) { frame.contentWindow.postMessage(msg, '*'); }
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== frame.contentWindow) return;
+    var m = event.data;
+    if (!m || m.jsonrpc !== '2.0') return;
+    var reply = function (result) { send({ jsonrpc: '2.0', id: m.id, result: result }); };
+    var fail = function (message) { send({ jsonrpc: '2.0', id: m.id, error: { code: -32000, message: message } }); };
+
+    switch (m.method) {
+      case 'ui/initialize':
+        reply({ protocolVersion: '2026-01-26', hostInfo: { name: 'stand-in-host', version: '1.0.0' }, hostCapabilities: { downloadFile: {}, openLinks: {}, serverTools: {} }, hostContext: hostContext() });
+        break;
+      case 'ui/notifications/initialized':
+        if (lastResult) { setTimeout(function () { send({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: lastResult }); }, 30); }
+        break;
+      case 'ui/notifications/size-changed':
+        if (displayMode !== 'fullscreen' && m.params && m.params.height) frame.style.height = Math.min(m.params.height, 900) + 'px';
+        break;
+      case 'tools/call':
+        rpc('tools/call', m.params).then(function (r) { if (r.error) fail(r.error.message); else reply(r.result); }).catch(function (e) { fail(String(e)); });
+        break;
+      case 'ui/open-link': log('open-link ' + m.params.url); reply({}); break;
+      case 'ui/download-file': log('download-file ' + m.params.contents[0].resource.uri + ' (' + (m.params.contents[0].resource.text || '').length + ' chars)'); reply({}); break;
+      case 'ui/message': log('message: ' + JSON.stringify(m.params.content)); reply({}); break;
+      case 'ui/update-model-context': log('model-context: ' + JSON.stringify(m.params.content)); reply({}); break;
+      case 'ui/request-display-mode':
+        displayMode = m.params.mode;
+        document.body.classList.toggle('fullscreen', displayMode === 'fullscreen');
+        reply({ mode: displayMode });
+        send({ jsonrpc: '2.0', method: 'ui/notifications/host-context-changed', params: hostContext() });
+        break;
+      default:
+        if (m.id !== undefined) fail('Unsupported: ' + m.method);
+    }
+  });
+
+  document.getElementById('dark').addEventListener('change', function () {
+    document.body.classList.toggle('dark', this.checked);
+    send({ jsonrpc: '2.0', method: 'ui/notifications/host-context-changed', params: hostContext() });
+  });
+
+  function run() {
+    var name = document.getElementById('tool').value;
+    var args;
+    try { args = JSON.parse(document.getElementById('args').value || '{}'); } catch (e) { statusEl.textContent = 'Bad JSON'; return; }
+    var tool = tools.filter(function (t) { return t.name === name; })[0];
+    var uri = tool && tool._meta && tool._meta.ui && tool._meta.ui.resourceUri;
+    statusEl.textContent = 'Running…';
+    var started = Date.now();
+    Promise.all([
+      rpc('tools/call', { name: name, arguments: args }),
+      uri ? rpc('resources/read', { uri: uri }) : Promise.resolve(null)
+    ]).then(function (out) {
+      var call = out[0];
+      lastResult = call.result || { isError: true, content: [{ type: 'text', text: JSON.stringify(call.error) }] };
+      statusEl.textContent = (lastResult.isError ? 'Error' : 'OK') + ' in ' + (Date.now() - started) + ' ms' + (uri ? '' : ' (no app)');
+      if (!uri) { log(JSON.stringify(lastResult).slice(0, 1500)); return; }
+      frame.srcdoc = out[1].result.contents[0].text;
+      frame.style.height = '200px';
+    }).catch(function (e) { statusEl.textContent = String(e); });
+  }
+
+  document.getElementById('run').addEventListener('click', run);
+
+  rpc('tools/list', {}).then(function (r) {
+    tools = r.result.tools;
+    var select = document.getElementById('tool');
+    tools.forEach(function (t) { var o = document.createElement('option'); o.value = t.name; o.textContent = t.name + (t._meta && t._meta.ui && t._meta.ui.resourceUri ? ' ▣' : ''); select.appendChild(o); });
+    var q = new URLSearchParams(location.search);
+    if (q.get('dark') === '1') { document.getElementById('dark').checked = true; document.body.classList.add('dark'); }
+    if (q.get('tool')) { select.value = q.get('tool'); document.getElementById('args').value = q.get('args') || '{}'; run(); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.1",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Azure Maps${{APP_NAME_SUFFIX}}",
+    "full": "Azure Maps"
+  },
+  "description": {
+    "short": "Search places, plan routes, check weather and traffic with Azure Maps.",
+    "full": "Connects Microsoft 365 Copilot to an Azure Maps MCP server so you can find addresses and places, get directions with alternatives and live traffic, compare travel times between many places, see the area you can reach in a given time, find the best time to leave, check the weather and rain on your way, see traffic incidents, plan meetings across time zones, geocode a list of addresses, and track tropical storms. Many answers appear as interactive apps: a map you can pan and zoom, a route planner, a weather dashboard, a travel time matrix and more."
+  },
+  "accentColor": "#0078D4",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "${{AZURE_MAPS_MCP_SERVER_DOMAIN}}"
+  ],
+  "agentConnectors": [
+    {
+      "id": "azure-maps",
+      "displayName": "Azure Maps",
+      "description": "Search, geocoding, routing, weather, traffic, time zones, map rendering and IP geolocation from Azure Maps, with interactive map apps.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "${{AZURE_MAPS_MCP_SERVER_URL}}",
+          "authorization": {
+            "type": "OAuthPluginVault",
+            "referenceId": "${{AZURE_MAPS_OAUTH_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    { "folder": "skills/find-places" },
+    { "folder": "skills/plan-a-route" },
+    { "folder": "skills/best-time-to-leave" },
+    { "folder": "skills/compare-travel-times" },
+    { "folder": "skills/find-service-area" },
+    { "folder": "skills/find-stops-along-a-route" },
+    { "folder": "skills/check-the-weather" },
+    { "folder": "skills/weather-on-the-road" },
+    { "folder": "skills/check-traffic" },
+    { "folder": "skills/plan-across-time-zones" },
+    { "folder": "skills/geocode-an-address-list" },
+    { "folder": "skills/track-a-storm" },
+    { "folder": "skills/show-a-map" },
+    { "folder": "skills/clean-a-gps-trace" }
+  ]
+}

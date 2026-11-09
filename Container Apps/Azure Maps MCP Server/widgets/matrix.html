@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travel time matrix</title>
+<style>
+/*@shared-css*/
+.bar-actions { display: flex; flex-wrap: wrap; gap: var(--sp-xs); }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-xs) var(--sp-m); margin-bottom: var(--sp-s); }
+.ctl .lbl { font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.mx-wrap { max-height: 440px; overflow: auto; border: 1px solid var(--stroke2); border-radius: var(--radius-m); background: var(--bg1); }
+table.mx { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: var(--fs-200); line-height: var(--lh-200); }
+table.mx th, table.mx td { padding: 0; border-right: 1px solid var(--stroke3); border-bottom: 1px solid var(--stroke3); }
+table.mx thead th { position: sticky; top: 0; z-index: 2; background: var(--bg2); font-weight: var(--fw-semibold); vertical-align: bottom; }
+table.mx tbody th { position: sticky; left: 0; z-index: 1; background: var(--bg2); text-align: left; font-weight: var(--fw-semibold); }
+table.mx thead th.corner { left: 0; z-index: 3; text-align: left; padding: 4px var(--sp-s); color: var(--fg3); font-weight: var(--fw-regular); }
+table.mx th.hl-h { background: var(--brand-bg-subtle); }
+table.mx .hdr { display: flex; align-items: center; gap: 4px; width: 100%; padding: 4px var(--sp-s); background: none; border: none; cursor: pointer; text-align: left; font-weight: var(--fw-semibold); color: var(--fg1); }
+table.mx thead .hdr { justify-content: center; text-align: center; }
+table.mx .hdr:hover { background: var(--bg1-hover); }
+table.mx .hdr:focus-visible { outline: 2px solid var(--focus-outer); outline-offset: -2px; box-shadow: inset 0 0 0 3px var(--focus-inner); }
+table.mx .hdr .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 92px; }
+table.mx tbody .hdr .nm { max-width: 108px; }
+table.mx .hdr .arrow { flex: none; font-size: 10px; color: var(--brand-link); }
+.compact table.mx thead .hdr { flex-direction: column-reverse; justify-content: flex-end; padding: 4px 2px; }
+.compact table.mx thead .hdr .nm { writing-mode: vertical-rl; transform: rotate(180deg); max-width: none; max-height: 120px; }
+.compact table.mx tbody .hdr .nm { max-width: 72px; }
+.org-tag { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 18px; height: 18px; padding: 0 3px; border-radius: var(--radius-s); font-size: 11px; font-weight: var(--fw-semibold); color: #ffffff; text-shadow: 0 0 2px rgba(0, 0, 0, 0.5); box-shadow: 0 0 0 1px var(--stroke2); }
+td.cell { min-width: 64px; height: 40px; text-align: center; color: #1b1b1b; cursor: pointer; position: relative; }
+.compact td.cell { min-width: 46px; height: 30px; font-size: 11px; }
+td.cell .p { display: block; font-weight: var(--fw-semibold); white-space: nowrap; padding: 0 4px; }
+td.cell .s { display: block; font-size: 10px; line-height: 12px; opacity: 0.85; white-space: nowrap; }
+td.cell.na { color: var(--fg3); background-image: repeating-linear-gradient(45deg, var(--bg3) 0 4px, var(--stroke2) 4px 5px); cursor: default; }
+td.cell.best-row { box-shadow: inset 0 0 0 2px #1b1b1b, inset 0 0 0 3px #ffffff; }
+td.cell.best-col .p { font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+td.cell.best-col::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 9px 9px 0; border-color: transparent #1b1b1b transparent transparent; }
+td.cell.hl { outline: 2px solid var(--brand); outline-offset: -2px; z-index: 1; }
+td.cell.pin { outline: 3px solid var(--brand-pressed); outline-offset: -3px; box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.85); z-index: 1; }
+td.cell:focus-visible { outline: 3px solid var(--focus-outer); outline-offset: -3px; z-index: 1; }
+.legend-scale { display: inline-flex; align-items: center; gap: 6px; }
+.legend-scale .ramp { width: 96px; height: 10px; border-radius: 2px; box-shadow: 0 0 0 1px var(--stroke2); }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.key i { position: relative; display: inline-block; width: 16px; height: 12px; background: #9ad8a1; color: #1b1b1b; box-shadow: 0 0 0 1px var(--stroke2); }
+.key i.k-row { box-shadow: inset 0 0 0 2px #1b1b1b, inset 0 0 0 3px #ffffff; }
+.key i.k-col::after { content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 7px 7px 0; border-color: transparent #1b1b1b transparent transparent; }
+.key i.k-na { background: repeating-linear-gradient(45deg, var(--bg3) 0 3px, var(--stroke2) 3px 4px); }
+.pair-info { min-height: 20px; margin: var(--sp-s) 0; }
+.load-row { display: grid; grid-template-columns: minmax(70px, 150px) 1fr auto; align-items: center; gap: var(--sp-s); padding: 2px 0; }
+.load-row .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.load-row .nm span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.load-bar { height: 10px; background: var(--bg4); border-radius: 999px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--stroke2); }
+.load-bar i { display: block; height: 100%; border-radius: 999px; }
+.assign-wrap { max-height: 260px; overflow: auto; margin-top: var(--sp-s); }
+tr.assign { cursor: pointer; }
+tr.assign:hover, tr.assign.active { background: var(--brand-bg-subtle); }
+tr.assign:focus-visible { outline: 2px solid var(--focus-outer); outline-offset: -2px; }
+details > summary { cursor: pointer; font-weight: var(--fw-semibold); padding: var(--sp-xs) 0; }
+details > summary:focus-visible { outline: 2px solid var(--focus-outer); }
+@media (forced-colors: active) {
+  td.cell { forced-color-adjust: none; }
+  .org-tag, .load-bar i { forced-color-adjust: none; }
+}
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Travel time matrix</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="bar-actions no-print" id="actions"></div>
+  </div>
+  <div id="message" aria-live="polite"></div>
+  <div id="body"><div class="skeleton" style="height:240px" role="progressbar" aria-label="Loading travel times"></div></div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  const PALETTE = ['#0f6cbd', '#c239b3', '#ca5010', '#107c10', '#8764b8', '#00b7c3', '#c50f1f', '#986f0b', '#4f6bed', '#498205'];
+  const NO_COLOR = '#767676';
+  const STOPS = [[0, [127, 209, 139]], [0.5, [250, 220, 100]], [1, [243, 139, 130]]];
+  const METRICS = { time: 'Time', distance: 'Distance', traffic: 'With traffic' };
+
+  const S = { d: null, metric: 'time', rowSort: null, colSort: null, hover: null, pinned: null, focus: null, compact: false };
+  let map = null;
+  let mapOk = false;
+  let rowOrder = [];
+  let colOrder = [];
+  let cells = {};
+  let model = null;
+  let refs = {};
+
+  const letter = (i) => { let s = ''; let n = i; do { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; } while (n >= 0); return s; };
+  const colorOf = (i) => PALETTE[i % PALETTE.length];
+  const num = (v) => typeof v === 'number' && isFinite(v);
+
+  function showMessage(kind, text) {
+    const box = UI.clear($('message'));
+    if (text) { const m = UI.message(kind, text); m.style.marginBottom = '8px'; box.appendChild(m); }
+  }
+
+  // ───────────── data helpers ─────────────
+
+  function valueAt(o, d, metric) {
+    const grid = metric === 'distance' ? S.d.distanceMeters : metric === 'traffic' ? S.d.trafficSeconds : S.d.durationSeconds;
+    const v = grid && grid[o] ? grid[o][d] : null;
+    return num(v) ? v : null;
+  }
+
+  function fmtValue(v, metric, compact) {
+    if (v === null) return 'n/a';
+    if (metric === 'distance') return UI.fmtDistance(v, S.d.units);
+    if (!compact) return UI.fmtDuration(v);
+    const m = Math.round(v / 60);
+    if (m < 60) return Math.max(1, m) + 'm';
+    return Math.floor(m / 60) + 'h' + UI.pad(m % 60);
+  }
+
+  function otherMetric(metric) { return metric === 'distance' ? 'time' : 'distance'; }
+
+  function buildModel() {
+    const d = S.d;
+    const O = d.origins.length, D = d.destinations.length;
+    const m = S.metric;
+    let min = Infinity, max = -Infinity;
+    const rowBest = new Array(O).fill(-1);
+    const colBest = new Array(D).fill(-1);
+    const colBestVal = new Array(D).fill(Infinity);
+    for (let o = 0; o < O; o++) {
+      let best = Infinity;
+      for (let c = 0; c < D; c++) {
+        const v = valueAt(o, c, m);
+        if (v === null) continue;
+        if (v < min) min = v;
+        if (v > max) max = v;
+        if (v < best) { best = v; rowBest[o] = c; }
+        if (v < colBestVal[c]) { colBestVal[c] = v; colBest[c] = o; }
+      }
+    }
+    const loads = new Array(O).fill(0);
+    const loadSum = new Array(O).fill(0);
+    let served = 0, total = 0, longest = 0;
+    for (let c = 0; c < D; c++) {
+      if (colBest[c] < 0) continue;
+      served++;
+      loads[colBest[c]]++;
+      loadSum[colBest[c]] += colBestVal[c];
+      total += colBestVal[c];
+      longest = Math.max(longest, colBestVal[c]);
+    }
+    model = { O, D, min: isFinite(min) ? min : 0, max: isFinite(max) ? max : 0, rowBest, colBest, colBestVal, loads, loadSum, served, total, longest };
+  }
+
+  function heat(v) {
+    const span = model.max - model.min;
+    const t = span > 0 ? (v - model.min) / span : 0;
+    let a = STOPS[0], b = STOPS[1];
+    if (t > 0.5) { a = STOPS[1]; b = STOPS[2]; }
+    const k = (t - a[0]) / (b[0] - a[0]);
+    const rgb = a[1].map((x, i) => Math.round(x + (b[1][i] - x) * k));
+    return 'rgb(' + rgb.join(',') + ')';
+  }
+
+  function order(axis) {
+    const O = model.O, D = model.D;
+    const idx = Array.from({ length: axis === 'row' ? O : D }, (_, i) => i);
+    const sort = axis === 'row' ? S.rowSort : S.colSort;
+    if (!sort) return idx;
+    const val = (i) => (axis === 'row' ? valueAt(i, sort.index, S.metric) : valueAt(sort.index, i, S.metric));
+    return idx.sort((a, b) => {
+      const va = val(a), vb = val(b);
+      if (va === null && vb === null) return a - b;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      return (sort.dir === 'asc' ? va - vb : vb - va) || a - b;
+    });
+  }
+
+  // ───────────── table ─────────────
+
+  function cycle(sort, index) {
+    if (!sort || sort.index !== index) return { index, dir: 'asc' };
+    return sort.dir === 'asc' ? { index, dir: 'desc' } : null;
+  }
+
+  function header(kind, i) {
+    const d = S.d;
+    const name = (kind === 'row' ? d.origins[i] : d.destinations[i]).name || (kind === 'row' ? 'Origin ' : 'Destination ') + (i + 1);
+    const sort = kind === 'row' ? S.colSort : S.rowSort;
+    const active = sort && sort.index === i;
+    const arrow = active ? (sort.dir === 'asc' ? '▲' : '▼') : '';
+    const label = (kind === 'row' ? 'Origin ' : 'Destination ') + name + '. ' + (kind === 'row' ? 'Sort destinations by travel from this origin.' : 'Sort origins by travel to this destination.');
+    const btn = UI.el('button', { class: 'hdr', type: 'button', title: name, 'aria-label': label }, [
+      kind === 'row' ? UI.el('span', { class: 'org-tag', text: letter(i), style: 'background:' + colorOf(i), 'aria-hidden': 'true' }) : null,
+      UI.el('span', { class: 'nm', text: name }),
+      UI.el('span', { class: 'arrow', text: arrow, 'aria-hidden': 'true' })
+    ]);
+    btn.addEventListener('click', () => {
+      if (kind === 'row') S.colSort = cycle(S.colSort, i); else S.rowSort = cycle(S.rowSort, i);
+      renderTable();
+      updateHighlight();
+    });
+    const th = UI.el('th', { scope: kind === 'row' ? 'row' : 'col', 'aria-sort': active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : null }, btn);
+    th.dataset[kind === 'row' ? 'r' : 'c'] = String(i);
+    return th;
+  }
+
+  function renderTable() {
+    const d = S.d;
+    const m = S.metric;
+    rowOrder = order('row');
+    colOrder = order('col');
+    cells = {};
+    const table = UI.el('table', { class: 'mx', role: 'grid', 'aria-label': 'Travel ' + METRICS[m].toLowerCase() + ' from each origin (rows) to each destination (columns)' });
+    const head = UI.el('tr', {}, UI.el('th', { class: 'corner', scope: 'col', text: 'From \\ To' }));
+    colOrder.forEach((c) => head.appendChild(header('col', c)));
+    table.appendChild(UI.el('thead', {}, head));
+    const body = UI.el('tbody');
+    const first = S.focus || { r: rowOrder[0], c: colOrder[0] };
+    rowOrder.forEach((r) => {
+      const tr = UI.el('tr', {}, header('row', r));
+      colOrder.forEach((c) => {
+        const v = valueAt(r, c, m);
+        const oName = d.origins[r].name || 'Origin ' + (r + 1), dName = d.destinations[c].name || 'Destination ' + (c + 1);
+        const td = UI.el('td', { class: 'cell', role: 'gridcell', tabindex: r === first.r && c === first.c ? '0' : '-1' });
+        td.dataset.r = String(r);
+        td.dataset.c = String(c);
+        if (v === null) {
+          td.classList.add('na');
+          td.setAttribute('aria-label', oName + ' to ' + dName + ': no route');
+          td.title = oName + ' to ' + dName + ': no route found';
+          td.appendChild(UI.el('span', { class: 'p', text: 'n/a' }));
+        } else {
+          const other = otherMetric(m);
+          const ov = valueAt(r, c, other);
+          const best = [];
+          if (model.rowBest[r] === c) { td.classList.add('best-row'); best.push('nearest destination for this origin'); }
+          if (model.colBest[c] === r) { td.classList.add('best-col'); best.push('nearest origin for this destination'); }
+          td.style.backgroundColor = heat(v);
+          td.appendChild(UI.el('span', { class: 'p', text: fmtValue(v, m, S.compact) }));
+          if (!S.compact && ov !== null) td.appendChild(UI.el('span', { class: 's', text: fmtValue(ov, other, false) }));
+          const text = oName + ' to ' + dName + ': ' + fmtValue(v, m) + (ov !== null ? ', ' + fmtValue(ov, other) : '');
+          td.setAttribute('aria-label', text + (best.length ? '. ' + best.join(', ') : ''));
+          td.title = text + (best.length ? ' (' + best.join(', ') + ')' : '');
+        }
+        cells[r + ':' + c] = td;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    refs.table = table;
+    UI.clear(refs.tableBox).appendChild(table);
+    refs.resetSort.classList.toggle('hidden', !S.rowSort && !S.colSort);
+  }
+
+  function cellAt(r, c) { return cells[r + ':' + c] || null; }
+
+  function onTableEvent(e) {
+    const td = e.target.closest && e.target.closest('td.cell');
+    if (!td) return;
+    const r = Number(td.dataset.r), c = Number(td.dataset.c);
+    if (e.type === 'mouseover') { if (S.hover && S.hover.r === r && S.hover.c === c) return; S.hover = { r, c }; updateHighlight(); }
+    else if (e.type === 'focusin') { S.focus = { r, c }; S.hover = { r, c }; updateHighlight(); announce(r, c); }
+    else if (e.type === 'click') pin(r, c);
+  }
+
+  function onTableKey(e) {
+    const td = e.target.closest && e.target.closest('td.cell');
+    if (!td) return;
+    const r = Number(td.dataset.r), c = Number(td.dataset.c);
+    let ri = rowOrder.indexOf(r), ci = colOrder.indexOf(c);
+    if (e.key === 'ArrowRight') ci++;
+    else if (e.key === 'ArrowLeft') ci--;
+    else if (e.key === 'ArrowDown') ri++;
+    else if (e.key === 'ArrowUp') ri--;
+    else if (e.key === 'Home') ci = 0;
+    else if (e.key === 'End') ci = colOrder.length - 1;
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pin(r, c); return; }
+    else return;
+    e.preventDefault();
+    ri = Math.max(0, Math.min(rowOrder.length - 1, ri));
+    ci = Math.max(0, Math.min(colOrder.length - 1, ci));
+    const next = cellAt(rowOrder[ri], colOrder[ci]);
+    if (!next) return;
+    td.tabIndex = -1;
+    next.tabIndex = 0;
+    next.focus();
+  }
+
+  // ───────────── highlight, map link ─────────────
+
+  function pairText(r, c) {
+    const d = S.d;
+    const o = d.origins[r].name || 'Origin ' + (r + 1), t = d.destinations[c].name || 'Destination ' + (c + 1);
+    const time = valueAt(r, c, 'time'), dist = valueAt(r, c, 'distance'), traffic = valueAt(r, c, 'traffic');
+    if (time === null && dist === null && traffic === null) return o + ' to ' + t + ': no route found.';
+    const parts = [];
+    if (time !== null) parts.push(UI.fmtDuration(time));
+    if (traffic !== null && S.d.trafficSeconds) parts.push(UI.fmtDuration(traffic) + ' with traffic');
+    if (dist !== null) parts.push(UI.fmtDistance(dist, d.units));
+    return o + ' to ' + t + ': ' + parts.join(' · ');
+  }
+
+  function announce(r, c) { refs.live.textContent = pairText(r, c); }
+
+  function pin(r, c) {
+    if (valueAt(r, c, 'time') === null && valueAt(r, c, S.metric) === null) return;
+    const same = S.pinned && S.pinned.r === r && S.pinned.c === c;
+    S.pinned = same ? null : { r, c };
+    updateHighlight();
+    if (S.pinned) {
+      announce(r, c);
+      App.updateModelContext('The user selected the route: ' + pairText(r, c));
+    }
+  }
+
+  let lit = [];
+  function updateHighlight() {
+    lit.forEach((n) => n.classList.remove('hl', 'pin', 'hl-h'));
+    lit = [];
+    const a = S.hover || S.pinned;
+    const mark = (node, cls) => { if (node) { node.classList.add(cls); lit.push(node); } };
+    if (S.pinned) mark(cellAt(S.pinned.r, S.pinned.c), 'pin');
+    if (a) {
+      mark(cellAt(a.r, a.c), 'hl');
+      if (refs.table) {
+        mark(refs.table.querySelector('tbody th[data-r="' + a.r + '"]'), 'hl-h');
+        mark(refs.table.querySelector('thead th[data-c="' + a.c + '"]'), 'hl-h');
+      }
+    }
+    refs.pairInfo.textContent = a ? pairText(a.r, a.c) : 'Hover or select a cell to see the route between a pair.';
+    document.querySelectorAll('tr.assign').forEach((tr) => tr.classList.toggle('active', !!a && Number(tr.dataset.c) === a.c && Number(tr.dataset.r) === a.r));
+    drawMap();
+  }
+
+  function assignedColor(c) { return model.colBest[c] >= 0 ? colorOf(model.colBest[c]) : NO_COLOR; }
+
+  function drawMap() {
+    if (!map) return;
+    const d = S.d;
+    const a = S.hover || S.pinned;
+    const markers = [];
+    d.origins.forEach((o, i) => markers.push({ id: 'o' + i, longitude: o.longitude, latitude: o.latitude, label: letter(i), color: colorOf(i), description: o.name || 'Origin ' + (i + 1) }));
+    d.destinations.forEach((p, j) => {
+      const hl = a && a.c === j;
+      markers.push({ id: 'd' + j, longitude: p.longitude, latitude: p.latitude, small: !hl, label: hl ? String(j + 1) : '', color: hl ? colorOf(a.r) : assignedColor(j), description: p.name || 'Destination ' + (j + 1) });
+    });
+    map.setMarkers(markers);
+    if (a) {
+      const o = d.origins[a.r], p = d.destinations[a.c];
+      map.setLayers([{ id: 'pair', type: 'line', name: 'Selected pair', coordinates: [[o.longitude, o.latitude], [p.longitude, p.latitude]], color: colorOf(a.r), width: 3, dashed: true }]);
+      map.select('o' + a.r);
+      const pop = UI.el('div', {}, [UI.el('div', { class: 't', text: p.name || 'Destination ' + (a.c + 1) }), UI.el('div', { class: 'small muted', text: pairText(a.r, a.c).split(': ').slice(1).join(': ') })]);
+      map.setPopup('d' + a.c, pop);
+    } else {
+      map.setLayers([]);
+      map.select(null);
+      map.setPopup(null, null);
+    }
+  }
+
+  // ───────────── panels ─────────────
+
+  function renderAssign() {
+    const box = UI.clear(refs.assign);
+    const d = S.d;
+    const m = S.metric;
+    const metricWord = m === 'distance' ? 'distance' : 'travel time';
+    box.appendChild(UI.el('h2', { class: 'section-title', text: 'Nearest origin for each destination' }));
+    box.appendChild(UI.el('p', { class: 'small muted', style: 'margin:0 0 8px', text: 'Each destination goes to the origin with the lowest ' + metricWord + '.' }));
+
+    const stats = UI.el('div', { class: 'stats' });
+    const stat = (v, l) => stats.appendChild(UI.el('div', { class: 'stat' }, [UI.el('div', { class: 'v', text: v }), UI.el('div', { class: 'l', text: l })]));
+    stat(model.served + ' of ' + model.D, 'Destinations served');
+    if (model.served) {
+      stat(fmtValue(model.total / model.served, m), 'Average assigned');
+      stat(fmtValue(model.total, m), 'Total assigned');
+      stat(fmtValue(model.longest, m), 'Longest assigned');
+    }
+    box.appendChild(stats);
+
+    if (!model.served) { box.appendChild(UI.message('info', 'No destination can be reached from any origin.')); return; }
+
+    const maxLoad = Math.max(1, ...model.loads);
+    const loads = UI.el('div', { style: 'margin-top:10px;max-height:220px;overflow:auto', role: 'list', 'aria-label': 'Destinations assigned to each origin' });
+    d.origins.forEach((o, i) => {
+      const avg = model.loads[i] ? ' · avg ' + fmtValue(model.loadSum[i] / model.loads[i], m) : '';
+      const name = o.name || 'Origin ' + (i + 1);
+      const row = UI.el('div', { class: 'load-row', role: 'listitem', 'aria-label': name + ': ' + model.loads[i] + ' destinations' + avg }, [
+        UI.el('div', { class: 'nm', title: name }, [UI.el('span', { class: 'org-tag', text: letter(i), style: 'background:' + colorOf(i), 'aria-hidden': 'true' }), UI.el('span', { class: 't', text: name })]),
+        UI.el('div', { class: 'load-bar', 'aria-hidden': 'true' }, UI.el('i', { style: 'width:' + Math.round(model.loads[i] / maxLoad * 100) + '%;background:' + colorOf(i) })),
+        UI.el('div', { class: 'small nowrap', text: model.loads[i] + avg })
+      ]);
+      loads.appendChild(row);
+    });
+    box.appendChild(loads);
+
+    const details = UI.el('details', { style: 'margin-top:8px' });
+    if (model.D <= 12) details.open = true;
+    details.appendChild(UI.el('summary', { text: 'Assignments (' + model.served + ')' }));
+    const table = UI.el('table', { class: 'grid' });
+    table.appendChild(UI.el('thead', {}, UI.el('tr', {}, [
+      UI.el('th', { scope: 'col', text: 'Destination' }), UI.el('th', { scope: 'col', text: 'Nearest origin' }), UI.el('th', { scope: 'col', text: METRICS[m === 'traffic' ? 'traffic' : m] })
+    ])));
+    const body = UI.el('tbody');
+    d.destinations.forEach((p, c) => {
+      const r = model.colBest[c];
+      if (r < 0) return;
+      const tr = UI.el('tr', { class: 'assign', tabindex: '0', 'aria-label': pairText(r, c) }, [
+        UI.el('td', { text: p.name || 'Destination ' + (c + 1) }),
+        UI.el('td', {}, [UI.el('span', { class: 'org-tag', text: letter(r), style: 'background:' + colorOf(r) + ';margin-right:6px', 'aria-hidden': 'true' }), d.origins[r].name || 'Origin ' + (r + 1)]),
+        UI.el('td', { class: 'nowrap', text: fmtValue(model.colBestVal[c], m) })
+      ]);
+      tr.dataset.r = String(r);
+      tr.dataset.c = String(c);
+      tr.addEventListener('mouseenter', () => { S.hover = { r, c }; updateHighlight(); });
+      tr.addEventListener('mouseleave', () => { S.hover = null; updateHighlight(); });
+      tr.addEventListener('focus', () => { S.hover = { r, c }; updateHighlight(); announce(r, c); });
+      tr.addEventListener('blur', () => { S.hover = null; updateHighlight(); });
+      tr.addEventListener('click', () => pin(r, c));
+      tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pin(r, c); } });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    details.appendChild(UI.el('div', { class: 'assign-wrap' }, table));
+    box.appendChild(details);
+  }
+
+  function renderLegend() {
+    const box = UI.clear(refs.legend);
+    const m = S.metric;
+    const ramp = 'linear-gradient(to right, ' + STOPS.map((s) => 'rgb(' + s[1].join(',') + ')').join(', ') + ')';
+    box.appendChild(UI.el('span', { class: 'legend-scale' }, [
+      UI.el('span', { text: fmtValue(model.min, m) }), UI.el('span', { class: 'ramp', style: 'background:' + ramp, role: 'img', 'aria-label': 'Color scale from the shortest to the longest ' + (m === 'distance' ? 'distance' : 'time') }), UI.el('span', { text: fmtValue(model.max, m) })
+    ]));
+    box.appendChild(UI.el('span', { class: 'key' }, [UI.el('i', { class: 'k-row' }), 'Nearest destination for the origin']));
+    box.appendChild(UI.el('span', { class: 'key' }, [UI.el('i', { class: 'k-col' }), 'Nearest origin for the destination']));
+    if (hasNa()) box.appendChild(UI.el('span', { class: 'key' }, [UI.el('i', { class: 'k-na' }), 'No route']));
+  }
+
+  function hasNa() {
+    for (let o = 0; o < model.O; o++) for (let c = 0; c < model.D; c++) if (valueAt(o, c, S.metric) === null) return true;
+    return false;
+  }
+
+  // ───────────── CSV ─────────────
+
+  function csv() {
+    const d = S.d;
+    const imperial = d.units === 'imperial';
+    const rows = [];
+    d.origins.forEach((o, r) => d.destinations.forEach((p, c) => rows.push({ r, c })));
+    const cols = [
+      { label: 'Origin', get: (x) => d.origins[x.r].name },
+      { label: 'Destination', get: (x) => d.destinations[x.c].name },
+      { label: 'Duration (minutes)', get: (x) => { const v = valueAt(x.r, x.c, 'time'); return v === null ? '' : (v / 60).toFixed(1); } }
+    ];
+    if (d.trafficSeconds) cols.push({ label: 'Duration with traffic (minutes)', get: (x) => { const v = valueAt(x.r, x.c, 'traffic'); return v === null ? '' : (v / 60).toFixed(1); } });
+    cols.push({ label: imperial ? 'Distance (miles)' : 'Distance (km)', get: (x) => { const v = valueAt(x.r, x.c, 'distance'); return v === null ? '' : (imperial ? v / 1609.344 : v / 1000).toFixed(2); } });
+    cols.push({ label: 'Duration (seconds)', get: (x) => { const v = valueAt(x.r, x.c, 'time'); return v === null ? '' : v; } });
+    cols.push({ label: 'Distance (meters)', get: (x) => { const v = valueAt(x.r, x.c, 'distance'); return v === null ? '' : v; } });
+    return UI.toCsv(rows, cols);
+  }
+
+  function copyCsv() {
+    UI.copyText(csv()).then((ok) => UI.tempHint(ok ? 'CSV copied' : 'Copy is not available here'));
+  }
+
+  function downloadCsv() {
+    Promise.resolve(App.download('travel-times.csv', 'text/csv', csv())).then(() => UI.tempHint('CSV download started'), () => copyCsv());
+  }
+
+  // ───────────── render ─────────────
+
+  function setMetric(m) {
+    if (S.metric === m) return;
+    S.metric = m;
+    refresh();
+  }
+
+  function refresh() {
+    buildModel();
+    renderMetricBar();
+    renderLegend();
+    renderTable();
+    renderAssign();
+    updateHighlight();
+  }
+
+  function renderMetricBar() {
+    refs.metric.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.m === S.metric)));
+  }
+
+  function hasCoords(list) { return list.length && list.every((p) => num(p.longitude) && num(p.latitude)); }
+
+  function build(d) {
+    S.d = d;
+    S.metric = 'time';
+    S.rowSort = null;
+    S.colSort = null;
+    S.hover = null;
+    S.pinned = null;
+    S.focus = null;
+    const O = d.origins.length, D = d.destinations.length;
+    S.compact = D > 10 || O * D > 80;
+    const hasTraffic = !!(d.trafficSeconds && d.trafficSeconds.some((r) => r && r.some(num)));
+    if (!hasTraffic) d.trafficSeconds = undefined;
+
+    const total = (d.summary && d.summary.totalCount) || O * D;
+    let found = 0;
+    for (let o = 0; o < O; o++) for (let c = 0; c < D; c++) if (valueAt(o, c, 'time') !== null) found++;
+    const mode = String(d.travelMode || 'driving');
+    $('subtitle').textContent = O + ' origin' + (O === 1 ? '' : 's') + ' × ' + D + ' destination' + (D === 1 ? '' : 's') + ' · ' + found + ' of ' + total + ' routes found · ' + (mode === 'truck' ? 'Truck' : mode === 'driving' ? 'Drive' : mode.replace(/^./, (x) => x.toUpperCase()));
+
+    const root = UI.clear($('body'));
+    root.classList.toggle('compact', S.compact);
+
+    const ctl = UI.el('div', { class: 'ctl no-print' });
+    const seg = UI.el('div', { class: 'seg', role: 'group', 'aria-label': 'What to show in the cells' });
+    refs.metric = [];
+    Object.keys(METRICS).forEach((k) => {
+      if (k === 'traffic' && !hasTraffic) return;
+      const b = UI.el('button', { type: 'button', text: METRICS[k], on: { click: () => setMetric(k) } });
+      b.dataset.m = k;
+      refs.metric.push(b);
+      seg.appendChild(b);
+    });
+    refs.resetSort = UI.el('button', { class: 'btn small subtle hidden', type: 'button', text: 'Reset order', on: { click: () => { S.rowSort = null; S.colSort = null; renderTable(); updateHighlight(); } } });
+    ctl.appendChild(UI.el('span', { class: 'lbl', text: 'Show' }));
+    ctl.appendChild(seg);
+    ctl.appendChild(refs.resetSort);
+    if (D > 1 || O > 1) ctl.appendChild(UI.el('span', { class: 'small muted', text: 'Select a row or column heading to sort.' }));
+    root.appendChild(ctl);
+
+    refs.legend = UI.el('div', { class: 'legend', style: 'margin-bottom:8px' });
+    root.appendChild(refs.legend);
+    refs.tableBox = UI.el('div', { class: 'mx-wrap' });
+    refs.tableBox.addEventListener('mouseover', onTableEvent);
+    refs.tableBox.addEventListener('focusin', onTableEvent);
+    refs.tableBox.addEventListener('click', onTableEvent);
+    refs.tableBox.addEventListener('keydown', onTableKey);
+    refs.tableBox.addEventListener('mouseleave', () => { S.hover = null; updateHighlight(); });
+    refs.tableBox.addEventListener('focusout', (e) => { if (!refs.tableBox.contains(e.relatedTarget)) { S.hover = null; updateHighlight(); } });
+    root.appendChild(refs.tableBox);
+    refs.pairInfo = UI.el('div', { class: 'pair-info small' });
+    refs.live = UI.el('div', { class: 'sr-only', role: 'status', 'aria-live': 'polite' });
+    root.appendChild(refs.pairInfo);
+    root.appendChild(refs.live);
+
+    mapOk = hasCoords(d.origins) && hasCoords(d.destinations);
+    map = null;
+    if (mapOk) {
+      const mapEl = UI.el('div', {});
+      root.appendChild(mapEl);
+      const dark = App.hostContext && App.hostContext.theme === 'dark';
+      map = new MapView(mapEl, { style: dark ? 'dark' : 'road', label: 'Map of origins and destinations. Use the arrow keys to pan and plus and minus to zoom.' });
+      map.on('markerclick', (m) => {
+        if (m.id[0] === 'd') {
+          const c = Number(m.id.slice(1));
+          if (model.colBest[c] >= 0) pin(model.colBest[c], c);
+        } else {
+          const i = Number(m.id.slice(1));
+          map.select(m.id);
+          map.setPopup(m.id, UI.el('div', {}, [UI.el('div', { class: 't', text: m.description }), UI.el('div', { class: 'small muted', text: model.loads[i] + ' destination' + (model.loads[i] === 1 ? '' : 's') + ' closest to this origin' })]));
+        }
+      });
+      map.on('click', () => { S.pinned = null; updateHighlight(); });
+      map.on('tileerror', () => {});
+    }
+    refs.assign = UI.el('section', { 'aria-live': 'off', style: 'margin-top:12px' });
+    root.appendChild(refs.assign);
+
+    refs.copy = UI.el('button', { class: 'btn small', type: 'button', html: UI.icon('copy', 16), 'aria-label': 'Copy CSV', title: 'Copy all times and distances as CSV', on: { click: copyCsv } }, UI.el('span', { text: 'Copy CSV' }));
+    const bar = UI.clear($('actions'));
+    bar.appendChild(refs.copy);
+    if (App.canDownload()) bar.appendChild(UI.el('button', { class: 'btn small', type: 'button', html: UI.icon('download', 16), title: 'Download as CSV', 'aria-label': 'Download CSV', on: { click: downloadCsv } }, UI.el('span', { text: 'Download CSV' })));
+
+    refresh();
+    if (map) { map.fitContent(); }
+  }
+
+  function render(result) {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'matrix' || !Array.isArray(d.origins) || !Array.isArray(d.destinations) || !Array.isArray(d.durationSeconds)) {
+      UI.clear($('body'));
+      UI.clear($('actions'));
+      $('subtitle').textContent = '';
+      if (d && d.kind === 'operation') showMessage('info', App.textOf(result) || 'The matrix is not ready yet. Ask again in a few seconds.');
+      else showMessage(result && result.isError ? 'error' : 'info', (result && App.textOf(result)) || 'No matrix data was returned.');
+      return;
+    }
+    if (!d.origins.length || !d.destinations.length) { showMessage('info', 'The matrix is empty.'); return; }
+    showMessage();
+    build(d);
+    App.reportSize();
+  }
+
+  App.on('context', (ctx) => { if (map && ctx && ctx.theme) map.setStyle(ctx.theme === 'dark' ? 'dark' : 'road'); });
+  App.on('result', render);
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'matrix' }).catch(() => showMessage('error', 'The matrix view could not start.'));
+})();
+</script>
+</body>
+</html>

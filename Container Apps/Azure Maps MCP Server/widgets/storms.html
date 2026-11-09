@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storm tracker</title>
+<style>
+/*@shared-css*/
+#app { transition: opacity var(--dur-fast) var(--ease); }
+#app.busy { opacity: 0.65; }
+#app.busy * { cursor: progress; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-s); margin-bottom: var(--sp-s); }
+.bar .push { margin-left: auto; }
+.labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.slabel { position: absolute; left: 0; top: 0; padding: 0 6px; border-radius: 999px; font-size: var(--fs-200); line-height: var(--lh-200); font-weight: var(--fw-semibold); white-space: nowrap; color: var(--fg1); background: color-mix(in srgb, var(--bg1) 88%, transparent); border: 1px solid var(--stroke2); box-shadow: var(--shadow4); }
+.slabel.sel { border-color: var(--brand); }
+.sw2 { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-circle); box-shadow: 0 0 0 1px var(--stroke1); flex: none; }
+.legend .sw.wedge { height: 10px; width: 14px; border-radius: 2px; }
+.legend .sw.dashed { background: repeating-linear-gradient(to right, #c7c7c7 0 5px, transparent 5px 9px) !important; box-shadow: none; }
+.storms { margin: var(--sp-m) 0 0; }
+.storm { display: block; width: 100%; padding: var(--sp-s) var(--sp-m); background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); text-align: left; cursor: pointer; margin-bottom: var(--sp-xs); }
+.storm:hover { background: var(--bg1-hover); }
+.storm[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-bg-subtle); box-shadow: inset 0 0 0 1px var(--brand); }
+.storm:focus-visible, .rowbtn:focus-visible, summary:focus-visible { outline: 2px solid var(--focus-outer); box-shadow: inset 0 0 0 1px var(--focus-inner); }
+.storm .nm { font-weight: var(--fw-semibold); font-size: var(--fs-400); line-height: var(--lh-400); }
+.storm .meta { display: flex; flex-wrap: wrap; gap: 0 var(--sp-m); margin-top: 2px; }
+.detail { margin-top: var(--sp-m); padding: var(--sp-m); background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); }
+.detail h2 { margin: 0; font-size: var(--fs-400); line-height: var(--lh-400); font-weight: var(--fw-semibold); }
+.stats.s { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin: var(--sp-s) 0; }
+.stats.s .stat { background: var(--bg1); }
+.stats.s .stat .v { font-size: var(--fs-400); line-height: var(--lh-400); }
+.tbl { max-height: 240px; overflow: auto; border: 1px solid var(--stroke2); border-radius: var(--radius-m); background: var(--bg1); }
+.tbl table.grid th { background: var(--bg2); }
+.tbl tr.on td { background: var(--brand-bg-subtle); }
+.tbl tr { cursor: pointer; }
+.tbl tr:hover td { background: var(--bg1-hover); }
+.rowbtn { background: none; border: none; padding: 0; text-align: left; cursor: pointer; font-weight: var(--fw-semibold); color: var(--brand-link); }
+details.find { margin-top: var(--sp-m); border-top: 1px solid var(--stroke2); padding-top: var(--sp-s); }
+details.find summary { cursor: pointer; font-weight: var(--fw-semibold); padding: var(--sp-xs) 0; }
+.fields { display: flex; flex-wrap: wrap; gap: var(--sp-s); align-items: flex-end; margin-top: var(--sp-s); }
+.fields label { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-200); color: var(--fg2); }
+@media (prefers-reduced-motion: reduce) { #app { transition: none; } }
+@media (forced-colors: active) { .sw2, .legend .sw { forced-color-adjust: none; } }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title" aria-busy="false">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Storm tracker</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="seg no-print" id="units" role="group" aria-label="Units"></div>
+  </div>
+  <div id="message" aria-live="polite"></div>
+  <div id="body">
+    <div class="skeleton" style="height:320px" role="progressbar" aria-label="Loading storms"></div>
+  </div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = UI.el;
+
+  const BASINS = { AL: 'Atlantic', CP: 'Central Pacific', EP: 'East Pacific', NI: 'North Indian', NP: 'Northwest Pacific', SI: 'South Indian', SP: 'South Pacific' };
+  // Saffir-Simpson thresholds in knots of sustained wind.
+  const CATS = [
+    { name: 'Tropical depression', short: 'TD', color: '#5ebaff', min: 0 },
+    { name: 'Tropical storm', short: 'TS', color: '#00e0b8', min: 34 },
+    { name: 'Category 1', short: 'Cat 1', color: '#fff3a0', min: 64 },
+    { name: 'Category 2', short: 'Cat 2', color: '#ffd23f', min: 83 },
+    { name: 'Category 3', short: 'Cat 3', color: '#ff9f1c', min: 96 },
+    { name: 'Category 4', short: 'Cat 4', color: '#ff5a36', min: 113 },
+    { name: 'Category 5', short: 'Cat 5', color: '#e5188b', min: 137 }
+  ];
+  const UNKNOWN = { name: 'Unknown intensity', short: '?', color: '#9aa5b1' };
+  const WEDGE = [{ min: 64, color: '#e5188b' }, { min: 50, color: '#ff5a36' }, { min: 0, color: '#ffd23f' }];
+  const THIS_YEAR = new Date().getFullYear();
+
+  const state = { data: null, storms: [], scope: 'active', unit: 'metric', sel: -1, pt: null, radii: true, tab: 'forecast', busy: false, auto: null, search: { year: THIS_YEAR, basin: 'AL', label: '' } };
+  let map = null;
+  let labelBox = null;
+
+  const round = (v, d) => { const p = Math.pow(10, d || 0); return Math.round(v * p) / p; };
+  const imperial = () => state.unit === 'imperial';
+
+  // ───────────── units ─────────────
+
+  function kmh(m) {
+    if (!m || typeof m.value !== 'number') return null;
+    const u = (m.unit || '').toLowerCase();
+    if (u === 'mi/h' || u === 'mph') return m.value * 1.609344;
+    if (u === 'kt' || u === 'kn' || u === 'kts') return m.value * 1.852;
+    if (u === 'm/s') return m.value * 3.6;
+    return m.value;
+  }
+  const windText = (m) => { const v = kmh(m); return v === null ? '–' : imperial() ? Math.round(v / 1.609344) + ' mph' : Math.round(v) + ' km/h'; };
+  function pressureText(m) {
+    if (!m || typeof m.value !== 'number') return '–';
+    const hpa = /inhg/i.test(m.unit || '') ? m.value / 0.02953 : m.value;
+    return imperial() ? round(hpa * 0.02953, 2) + ' inHg' : Math.round(hpa) + ' mb';
+  }
+  const knots = (m) => { const v = kmh(m); return v === null ? null : v / 1.852; };
+  function catOf(p) {
+    const k = knots(p && p.sustainedWind);
+    if (k === null) return UNKNOWN;
+    let c = CATS[0];
+    CATS.forEach((x) => { if (k >= x.min) c = x; });
+    return c;
+  }
+  function when(iso) {
+    if (!iso) return '';
+    const off = iso.slice(19);
+    return UI.monthDayOf(iso) + ' ' + UI.clockOf(iso) + (!off || off === 'Z' || off === '+00:00' ? ' UTC' : ' (UTC' + off + ')');
+  }
+  function coords(lat, lon) {
+    const l = ((lon + 540) % 360) - 180;
+    return Math.abs(round(lat, 1)) + '°' + (lat >= 0 ? 'N' : 'S') + ' ' + Math.abs(round(l, 1)) + '°' + (l >= 0 ? 'E' : 'W');
+  }
+  const basinName = (id) => BASINS[id] || id || '';
+
+  // ───────────── data ─────────────
+
+  function prepare(raw) {
+    const asc = (a, b) => Date.parse(a.time) - Date.parse(b.time);
+    const ok = (p) => p && typeof p.longitude === 'number' && typeof p.latitude === 'number';
+    const past = (raw.past || []).filter(ok).sort(asc);
+    const fc = (raw.forecast || []).filter(ok).sort(asc);
+    let prev = null;
+    const wrap = (p) => {
+      let lon = p.longitude;
+      if (prev !== null) { while (lon - prev > 180) lon -= 360; while (lon - prev < -180) lon += 360; }
+      prev = lon;
+      return Object.assign({}, p, { lon, lat: p.latitude, cat: catOf(p) });
+    };
+    const s = Object.assign({}, raw, { pastP: past.map(wrap), fcP: fc.map(wrap) });
+    s.loaded = Array.isArray(raw.past) || Array.isArray(raw.forecast);
+    s.cur = s.pastP.length ? s.pastP[s.pastP.length - 1] : (s.fcP[0] || null);
+    return s;
+  }
+
+  function bboxOf(list) {
+    let b = null;
+    list.forEach((p) => { if (!b) b = [p.lon, p.lat, p.lon, p.lat]; else { b[0] = Math.min(b[0], p.lon); b[1] = Math.min(b[1], p.lat); b[2] = Math.max(b[2], p.lon); b[3] = Math.max(b[3], p.lat); } });
+    if (!b) return null;
+    const padTo = (lo, hi, min) => { const span = hi - lo; if (span >= min) return [lo, hi]; const c = (lo + hi) / 2; return [c - min / 2, c + min / 2]; };
+    const x = padTo(b[0], b[2], 8), y = padTo(b[1], b[3], 6);
+    return [x[0], Math.max(-80, y[0]), x[1], Math.min(80, y[1])];
+  }
+  const allPoints = (s) => s.pastP.concat(s.fcP);
+
+  // ───────────── wind radii ─────────────
+
+  function dest(lon, lat, bearing, km) {
+    const R = 6371, r = Math.PI / 180;
+    const d = km / R, t = bearing * r, p1 = lat * r;
+    const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(t));
+    const dl = Math.atan2(Math.sin(t) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+    return [lon + dl / r, p2 / r];
+  }
+
+  // Quadrant wedges: the radii are nautical miles from the center between two compass bearings.
+  function wedgeLayers(p) {
+    if (!p || !p.windRadii) return [];
+    const out = [];
+    const sets = p.windRadii.slice().sort((a, b) => (knots(a.windSpeed) || 0) - (knots(b.windSpeed) || 0));
+    sets.forEach((set, si) => {
+      const k = knots(set.windSpeed) || 0;
+      const color = (WEDGE.find((w) => k >= w.min) || WEDGE[2]).color;
+      (set.radii || []).forEach((q, qi) => {
+        if (!(q.range > 0)) return;
+        const begin = q.begin;
+        let end = q.end;
+        if (end <= begin) end += 360;
+        const ring = [[p.lon, p.lat]];
+        const steps = Math.max(2, Math.ceil((end - begin) / 6));
+        for (let i = 0; i <= steps; i++) ring.push(dest(p.lon, p.lat, begin + (end - begin) * i / steps, q.range * 1.852));
+        ring.push([p.lon, p.lat]);
+        out.push({ id: 'w' + si + '_' + qi, type: 'polygon', color, fillOpacity: 0.28, strokeWidth: 1.5, geometry: { type: 'Polygon', coordinates: [ring] } });
+      });
+    });
+    return out;
+  }
+
+  function wedgeKey(p) {
+    const sets = (p && p.windRadii) || [];
+    return sets.filter((s) => (s.radii || []).some((q) => q.range > 0)).sort((a, b) => (knots(a.windSpeed) || 0) - (knots(b.windSpeed) || 0)).map((s) => ({ speed: s.windSpeed, color: (WEDGE.find((w) => (knots(s.windSpeed) || 0) >= w.min) || WEDGE[2]).color }));
+  }
+
+  // ───────────── map ─────────────
+
+  function trackRuns(storm, i, selected) {
+    const out = [];
+    const width = selected ? 5 : 3;
+    const opacity = selected || state.sel < 0 ? 1 : 0.6;
+    const build = (pts, dashed, tag) => {
+      let run = null;
+      for (let j = 1; j < pts.length; j++) {
+        const color = pts[j].cat.color;
+        const seg = [[pts[j - 1].lon, pts[j - 1].lat], [pts[j].lon, pts[j].lat]];
+        if (!run || run.color !== color) {
+          run = { id: 's' + i + tag + out.length, type: 'line', color, width, opacity, dashed, noCasing: dashed, coordinates: seg };
+          out.push(run);
+        } else run.coordinates.push(seg[1]);
+      }
+    };
+    build(storm.pastP, false, 'p');
+    const fcChain = storm.pastP.length ? [storm.pastP[storm.pastP.length - 1]].concat(storm.fcP) : storm.fcP;
+    build(fcChain, true, 'f');
+    return out;
+  }
+
+  function selectedPoint() {
+    const s = state.storms[state.sel];
+    if (!s) return null;
+    if (state.pt) return (state.pt.k === 'past' ? s.pastP : s.fcP)[state.pt.i] || s.cur;
+    return s.cur;
+  }
+
+  function updateMap() {
+    if (!map) return;
+    const layers = [];
+    const sel = state.storms[state.sel];
+    if (sel && state.radii) wedgeLayers(selectedPoint()).forEach((l) => layers.push(l));
+    state.storms.forEach((s, i) => { if (i !== state.sel) trackRuns(s, i, false).forEach((l) => layers.push(l)); });
+    if (sel) trackRuns(sel, state.sel, true).forEach((l) => layers.push(l));
+    map.setLayers(layers);
+
+    const markers = [];
+    if (sel) {
+      sel.pastP.forEach((p, j) => markers.push({ id: 'pt:past:' + j, longitude: p.lon, latitude: p.lat, small: true, color: p.cat.color }));
+      sel.fcP.forEach((p, j) => markers.push({ id: 'pt:fc:' + j, longitude: p.lon, latitude: p.lat, small: true, color: p.cat.color }));
+    }
+    state.storms.forEach((s, i) => { if (s.cur) markers.push({ id: 'cur:' + i, longitude: s.cur.lon, latitude: s.cur.lat, color: s.cur.cat.color === CATS[2].color ? '#d4b000' : s.cur.cat.color }); });
+    map.setMarkers(markers);
+    if (state.pt && sel) map.select('pt:' + state.pt.k + ':' + state.pt.i);
+    else if (sel && sel.cur) map.select('cur:' + state.sel);
+    else map.select(null);
+    renderLabels();
+  }
+
+  function renderLabels() {
+    if (!labelBox) return;
+    UI.clear(labelBox);
+    state.storms.forEach((s, i) => {
+      if (!s.cur) return;
+      const node = el('div', { class: 'slabel' + (i === state.sel ? ' sel' : ''), 'aria-hidden': 'true', text: s.name || 'Storm' });
+      node.dataset.i = String(i);
+      labelBox.appendChild(node);
+    });
+    positionLabels();
+  }
+
+  function positionLabels() {
+    if (!labelBox || !map) return;
+    labelBox.querySelectorAll('.slabel').forEach((n) => {
+      const s = state.storms[Number(n.dataset.i)];
+      if (!s || !s.cur) { n.style.display = 'none'; return; }
+      const p = map.project(s.cur.lon, s.cur.lat);
+      n.style.transform = 'translate(' + Math.round(p.x + 12) + 'px,' + Math.round(p.y - 30) + 'px)';
+      n.style.display = p.x < -40 || p.y < -40 || p.x > map.size.w + 40 || p.y > map.size.h + 40 ? 'none' : '';
+    });
+  }
+
+  function popupFor(p, title) {
+    const node = el('div', {});
+    node.appendChild(el('div', { class: 't', text: title }));
+    node.appendChild(el('div', { class: 'small', text: p.cat.name + (p.status ? ' · ' + p.status : '') }));
+    node.appendChild(el('div', { class: 'small', text: 'Wind ' + windText(p.sustainedWind) + ', gusts ' + windText(p.gust) }));
+    node.appendChild(el('div', { class: 'small muted', text: when(p.time) }));
+    return node;
+  }
+
+  function ensureMap() {
+    if (map) return;
+    const box = $('stage');
+    UI.clear(box);
+    const mapEl = el('div', { class: 'tall' });
+    box.appendChild(mapEl);
+    map = new MapView(mapEl, { style: 'dark', label: 'Storm map. Use the arrow keys to pan and plus and minus to zoom.' });
+    labelBox = el('div', { class: 'labels', 'aria-hidden': 'true' });
+    mapEl.appendChild(labelBox);
+    map.on('move', positionLabels);
+    let lastWidth = 0;
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(() => {
+        positionLabels();
+        const w = mapEl.clientWidth;
+        if (state.auto !== null && lastWidth && Math.abs(w - lastWidth) > 8) { if (state.auto === 'all') fitAll(); else fitStorm(state.auto); }
+        lastWidth = w;
+      }).observe(mapEl);
+    }
+    ['pointerdown', 'wheel', 'keydown'].forEach((ev) => mapEl.addEventListener(ev, () => { state.auto = null; }, { capture: true, passive: true }));
+    map.on('click', () => map.setPopup(null, null));
+    map.on('markerclick', (m) => {
+      const parts = m.id.split(':');
+      if (parts[0] === 'cur') { selectStorm(Number(parts[1]), { fit: false }); return; }
+      const idx = Number(parts[2]);
+      const s = state.storms[state.sel];
+      const p = s && (parts[1] === 'past' ? s.pastP : s.fcP)[idx];
+      if (!p) return;
+      state.pt = { k: parts[1], i: idx };
+      state.tab = parts[1] === 'past' ? 'past' : 'forecast';
+      updateMap();
+      map.setPopup(m.id, popupFor(p, (s.name || 'Storm') + (parts[1] === 'past' ? ' · observed' : ' · forecast')));
+      renderDetail();
+    });
+  }
+
+  function fitStorm(i) {
+    const s = state.storms[i];
+    if (b) { map.fitBounds(b, 40); state.auto = i; }
+  }
+  function fitAll() {
+    const pts = [];
+    state.storms.forEach((s) => allPoints(s).forEach((p) => pts.push(p)));
+    const b = bboxOf(pts);
+    if (b) { map.fitBounds(b, 40); state.auto = 'all'; }
+  }
+
+  // ───────────── views ─────────────
+
+  function renderUnits() {
+    const box = UI.clear($('units'));
+    [['metric', 'Metric'], ['imperial', 'Imperial']].forEach((u) => box.appendChild(el('button', { type: 'button', text: u[1], 'aria-pressed': String(state.unit === u[0]), on: { click: () => { state.unit = u[0]; if (map) map.setPopup(null, null); renderAll(); } } })));
+  }
+
+  function renderSubtitle() {
+    const n = state.storms.length;
+    let t = '';
+    if (state.scope === 'active') t = n ? n + ' active storm' + (n === 1 ? '' : 's') : 'No active storms';
+    else t = n + ' storm' + (n === 1 ? '' : 's') + (state.search.label ? ' · ' + state.search.label : '');
+    $('subtitle').textContent = t;
+  }
+
+  function mapBar() {
+    const bar = el('div', { class: 'bar no-print' });
+    const styles = el('div', { class: 'seg', role: 'group', 'aria-label': 'Map style' });
+    [['dark', 'Dark'], ['road', 'Road'], ['satellite', 'Satellite']].forEach((s) => styles.appendChild(el('button', { type: 'button', text: s[1], 'aria-pressed': String(map ? map.styleName === s[0] : s[0] === 'dark'), on: { click: () => { map.setStyle(s[0]); renderBar(); } } })));
+    bar.appendChild(styles);
+    bar.appendChild(el('button', { class: 'chip', type: 'button', text: 'Wind radii', 'aria-pressed': String(state.radii), title: 'Show the area covered by strong winds around the selected storm', on: { click: () => { state.radii = !state.radii; updateMap(); renderBar(); renderLegend(); } } }));
+    bar.appendChild(el('button', { class: 'btn small subtle push', type: 'button', text: 'Fit all', on: { click: fitAll } }));
+    if (state.scope !== 'active') bar.appendChild(el('button', { class: 'btn small', type: 'button', text: 'Show active storms', on: { click: () => loadActive() } }));
+    return bar;
+  }
+  function renderBar() { const b = $('bar'); if (b) b.replaceWith(Object.assign(mapBar(), { id: 'bar' })); }
+
+  function renderLegend() {
+    const box = $('legend');
+    if (!box) return;
+    UI.clear(box);
+    CATS.forEach((c) => box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'sw', style: 'background:' + c.color }), el('span', { text: c.short })])));
+    box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'sw', style: 'background:' + UNKNOWN.color }), el('span', { text: 'Unknown' })]));
+    box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'sw dashed' }), el('span', { text: 'Forecast' })]));
+    const key = wedgeKey(selectedPoint());
+    if (state.radii && key.length) {
+      box.appendChild(el('span', { class: 'muted', text: 'Winds of at least:' }));
+      key.forEach((k) => box.appendChild(el('span', { class: 'item' }, [el('span', { class: 'sw wedge', style: 'background:' + k.color }), el('span', { text: windText(k.speed) })])));
+    }
+  }
+
+  function stormCard(s, i) {
+    const c = s.cur;
+    const meta = el('div', { class: 'meta small' });
+    if (c) {
+      meta.appendChild(el('span', { text: 'Wind ' + windText(c.sustainedWind) }));
+      meta.appendChild(el('span', { text: 'Gusts ' + windText(c.gust) }));
+      meta.appendChild(el('span', { text: pressureText(c.pressure) }));
+      if (c.movement && c.movement.speed) meta.appendChild(el('span', { text: 'Moving ' + (c.movement.direction || '') + ' ' + windText(c.movement.speed) }));
+    } else {
+      meta.appendChild(el('span', { class: 'muted', text: s.loaded ? 'No positions were reported.' : 'Select to load the track.' }));
+    }
+    const label = (s.name || 'Storm') + ', ' + basinName(s.basinId) + ' ' + s.year + (s.isActive ? ', active' : '') + (c ? ', ' + c.cat.name + ', wind ' + windText(c.sustainedWind) : '');
+    return el('button', { class: 'storm', type: 'button', 'aria-pressed': String(i === state.sel), 'aria-label': label, on: { click: () => selectStorm(i, { fit: true, user: true }) } }, [
+      el('div', { class: 'row', style: 'gap:6px' }, [
+        c ? el('span', { class: 'sw2', style: 'background:' + c.cat.color, 'aria-hidden': 'true' }) : null,
+        el('span', { class: 'nm', text: s.name || 'Unnamed storm' }),
+        s.isActive ? el('span', { class: 'badge good', text: 'Active' }) : null,
+        el('span', { class: 'small muted grow', style: 'text-align:right', text: basinName(s.basinId) + ' · ' + s.year })
+      ]),
+      c ? el('div', { class: 'small', text: c.cat.name + (c.status ? ' · ' + c.status : '') }) : null,
+      meta
+    ]);
+  }
+
+  function renderList() {
+    const box = $('storms');
+    if (!box) return;
+    UI.clear(box);
+    state.storms.forEach((s, i) => box.appendChild(stormCard(s, i)));
+  }
+
+  function renderDetail() {
+    const box = $('detail');
+    if (!box) return;
+    UI.clear(box);
+    const s = state.storms[state.sel];
+    if (!s) { box.classList.add('hidden'); renderLegend(); return; }
+    box.classList.remove('hidden');
+    const p = selectedPoint();
+    box.appendChild(el('div', { class: 'row wrap' }, [el('h2', { class: 'grow', text: (s.name || 'Storm') + ' · ' + basinName(s.basinId) + ' ' + s.year }), s.isActive ? el('span', { class: 'badge good', text: 'Active' }) : el('span', { class: 'badge', text: s.endDate ? 'Ended ' + UI.monthDayOf(s.endDate) : 'Not active' })]));
+    if (!s.loaded) {
+      box.appendChild(el('p', { class: 'muted', text: state.busy ? 'Loading the storm track…' : 'The track is not loaded yet.' }));
+      renderLegend();
+      return;
+    }
+    if (!p) {
+      box.appendChild(el('p', { class: 'muted', text: 'No positions were reported for this storm.' }));
+      renderLegend();
+      return;
+    }
+    const isCurrent = p === s.cur;
+    box.appendChild(el('div', { class: 'small muted', text: (isCurrent ? 'Latest position · ' : (state.pt && state.pt.k === 'fc' ? 'Forecast · ' : 'Observed · ')) + when(p.time) + ' · ' + coords(p.lat, p.lon) }));
+    const stats = el('div', { class: 'stats s', role: 'list', 'aria-label': 'Storm details' });
+    const add = (l, v, sub) => stats.appendChild(el('div', { class: 'stat', role: 'listitem' }, [el('div', { class: 'v', text: v }), el('div', { class: 'l', text: l }), sub ? el('div', { class: 'small muted', text: sub }) : null]));
+    add('Category', p.cat.short === '?' ? '–' : p.cat.short, p.status);
+    add('Sustained wind', windText(p.sustainedWind));
+    add('Gusts', windText(p.gust));
+    add('Pressure', pressureText(p.pressure));
+    if (p.movement && p.movement.speed) add('Movement', (p.movement.direction || '') + ' ' + windText(p.movement.speed));
+    box.appendChild(stats);
+    if (state.radii && !wedgeKey(p).length) box.appendChild(el('p', { class: 'small muted', style: 'margin:0 0 8px', text: 'No wind radii were reported for this position.' }));
+
+    const hasF = s.fcP.length > 0, hasP = s.pastP.length > 0;
+    if (!hasF && !hasP) { renderLegend(); return; }
+    if (state.tab === 'forecast' && !hasF) state.tab = 'past';
+    if (state.tab === 'past' && !hasP) state.tab = 'forecast';
+    const tabs = el('div', { class: 'seg', role: 'group', 'aria-label': 'Track table', style: 'margin-bottom:6px' });
+    if (hasF) tabs.appendChild(el('button', { type: 'button', text: 'Forecast (' + s.fcP.length + ')', 'aria-pressed': String(state.tab === 'forecast'), on: { click: () => { state.tab = 'forecast'; renderDetail(); } } }));
+    if (hasP) tabs.appendChild(el('button', { type: 'button', text: 'Observed (' + s.pastP.length + ')', 'aria-pressed': String(state.tab === 'past'), on: { click: () => { state.tab = 'past'; renderDetail(); } } }));
+    box.appendChild(tabs);
+
+    const list = state.tab === 'forecast' ? s.fcP : s.pastP.slice().reverse().map((q) => q);
+    const table = el('table', { class: 'grid' });
+    table.appendChild(el('caption', { class: 'sr-only', text: (state.tab === 'forecast' ? 'Forecast' : 'Observed') + ' positions for ' + (s.name || 'the storm') }));
+    table.appendChild(el('thead', {}, [el('tr', {}, ['Time', 'Status', 'Wind', 'Position'].map((h) => el('th', { scope: 'col', text: h })))]));
+    const body = el('tbody', {});
+    list.forEach((q) => {
+      const idx = (state.tab === 'forecast' ? s.fcP : s.pastP).indexOf(q);
+      const on = state.pt && state.pt.k === (state.tab === 'forecast' ? 'fc' : 'past') && state.pt.i === idx;
+      const pick = () => pickPoint(state.tab === 'forecast' ? 'fc' : 'past', idx);
+      body.appendChild(el('tr', { class: on ? 'on' : '', 'aria-selected': on ? 'true' : null, on: { click: pick } }, [
+        el('td', {}, [el('button', { class: 'rowbtn', type: 'button', text: when(q.time), 'aria-pressed': String(!!on), on: { click: (e) => { e.stopPropagation(); pick(); } } })]),
+        el('td', {}, [el('span', { class: 'sw2', style: 'background:' + q.cat.color, 'aria-hidden': 'true' }), ' ' + (q.status || q.cat.name)]),
+        el('td', { class: 'nowrap', text: windText(q.sustainedWind) }),
+        el('td', { class: 'nowrap', text: coords(q.lat, q.lon) })
+      ]));
+    });
+    table.appendChild(body);
+    box.appendChild(el('div', { class: 'tbl', role: 'region', 'aria-label': 'Track positions', tabindex: '0' }, [table]));
+    if (state.pt) box.appendChild(el('button', { class: 'btn small subtle', type: 'button', style: 'margin-top:6px', text: 'Back to the latest position', on: { click: () => { state.pt = null; updateMap(); renderDetail(); } } }));
+    renderLegend();
+  }
+
+  function pickPoint(k, idx) {
+    state.pt = { k, i: idx };
+    updateMap();
+    const s = state.storms[state.sel];
+    const p = (k === 'past' ? s.pastP : s.fcP)[idx];
+    if (p && map) { map.select('pt:' + k + ':' + idx, true); map.setPopup('pt:' + k + ':' + idx, popupFor(p, (s.name || 'Storm') + (k === 'past' ? ' · observed' : ' · forecast'))); }
+    renderDetail();
+  }
+
+  function searchView(open) {
+    const d = el('details', { class: 'find no-print', id: 'find' });
+    if (open) d.setAttribute('open', '');
+    d.appendChild(el('summary', { text: 'Find a storm by year and basin' }));
+    const year = el('select', { class: 'input', id: 'year', 'aria-label': 'Year' });
+    for (let y = THIS_YEAR; y >= 1990; y--) year.appendChild(el('option', { value: String(y), text: String(y), selected: y === state.search.year }));
+    const basin = el('select', { class: 'input', id: 'basin', 'aria-label': 'Ocean basin' });
+    Object.keys(BASINS).forEach((b) => basin.appendChild(el('option', { value: b, text: BASINS[b], selected: b === state.search.basin })));
+    d.appendChild(el('div', { class: 'fields' }, [
+      el('label', {}, ['Year', year]),
+      el('label', {}, ['Ocean basin', basin]),
+      el('button', { class: 'btn primary', type: 'button', text: 'Search', on: { click: () => { state.search.year = Number(year.value); state.search.basin = basin.value; runSearch(); } } })
+    ]));
+    return d;
+  }
+
+  function renderAll() {
+    renderUnits();
+    renderSubtitle();
+    const body = $('body');
+    const has = state.storms.length > 0;
+    if (!$('stage')) {
+      UI.clear(body);
+      body.appendChild(el('div', { id: 'bar' }));
+      body.appendChild(el('div', { id: 'stage' }));
+      body.appendChild(el('div', { class: 'legend', id: 'legend', style: 'margin-top:8px', role: 'group', 'aria-label': 'Map key' }));
+      body.appendChild(el('div', { id: 'empty' }));
+      body.appendChild(el('div', { class: 'storms', id: 'storms', role: 'group', 'aria-label': 'Storms' }));
+      body.appendChild(el('div', { class: 'detail hidden', id: 'detail', 'aria-live': 'polite' }));
+      body.appendChild(el('p', { class: 'small muted', id: 'foot', style: 'margin:8px 0 0' }));
+      body.appendChild(el('div', { id: 'finder' }));
+    }
+    const anyPos = state.storms.some((s) => s.cur);
+    $('stage').classList.toggle('hidden', !anyPos);
+    $('legend').classList.toggle('hidden', !anyPos);
+    if (anyPos) { ensureMap(); renderBar(); } else { $('bar').classList.add('hidden'); if (labelBox) UI.clear(labelBox); }
+    if (anyPos) $('bar').classList.remove('hidden');
+    const empty = UI.clear($('empty'));
+    if (!has) {
+      empty.appendChild(UI.message('info', state.scope === 'active' ? 'No tropical storms are active right now.' : 'No storms were found for ' + (state.search.label || 'that search') + '.'));
+      empty.appendChild(el('div', { style: 'margin-top:8px' }, [state.scope !== 'active' ? el('button', { class: 'btn small', type: 'button', text: 'Show active storms', on: { click: () => loadActive() } }) : null]));
+    }
+    $('foot').textContent = anyPos ? 'Track colors use the Saffir-Simpson scale from sustained wind. Agencies measure wind over different periods, so categories are approximate. Wind radii show where winds of the given speed extend.' : '';
+    renderList();
+    renderDetail();
+    UI.clear($('finder')).appendChild(searchView(!has));
+    if (anyPos) updateMap();
+    App.reportSize();
+  }
+
+  // ───────────── actions ─────────────
+
+  function setBusy(on) {
+    state.busy = on;
+    $('app').classList.toggle('busy', on);
+    $('app').setAttribute('aria-busy', String(on));
+  }
+
+  async function call(args) {
+    const res = await App.callTool('get_tropical_storms', args, 60000);
+    const d = App.dataOf(res);
+    if (!d || d.kind !== 'storms') throw new Error(App.textOf(res) || 'No storm data was returned.');
+    return d;
+  }
+
+  function adopt(d, scope, label) {
+    state.data = d;
+    state.scope = scope;
+    state.search.label = label || '';
+    state.storms = (d.storms || []).map(prepare);
+    state.pt = null;
+    state.sel = state.storms.length === 1 || (state.storms.length && scope === 'active') ? 0 : -1;
+    if (state.sel === -1 && state.storms.length && state.storms[0].loaded) state.sel = 0;
+    state.tab = state.sel >= 0 && state.storms[state.sel].fcP.length ? 'forecast' : 'past';
+    if (!state.data.unit) state.data.unit = 'metric';
+    state.unit = d.unit === 'imperial' ? 'imperial' : state.unit;
+  }
+
+  async function loadActive() {
+    if (state.busy) return;
+    setBusy(true);
+    try {
+      const d = await call({ scope: 'active' });
+      clearMessage();
+      adopt(d, 'active');
+      renderAll();
+      if (map) fitAll();
+    } catch (err) { showMessage('error', (err && err.message) || 'The storms could not be loaded.'); } finally { setBusy(false); renderAll(); }
+  }
+
+  async function runSearch() {
+    if (state.busy) return;
+    const label = basinName(state.search.basin) + ' ' + state.search.year;
+    setBusy(true);
+    try {
+      const d = await call({ scope: 'search', year: state.search.year, basinId: state.search.basin, maxStorms: 1 });
+      clearMessage();
+      adopt(d, 'search', label);
+      setBusy(false);
+      renderAll();
+      if (map && state.storms.some((s) => s.cur)) { if (state.sel >= 0) fitStorm(state.sel); else fitAll(); }
+      if (state.storms.length) $('finder').firstChild.removeAttribute('open');
+    } catch (err) { showMessage('error', (err && err.message) || 'The search failed.'); } finally { if (state.busy) setBusy(false); }
+  }
+
+  async function selectStorm(i, opts) {
+    opts = opts || {};
+    const s = state.storms[i];
+    if (!s || state.busy) return;
+    state.sel = i;
+    state.pt = null;
+    state.tab = s.fcP.length ? 'forecast' : 'past';
+    if (map) map.setPopup(null, null);
+    if (!s.loaded) {
+      renderList();
+      setBusy(true);
+      renderDetail();
+      try {
+        const d = await call({ scope: 'track', year: Number(s.year), basinId: s.basinId, govId: s.govId });
+        const t = (d.storms || [])[0];
+        if (!t) throw new Error('No track was returned for this storm.');
+        state.storms[i] = prepare(Object.assign({}, s, { past: t.past || [], forecast: t.forecast || [] }));
+        clearMessage();
+        state.tab = state.storms[i].fcP.length ? 'forecast' : 'past';
+      } catch (err) { showMessage('error', (err && err.message) || 'The track could not be loaded.'); } finally { setBusy(false); }
+    }
+    const cur = state.storms[i];
+    $('stage').classList.toggle('hidden', !state.storms.some((x) => x.cur));
+    if (cur.cur) { ensureMap(); renderBar(); }
+    renderList();
+    renderDetail();
+    updateMap();
+    if (map && opts.fit !== false && cur.cur) fitStorm(i);
+    if (opts.user !== false) App.updateModelContext('The user selected the storm ' + (cur.name || 'unnamed') + ' (' + basinName(cur.basinId) + ' ' + cur.year + ')' + (cur.cur ? ': ' + cur.cur.cat.name + ', sustained wind ' + windText(cur.cur.sustainedWind) + ', at ' + coords(cur.cur.lat, cur.cur.lon) + '.' : '.'));
+    App.reportSize();
+  }
+
+  function showMessage(kind, text) { UI.clear($('message')).appendChild(UI.message(kind, text)); }
+  function clearMessage() { UI.clear($('message')); }
+
+  App.on('result', (result) => {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'storms') {
+      showMessage(result && result.isError ? 'error' : 'info', (result && App.textOf(result)) || 'No storm data was returned.');
+      if (!state.data) UI.clear($('body'));
+      return;
+    }
+    clearMessage();
+    adopt(d, d.scope === 'active' ? 'active' : 'search');
+    renderAll();
+    if (map && state.storms.some((s) => s.cur)) { if (state.sel >= 0 && state.storms.length === 1) fitStorm(state.sel); else fitAll(); }
+  });
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'storms' }).catch(() => showMessage('error', 'The storm tracker could not start.'));
+})();
+</script>
+</body>
+</html>

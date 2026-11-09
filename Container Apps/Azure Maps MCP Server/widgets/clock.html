@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World clock</title>
+<style>
+/*@shared-css*/
+.bar-row { display: flex; flex-wrap: wrap; gap: var(--sp-s); align-items: flex-end; margin-bottom: var(--sp-m); }
+.field-col { display: flex; flex-direction: column; gap: 2px; }
+.field-col label { font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.add-form { display: flex; gap: var(--sp-xs); align-items: flex-end; flex: 1 1 200px; min-width: 0; }
+.add-form .field-col { flex: 1 1 auto; min-width: 0; }
+.add-form .input { width: 100%; }
+.clocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-s); }
+.zc { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--sp-s); background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); text-align: center; min-width: 0; }
+.zc.home { border-color: var(--brand); }
+.zc .name { font-weight: var(--fw-semibold); max-width: 100%; padding: 0 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zc .sub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zc .rm { position: absolute; top: 2px; right: 2px; min-width: 24px; padding: 2px; }
+.zc .time { font-size: var(--fs-600); line-height: var(--lh-600); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zc .time small { font-size: var(--fs-200); font-weight: var(--fw-semibold); margin-left: 2px; }
+.zc .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-xs); }
+.zc .sun { display: flex; align-items: center; gap: var(--sp-s); flex-wrap: wrap; justify-content: center; }
+.zc .sun span { display: inline-flex; align-items: center; gap: 3px; }
+.daybar { position: relative; width: 100%; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--fg3) 35%, var(--bg4)); overflow: hidden; }
+.daybar .day { position: absolute; top: 0; bottom: 0; background: #f2b134; }
+.daybar .now { position: absolute; top: -1px; bottom: -1px; width: 2px; margin-left: -1px; background: var(--fg1); }
+.diff { font-weight: var(--fw-semibold); }
+.section-h { margin: var(--sp-l) 0 var(--sp-s); font-size: var(--fs-400); line-height: var(--lh-400); font-weight: var(--fw-semibold); }
+.windows { display: flex; flex-wrap: wrap; gap: var(--sp-xs); margin: var(--sp-xs) 0 var(--sp-s); }
+.windows .chip { flex-direction: column; align-items: flex-start; border-radius: var(--radius-m); gap: 0; }
+.windows .chip small { color: var(--fg3); font-weight: var(--fw-regular); }
+.windows .chip[aria-pressed="true"] small { color: inherit; }
+.gscroll { overflow-x: auto; padding-bottom: 4px; }
+.gw { position: relative; min-width: 744px; }
+table.pg { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 11px; line-height: 13px; }
+table.pg col.h { width: 120px; }
+table.pg th { position: sticky; left: 0; z-index: 2; text-align: left; padding: 2px 6px 2px 0; background: var(--bg1); border-bottom: 2px solid var(--bg1); font-weight: var(--fw-semibold); font-size: var(--fs-200); line-height: 14px; overflow: hidden; }
+table.pg th .t { display: block; font-weight: var(--fw-regular); color: var(--fg3); white-space: nowrap; }
+table.pg th .n { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+table.pg td { height: 36px; padding: 0; text-align: center; vertical-align: middle; border-bottom: 2px solid var(--bg1); border-left: 1px solid var(--bg1); font-variant-numeric: tabular-nums; }
+table.pg td small { display: block; font-size: 9px; line-height: 10px; }
+table.pg td.work { background: color-mix(in srgb, var(--success) 32%, var(--bg1)); font-weight: var(--fw-semibold); }
+table.pg td.edge { background: color-mix(in srgb, var(--warning) 24%, var(--bg1)); }
+table.pg td.night { color: var(--fg3); background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--fg3) 16%, transparent) 4px 5px), color-mix(in srgb, var(--fg3) 12%, var(--bg1)); }
+table.pg td.utc { background: transparent; color: var(--fg3); height: 26px; }
+table.pg td.dc { border-left: 2px solid var(--fg1); }
+table.pg td.sel { box-shadow: inset 0 -3px 0 var(--brand); }
+input.scrub { position: absolute; left: 120px; right: 0; top: 0; width: calc(100% - 120px); height: 100%; margin: 0; padding: 0; z-index: 1; background: transparent; -webkit-appearance: none; appearance: none; cursor: ew-resize; }
+.scrub::-webkit-slider-runnable-track { height: var(--gh, 200px); background: transparent; }
+.scrub::-moz-range-track { height: var(--gh, 200px); background: transparent; }
+.scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 5px; height: var(--gh, 200px); border: 0; border-radius: 2px; background: var(--brand); box-shadow: 0 0 0 2px var(--bg1); cursor: ew-resize; }
+.scrub::-moz-range-thumb { width: 5px; height: var(--gh, 200px); border: 0; border-radius: 2px; background: var(--brand); box-shadow: 0 0 0 2px var(--bg1); cursor: ew-resize; }
+.scrub:focus-visible { outline: 2px solid var(--focus-outer); outline-offset: 2px; box-shadow: none; }
+.keyrow { display: flex; flex-wrap: wrap; gap: var(--sp-xs) var(--sp-m); margin-top: var(--sp-xs); }
+.keyrow .item { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.keyrow .swatch { width: 22px; height: 14px; border-radius: 2px; border: 1px solid var(--stroke2); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: var(--fg1); }
+.keyrow .swatch.work { background: color-mix(in srgb, var(--success) 32%, var(--bg1)); font-weight: var(--fw-semibold); }
+.keyrow .swatch.edge { background: color-mix(in srgb, var(--warning) 24%, var(--bg1)); }
+.keyrow .swatch.night { color: var(--fg3); background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--fg3) 16%, transparent) 4px 5px), color-mix(in srgb, var(--fg3) 12%, var(--bg1)); }
+.selline { margin-top: var(--sp-s); padding: var(--sp-s) var(--sp-m); background: var(--bg2); border: 1px solid var(--stroke2); border-radius: var(--radius-m); display: flex; flex-wrap: wrap; gap: var(--sp-s); align-items: center; }
+.selline .txt { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; font-weight: var(--fw-semibold); }
+@media (forced-colors: active) {
+  table.pg td.work { font-weight: 700; outline: 1px solid CanvasText; }
+  .scrub::-webkit-slider-thumb { background: Highlight; }
+  .scrub::-moz-range-thumb { background: Highlight; }
+  .daybar .day { background: Highlight; forced-color-adjust: none; }
+}
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">World clock</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="seg no-print" id="fmt" role="group" aria-label="Time format"></div>
+  </div>
+  <div id="stage"><div class="skeleton" style="height:240px" role="progressbar" aria-label="Loading clocks"></div></div>
+  <div id="message" style="margin-top:8px"></div>
+</main>
+<script>
+/*@shared-js*/
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = UI.el;
+  const pad = UI.pad;
+  const MAX_ZONES = 12;
+  const STEP = 15; // planner resolution in minutes
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const defaultHour12 = (() => { try { return !!new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12; } catch (e) { return false; } })();
+
+  const state = { zones: [], homeKey: null, hour12: defaultHour12, fixed: null, workStart: 540, workEnd: 1020, planDay: '', step: 0, refMs: Date.now(), inputArgs: {}, busy: false };
+  let cards = new Map();
+  let timer = null;
+  let ui = {};
+
+  const keyOf = (z) => z.id + '|' + (z.label || '');
+  const shortName = (z) => String(z.label || z.id || '').split(',')[0].trim() || z.id;
+  const restName = (z) => String(z.label || '').split(',').slice(1).join(',').trim();
+  const home = () => state.zones.find((z) => keyOf(z) === state.homeKey) || state.zones[0];
+  const nowMs = () => (state.fixed !== null ? state.fixed : Date.now());
+  const toMin = (s, fallback) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? Math.min(1439, Number(m[1]) * 60 + Number(m[2])) : fallback; };
+  const hhmm = (min) => pad(Math.floor(min / 60)) + ':' + pad(min % 60);
+  const showMessage = (kind, text) => UI.clear($('message')).appendChild(UI.message(kind, text));
+  const clearMessage = () => UI.clear($('message'));
+  const setText = (node, text) => { if (node && node.textContent !== text) node.textContent = text; };
+
+  // ───────────── time zone math (browser Intl) ─────────────
+
+  const fmts = new Map();
+  function fmtFor(id) {
+    if (!fmts.has(id)) {
+      let f = null;
+      try { f = new Intl.DateTimeFormat('en-US', { timeZone: id, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', weekday: 'short' }); } catch (e) { f = null; }
+      fmts.set(id, f);
+    }
+    return fmts.get(id);
+  }
+
+  /** Wall-clock fields of a zone at an instant, plus its UTC offset in minutes. */
+  function local(z, ms) {
+    const sec = Math.floor(ms / 1000) * 1000;
+    const f = fmtFor(z.id);
+    let y, mo, d, h, mi, s, wd;
+    if (f) {
+      const p = {};
+      f.formatToParts(sec).forEach((part) => { p[part.type] = part.value; });
+      y = +p.year; mo = +p.month; d = +p.day; h = +p.hour % 24; mi = +p.minute; s = +p.second; wd = WD.indexOf(p.weekday);
+    } else {
+      const t = new Date(sec + (z.offsetMinutes || 0) * 60000);
+      y = t.getUTCFullYear(); mo = t.getUTCMonth() + 1; d = t.getUTCDate(); h = t.getUTCHours(); mi = t.getUTCMinutes(); s = t.getUTCSeconds(); wd = t.getUTCDay();
+    }
+    const off = Math.round((Date.UTC(y, mo - 1, d, h, mi, s) - sec) / 60000);
+    return { y, mo, d, h, mi, s, wd, off, min: h * 60 + mi, dayNum: Date.UTC(y, mo - 1, d) / 864e5 };
+  }
+
+  function zonedToUtc(z, y, mo, d, h, mi) {
+    const wall = Date.UTC(y, mo - 1, d, h, mi);
+    let guess = wall;
+    for (let i = 0; i < 3; i++) guess = wall - local(z, guess).off * 60000;
+    return guess;
+  }
+
+  function isDst(z, ms) {
+    if (!fmtFor(z.id)) return !!z.daylightSaving;
+    const L = local(z, ms);
+    const a = local(z, Date.UTC(L.y, 0, 1)).off, b = local(z, Date.UTC(L.y, 6, 1)).off;
+    return a !== b && L.off > Math.min(a, b);
+  }
+
+  const utcLabel = (off) => 'UTC' + (off < 0 ? '−' : '+') + Math.floor(Math.abs(off) / 60) + (Math.abs(off) % 60 ? ':' + pad(Math.abs(off) % 60) : '');
+  const offsetOfText = (t) => { const m = /^([+-])(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0; };
+  const dateText = (L) => WD[L.wd] + ', ' + MON[L.mo - 1] + ' ' + L.d;
+
+  function fmtHM(h, mi) {
+    if (!state.hour12) return pad(h) + ':' + pad(mi);
+    return ((h % 12) || 12) + ':' + pad(mi) + ' ' + (h < 12 ? 'AM' : 'PM');
+  }
+  const fmtMinutes = (min) => fmtHM(Math.floor(min / 60) % 24, min % 60);
+
+  function diffText(L, H, isHome) {
+    if (isHome) return 'Home';
+    const dMin = L.off - H.off;
+    const dd = L.dayNum - H.dayNum;
+    const day = dd === 0 ? 'today' : dd > 0 ? 'tomorrow' : 'yesterday';
+    if (dMin === 0) return 'Same time as home';
+    const a = Math.abs(dMin);
+    return (dMin > 0 ? '+' : '−') + Math.floor(a / 60) + ' h' + (a % 60 ? ' ' + (a % 60) + ' min' : '') + ' · ' + day;
+  }
+
+  // ───────────── clock cards ─────────────
+
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function svg(tag, attrs) {
+    const n = document.createElementNS(SVGNS, tag);
+    Object.keys(attrs || {}).forEach((k) => n.setAttribute(k, attrs[k]));
+    return n;
+  }
+  const DAY = { face: '#fff4d1', ink: '#3b3a39', ring: '#d9a400' };
+  const NIGHT = { face: '#1f2d44', ink: '#f3f2f1', ring: '#5b6f93' };
+
+  function buildClock() {
+    const root = svg('svg', { viewBox: '-50 -50 100 100', width: '96', height: '96', role: 'img', focusable: 'false' });
+    const face = svg('circle', { r: '47', 'stroke-width': '3' });
+    root.appendChild(face);
+    const ticks = [];
+    for (let i = 0; i < 12; i++) {
+      const big = i % 3 === 0;
+      const t = svg('line', { x1: '0', y1: big ? '-38' : '-41', x2: '0', y2: '-44', 'stroke-width': big ? '3' : '1.5', 'stroke-linecap': 'round', transform: 'rotate(' + i * 30 + ')' });
+      ticks.push(t); root.appendChild(t);
+    }
+    const hour = svg('line', { x1: '0', y1: '4', x2: '0', y2: '-24', 'stroke-width': '4.5', 'stroke-linecap': 'round' });
+    const min = svg('line', { x1: '0', y1: '6', x2: '0', y2: '-36', 'stroke-width': '3', 'stroke-linecap': 'round' });
+    const sec = svg('line', { x1: '0', y1: '8', x2: '0', y2: '-40', 'stroke-width': '1.4', 'stroke-linecap': 'round', stroke: '#d13438' });
+    const pin = svg('circle', { r: '3', fill: '#d13438' });
+    root.append(hour, min);
+    if (!reduceMotion) root.appendChild(sec);
+    root.appendChild(pin);
+    return { root, face, ticks, hour, min, sec, isDay: null };
+  }
+
+  function sunMinutes(z) {
+    const sr = toMin(String(z.sunrise || '').slice(11, 16), null);
+    const ss = toMin(String(z.sunset || '').slice(11, 16), null);
+    return sr !== null && ss !== null ? { sr, ss } : null;
+  }
+
+  function buildCard(z) {
+    const k = keyOf(z);
+    const sun = sunMinutes(z);
+    const clock = buildClock();
+    const c = { z, k, sun, clock, lastMin: -1 };
+    c.name = el('div', { class: 'name', text: shortName(z), title: z.label || z.id });
+    c.sub = el('div', { class: 'sub small muted', text: restName(z) || z.id });
+    c.rm = el('button', { class: 'btn subtle rm', type: 'button', 'aria-label': 'Remove ' + shortName(z), title: 'Remove', html: UI.icon('close', 14), on: { click: () => removeZone(k) } });
+    c.time = el('div', { class: 'time' });
+    c.timeText = document.createTextNode('');
+    c.ampm = el('small');
+    c.time.append(c.timeText, c.ampm);
+    c.date = el('div', { class: 'small' });
+    c.offBadge = el('span', { class: 'badge' });
+    c.dstBadge = el('span', { class: 'badge warn', text: 'DST' });
+    c.badges = el('div', { class: 'badges' }, [c.offBadge, c.dstBadge]);
+    c.diff = el('div', { class: 'diff small' });
+    c.next = el('div', { class: 'small muted' });
+    c.sunRow = el('div', { class: 'small sun' });
+    c.bar = el('div', { class: 'daybar', role: 'img' });
+    c.barDay = el('span', { class: 'day' });
+    c.barNow = el('span', { class: 'now' });
+    c.bar.append(c.barDay, c.barNow);
+    c.home = el('button', { class: 'btn small subtle', type: 'button', text: 'Set as home', on: { click: () => setHome(k) } });
+    c.node = el('section', { class: 'zc', 'aria-label': shortName(z) }, [c.rm, c.name, c.sub, clock.root, c.time, c.date, c.badges, c.diff, c.sunRow, c.bar, c.next, c.home]);
+    return c;
+  }
+
+  function paintClock(c, L, isDay) {
+    const k = c.clock;
+    if (k.isDay !== isDay) {
+      k.isDay = isDay;
+      const p = isDay ? DAY : NIGHT;
+      k.face.setAttribute('fill', p.face); k.face.setAttribute('stroke', p.ring);
+      k.ticks.forEach((t) => t.setAttribute('stroke', p.ink));
+      k.hour.setAttribute('stroke', p.ink); k.min.setAttribute('stroke', p.ink);
+    }
+    k.hour.setAttribute('transform', 'rotate(' + (((L.h % 12) + L.mi / 60) * 30) + ')');
+    k.min.setAttribute('transform', 'rotate(' + ((L.mi + (reduceMotion ? 0 : L.s / 60)) * 6) + ')');
+    if (!reduceMotion) k.sec.setAttribute('transform', 'rotate(' + L.s * 6 + ')');
+  }
+
+  function updateCard(c, ms, H) {
+    const z = c.z;
+    const L = local(z, ms);
+    const isHome = c.k === state.homeKey;
+    const sec = reduceMotion ? '' : ':' + pad(L.s);
+    if (state.hour12) { setText(c.timeText, ((L.h % 12) || 12) + ':' + pad(L.mi) + sec); setText(c.ampm, L.h < 12 ? 'AM' : 'PM'); }
+    else { setText(c.timeText, pad(L.h) + ':' + pad(L.mi) + sec); setText(c.ampm, ''); }
+    setText(c.date, dateText(L));
+    const abbr = z.abbreviation && /^[A-Za-z]{2,5}$/.test(z.abbreviation) && L.off === z.offsetMinutes ? z.abbreviation + ' · ' : '';
+    setText(c.offBadge, abbr + utcLabel(L.off));
+    c.dstBadge.classList.toggle('hidden', !isDst(z, ms));
+    setText(c.diff, diffText(L, H, isHome));
+    c.diff.classList.toggle('muted', isHome);
+    c.node.classList.toggle('home', isHome);
+    c.home.classList.toggle('hidden', isHome || state.zones.length < 2);
+
+    const nc = z.nextChange && Date.parse(z.nextChange.utc) > ms ? z.nextChange : null;
+    if (nc) {
+      const NL = local(z, Date.parse(nc.utc) + 60000);
+      setText(c.next, 'Clocks change ' + MON[NL.mo - 1] + ' ' + NL.d + ' to ' + utcLabel(offsetOfText(nc.offset)));
+    } else setText(c.next, '');
+    c.next.classList.toggle('hidden', !nc);
+
+    const sunUp = c.sun ? (c.sun.sr <= c.sun.ss ? L.min >= c.sun.sr && L.min < c.sun.ss : L.min >= c.sun.sr || L.min < c.sun.ss) : L.min >= 360 && L.min < 1080;
+    paintClock(c, L, sunUp);
+    if (c.lastMin !== L.min + state.hour12 * 5000) {
+      c.lastMin = L.min + state.hour12 * 5000;
+      const label = shortName(z) + ', ' + fmtHM(L.h, L.mi) + (sunUp ? ', daytime' : ', night');
+      c.clock.root.setAttribute('aria-label', 'Analog clock: ' + label);
+      if (c.sun) {
+        UI.clear(c.sunRow);
+        c.sunRow.append(
+          el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="#f2b134"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2" stroke="#f2b134" stroke-width="2" stroke-linecap="round"/></svg>' }, [el('span', { text: 'Rise ' + fmtMinutes(c.sun.sr) })]),
+          el('span', { html: '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" fill="#8a9bc0"/></svg>' }, [el('span', { text: 'Set ' + fmtMinutes(c.sun.ss) })])
+        );
+        const len = ((c.sun.ss - c.sun.sr) + 1440) % 1440;
+        c.bar.setAttribute('aria-label', 'Daylight ' + Math.floor(len / 60) + ' h ' + len % 60 + ' min, from ' + fmtMinutes(c.sun.sr) + ' to ' + fmtMinutes(c.sun.ss));
+        c.barDay.style.left = (c.sun.sr / 14.4) + '%';
+        c.barDay.style.width = (len / 14.4) + '%';
+        if (c.sun.sr + len > 1440) { c.barDay.style.width = ((1440 - c.sun.sr) / 14.4) + '%'; }
+      }
+    }
+    if (c.sun) c.barNow.style.left = (L.min / 14.4) + '%';
+    c.sunRow.classList.toggle('hidden', !c.sun);
+    c.bar.classList.toggle('hidden', !c.sun);
+  }
+
+  function tick() {
+    if (!ui.clocks || document.hidden) return;
+    const ms = nowMs();
+    const H = local(home(), ms);
+    state.zones.forEach((z) => { const c = cards.get(keyOf(z)); if (c) updateCard(c, ms, H); });
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = null;
+    if (state.fixed === null) timer = setInterval(tick, reduceMotion ? 15000 : 1000);
+  }
+
+  // ───────────── controls ─────────────
+
+  function setHome(k) {
+    state.homeKey = k;
+    state.planDay = homeDate(nowMs());
+    buildAll(false);
+  }
+
+  function removeZone(k) {
+    if (state.zones.length < 2) return;
+    state.zones = state.zones.filter((z) => keyOf(z) !== k);
+    if (state.homeKey === k) state.homeKey = keyOf(state.zones[0]);
+    buildAll(false);
+    App.updateModelContext('The user removed a place from the world clock. Places now: ' + state.zones.map(shortName).join(', ') + '.');
+  }
+
+  function homeDate(ms) { const L = local(home(), ms); return L.y + '-' + pad(L.mo) + '-' + pad(L.d); }
+  const inputValue = (ms) => { const L = local(home(), ms); return L.y + '-' + pad(L.mo) + '-' + pad(L.d) + 'T' + pad(L.h) + ':' + pad(L.mi); };
+
+  function updateSubtitle() {
+    $('subtitle').textContent = state.zones.length + ' place' + (state.zones.length === 1 ? '' : 's') + (state.fixed !== null ? ' · previewing ' + inputValue(state.fixed).replace('T', ' ') : ' · live');
+  }
+
+  function setPreview(ms) {
+    state.fixed = ms;
+    state.planDay = homeDate(ms);
+    ui.when.value = inputValue(ms);
+    ui.now.classList.toggle('hidden', ms === null);
+    ui.sunNote.classList.toggle('hidden', ms === null || Math.abs(ms - state.refMs) < 3 * 864e5);
+    updateSubtitle();
+    startTimer();
+    buildPlanner();
+    tick();
+    if (ms !== null) App.updateModelContext('The user is previewing the world clock at ' + inputValue(ms).replace('T', ' ') + ' in ' + shortName(home()) + '.');
+  }
+
+  function resumeNow() {
+    state.fixed = null;
+    state.planDay = homeDate(Date.now());
+    ui.when.value = inputValue(Date.now());
+    ui.now.classList.add('hidden');
+    ui.sunNote.classList.add('hidden');
+    updateSubtitle();
+    startTimer();
+    buildPlanner();
+    tick();
+  }
+
+  function renderFormatSeg() {
+    const box = UI.clear($('fmt'));
+    [['12 h', true], ['24 h', false]].forEach(([label, v]) => box.appendChild(el('button', {
+      type: 'button', text: label, 'aria-pressed': String(state.hour12 === v),
+      on: { click: () => { state.hour12 = v; renderFormatSeg(); cards.forEach((c) => { c.lastMin = -1; }); tick(); buildPlanner(); } }
+    })));
+  }
+
+  async function addPlace(text) {
+    const q = String(text || '').trim();
+    if (!q || state.busy) return;
+    if (state.zones.length >= MAX_ZONES) { showMessage('warning', 'You can show up to ' + MAX_ZONES + ' places. Remove one to add another.'); return; }
+    clearMessage();
+    state.busy = true;
+    ui.addBtn.setAttribute('disabled', '');
+    try {
+      const args = { locations: [{ query: q }] };
+      if (state.fixed !== null) args.timeStamp = new Date(state.fixed).toISOString();
+      const res = await App.callTool('get_timezone', args);
+      const d = App.dataOf(res);
+      const added = d && d.kind === 'clock' && Array.isArray(d.zones) ? d.zones : [];
+      if (!added.length) throw new Error('No time zone was found for "' + q + '".');
+      let n = 0;
+      added.forEach((z) => {
+        if (state.zones.length < MAX_ZONES && !state.zones.some((x) => keyOf(x) === keyOf(z))) { state.zones.push(z); n++; }
+      });
+      if (!n) showMessage('info', 'That place is already on the list.');
+      ui.addInput.value = '';
+      buildAll(false);
+      if (n) App.updateModelContext('The user added ' + added.map(shortName).join(', ') + ' to the world clock.');
+    } catch (err) {
+      showMessage('error', (err && err.message) || 'The place could not be added.');
+    }
+    state.busy = false;
+    if (ui.addBtn) ui.addBtn.removeAttribute('disabled');
+  }
+
+  // ───────────── meeting planner ─────────────
+
+  const inWork = (min) => (state.workStart < state.workEnd ? min >= state.workStart && min < state.workEnd : min >= state.workStart || min < state.workEnd);
+  function inEdge(min) {
+    const before = (state.workStart - min + 1440) % 1440;
+    const after = (min - state.workEnd + 1440) % 1440;
+    return (before > 0 && before <= 120) || (after >= 0 && after < 120);
+  }
+  const zoneClass = (z, ms) => { const m = local(z, ms).min; return inWork(m) ? 'work' : inEdge(m) ? 'edge' : 'night'; };
+  const CLASS_TEXT = { work: 'working hours', edge: 'early or late', night: 'night' };
+
+  function dayStart() {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(state.planDay);
+    if (!m) { const L = local(home(), nowMs()); return zonedToUtc(home(), L.y, L.mo, L.d, 0, 0); }
+    return zonedToUtc(home(), Number(m[1]), Number(m[2]), Number(m[3]), 0, 0);
+  }
+
+  function bestWindows(start) {
+    const n = state.zones.length;
+    const counts = [];
+    for (let i = 0; i < 96; i++) {
+      const t = start + i * STEP * 60000;
+      counts.push(state.zones.filter((z) => !inWork(local(z, t).min)).length);
+    }
+    const best = Math.min.apply(null, counts);
+    const runs = [];
+    let from = -1;
+    for (let i = 0; i <= 96; i++) {
+      const ok = i < 96 && counts[i] === best;
+      if (ok && from < 0) from = i;
+      if (!ok && from >= 0) { runs.push({ a: from, b: i }); from = -1; }
+    }
+    const long = runs.filter((r) => r.b - r.a >= 2);
+    return { best, n, runs: (long.length ? long : runs).slice(0, 8), start };
+  }
+
+  const utcText = (ms) => { const d = new Date(ms); return pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); };
+
+  function inviteText(ms) {
+    const u = new Date(ms);
+    const parts = state.zones.map((z) => {
+      const L = local(z, ms);
+      const dd = L.dayNum - Math.floor(ms / 864e5);
+      return shortName(z) + ' ' + pad(L.h) + ':' + pad(L.mi) + (dd ? ' (' + (dd > 0 ? '+' : '−') + Math.abs(dd) + 'd)' : '');
+    });
+    return WD[u.getUTCDay()] + ' ' + utcText(ms) + ' UTC — ' + parts.join(', ');
+  }
+
+  function buildPlanner() {
+    const box = ui.planner;
+    if (!box) return;
+    UI.clear(box);
+    if (state.zones.length < 2) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const start = dayStart();
+    const H = home();
+
+    box.appendChild(el('h2', { class: 'section-h', text: 'Meeting planner' }));
+
+    const workStart = el('input', { class: 'input', type: 'time', id: 'ws', value: hhmm(state.workStart), 'aria-label': 'Working day starts' });
+    const workEnd = el('input', { class: 'input', type: 'time', id: 'we', value: hhmm(state.workEnd), 'aria-label': 'Working day ends' });
+    const onWork = () => {
+      if (!workStart.value || !workEnd.value) return;
+      state.workStart = toMin(workStart.value, 540); state.workEnd = toMin(workEnd.value, 1020);
+      state.step = -1;
+      buildPlanner();
+    };
+    workStart.addEventListener('change', onWork); workEnd.addEventListener('change', onWork);
+    const day = el('input', { class: 'input', type: 'date', id: 'day', value: state.planDay, 'aria-label': 'Day in ' + shortName(H) });
+    day.addEventListener('change', () => { if (day.value) { state.planDay = day.value; state.step = -1; buildPlanner(); } });
+    box.appendChild(el('div', { class: 'bar-row no-print' }, [
+      el('div', { class: 'field-col' }, [el('label', { for: 'day', text: 'Day (' + shortName(H) + ')' }), day]),
+      el('div', { class: 'field-col' }, [el('label', { for: 'ws', text: 'Work starts' }), workStart]),
+      el('div', { class: 'field-col' }, [el('label', { for: 'we', text: 'Work ends' }), workEnd])
+    ]));
+
+    const bw = bestWindows(start);
+    box.appendChild(el('div', { class: 'small semibold', id: 'bwTitle', text: bw.best === 0 ? 'Best windows: everyone is in working hours' : 'No time works for everyone. Fewest people outside working hours (' + bw.best + ' of ' + bw.n + '):' }));
+    const chips = el('div', { class: 'windows', role: 'group', 'aria-labelledby': 'bwTitle' });
+    bw.runs.forEach((r) => {
+      const a = start + r.a * STEP * 60000, b = start + r.b * STEP * 60000;
+      const La = local(H, a), Lb = local(H, b);
+      chips.appendChild(el('button', {
+        class: 'chip', type: 'button', 'data-a': String(r.a), 'data-b': String(r.b), 'aria-pressed': 'false',
+        on: { click: () => { scrub.value = String(r.a); onScrub(true); } }
+      }, [
+        el('span', { text: utcText(a) + '–' + utcText(b) + ' UTC' }),
+        el('small', { text: shortName(H) + ' ' + fmtHM(La.h, La.mi) + '–' + fmtHM(Lb.h, Lb.mi) })
+      ]));
+    });
+    box.appendChild(chips);
+
+    // grid
+    const table = el('table', { class: 'pg', 'aria-label': 'Hour by hour in each place, starting at midnight in ' + shortName(H) + '. Use the meeting time slider to choose a time.' });
+    const cg = el('colgroup', {}, [el('col', { class: 'h' })]);
+    table.appendChild(cg);
+    const body = el('tbody');
+    table.appendChild(body);
+    const rowRefs = [];
+    const hourCell = (z, t, isUtc, prevDay) => {
+      const L = isUtc ? local({ id: 'UTC', offsetMinutes: 0 }, t) : local(z, t);
+      const cls = isUtc ? 'utc' : zoneClass(z, t + 30 * 60000);
+      const label = state.hour12 ? ((L.h % 12) || 12) + (L.h < 12 ? 'a' : 'p') : pad(L.h);
+      const td = el('td', { class: cls + (prevDay !== undefined && prevDay !== L.dayNum ? ' dc' : ''), 'aria-label': WD[L.wd] + ' ' + hhmm(L.min) + (isUtc ? ' UTC' : ', ' + CLASS_TEXT[cls]), title: isUtc ? '' : WD[L.wd] + ' ' + MON[L.mo - 1] + ' ' + L.d + ', ' + hhmm(L.min) + ' — ' + CLASS_TEXT[cls] }, [label]);
+      if (L.mi) td.appendChild(el('small', { text: ':' + pad(L.mi) }));
+      return { td, L };
+    };
+    const utcRow = el('tr');
+    utcRow.appendChild(el('th', { scope: 'row' }, [el('span', { class: 'n', text: 'UTC' })]));
+    for (let i = 0; i < 24; i++) { cg.appendChild(el('col')); utcRow.appendChild(hourCell(null, start + i * 3600000, true).td); }
+    body.appendChild(utcRow);
+    state.zones.forEach((z) => {
+      const tr = el('tr');
+      const th = el('th', { scope: 'row' });
+      const nm = el('span', { class: 'n', text: shortName(z), title: z.label || z.id });
+      const tt = el('span', { class: 't' });
+      th.append(nm, tt);
+      tr.appendChild(th);
+      let prev;
+      const tds = [];
+      for (let i = 0; i < 24; i++) {
+        const { td, L } = hourCell(z, start + i * 3600000, false, prev);
+        prev = L.dayNum;
+        tds.push(td); tr.appendChild(td);
+      }
+      rowRefs.push({ z, tt, tds });
+      body.appendChild(tr);
+    });
+
+    const scrub = el('input', { class: 'scrub no-print', type: 'range', min: '0', max: '96', step: '1', value: '0', 'aria-label': 'Meeting time' });
+    const gw = el('div', { class: 'gw' }, [table, scrub]);
+    box.appendChild(el('div', { class: 'gscroll' }, [gw]));
+
+    box.appendChild(el('div', { class: 'keyrow' }, [
+      el('span', { class: 'item' }, [el('span', { class: 'swatch work', text: '9' }), el('span', { text: 'Working hours' })]),
+      el('span', { class: 'item' }, [el('span', { class: 'swatch edge', text: '8' }), el('span', { text: 'Early or late (2 h around work)' })]),
+      el('span', { class: 'item' }, [el('span', { class: 'swatch night', text: '2' }), el('span', { text: 'Night' })]),
+      el('span', { class: 'item', text: 'Thick left edge = new day' })
+    ]));
+
+    const selTxt = el('div', { class: 'txt' });
+    const copy = el('button', { class: 'btn no-print', type: 'button', html: UI.icon('copy'), on: { click: () => {
+      UI.copyText(inviteText(start + Number(scrub.value) * STEP * 60000)).then((okay) => UI.tempHint(okay ? 'Invite text copied' : 'Copy is not available here'));
+    } } }, [el('span', { text: 'Copy invite text' })]);
+    box.appendChild(el('div', { class: 'selline' }, [selTxt, copy]));
+
+    const onScrub = (commit) => {
+      const v = Number(scrub.value);
+      const ms = start + v * STEP * 60000;
+      state.step = v;
+      rowRefs.forEach((r) => {
+        const L = local(r.z, ms);
+        setText(r.tt, fmtHM(L.h, L.mi) + ' · ' + WD[L.wd]);
+        r.tds.forEach((td, i) => td.classList.toggle('sel', i === Math.min(23, Math.floor(v / 4))));
+      });
+      const text = inviteText(ms);
+      setText(selTxt, text);
+      scrub.setAttribute('aria-valuetext', text);
+      chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(v >= Number(c.dataset.a) && v < Number(c.dataset.b))));
+      if (commit) {
+        const sc = gw.parentNode;
+        const x = 120 + (v / 96) * (gw.clientWidth - 120);
+        if (x < sc.scrollLeft + 130 || x > sc.scrollLeft + sc.clientWidth - 10) sc.scrollLeft = Math.max(0, x - sc.clientWidth / 2);
+        App.updateModelContext('The user is considering a meeting time: ' + text + '.');
+      }
+    };
+    scrub.addEventListener('input', () => onScrub(false));
+    scrub.addEventListener('change', () => onScrub(true));
+    scrub.addEventListener('keydown', (e) => {
+      if (e.key === 'PageUp' || e.key === 'PageDown') {
+        e.preventDefault();
+        scrub.value = String(Math.max(0, Math.min(96, Number(scrub.value) + (e.key === 'PageUp' ? 4 : -4))));
+        onScrub(true);
+      }
+    });
+
+    const syncHeight = () => gw.style.setProperty('--gh', table.offsetHeight + 'px');
+    syncHeight();
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(syncHeight).observe(table);
+
+    // initial position: keep the user's choice, else a window that contains the shown time, else the first window
+    let step = state.step;
+    if (step < 0 || step > 96 || step === undefined) {
+      const at = Math.round((nowMs() - start) / (STEP * 60000));
+      const win = bw.best === 0 ? (bw.runs.find((r) => at >= r.a && at < r.b) || bw.runs[0]) : null;
+      step = win ? (at >= win.a && at < win.b ? at : win.a) : Math.max(0, Math.min(96, at));
+    }
+    scrub.value = String(step);
+    onScrub(false);
+  }
+
+  // ───────────── page ─────────────
+
+  function buildAll(fresh) {
+    const stage = UI.clear($('stage'));
+    cards = new Map();
+    ui = {};
+    updateSubtitle();
+
+    const when = el('input', { class: 'input', type: 'datetime-local', id: 'when', 'aria-label': 'Preview date and time in ' + shortName(home()) });
+    when.value = inputValue(nowMs());
+    when.addEventListener('change', () => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(when.value);
+      if (m) setPreview(zonedToUtc(home(), +m[1], +m[2], +m[3], +m[4], +m[5]));
+    });
+    const now = el('button', { class: 'btn', type: 'button', text: 'Now', title: 'Go back to the current time', on: { click: resumeNow } });
+    const addInput = el('input', { class: 'input', type: 'text', id: 'place', placeholder: 'City or address', autocomplete: 'off', 'aria-label': 'Add a place' });
+    const addBtn = el('button', { class: 'btn primary', type: 'button', html: UI.icon('plus'), on: { click: () => addPlace(addInput.value) } }, [el('span', { text: 'Add' })]);
+    addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPlace(addInput.value); } });
+    const form = el('div', { class: 'add-form' }, [
+      el('div', { class: 'field-col' }, [el('label', { for: 'place', text: 'Add a place' }), addInput]), addBtn
+    ]);
+    if (state.zones.length >= MAX_ZONES) form.classList.add('hidden');
+    stage.appendChild(el('div', { class: 'bar-row no-print' }, [
+      el('div', { class: 'field-col' }, [el('label', { for: 'when', text: 'Preview a date and time (' + shortName(home()) + ')' }), el('div', { class: 'row' }, [when, now])]),
+      form
+    ]));
+    const sunNote = el('div', { class: 'small muted hidden', style: 'margin-bottom:8px', text: 'Sunrise and sunset times are for ' + new Date(state.refMs).toISOString().slice(0, 10) + ', so they are approximate for the preview date.' });
+    stage.appendChild(sunNote);
+
+    const clocks = el('div', { class: 'clocks', role: 'list', 'aria-label': 'Clocks' });
+    state.zones.forEach((z) => {
+      const c = buildCard(z);
+      c.node.setAttribute('role', 'listitem');
+      if (state.zones.length < 2) c.rm.classList.add('hidden');
+      cards.set(c.k, c);
+      clocks.appendChild(c.node);
+    });
+    stage.appendChild(clocks);
+    const planner = el('div', { id: 'planner' });
+    stage.appendChild(planner);
+    ui = { clocks, when, now, addInput, addBtn, planner, sunNote };
+    now.classList.toggle('hidden', state.fixed === null);
+    sunNote.classList.toggle('hidden', state.fixed === null || Math.abs(state.fixed - state.refMs) < 3 * 864e5);
+
+    renderFormatSeg();
+    buildPlanner();
+    tick();
+    startTimer();
+    App.reportSize();
+  }
+
+  function render(result) {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'clock' || !Array.isArray(d.zones) || !d.zones.length) {
+      UI.clear($('stage'));
+      showMessage(result && result.isError ? 'error' : 'info', (result && result.isError && App.textOf(result)) || 'No time zone data was returned.');
+      return;
+    }
+    clearMessage();
+    state.zones = d.zones.slice(0, MAX_ZONES);
+    state.homeKey = keyOf(state.zones[0]);
+    state.workStart = toMin(d.workStart, 540);
+    state.workEnd = toMin(d.workEnd, 1020);
+    const ref = Date.parse(d.referenceUtc);
+    state.refMs = isNaN(ref) ? Date.now() : ref;
+    const previewing = !!state.inputArgs.timeStamp || (!isNaN(ref) && Math.abs(ref - Date.now()) > 10 * 60000);
+    state.fixed = previewing && !isNaN(ref) ? ref : null;
+    state.planDay = homeDate(nowMs());
+    state.step = -1;
+    buildAll(true);
+  }
+
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+  App.on('input', (a) => { state.inputArgs = a || {}; });
+  App.on('result', render);
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'clock' }).catch(() => showMessage('error', 'The clock could not start.'));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Directions</title>
+<style>
+/*@shared-css*/
+.routes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-s); margin: var(--sp-s) 0; }
+.route-card { text-align: left; padding: var(--sp-s) var(--sp-m); background: var(--bg1); border: 1px solid var(--stroke1); border-radius: var(--radius-m); cursor: pointer; }
+.route-card:hover { background: var(--bg1-hover); }
+.route-card[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-bg-subtle); box-shadow: inset 0 0 0 1px var(--brand); }
+.route-card .t { font-size: var(--fs-600); line-height: var(--lh-600); font-weight: var(--fw-semibold); }
+.route-card .swatch { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.controls-row { display: flex; flex-wrap: wrap; gap: var(--sp-s) var(--sp-m); align-items: center; margin-bottom: var(--sp-s); }
+.steps { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--stroke2); }
+.step { display: grid; grid-template-columns: 28px 1fr auto; gap: var(--sp-s); align-items: baseline; padding: 6px var(--sp-xs); border-bottom: 1px solid var(--stroke2); cursor: pointer; }
+.step:hover, .step[aria-current="true"] { background: var(--brand-bg-subtle); }
+.step .ico { text-align: center; font-size: 16px; color: var(--brand-link); }
+.step.stop { background: var(--bg2); font-weight: var(--fw-semibold); }
+.busy { opacity: 0.6; pointer-events: none; }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Directions</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="seg no-print hidden" id="units" role="group" aria-label="Distance units"></div>
+  </div>
+  <div id="controls" class="controls-row no-print hidden"></div>
+  <div id="stage"><div class="skeleton" style="height:300px" role="progressbar" aria-label="Loading directions"></div></div>
+  <div class="routes" id="routes" role="group" aria-label="Route options"></div>
+  <div class="row wrap no-print" id="actions" style="margin-bottom:8px"></div>
+  <h2 class="section-title" id="stepsTitle"></h2>
+  <ol class="steps" id="steps"></ol>
+  <div class="row" style="margin-top:8px"><button class="btn subtle hidden" id="more" type="button"></button></div>
+  <div id="message" style="margin-top:8px"></div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const SELECTED = '#0f6cbd';
+  const OTHER = '#8a8886';
+  const STEP_PREVIEW = 8;
+
+  let data = null;
+  let map = null;
+  let selected = 0;
+  let units = 'metric';
+  let showAll = false;
+  let activeStep = -1;
+  let request = {};
+  let pendingTimer = null;
+
+  const showMessage = (kind, text) => UI.clear($('message')).appendChild(UI.message(kind, text));
+  const clearMessage = () => UI.clear($('message'));
+  const seconds = (r) => (r.trafficSeconds !== undefined ? r.trafficSeconds : r.seconds);
+  const nameOf = (s, i, n) => s.name || (i === 0 ? 'Start' : i === n - 1 ? 'Destination' : 'Stop ' + i);
+  const letter = (i) => String.fromCharCode(65 + (i % 26));
+
+  function stepIcon(type) {
+    if (/Arrive/.test(type)) return '⚑';
+    if (/Depart|Start/.test(type)) return '●';
+    if (/UTurn/.test(type)) return '↶';
+    if (/Roundabout/.test(type)) return '↻';
+    if (/Left/.test(type)) return '↰';
+    if (/Right/.test(type)) return '↱';
+    if (/Merge|Ramp|Exit/.test(type)) return '⇗';
+    return '↑';
+  }
+
+  // ───────────── drawing ─────────────
+
+  function layersFor() {
+    const layers = [];
+    data.routes.forEach((r, i) => {
+      if (i === selected) return;
+      layers.push({ id: 'r' + i, type: 'line', name: 'Route ' + (i + 1), coordinates: r.line, color: OTHER, width: 4, opacity: 0.85, noCasing: false });
+    });
+    const r = data.routes[selected];
+    if (r) layers.push({ id: 'r' + selected, type: 'line', name: 'Route ' + (selected + 1), coordinates: r.line, color: SELECTED, width: 6 });
+    return layers;
+  }
+
+  function markersFor() {
+    const n = data.stops.length;
+    const markers = data.stops.map((s, i) => ({ id: 'stop' + i, longitude: s.longitude, latitude: s.latitude, label: letter(i), color: i === 0 ? '#107c10' : i === n - 1 ? '#c50f1f' : '#0f6cbd', description: nameOf(s, i, n) }));
+    const r = data.routes[selected];
+    if (r && activeStep >= 0 && r.steps[activeStep]) {
+      const s = r.steps[activeStep];
+      markers.push({ id: 'step', longitude: s.longitude, latitude: s.latitude, small: true, color: '#ffb900', description: s.text });
+    }
+    return markers;
+  }
+
+  function redraw() {
+    map.setLayers(layersFor());
+    map.setMarkers(markersFor());
+  }
+
+  function fit() {
+    const pts = [];
+    data.routes.forEach((r) => r.line.forEach((p) => pts.push(p)));
+    data.stops.forEach((s) => pts.push([s.longitude, s.latitude]));
+    const b = pts.reduce((a, p) => [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.max(a[2], p[0]), Math.max(a[3], p[1])], [180, 90, -180, -90]);
+    map.fitBounds(b, 36);
+  }
+
+  // ───────────── panels ─────────────
+
+  function renderRoutes() {
+    const box = UI.clear($('routes'));
+    const best = Math.min.apply(null, data.routes.map(seconds));
+    data.routes.forEach((r, i) => {
+      const extra = seconds(r) - best;
+      const card = UI.el('button', { class: 'route-card', type: 'button', 'aria-pressed': String(i === selected), on: { click: () => selectRoute(i) } });
+      card.appendChild(UI.el('div', { class: 'small muted' }, [UI.el('span', { class: 'swatch', style: 'background:' + (i === selected ? SELECTED : OTHER) }), 'Route ' + (i + 1) + (i === 0 ? ' · fastest' : '')]));
+      card.appendChild(UI.el('div', { class: 't', text: UI.fmtDuration(seconds(r)) }));
+      const sub = [UI.fmtDistance(r.meters, units)];
+      if (extra >= 60) sub.push('+' + Math.round(extra / 60) + ' min');
+      card.appendChild(UI.el('div', { class: 'small', text: sub.join(' · ') }));
+      const badges = UI.el('div', { class: 'row wrap', style: 'margin-top:4px;gap:4px' });
+      if (r.trafficSeconds !== undefined && r.seconds !== r.trafficSeconds) {
+        const delay = Math.round((r.trafficSeconds - r.seconds) / 60);
+        if (delay > 0) badges.appendChild(UI.el('span', { class: 'badge ' + (delay > 10 ? 'bad' : 'warn'), text: '+' + delay + ' min traffic' }));
+      }
+      if (r.congestion && r.congestion !== 'None') badges.appendChild(UI.el('span', { class: 'badge', text: r.congestion + ' congestion' }));
+      if (r.arriveAt) badges.appendChild(UI.el('span', { class: 'badge', text: 'Arrive ' + UI.clockOf(r.arriveAt) + (/(Z|[+-]00:00)$/.test(r.arriveAt) ? ' UTC' : '') }));
+      card.appendChild(badges);
+      box.appendChild(card);
+    });
+  }
+
+  function renderSteps() {
+    const r = data.routes[selected];
+    const list = UI.clear($('steps'));
+    if (!r) return;
+    $('stepsTitle').textContent = 'Route ' + (selected + 1) + ' · ' + UI.fmtDistance(r.meters, units) + ', ' + UI.fmtDuration(seconds(r));
+    let n = 0;
+    const rows = r.steps;
+    const shown = showAll ? rows : rows.slice(0, STEP_PREVIEW);
+    shown.forEach((s, i) => {
+      const isStop = s.stop !== undefined;
+      const li = UI.el('li', { class: 'step' + (isStop ? ' stop' : ''), tabindex: '0', 'aria-current': String(i === activeStep), on: { click: () => focusStep(i), keydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focusStep(i); } } } });
+      li.appendChild(UI.el('span', { class: 'ico', text: isStop ? letter(s.stop) : stepIcon(s.maneuver), 'aria-hidden': 'true' }));
+      li.appendChild(UI.el('span', { text: (isStop ? '' : (++n) + '. ') + (s.text || '') }));
+      li.appendChild(UI.el('span', { class: 'small muted nowrap', text: s.meters ? UI.fmtDistance(s.meters, units) : '' }));
+      list.appendChild(li);
+    });
+    const hidden = rows.length - shown.length;
+    const more = $('more');
+    more.classList.toggle('hidden', rows.length <= STEP_PREVIEW);
+    more.textContent = showAll ? 'Show fewer steps' : 'Show all ' + (r.stepCount || rows.length) + ' steps';
+    if (showAll && r.stepCount > rows.length) list.appendChild(UI.el('li', { class: 'small muted', style: 'padding:6px', text: (r.stepCount - rows.length) + ' more steps are not shown. Split long trips into legs with stops.' }));
+  }
+
+  function focusStep(i) {
+    activeStep = activeStep === i ? -1 : i;
+    const r = data.routes[selected];
+    renderSteps();
+    redraw();
+    const s = r.steps[i];
+    if (activeStep >= 0 && s) map.setView(s.longitude, s.latitude, Math.max(map.view.zoom, 14));
+  }
+
+  function selectRoute(i) {
+    selected = i;
+    activeStep = -1;
+    showAll = false;
+    renderRoutes();
+    renderSteps();
+    redraw();
+    const r = data.routes[i];
+    App.updateModelContext('The user is looking at route ' + (i + 1) + ': ' + UI.fmtDistance(r.meters, units) + ', ' + UI.fmtDuration(seconds(r)) + '.');
+  }
+
+  function directionsText() {
+    const r = data.routes[selected];
+    const n = data.stops.length;
+    const lines = ['Directions from ' + nameOf(data.stops[0], 0, n) + ' to ' + nameOf(data.stops[n - 1], n - 1, n), UI.fmtDistance(r.meters, units) + ', ' + UI.fmtDuration(seconds(r)), ''];
+    let k = 0;
+    r.steps.forEach((s) => lines.push((s.stop !== undefined ? letter(s.stop) + '.' : (++k) + '.') + ' ' + s.text + (s.meters ? ' (' + UI.fmtDistance(s.meters, units) + ')' : '')));
+    return lines.join('\n');
+  }
+
+  function renderActions() {
+    const box = UI.clear($('actions'));
+    box.appendChild(UI.el('button', { class: 'btn', type: 'button', text: 'Open in Bing Maps', on: { click: () => data.bingUrl && App.openLink(data.bingUrl) } }));
+    box.appendChild(UI.el('button', { class: 'btn', type: 'button', text: 'Copy directions', on: { click: () => UI.copyText(directionsText()).then(() => UI.tempHint('Directions copied')) } }));
+    if (App.canDownload()) {
+      box.appendChild(UI.el('button', { class: 'btn subtle', type: 'button', text: 'Save as text', on: { click: () => App.download('directions.txt', 'text/plain', directionsText()).catch(() => UI.tempHint('The host could not save the file')) } }));
+    }
+    if (!request.readOnly && data.stops.length >= 2) {
+      box.appendChild(UI.el('button', { class: 'btn subtle', type: 'button', text: 'Swap start and end', on: { click: swap } }));
+    }
+  }
+
+  function renderUnits() {
+    const box = UI.clear($('units'));
+    box.classList.remove('hidden');
+    [['metric', 'km'], ['imperial', 'mi']].forEach(([key, label]) => {
+      box.appendChild(UI.el('button', { type: 'button', text: label, 'aria-pressed': String(units === key), on: { click: () => { units = key; renderUnits(); renderRoutes(); renderSteps(); renderActions(); } } }));
+    });
+  }
+
+  // ───────────── controls ─────────────
+
+  function seg(label, options, value, onPick) {
+    const wrap = UI.el('div', { class: 'seg', role: 'group', 'aria-label': label });
+    options.forEach(([key, text]) => wrap.appendChild(UI.el('button', { type: 'button', text, 'aria-pressed': String(value === key), on: { click: () => onPick(key) } })));
+    return wrap;
+  }
+
+  function renderControls() {
+    const box = UI.clear($('controls'));
+    if (request.readOnly) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const mode = request.travelMode || 'driving';
+    box.appendChild(seg('Travel mode', [['driving', 'Drive'], ['truck', 'Truck'], ['walking', 'Walk']], mode, (k) => { request.travelMode = k; update(); }));
+    const opt = request.optimizeRoute || 'fastestWithoutTraffic';
+    if (mode !== 'walking') {
+      box.appendChild(seg('Route preference', [['fastestWithTraffic', 'With traffic'], ['fastestWithoutTraffic', 'Fastest'], ['shortest', 'Shortest']], opt === 'short' ? 'shortest' : opt, (k) => { request.optimizeRoute = k; update(); }));
+    }
+    const avoid = request.avoid || [];
+    const chips = UI.el('div', { class: 'chips', role: 'group', 'aria-label': 'Avoid' });
+    chips.appendChild(UI.el('span', { class: 'small muted', text: 'Avoid:', style: 'align-self:center' }));
+    [['tollRoads', 'Tolls'], ['limitedAccessHighways', 'Highways'], ['ferries', 'Ferries'], ['unpavedRoads', 'Unpaved']].forEach(([key, text]) => {
+      chips.appendChild(UI.el('button', { class: 'chip', type: 'button', text, 'aria-pressed': String(avoid.indexOf(key) >= 0), on: { click: () => { request.avoid = avoid.indexOf(key) >= 0 ? avoid.filter((a) => a !== key) : avoid.concat(key); update(); } } }));
+    });
+    box.appendChild(chips);
+  }
+
+  function swap() {
+    data.stops = data.stops.slice().reverse();
+    update(true);
+  }
+
+  function update() {
+    renderControls();
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(reload, 350);
+  }
+
+  async function reload() {
+    const stops = data.stops;
+    if (stops.length < 2) return;
+    $('app').classList.add('busy');
+    $('app').setAttribute('aria-busy', 'true');
+    try {
+      const args = {
+        origin: { longitude: stops[0].longitude, latitude: stops[0].latitude, name: stops[0].name },
+        destination: { longitude: stops[stops.length - 1].longitude, latitude: stops[stops.length - 1].latitude, name: stops[stops.length - 1].name },
+        travelMode: request.travelMode, optimizeRoute: request.optimizeRoute, avoid: request.avoid, units, includeSteps: false
+      };
+      if (stops.length > 2) args.waypoints = stops.slice(1, -1).map((s) => ({ longitude: s.longitude, latitude: s.latitude, name: s.name }));
+      const res = await App.callTool('get_route_directions', args, 60000);
+      const d = App.dataOf(res);
+      if (!d) throw new Error('No route data was returned.');
+      render(d);
+    } catch (err) {
+      showMessage('error', err.message || 'The route could not be updated.');
+    } finally {
+      $('app').classList.remove('busy');
+      $('app').setAttribute('aria-busy', 'false');
+    }
+  }
+
+  // ───────────── render ─────────────
+
+  function render(d) {
+    if (!d || d.kind !== 'route' || !d.routes || !d.routes.length) { showMessage('info', 'No route was found.'); return; }
+    clearMessage();
+    data = d;
+    request = Object.assign({}, d.request);
+    units = (d.request && d.request.units) || units;
+    selected = 0;
+    activeStep = -1;
+    showAll = false;
+
+    const n = d.stops.length;
+    $('title').textContent = 'Directions';
+    $('subtitle').textContent = nameOf(d.stops[0], 0, n) + ' → ' + nameOf(d.stops[n - 1], n - 1, n) + (n > 2 ? ' · ' + (n - 2) + ' stop' + (n === 3 ? '' : 's') : '');
+
+    if (!map) {
+      const stage = UI.clear($('stage'));
+      const el = UI.el('div', {});
+      stage.appendChild(el);
+      map = new MapView(el, { style: 'road' });
+    }
+    renderUnits();
+    renderControls();
+    renderRoutes();
+    renderSteps();
+    renderActions();
+    redraw();
+    fit();
+    App.reportSize();
+  }
+
+  App.on('result', (result) => {
+    if (result && result.isError) { showMessage('error', App.textOf(result) || 'The route could not be found.'); return; }
+    render(App.dataOf(result));
+  });
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  $('more').addEventListener('click', () => { showAll = !showAll; renderSteps(); });
+  App.init({ name: 'route' }).catch(() => showMessage('error', 'The route planner could not start.'));
+})();
+</script>
+</body>
+</html>

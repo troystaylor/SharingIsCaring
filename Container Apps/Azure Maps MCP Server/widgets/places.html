@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Places</title>
+<style>
+/*@shared-css*/
+.layout { display: grid; grid-template-columns: 1fr; gap: var(--sp-s); }
+@media (min-width: 640px) { .layout { grid-template-columns: 290px 1fr; } .layout .results { max-height: 380px; overflow: auto; } .layout .map { height: 380px; } }
+.results { border-radius: var(--radius-m); }
+.search { position: relative; margin-bottom: var(--sp-s); }
+.suggest { position: absolute; z-index: 5; left: 0; right: 0; top: 34px; max-height: 240px; overflow: auto; background: var(--bg1); border: 1px solid var(--stroke2); border-radius: var(--radius-m); box-shadow: var(--shadow8); }
+.suggest [role="option"] { padding: 6px var(--sp-m); cursor: pointer; border-bottom: 1px solid var(--stroke3); }
+.suggest [role="option"][aria-selected="true"], .suggest [role="option"]:hover { background: var(--brand-bg-subtle); }
+.num { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--brand-fg-on); font-size: 11px; font-weight: 600; }
+.num.sel { outline: 2px solid var(--focus-outer); }
+.detail { margin-top: 4px; }
+.detail .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.search-area { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); box-shadow: var(--shadow8); }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Places</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <div class="seg no-print hidden" id="sort" role="group" aria-label="Sort results"></div>
+  </div>
+  <div class="search no-print">
+    <div class="row">
+      <div class="field grow">
+        <input class="input" id="q" type="search" placeholder="Search places or addresses" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="suggest" aria-autocomplete="list" aria-label="Search places or addresses">
+      </div>
+      <button class="btn primary" id="go" type="button">Search</button>
+    </div>
+    <div class="suggest hidden" id="suggest" role="listbox" aria-label="Suggestions"></div>
+  </div>
+  <div id="stage"><div class="skeleton" style="height:300px" role="progressbar" aria-label="Loading places"></div></div>
+  <div id="message" style="margin-top:8px"></div>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const COLOR = '#0f6cbd';
+  const SEARCH_TOOLS = { search_fuzzy: 1, search_poi: 1, search_poi_category: 1 };
+
+  let data = null;
+  let map = null;
+  let items = [];
+  let sortBy = 'relevance';
+  let selectedId = null;
+  let viewMoved = false;
+  let busy = false;
+  let suggestItems = [];
+  let suggestIndex = -1;
+  let programmatic = false;
+
+  const showMessage = (kind, text) => UI.clear($('message')).appendChild(UI.message(kind, text));
+  const clearMessage = () => UI.clear($('message'));
+
+  // ───────────── helpers ─────────────
+
+  const bingPlace = (p) => 'https://www.bing.com/maps?cp=' + p.latitude + '~' + p.longitude + '&lvl=17&sp=point.' + p.latitude + '_' + p.longitude + '_' + encodeURIComponent(p.name || '');
+  const bingRoute = (p) => 'https://www.bing.com/maps?rtp=~pos.' + p.latitude + '_' + p.longitude + '_' + encodeURIComponent(p.name || '') + '&mode=D';
+
+  function fmtMeters(m) { return m >= 1000 ? (m / 1000).toFixed(m >= 10000 ? 0 : 1) + ' km' : m + ' m'; }
+
+  function hoursText(p) {
+    if (!p.hours || !p.hours.length) return '';
+    const first = p.hours[0];
+    const sameDay = p.hours.filter((h) => h.date === first.date).map((h) => h.open + '–' + h.close).join(', ');
+    return 'Next open ' + UI.weekdayOf(first.date + 'T00:00') + ' ' + sameDay;
+  }
+
+  function visiblePlaces() {
+    const list = items.filter((p) => p.longitude !== undefined);
+    if (sortBy === 'distance') return list.slice().sort((a, b) => (a.distance ?? 1e12) - (b.distance ?? 1e12));
+    return list;
+  }
+
+  // ───────────── render ─────────────
+
+  function renderSort() {
+    const box = UI.clear($('sort'));
+    const canSort = items.some((p) => p.distance !== undefined) && items.length > 1;
+    box.classList.toggle('hidden', !canSort);
+    if (!canSort) return;
+    [['relevance', 'Relevance'], ['distance', 'Distance']].forEach(([key, label]) => {
+      box.appendChild(UI.el('button', { type: 'button', text: label, 'aria-pressed': String(sortBy === key), on: { click: () => { sortBy = key; renderList(); renderSort(); } } }));
+    });
+  }
+
+  function placeRow(p, n) {
+    const selected = p._id === selectedId;
+    const row = UI.el('li', { class: 'list-item', tabindex: '0', role: 'option', 'aria-selected': String(selected), on: { click: () => choose(p._id, true), keydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(p._id, true); } } } });
+    row.appendChild(UI.el('span', { class: 'num' + (selected ? ' sel' : ''), text: String(n), 'aria-hidden': 'true' }));
+    const body = UI.el('div', { class: 'grow' });
+    body.appendChild(UI.el('div', { class: 'semibold', text: p.name }));
+    const sub = [p.category || p.type, p.distance !== undefined ? fmtMeters(p.distance) + (data.route ? ' from route' : ' away') : '', p.detourSeconds !== undefined ? Math.round(p.detourSeconds / 60) + ' min detour' : ''].filter(Boolean).join(' · ');
+    if (sub) body.appendChild(UI.el('div', { class: 'small muted', text: sub }));
+    if (p.address && p.address !== p.name) body.appendChild(UI.el('div', { class: 'small', text: p.address }));
+    if (p.confidence) body.appendChild(UI.el('span', { class: 'badge ' + (p.confidence === 'High' ? 'good' : p.confidence === 'Medium' ? 'warn' : 'bad'), text: p.confidence + ' confidence' }));
+    if (selected) body.appendChild(detail(p));
+    row.appendChild(body);
+    return row;
+  }
+
+  function detail(p) {
+    const box = UI.el('div', { class: 'detail' });
+    const h = hoursText(p);
+    if (h) box.appendChild(UI.el('div', { class: 'small', text: h }));
+    if (p.phone) box.appendChild(UI.el('div', { class: 'small', text: p.phone }));
+    if (p.url) box.appendChild(UI.el('div', { class: 'small muted', text: p.url }));
+    if (p.matchCodes && p.matchCodes.length) box.appendChild(UI.el('div', { class: 'small muted', text: 'Match: ' + p.matchCodes.join(', ') }));
+    if (p.longitude !== undefined) box.appendChild(UI.el('div', { class: 'small muted', text: p.latitude.toFixed(5) + ', ' + p.longitude.toFixed(5) }));
+    const actions = UI.el('div', { class: 'actions no-print' });
+    actions.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Directions', on: { click: (e) => { e.stopPropagation(); App.openLink(bingRoute(p)); } } }));
+    actions.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Open in Bing Maps', on: { click: (e) => { e.stopPropagation(); App.openLink(bingPlace(p)); } } }));
+    actions.appendChild(UI.el('button', { class: 'btn small subtle', type: 'button', text: 'Copy address', on: { click: (e) => { e.stopPropagation(); UI.copyText(p.address || p.name).then(() => UI.tempHint('Address copied')); } } }));
+    box.appendChild(actions);
+    return box;
+  }
+
+  function renderList() {
+    const list = UI.clear($('list'));
+    visiblePlaces().forEach((p, i) => list.appendChild(placeRow(p, i + 1)));
+    if (!list.children.length) list.appendChild(UI.el('li', { class: 'list-item muted', text: 'No places to show.' }));
+    syncMarkers();
+  }
+
+  function syncMarkers() {
+    if (!map) return;
+    const shown = visiblePlaces();
+    const markers = shown.map((p, i) => ({ id: p._id, longitude: p.longitude, latitude: p.latitude, label: String(i + 1), color: COLOR, description: p.name }));
+    if (data && data.center && !data.suggestions) markers.push({ id: 'center', longitude: data.center.longitude, latitude: data.center.latitude, small: true, color: '#c50f1f', description: data.center.name || 'Search center' });
+    map.setMarkers(markers);
+    map.select(selectedId);
+  }
+
+  function layersFor(d) {
+    const layers = [];
+    if (d.route && d.route.length > 1) layers.push({ id: 'route', type: 'line', name: 'Route', coordinates: d.route, color: '#0f6cbd', width: 5 });
+    if (d.area) {
+      if (d.area.type === 'circle') layers.push({ id: 'area', type: 'circle', longitude: d.area.longitude, latitude: d.area.latitude, radiusMeters: d.area.radius, color: '#0f6cbd', fillOpacity: 0.1 });
+      else if (d.area.ring) layers.push({ id: 'area', type: 'polygon', geometry: { type: 'Polygon', coordinates: [d.area.ring] }, color: '#0f6cbd', fillOpacity: 0.1 });
+    }
+    return layers;
+  }
+
+  function popupFor(p) {
+    const node = UI.el('div', {}, [UI.el('div', { class: 't', text: p.name })]);
+    if (p.address && p.address !== p.name) node.appendChild(UI.el('div', { class: 'small muted', text: p.address }));
+    if (p.category) node.appendChild(UI.el('div', { class: 'small', text: p.category }));
+    return node;
+  }
+
+  function choose(id, scroll) {
+    selectedId = id;
+    const p = items.find((x) => x._id === id);
+    renderList();
+    if (!p) return;
+    map.select(id, true);
+    map.setPopup(id, popupFor(p));
+    const row = $('list').querySelector('[aria-selected="true"]');
+    if (row && scroll) row.scrollIntoView({ block: 'nearest' });
+    App.updateModelContext('The user selected "' + p.name + '"' + (p.address ? ' (' + p.address + ')' : '') + (p.longitude !== undefined ? ' at ' + p.latitude.toFixed(5) + ', ' + p.longitude.toFixed(5) : '') + '.');
+  }
+
+  function build() {
+    const stage = UI.clear($('stage'));
+    const layout = UI.el('div', { class: 'layout' });
+    const results = UI.el('div', { class: 'results', 'aria-label': 'Results' });
+    results.appendChild(UI.el('ul', { class: 'list', id: 'list', role: 'listbox', 'aria-label': 'Places' }));
+    const mapWrap = UI.el('div', { style: 'position:relative' });
+    const mapEl = UI.el('div', {});
+    mapWrap.appendChild(mapEl);
+    const searchArea = UI.el('button', { class: 'btn search-area hidden no-print', id: 'searchArea', type: 'button', text: 'Search this area', on: { click: searchThisArea } });
+    mapWrap.appendChild(searchArea);
+    layout.appendChild(results);
+    layout.appendChild(mapWrap);
+    stage.appendChild(layout);
+
+    map = new MapView(mapEl, { style: 'road' });
+    map.on('markerclick', (m) => { if (m.id !== 'center') choose(m.id, true); });
+    map.on('click', () => { selectedId = null; map.select(null); map.setPopup(null, null); renderList(); });
+    map.on('moveend', () => { if (programmatic) return; viewMoved = true; $('searchArea').classList.toggle('hidden', !canSearchArea()); });
+  }
+
+  function canSearchArea() { return !!(data && data.searchContext && !data.suggestions); }
+
+  function fitAll() {
+    programmatic = true;
+    const shown = visiblePlaces();
+    const layers = layersFor(data);
+    map.setLayers(layers);
+    const pts = shown.map((p) => [p.longitude, p.latitude]);
+    if (data.center) pts.push([data.center.longitude, data.center.latitude]);
+    (data.route || []).forEach((c) => pts.push(c));
+    if (!pts.length) map.fitContent();
+    else {
+      const b = pts.reduce((a, p) => [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.max(a[2], p[0]), Math.max(a[3], p[1])], [180, 90, -180, -90]);
+      if (b[0] === b[2] && b[1] === b[3]) map.setView(b[0], b[1], 15); else map.fitBounds(b, 40);
+    }
+    programmatic = false;
+  }
+
+  function render(d, options) {
+    options = options || {};
+    if (!d || d.kind !== 'places') return;
+    data = d;
+    clearMessage();
+    items = (d.places || []).map((p, i) => Object.assign({ _id: 'p' + i }, p));
+    selectedId = options.select ? 'p0' : null;
+    if (!map) build();
+    $('title').textContent = d.title || 'Places';
+    const shown = items.filter((p) => p.longitude !== undefined).length;
+    $('subtitle').textContent = d.suggestions ? items.length + ' suggestion' + (items.length === 1 ? '' : 's') : shown + (d.total && d.total > shown ? ' of ' + d.total : '') + ' place' + (shown === 1 ? '' : 's');
+    $('searchArea').classList.add('hidden');
+    viewMoved = false;
+
+    if (d.suggestions) { renderSuggestionList(); map.setMarkers([]); map.setLayers([]); App.reportSize(); return; }
+
+    renderSort();
+    renderList();
+    fitAll();
+    if (items.length === 1 && items[0].longitude !== undefined) choose(items[0]._id, false);
+    if (!items.length) showMessage('info', 'No places were found. Try a broader search or move the map and search this area.');
+    App.reportSize();
+  }
+
+  function renderSuggestionList() {
+    const list = UI.clear($('list'));
+    items.forEach((p, i) => {
+      const row = UI.el('li', { class: 'list-item', tabindex: '0', role: 'option', on: { click: () => pickSuggestion(p), keydown: (e) => { if (e.key === 'Enter') pickSuggestion(p); } } }, [
+        UI.el('span', { class: 'num', text: String(i + 1), 'aria-hidden': 'true' }),
+        UI.el('div', { class: 'grow' }, [UI.el('div', { class: 'semibold', text: p.address || p.name }), UI.el('div', { class: 'small muted', text: p.type || '' })])
+      ]);
+      list.appendChild(row);
+    });
+  }
+
+  // ───────────── searching ─────────────
+
+  function setBusy(on) {
+    busy = on;
+    $('go').disabled = on;
+    $('app').setAttribute('aria-busy', String(on));
+  }
+
+  async function run(tool, args, options) {
+    setBusy(true);
+    try {
+      const res = await App.callTool(tool, args, 45000);
+      const d = App.dataOf(res);
+      if (!d) throw new Error('The search returned no data.');
+      render(d, options);
+    } catch (err) {
+      showMessage('error', err.message || 'The search failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function mapCenter() { const v = map ? map.view : null; return v ? { longitude: v.lon, latitude: v.lat } : (data && data.center) || undefined; }
+
+  function searchThisArea() {
+    const ctx = data.searchContext;
+    if (!ctx || !map) return;
+    const b = map.getBounds();
+    const bbox = b.map((n) => Number(n.toFixed(5))).join(',');
+    const c = mapCenter();
+    const args = Object.assign({}, ctx.args, { limit: 30 });
+    let tool = ctx.tool;
+    if (tool === 'search_nearby') {
+      args.location = c;
+      const meters = Math.max(200, Math.min(50000, Math.round(Math.abs(b[2] - b[0]) * 111320 * Math.cos(c.latitude * Math.PI / 180) / 2)));
+      args.radius = meters;
+    } else if (SEARCH_TOOLS[tool]) {
+      args.bbox = bbox;
+      args.near = c;
+    } else {
+      tool = 'search_fuzzy';
+      args.query = ctx.args && ctx.args.query ? ctx.args.query : (data.title || '').replace(/^Results for /, '');
+      args.bbox = bbox;
+      args.near = c;
+    }
+    run(tool, args);
+  }
+
+  function submit() {
+    const q = $('q').value.trim();
+    closeSuggest();
+    if (!q) return;
+    const args = { query: q, limit: 20 };
+    const c = mapCenter();
+    if (c) args.near = c;
+    run('search_fuzzy', args);
+  }
+
+  async function pickSuggestion(s) {
+    closeSuggest();
+    $('q').value = s.address || s.name;
+    const args = { query: s.address || s.name, top: 1 };
+    const c = mapCenter();
+    if (c) args.near = c;
+    await run('geocode', args, { select: true });
+  }
+
+  // ───────────── type-ahead ─────────────
+
+  function closeSuggest() {
+    suggestItems = [];
+    suggestIndex = -1;
+    $('suggest').classList.add('hidden');
+    $('q').setAttribute('aria-expanded', 'false');
+  }
+
+  function renderSuggest() {
+    const box = UI.clear($('suggest'));
+    suggestItems.forEach((s, i) => {
+      box.appendChild(UI.el('div', { role: 'option', id: 'sg' + i, 'aria-selected': String(i === suggestIndex), text: s.address || s.name, on: { mousedown: (e) => { e.preventDefault(); pickSuggestion(s); } } }));
+    });
+    const open = suggestItems.length > 0;
+    box.classList.toggle('hidden', !open);
+    $('q').setAttribute('aria-expanded', String(open));
+    if (suggestIndex >= 0) $('q').setAttribute('aria-activedescendant', 'sg' + suggestIndex); else $('q').removeAttribute('aria-activedescendant');
+  }
+
+  const fetchSuggestions = UI.debounce(async () => {
+    const q = $('q').value.trim();
+    if (q.length < 2) { closeSuggest(); return; }
+    const c = mapCenter() || { longitude: -98.5, latitude: 39.8 };
+    try {
+      const res = await App.callTool('autocomplete_places', { query: q, near: c, top: 6 }, 15000);
+      const d = App.dataOf(res);
+      if ($('q').value.trim() !== q) return;
+      suggestItems = (d && d.places) || [];
+      suggestIndex = -1;
+      renderSuggest();
+    } catch (e) { closeSuggest(); }
+  }, 250);
+
+  $('q').addEventListener('input', fetchSuggestions);
+  $('q').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' && suggestItems.length) { e.preventDefault(); suggestIndex = (suggestIndex + 1) % suggestItems.length; renderSuggest(); }
+    else if (e.key === 'ArrowUp' && suggestItems.length) { e.preventDefault(); suggestIndex = (suggestIndex - 1 + suggestItems.length) % suggestItems.length; renderSuggest(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (suggestIndex >= 0) pickSuggestion(suggestItems[suggestIndex]); else submit(); }
+    else if (e.key === 'Escape') closeSuggest();
+  });
+  $('q').addEventListener('blur', () => setTimeout(closeSuggest, 120));
+  $('go').addEventListener('click', submit);
+
+  App.on('result', (result) => {
+    if (result && result.isError) { showMessage('error', App.textOf(result) || 'The search failed.'); return; }
+    const d = App.dataOf(result);
+    if (!d) { showMessage('info', 'No places were returned.'); return; }
+    render(d);
+  });
+  App.on('cancelled', () => showMessage('warning', 'The search was cancelled.'));
+  App.init({ name: 'places' }).catch(() => showMessage('error', 'The place finder could not start.'));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reachable area</title>
+<style>
+/*@shared-css*/
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-xs) var(--sp-m); margin-bottom: var(--sp-s); }
+.ctl .group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-xs); }
+.ctl .lbl { font-size: var(--fs-200); line-height: var(--lh-200); color: var(--fg3); }
+.map.picking, .map.picking canvas { cursor: crosshair !important; }
+.map-status { position: absolute; left: var(--sp-s); top: var(--sp-s); max-width: calc(100% - 56px); display: flex; flex-direction: column; gap: var(--sp-xs); pointer-events: none; z-index: 2; }
+.map-status .pill { display: inline-flex; align-items: center; gap: var(--sp-s); align-self: flex-start; padding: 2px var(--sp-m); border-radius: 999px; background: var(--bg1); border: 1px solid var(--stroke2); box-shadow: var(--shadow4); font-size: var(--fs-200); line-height: var(--lh-200); }
+.map-status .pill.pick { border-color: var(--brand); color: var(--brand-link); font-weight: var(--fw-semibold); }
+.map-status .spin { width: 12px; height: 12px; border: 2px solid var(--stroke1); border-top-color: var(--brand); border-radius: var(--radius-circle); animation: spin 0.8s linear infinite; }
+.insight { margin: var(--sp-s) 0 var(--sp-xs); }
+.band-table td.num, .band-table th.num { text-align: right; white-space: nowrap; }
+.band-table .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 1px var(--stroke1); }
+.places-list { max-height: 260px; overflow: auto; }
+.places-list .list-item { align-items: center; }
+.pin-num { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border-radius: var(--radius-circle); background: #243a5e; color: #ffffff; font-size: var(--fs-200); font-weight: var(--fw-semibold); }
+.hl-picked { outline: 2px solid var(--brand); }
+.place-form { display: flex; gap: var(--sp-s); margin-bottom: var(--sp-xs); }
+.place-form .input { flex: 1 1 auto; min-width: 0; }
+.popup-actions { display: flex; flex-wrap: wrap; gap: var(--sp-xs); margin-top: 6px; }
+@media (forced-colors: active) {
+  .pin-num { border: 1px solid CanvasText; forced-color-adjust: none; }
+  .band-table .sw { forced-color-adjust: none; }
+}
+@media (prefers-reduced-motion: reduce) { .map-status .spin { animation: none; } }
+</style>
+</head>
+<body>
+<main class="card" id="app" aria-labelledby="title" aria-busy="false">
+  <div class="header">
+    <div class="grow">
+      <h1 class="title" id="title">Reachable area</h1>
+      <p class="subtitle" id="subtitle"></p>
+    </div>
+    <button class="btn subtle small no-print hidden" id="fit" type="button">Fit all</button>
+  </div>
+  <div id="controls" class="no-print hidden"></div>
+  <div id="message" aria-live="polite"></div>
+  <div id="stage"><div class="skeleton" style="height:320px" role="progressbar" aria-label="Loading reachable area"></div></div>
+  <div id="summary"></div>
+  <section id="placesBox" class="no-print hidden" aria-labelledby="placesTitle">
+    <h2 class="section-title" id="placesTitle">Find places inside</h2>
+    <div class="place-form" id="placeForm" role="search">
+      <input class="input" id="placeInput" type="search" placeholder="For example pharmacy" aria-label="Type of place to find inside the area" autocomplete="off">
+      <button class="btn primary" type="button" id="placeGo">Search</button>
+      <button class="btn" type="button" id="placeClear">Clear</button>
+    </div>
+    <div class="chips" id="placeChips" role="group" aria-label="Quick place searches"></div>
+    <div id="placesOut" style="margin-top:8px" aria-live="polite"></div>
+  </section>
+</main>
+<script>
+/*@shared-js*/
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  const MODES = [['driving', 'Drive'], ['truck', 'Truck']];
+  const TIME_CHOICES = [5, 10, 15, 20, 30, 45, 60];
+  const AVOID = [['tollRoads', 'Toll roads'], ['ferries', 'Ferries'], ['limitedAccessHighways', 'Highways'], ['unpavedRoads', 'Unpaved roads']];
+  const PLACE_CHIPS = [['Pharmacy', 'pharmacy'], ['Grocery', 'grocery store'], ['Coffee', 'coffee'], ['Fuel', 'gas station'], ['EV charging', 'EV charging station'], ['Hospital', 'hospital']];
+  const ORIGIN_COLOR = '#d13438';
+  const PLACE_COLOR = '#243a5e';
+
+  const S = {
+    origin: null, startOrigin: null, mode: 'driving', minutes: [], distance: null, avoid: [], request: {}, units: 'metric',
+    readOnly: false, query: '', places: [], busy: '', move: false, seq: 0, fitNext: false, selected: null, data: null, userDriven: false
+  };
+  let map = null;
+  let status = null;
+  let bandsAsc = [];
+  let refs = {};
+
+  const modeLabel = (m) => { const f = MODES.find((x) => x[0] === m); return f ? f[1] : String(m || 'Drive').replace(/^./, (c) => c.toUpperCase()); };
+  const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+  function showMessage(kind, text, retry) {
+    const box = UI.clear($('message'));
+    if (!text) return;
+    const msg = UI.message(kind, text);
+    if (retry) msg.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Retry', style: 'margin-left:auto', on: { click: () => { UI.clear($('message')); run(); } } }));
+    msg.style.marginBottom = '8px';
+    box.appendChild(msg);
+  }
+
+  // ───────────── geometry ─────────────
+
+  function inRing(x, y, ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  function inGeometry(x, y, g) {
+    if (!g || !g.coordinates) return false;
+    const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+    return polys.some((rings) => {
+      let inside = false;
+      rings.forEach((r) => { if (inRing(x, y, r)) inside = !inside; });
+      return inside;
+    });
+  }
+
+  function bandOf(p) {
+    return bandsAsc.find((b) => b.geometry && inGeometry(p.longitude, p.latitude, b.geometry)) || null;
+  }
+
+  const bingUrl = (lat, lon, name) => 'https://www.bing.com/maps?cp=' + lat + '~' + lon + '&lvl=16&sp=point.' + lat + '_' + lon + '_' + encodeURIComponent(name || '');
+
+  // ───────────── controls ─────────────
+
+  function chip(label, pressed, fn, aria) {
+    return UI.el('button', { class: 'chip', type: 'button', text: label, 'aria-pressed': String(!!pressed), 'aria-label': aria, on: { click: fn } });
+  }
+
+  function buildControls() {
+    const box = UI.clear($('controls'));
+    refs = { mode: [], time: [], avoid: [] };
+
+    const modeSeg = UI.el('div', { class: 'seg', role: 'group', 'aria-label': 'Travel mode' });
+    MODES.forEach(([id, label]) => {
+      const b = UI.el('button', { type: 'button', text: label, on: { click: () => { if (S.mode === id) return; S.mode = id; sync(); change(); } } });
+      b.dataset.id = id;
+      refs.mode.push(b);
+      modeSeg.appendChild(b);
+    });
+
+    refs.move = UI.el('button', { class: 'btn small', type: 'button', text: 'Move start', 'aria-pressed': 'false', title: 'Then click the map to set a new starting point', on: { click: () => setMove(!S.move) } });
+    refs.center = UI.el('button', { class: 'btn small hidden', type: 'button', text: 'Use map center', on: { click: () => { const v = map.view; setOrigin({ longitude: v.lon, latitude: v.lat }); } } });
+    const row1 = UI.el('div', { class: 'ctl' }, [
+      UI.el('div', { class: 'group' }, [UI.el('span', { class: 'lbl', text: 'Mode' }), modeSeg]),
+      UI.el('div', { class: 'group' }, [refs.move, refs.center])
+    ]);
+    box.appendChild(row1);
+
+    if (S.distance === null) {
+      const minutes = Array.from(new Set(TIME_CHOICES.concat(S.minutes))).sort((a, b) => a - b);
+      const group = UI.el('div', { class: 'group', role: 'group', 'aria-label': 'Time limits in minutes. Choose up to six.' });
+      minutes.forEach((m) => {
+        const c = chip(m + ' min', false, () => toggleMinutes(m));
+        c.dataset.min = String(m);
+        refs.time.push(c);
+        group.appendChild(c);
+      });
+      box.appendChild(UI.el('div', { class: 'ctl' }, [UI.el('span', { class: 'lbl', text: 'Time' }), group]));
+    }
+
+    const avoid = UI.el('div', { class: 'group', role: 'group', 'aria-label': 'Road features to avoid' });
+    AVOID.forEach(([id, label]) => {
+      const c = chip(label, false, () => {
+        S.avoid = S.avoid.includes(id) ? S.avoid.filter((x) => x !== id) : S.avoid.concat(id);
+        sync(); change();
+      });
+      c.dataset.id = id;
+      refs.avoid.push(c);
+      avoid.appendChild(c);
+    });
+    box.appendChild(UI.el('div', { class: 'ctl' }, [UI.el('span', { class: 'lbl', text: 'Avoid' }), avoid]));
+    box.classList.remove('hidden');
+    sync();
+  }
+
+  function sync() {
+    if (S.readOnly || !refs.mode) return;
+    refs.mode.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === S.mode)));
+    refs.time.forEach((b) => b.setAttribute('aria-pressed', String(S.minutes.includes(Number(b.dataset.min)))));
+    refs.avoid.forEach((b) => b.setAttribute('aria-pressed', String(S.avoid.includes(b.dataset.id))));
+    refs.move.setAttribute('aria-pressed', String(S.move));
+    refs.center.classList.toggle('hidden', !S.move);
+    document.querySelectorAll('#placeChips .chip').forEach((b) => b.setAttribute('aria-pressed', String(!!S.query && b.dataset.q === S.query.toLowerCase())));
+  }
+
+  function toggleMinutes(m) {
+    if (S.minutes.includes(m)) {
+      if (S.minutes.length === 1) { UI.tempHint('Keep at least one time limit selected'); return; }
+      S.minutes = S.minutes.filter((x) => x !== m);
+    } else {
+      if (S.minutes.length >= 6) { UI.tempHint('Choose up to six time limits'); return; }
+      S.minutes = S.minutes.concat(m).sort((a, b) => a - b);
+    }
+    S.fitNext = true;
+    sync();
+    change();
+  }
+
+  function setMove(on) {
+    S.move = !!on;
+    if (map) map.container.classList.toggle('picking', S.move);
+    if (S.move && map) { map.select(null); map.setPopup(null, null); }
+    sync();
+    renderStatus();
+  }
+
+  function setOrigin(o) {
+    S.origin = { longitude: Number(o.longitude), latitude: Number(o.latitude), name: o.name || 'Dropped pin' };
+    S.move = false;
+    S.fitNext = true;
+    if (map) map.container.classList.remove('picking');
+    syncMarkers();
+    sync();
+    renderStatus();
+    renderSubtitle();
+    if (!o.name) nameOrigin(S.origin);
+    change();
+  }
+
+  // A dropped pin starts with a placeholder name; replace it with the address there when it is found.
+  function nameOrigin(origin) {
+    App.callTool('reverse_geocode', { location: { longitude: origin.longitude, latitude: origin.latitude } }, 15000).then((res) => {
+      const d = App.dataOf(res);
+      const p = d && d.places && d.places[0];
+      const name = p && (p.address || p.name);
+      if (!name || !S.origin || S.origin.longitude !== origin.longitude || S.origin.latitude !== origin.latitude) return;
+      S.origin.name = name;
+      syncMarkers();
+      renderStatus();
+      renderSubtitle();
+    }).catch(() => {});
+  }
+
+  function renderStatus() {
+    if (!status) return;
+    UI.clear(status);
+    if (S.move) status.appendChild(UI.el('span', { class: 'pill pick', text: 'Click the map to set the new start (Esc to cancel)' }));
+    if (S.busy) status.appendChild(UI.el('span', { class: 'pill', role: 'status' }, [UI.el('span', { class: 'spin', 'aria-hidden': 'true' }), S.busy]));
+  }
+
+  // ───────────── requests ─────────────
+
+  const change = UI.debounce(() => run(), 400);
+
+  async function run() {
+    if (S.readOnly || !S.origin) return;
+    const seq = ++S.seq;
+    S.userDriven = true;
+    S.busy = S.query ? 'Searching places…' : 'Updating area…';
+    $('app').setAttribute('aria-busy', 'true');
+    renderStatus();
+    showMessage();
+    const args = { origin: S.origin, travelMode: S.mode, avoid: S.avoid, units: S.units };
+    if (S.distance !== null) args.distanceBudgetInMeters = S.distance; else args.timeBudgetsMinutes = S.minutes.slice();
+    if (S.request.departAt) args.departAt = S.request.departAt;
+    if (S.request.optimizeRoute) args.optimizeRoute = S.request.optimizeRoute;
+    if (S.query) args.placesQuery = S.query;
+    try {
+      const res = await App.callTool('get_route_range', args, 60000);
+      if (seq !== S.seq) return;
+      const d = App.dataOf(res);
+      if (!d || d.kind !== 'reach') throw new Error('The reachable area could not be updated.');
+      apply(d);
+      announce();
+    } catch (err) {
+      if (seq !== S.seq) return;
+      showMessage('error', (err && err.message) || 'The reachable area could not be updated.', true);
+    } finally {
+      if (seq === S.seq) {
+        S.busy = '';
+        $('app').setAttribute('aria-busy', 'false');
+        renderStatus();
+      }
+    }
+  }
+
+  function announce() {
+    const labels = bandsAsc.filter((b) => b.geometry).map((b) => b.label).join(', ');
+    let text = 'The user is viewing the area reachable by ' + modeLabel(S.mode).toLowerCase() + ' from ' + S.origin.name + ' within ' + labels + '.';
+    if (S.query) text += ' ' + S.places.length + ' "' + S.query + '" place(s) were found inside the largest area.';
+    App.updateModelContext(text);
+  }
+
+  // ───────────── render ─────────────
+
+  function renderSubtitle() {
+    const parts = [S.origin ? S.origin.name : ''];
+    parts.push(modeLabel(S.mode));
+    const labels = bandsAsc.filter((b) => b.geometry).map((b) => b.label);
+    if (labels.length) parts.push(labels.join(', '));
+    $('subtitle').textContent = parts.filter(Boolean).join(' · ');
+  }
+
+  function syncMarkers() {
+    if (!map) return;
+    const markers = [{ id: 'origin', longitude: S.origin.longitude, latitude: S.origin.latitude, label: 'S', color: ORIGIN_COLOR, description: S.origin.name }];
+    S.places.forEach((p, i) => markers.push({ id: 'p' + i, longitude: p.longitude, latitude: p.latitude, label: String(i + 1), color: PLACE_COLOR, description: p.name }));
+    map.setMarkers(markers);
+  }
+
+  function apply(d) {
+    S.data = d;
+    S.origin = { longitude: d.origin.longitude, latitude: d.origin.latitude, name: d.origin.name || 'Start' };
+    bandsAsc = (d.bands || []).slice().sort((a, b) => (a.value || 0) - (b.value || 0));
+    S.places = (d.places || []).filter((p) => typeof p.longitude === 'number' && typeof p.latitude === 'number');
+    S.query = d.placesQuery || '';
+    S.selected = null;
+
+    const drawn = bandsAsc.filter((b) => b.geometry);
+    map.setLayers(drawn.slice().reverse().map((b, i) => ({ id: 'band' + i, type: 'polygon', name: b.label, geometry: b.geometry, color: b.color || '#0078d4', fillOpacity: 0.2 })));
+    syncMarkers();
+    map.setPopup(null, null);
+    map.select(null);
+    if (S.fitNext || !S.userDriven) {
+      if (d.bbox) map.fitBounds(d.bbox); else map.fitContent();
+      S.fitNext = false;
+    }
+    $('fit').classList.remove('hidden');
+    map.container.setAttribute('aria-label', 'Map of areas reachable from ' + S.origin.name + '. Use the arrow keys to pan and plus and minus to zoom.');
+    renderSubtitle();
+    renderSummary();
+    renderPlaces();
+    sync();
+    if (!drawn.length) showMessage('warning', 'No reachable area was returned for this start point. Try moving it onto a road.');
+  }
+
+  function renderSummary() {
+    const box = UI.clear($('summary'));
+    const units = S.units;
+    const drawn = bandsAsc.filter((b) => b.geometry);
+    const first = drawn[0];
+    const last = drawn[drawn.length - 1];
+    const hasPlaces = S.query && S.places.length;
+
+    if (drawn.length > 1 && first.areaSqKm > 0) {
+      const ratio = last.areaSqKm / first.areaSqKm;
+      const text = (ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)) + '×';
+      box.appendChild(UI.el('p', { class: 'insight' }, [
+        UI.el('span', { class: 'semibold', text: last.label }), ' reaches ', UI.el('span', { class: 'semibold', text }), '         the area of ', UI.el('span', { class: 'semibold', text: first.label }), '.'
+      ]));
+    }
+
+    const table = UI.el('table', { class: 'grid band-table' });
+    table.appendChild(UI.el('caption', { class: 'sr-only', text: 'Reachable area by limit' }));
+    const head = UI.el('tr', {}, [UI.el('th', { scope: 'col', text: 'Limit' }), UI.el('th', { scope: 'col', class: 'num', text: 'Area' })]);
+    if (drawn.length > 1) head.appendChild(UI.el('th', { scope: 'col', class: 'num', text: 'vs ' + first.label }));
+    if (hasPlaces) head.appendChild(UI.el('th', { scope: 'col', class: 'num', text: 'Places' }));
+    table.appendChild(UI.el('thead', {}, head));
+    const body = UI.el('tbody');
+    bandsAsc.forEach((b) => {
+      const tr = UI.el('tr');
+      tr.appendChild(UI.el('th', { scope: 'row', style: 'font-weight:400;color:inherit;background:transparent;position:static' }, [UI.el('span', { class: 'sw', style: 'background:' + (b.color || '#0078d4') }), b.label || '']));
+      if (!b.geometry) {
+        tr.appendChild(UI.el('td', { class: 'num muted', text: 'No area' }));
+        if (drawn.length > 1) tr.appendChild(UI.el('td', { class: 'num muted', text: '–' }));
+      } else {
+        tr.appendChild(UI.el('td', { class: 'num', text: UI.fmtArea(b.areaSqKm || 0, units) }));
+        if (drawn.length > 1) {
+          const r = first.areaSqKm > 0 ? b.areaSqKm / first.areaSqKm : 0;
+          tr.appendChild(UI.el('td', { class: 'num', text: b === first ? '1×' : (r >= 10 ? Math.round(r) : r.toFixed(1)) + '×' }));
+        }
+      }
+      if (hasPlaces) tr.appendChild(UI.el('td', { class: 'num', text: String(S.places.filter((p) => b.geometry && inGeometry(p.longitude, p.latitude, b.geometry)).length) }));
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    box.appendChild(UI.el('div', { class: 'scroll', style: 'margin-top:8px' }, table));
+  }
+
+  function bandText(p) {
+    const b = bandOf(p);
+    return b ? 'Within ' + b.label : 'Edge of the area';
+  }
+
+  function renderPlaces() {
+    const box = UI.clear($('placesOut'));
+    $('placeInput').value = S.query || $('placeInput').value;
+    if (!S.query) return;
+    if (!S.places.length) { box.appendChild(UI.message('info', 'No "' + S.query + '" places were found inside the largest area.')); return; }
+    const sorted = bandsAsc.filter((b) => b.geometry);
+    const inFirst = sorted.length > 1 ? S.places.filter((p) => inGeometry(p.longitude, p.latitude, sorted[0].geometry)).length : null;
+    let text = S.places.length + ' "' + S.query + '" place' + (S.places.length === 1 ? '' : 's') + ' inside the area';
+    if (inFirst !== null) text += ' · ' + inFirst + ' within ' + sorted[0].label;
+    box.appendChild(UI.el('div', { class: 'small muted', style: 'margin-bottom:4px', text }));
+    const list = UI.el('ul', { class: 'list places-list', role: 'listbox', 'aria-label': 'Places found inside the area' });
+    S.places.forEach((p, i) => {
+      const li = UI.el('li', { class: 'list-item', role: 'option', tabindex: '0', 'aria-selected': 'false', id: 'place' + i }, [
+        UI.el('span', { class: 'pin-num', text: String(i + 1), 'aria-hidden': 'true' }),
+        UI.el('div', { class: 'grow' }, [
+          UI.el('div', { class: 'semibold', text: p.name || 'Place' }),
+          p.address ? UI.el('div', { class: 'small muted', text: p.address }) : null
+        ]),
+        UI.el('span', { class: 'badge nowrap', text: bandText(p) })
+      ]);
+      li.addEventListener('click', () => selectPlace(i, true));
+      li.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectPlace(i, true); }
+        else if (e.key === 'ArrowDown' && li.nextSibling) { e.preventDefault(); li.nextSibling.focus(); }
+        else if (e.key === 'ArrowUp' && li.previousSibling) { e.preventDefault(); li.previousSibling.focus(); }
+      });
+      list.appendChild(li);
+    });
+    box.appendChild(list);
+  }
+
+  function popupBase(title, lines) {
+    const node = UI.el('div', {});
+    node.addEventListener('pointerdown', (e) => e.stopPropagation());
+    node.appendChild(UI.el('div', { class: 't', text: title }));
+    lines.filter(Boolean).forEach((l) => node.appendChild(UI.el('div', { class: 'small muted', text: l })));
+    return node;
+  }
+
+  function placePopup(p) {
+    const node = popupBase(p.name || 'Place', [p.address, p.category, bandText(p)]);
+    const row = UI.el('div', { class: 'popup-actions' });
+    row.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Open in Bing Maps', on: { click: () => App.openLink(bingUrl(p.latitude, p.longitude, p.name)) } }));
+    if (p.url) {
+      const url = /^https?:\/\//i.test(p.url) ? p.url : 'https://' + p.url;
+      row.appendChild(UI.el('button', { class: 'btn small subtle', type: 'button', text: 'Website', on: { click: () => App.openLink(url) } }));
+    }
+    node.appendChild(row);
+    return node;
+  }
+
+  function originPopup() {
+    const node = popupBase(S.origin.name, [S.origin.latitude.toFixed(5) + ', ' + S.origin.longitude.toFixed(5)]);
+    const row = UI.el('div', { class: 'popup-actions' });
+    if (!S.readOnly) {
+      row.appendChild(UI.el('button', { class: 'btn small', type: 'button', text: 'Move start', on: { click: () => setMove(true) } }));
+      const moved = S.startOrigin && (S.startOrigin.longitude !== S.origin.longitude || S.startOrigin.latitude !== S.origin.latitude);
+      if (moved) row.appendChild(UI.el('button', { class: 'btn small subtle', type: 'button', text: 'Reset start', on: { click: () => setOrigin(S.startOrigin) } }));
+    }
+    if (row.firstChild) node.appendChild(row);
+    return node;
+  }
+
+  function selectPlace(i, scroll) {
+    const p = S.places[i];
+    if (!p) return;
+    S.selected = i;
+    map.select('p' + i, scroll);
+    map.setPopup('p' + i, placePopup(p));
+    document.querySelectorAll('#placesOut [role=option]').forEach((li, k) => {
+      li.setAttribute('aria-selected', String(k === i));
+      if (k === i && !scroll) li.scrollIntoView({ block: 'nearest' });
+    });
+    App.updateModelContext('The user selected "' + (p.name || 'a place') + '"' + (p.address ? ' (' + p.address + ')' : '') + ', which is ' + bandText(p).toLowerCase() + ' of the reachable area.');
+  }
+
+  // ───────────── start ─────────────
+
+  function build(d) {
+    S.readOnly = !!(d.request && d.request.readOnly);
+    S.request = d.request || {};
+    S.units = S.request.units === 'imperial' ? 'imperial' : 'metric';
+    S.mode = S.request.travelMode || 'driving';
+    S.avoid = (S.request.avoid || []).slice();
+    const bands = (d.bands || []).slice().sort((a, b) => (a.value || 0) - (b.value || 0));
+    const timeBands = bands.filter((b) => b.type === 'time');
+    S.distance = !S.readOnly && bands.length && bands[0].type === 'distance' ? bands[0].value : null;
+    S.minutes = timeBands.map((b) => Math.round(b.value / 60)).filter((m) => m > 0);
+    if (!S.readOnly && S.distance === null && !S.minutes.length) S.minutes = [10];
+    S.userDriven = false;
+    S.fitNext = true;
+    S.startOrigin = { longitude: d.origin.longitude, latitude: d.origin.latitude, name: d.origin.name || 'Start' };
+    S.query = '';
+    S.places = [];
+    S.move = false;
+
+    const stage = UI.clear($('stage'));
+    const mapEl = UI.el('div', { class: 'tall' });
+    status = UI.el('div', { class: 'map-status' });
+    stage.appendChild(mapEl);
+    const dark = App.hostContext && App.hostContext.theme === 'dark';
+    map = new MapView(mapEl, { style: dark ? 'dark' : 'road' });
+    mapEl.appendChild(status);
+    map.on('markerclick', (m) => {
+      if (m.id === 'origin') {
+        map.select('origin');
+        map.setPopup('origin', originPopup());
+        App.updateModelContext('The user selected the start point "' + S.origin.name + '".');
+      } else {
+        selectPlace(Number(m.id.slice(1)), false);
+      }
+    });
+    map.on('click', (e) => {
+      if (S.move) { setOrigin({ longitude: e.longitude, latitude: e.latitude }); return; }
+      map.select(null);
+      map.setPopup(null, null);
+      document.querySelectorAll('#placesOut [role=option]').forEach((li) => li.setAttribute('aria-selected', 'false'));
+    });
+    map.on('tileerror', () => {});
+
+    $('placesBox').classList.toggle('hidden', S.readOnly);
+    $('controls').classList.toggle('hidden', S.readOnly);
+    if (!S.readOnly) buildControls();
+  }
+
+  function render(result) {
+    const d = App.dataOf(result);
+    if (!d || d.kind !== 'reach' || !d.origin) {
+      UI.clear($('stage'));
+      showMessage(result && result.isError ? 'error' : 'info', (result && result.isError && App.textOf(result)) || 'No reachable area data was returned.');
+      return;
+    }
+    showMessage();
+    S.seq++;
+    build(d);
+    apply(d);
+    if (S.readOnly) {
+      const stats = UI.el('div', { class: 'stats', style: 'margin-top:8px' });
+      const b = bandsAsc.find((x) => x.geometry);
+      if (b) {
+        stats.appendChild(UI.el('div', { class: 'stat' }, [UI.el('div', { class: 'v', text: UI.fmtArea(b.areaSqKm || 0, S.units) }), UI.el('div', { class: 'l', text: 'Reachable area' })]));
+        stats.appendChild(UI.el('div', { class: 'stat' }, [UI.el('div', { class: 'v', text: b.label || '' }), UI.el('div', { class: 'l', text: 'Budget' })]));
+        stats.appendChild(UI.el('div', { class: 'stat' }, [UI.el('div', { class: 'v', text: modeLabel(S.request.travelMode || 'car') }), UI.el('div', { class: 'l', text: 'Vehicle' })]));
+        $('summary').appendChild(stats);
+      }
+    }
+    App.reportSize();
+  }
+
+  // ───────────── page wiring ─────────────
+
+  $('fit').addEventListener('click', () => { if (map) { map.fitBounds(S.data && S.data.bbox ? S.data.bbox : map.bboxOfContent()); } });
+
+  PLACE_CHIPS.forEach(([label, query]) => {
+    const c = chip(label, false, () => { $('placeInput').value = query; search(query); });
+    c.dataset.q = query.toLowerCase();
+    $('placeChips').appendChild(c);
+  });
+
+  function search(q) {
+    S.query = (q || '').trim();
+    if (!S.query) { clearPlaces(); return; }
+    S.fitNext = false;
+    sync();
+    run();
+  }
+
+  function clearPlaces() {
+    S.seq++;
+    S.busy = '';
+    S.query = '';
+    S.places = [];
+    $('placeInput').value = '';
+    renderStatus();
+    syncMarkers();
+    if (map) map.setPopup(null, null);
+    renderSummary();
+    renderPlaces();
+    sync();
+  }
+
+  $('placeGo').addEventListener('click', () => search($('placeInput').value));
+  $('placeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); search($('placeInput').value); } });
+  $('placeClear').addEventListener('click', clearPlaces);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.move) setMove(false); });
+
+  App.on('context', (ctx) => {
+    if (map && ctx && ctx.theme && !S.themeLocked) map.setStyle(ctx.theme === 'dark' ? 'dark' : 'road');
+  });
+  App.on('result', render);
+  App.on('cancelled', () => showMessage('warning', 'The request was cancelled.'));
+  App.init({ name: 'reach' }).catch(() => showMessage('error', 'The reachable area view could not start.'));
+})();
+</script>
+</body>
+</html>
