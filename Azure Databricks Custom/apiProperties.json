@@ -1,0 +1,70 @@
+{
+    "properties": {
+        "connectionParameters": {
+            "token": {
+                "type": "oauthSetting",
+                "oAuthSettings": {
+                    "identityProvider": "oauth2",
+                    "clientId": "[YOUR_CLIENT_ID]",
+                    "scopes": [
+                        "2ff814a6-3304-4ab8-85cb-cd0e6f879c1d/user_impersonation offline_access"
+                    ],
+                    "redirectMode": "GlobalPerConnector",
+                    "redirectUrl": "[YOUR_REDIRECT_URL]",
+                    "properties": {
+                        "IsFirstParty": "False",
+                        "IsOnbehalfofLoginSupported": false
+                    },
+                    "customParameters": {
+                        "AuthorizationUrl": {
+                            "value": "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize"
+                        },
+                        "TokenUrl": {
+                            "value": "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token"
+                        },
+                        "RefreshUrl": {
+                            "value": "https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token"
+                        }
+                    }
+                },
+                "uiDefinition": {
+                    "displayName": "Sign in with Microsoft Entra ID",
+                    "description": "Sign in with your Azure Databricks account. No server hostname or HTTP path needed."
+                }
+            }
+        },
+        "iconBrandColor": "#da3b01",
+        "policyTemplateInstances": [
+            {
+                "templateId": "dynamichosturl",
+                "title": "Set workspace host from environment variable",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.urlTemplate": "https://@environmentVariables(\"new_DatabricksWorkspaceHost\")"
+                }
+            },
+            {
+                "templateId": "setheader",
+                "title": "Send SQL warehouse HTTP path from environment variable",
+                "parameters": {
+                    "x-ms-apimTemplateParameter.name": "x-databricks-http-path",
+                    "x-ms-apimTemplateParameter.value": "@environmentVariables(\"new_DatabricksSqlHttpPath\")",
+                    "x-ms-apimTemplateParameter.existsAction": "override",
+                    "x-ms-apimTemplate-policySection": "Request",
+                    "x-ms-apimTemplate-operationName": [
+                        "InvokeMCP",
+                        "ExecuteStatement"
+                    ]
+                }
+            }
+        ],
+        "capabilities": [
+            "actions"
+        ],
+        "publisher": "Troy Taylor",
+        "stackOwner": "Troy Taylor",
+        "scriptOperations": [
+            "InvokeMCP",
+            "ExecuteStatement"
+        ]
+    }
+}
