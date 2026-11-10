@@ -1,0 +1,1025 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "M365 Message Center",
+    "description": "Read Microsoft 365 Message Center posts with the Microsoft Graph service communications API. List and search upcoming changes, get a post's full text, list attachments, and mark posts read, archived or favorited. Includes MCP support for Copilot Studio agents.",
+    "version": "1.0",
+    "contact": {
+      "name": "Troy Taylor",
+      "email": "troy@troystaylor.com",
+      "url": "https://github.com/troystaylor"
+    }
+  },
+  "host": "graph.microsoft.com",
+  "basePath": "/v1.0",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/admin/serviceAnnouncement/messages": {
+      "get": {
+        "summary": "List Message Center Posts",
+        "description": "List Message Center posts for your tenant, most recently changed first, with a short summary of each. Filter by service, category, severity, major changes, modified date or action deadline, or search by keyword. One call scans up to 500 posts.",
+        "operationId": "ListMessages",
+        "parameters": [
+          {
+            "name": "service",
+            "in": "query",
+            "description": "Affected service name exactly as Message Center lists it, for example Microsoft Teams, Exchange Online or SharePoint Online.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Service"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Plan for change, Prevent or fix issue, or Stay informed.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "planForChange",
+              "preventOrFixIssue",
+              "stayInformed"
+            ],
+            "x-ms-summary": "Category"
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "The severity of the post.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "normal",
+              "high",
+              "critical"
+            ],
+            "x-ms-summary": "Severity"
+          },
+          {
+            "name": "majorChangeOnly",
+            "in": "query",
+            "description": "Return only posts marked as a major change.",
+            "required": false,
+            "type": "boolean",
+            "default": false,
+            "x-ms-summary": "Major Changes Only"
+          },
+          {
+            "name": "modifiedSince",
+            "in": "query",
+            "description": "Only posts published or updated on or after this date or date-time, for example 2026-11-01.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Modified Since"
+          },
+          {
+            "name": "actionDueBefore",
+            "in": "query",
+            "description": "Only posts with an action-required deadline between now and this date, for example 2026-12-31. Results are sorted soonest first.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Action Due Before"
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Text to look for in the post title or body. Not case-sensitive.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Keyword"
+          },
+          {
+            "name": "top",
+            "in": "query",
+            "description": "Maximum number of posts to return, from 1 to 50.",
+            "required": false,
+            "type": "integer",
+            "default": 20,
+            "x-ms-summary": "Max Posts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The matching posts.",
+            "schema": {
+              "$ref": "#/definitions/MessageList"
+            }
+          },
+          "400": {
+            "description": "A filter value was invalid."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          },
+          "429": {
+            "description": "Too many requests - Microsoft Graph throttled the call."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/{messageId}": {
+      "get": {
+        "summary": "Get Message Center Post",
+        "description": "Get one Message Center post: full text, links, tags, affected services, dates, action-required deadline, and your read, archived and favorite status.",
+        "operationId": "GetMessage",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "description": "The post to get. Pick it from the list, or enter its ID, for example MC123456.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Post",
+            "x-ms-dynamic-values": {
+              "operationId": "GetMessageDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The post.",
+            "schema": {
+              "$ref": "#/definitions/MessageDetail"
+            }
+          },
+          "400": {
+            "description": "The post ID was invalid."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          },
+          "404": {
+            "description": "Post not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/{messageId}/attachments": {
+      "get": {
+        "summary": "List Post Attachments",
+        "description": "List the attachments of a Message Center post.",
+        "operationId": "ListMessageAttachments",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "description": "The post whose attachments to list. Pick it from the list, or enter its ID, for example MC123456.",
+            "required": true,
+            "type": "string",
+            "x-ms-url-encoding": "single",
+            "x-ms-summary": "Post",
+            "x-ms-dynamic-values": {
+              "operationId": "GetMessageDropdown",
+              "value-path": "id",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The post's attachments.",
+            "schema": {
+              "$ref": "#/definitions/AttachmentList"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          },
+          "404": {
+            "description": "Post not found."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/markRead": {
+      "post": {
+        "summary": "Mark Posts Read",
+        "description": "Mark Message Center posts as read for the signed-in user. Only your own view changes.",
+        "operationId": "MarkMessagesRead",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MessageIdsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "True when the status was updated.",
+            "schema": {
+              "$ref": "#/definitions/StatusResult"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/markUnread": {
+      "post": {
+        "summary": "Mark Posts Unread",
+        "description": "Mark Message Center posts as unread for the signed-in user. Only your own view changes.",
+        "operationId": "MarkMessagesUnread",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MessageIdsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "True when the status was updated.",
+            "schema": {
+              "$ref": "#/definitions/StatusResult"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/archive": {
+      "post": {
+        "summary": "Archive Posts",
+        "description": "Archive Message Center posts for the signed-in user. Only your own view changes.",
+        "operationId": "ArchiveMessages",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MessageIdsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "True when the status was updated.",
+            "schema": {
+              "$ref": "#/definitions/StatusResult"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/unarchive": {
+      "post": {
+        "summary": "Unarchive Posts",
+        "description": "Move archived Message Center posts back to your inbox for the signed-in user.",
+        "operationId": "UnarchiveMessages",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MessageIdsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "True when the status was updated.",
+            "schema": {
+              "$ref": "#/definitions/StatusResult"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/favorite": {
+      "post": {
+        "summary": "Favorite Posts",
+        "description": "Mark Message Center posts as favorites for the signed-in user.",
+        "operationId": "FavoriteMessages",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MessageIdsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "True when the status was updated.",
+            "schema": {
+              "$ref": "#/definitions/StatusResult"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/admin/serviceAnnouncement/messages/unfavorite": {
+      "post": {
+        "summary": "Unfavorite Posts",
+        "description": "Remove the favorite mark from Message Center posts for the signed-in user.",
+        "operationId": "UnfavoriteMessages",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MessageIdsRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "True when the status was updated.",
+            "schema": {
+              "$ref": "#/definitions/StatusResult"
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/trigger/messages": {
+      "get": {
+        "summary": "When a Message Center post is published or updated",
+        "description": "Fires when a Message Center post is published or updated. Power Automate checks for changes on a schedule, so a flow starts within a few minutes of a post changing. When you turn the flow on, the newest post sets the starting point and does not start the flow.",
+        "operationId": "OnMessageCenterPost",
+        "x-ms-trigger": "batch",
+        "x-ms-trigger-metadata": {
+          "mode": "polling",
+          "kind": "query"
+        },
+        "x-ms-trigger-hint": "To see it work, wait for Microsoft to publish or update a Message Center post that matches your filters.",
+        "x-ms-visibility": "important",
+        "parameters": [
+          {
+            "name": "service",
+            "in": "query",
+            "description": "Only posts that affect this service, for example Microsoft Teams, Exchange Online or SharePoint Online.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Service"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Plan for change, Prevent or fix issue, or Stay informed.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "planForChange",
+              "preventOrFixIssue",
+              "stayInformed"
+            ],
+            "x-ms-summary": "Category"
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "The severity of the post.",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "normal",
+              "high",
+              "critical"
+            ],
+            "x-ms-summary": "Severity"
+          },
+          {
+            "name": "majorChangeOnly",
+            "in": "query",
+            "description": "Only posts marked as a major change.",
+            "required": false,
+            "type": "boolean",
+            "default": false,
+            "x-ms-summary": "Major Changes Only"
+          },
+          {
+            "name": "newOnly",
+            "in": "query",
+            "description": "Skip posts Microsoft revised after publishing. These carry the Updated message tag or an (Updated) title prefix. Message Center has no creation date, so this relies on that tag.",
+            "required": false,
+            "type": "boolean",
+            "default": false,
+            "x-ms-summary": "New Posts Only"
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Only posts whose title or body contains this text. Not case-sensitive.",
+            "required": false,
+            "type": "string",
+            "x-ms-summary": "Keyword"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "Set by the flow. The last modified time of the newest post already seen.",
+            "required": false,
+            "type": "string",
+            "default": "1970-01-01T00:00:00Z",
+            "x-ms-visibility": "internal",
+            "x-ms-summary": "Since",
+            "x-ms-trigger-value": {
+              "value-collection": "value",
+              "value-path": "lastModifiedDateTime"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Posts published or updated since the previous check, newest first.",
+            "schema": {
+              "$ref": "#/definitions/MessageTriggerList"
+            }
+          },
+          "202": {
+            "description": "No new or updated posts."
+          },
+          "400": {
+            "description": "A filter value was invalid."
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          },
+          "403": {
+            "description": "Forbidden - The signed-in user lacks an admin role that can read Message Center, or admin consent is missing."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/metadata/messages": {
+      "get": {
+        "summary": "Get Post List",
+        "description": "Internal operation that backs the post dropdown. Returns the IDs and titles of posts from the last 90 days.",
+        "operationId": "GetMessageDropdown",
+        "x-ms-visibility": "internal",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Post list for the dropdown.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Post ID"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Post ID and title"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or token."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ]
+      }
+    },
+    "/": {
+      "post": {
+        "summary": "Invoke M365 Message Center MCP",
+        "description": "Model Context Protocol endpoint for Copilot Studio. Handles JSON-RPC 2.0 requests for the list posts, get post, list attachments and set post status tools.",
+        "operationId": "InvokeMCP",
+        "parameters": [],
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "MCP request processed successfully.",
+            "schema": {
+              "type": "object"
+            }
+          },
+          "400": {
+            "description": "Invalid MCP request format."
+          },
+          "500": {
+            "description": "MCP processing error."
+          }
+        },
+        "security": [
+          {
+            "oauth2": [
+              "https://graph.microsoft.com/.default"
+            ]
+          }
+        ],
+        "x-ms-agentic-protocol": "mcp-streamable-1.0"
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2": {
+      "type": "oauth2",
+      "flow": "accessCode",
+      "authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+      "tokenUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      "scopes": {
+        "https://graph.microsoft.com/.default": "Read Message Center posts and manage your read status"
+      }
+    }
+  },
+  "x-ms-connector-metadata": [
+    {
+      "propertyName": "Website",
+      "propertyValue": "https://learn.microsoft.com/graph/api/resources/service-communications-api-overview"
+    },
+    {
+      "propertyName": "Privacy policy",
+      "propertyValue": "https://privacy.microsoft.com/privacystatement"
+    },
+    {
+      "propertyName": "Categories",
+      "propertyValue": "IT Operations;Productivity"
+    }
+  ],
+  "definitions": {
+    "MessageSummary": {
+      "type": "object",
+      "description": "A Message Center post with a short summary.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The post ID, for example MC123456.",
+          "x-ms-summary": "Post ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "The post title.",
+          "x-ms-summary": "Title"
+        },
+        "category": {
+          "type": "string",
+          "description": "PlanForChange, PreventOrFixIssue or StayInformed.",
+          "x-ms-summary": "Category"
+        },
+        "severity": {
+          "type": "string",
+          "description": "Normal, High or Critical.",
+          "x-ms-summary": "Severity"
+        },
+        "services": {
+          "type": "array",
+          "description": "The services the post affects.",
+          "x-ms-summary": "Services",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags such as New feature, Updated message or Retirement.",
+          "x-ms-summary": "Tags",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isMajorChange": {
+          "type": "boolean",
+          "description": "Whether the post describes a major change.",
+          "x-ms-summary": "Major Change"
+        },
+        "startDateTime": {
+          "type": "string",
+          "description": "When the post starts.",
+          "x-ms-summary": "Start"
+        },
+        "endDateTime": {
+          "type": "string",
+          "description": "When the post ends.",
+          "x-ms-summary": "End"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "description": "When the post was last updated.",
+          "x-ms-summary": "Last Modified"
+        },
+        "actionRequiredByDateTime": {
+          "type": "string",
+          "description": "The deadline for any action you need to take. Empty when no action is required.",
+          "x-ms-summary": "Action Required By"
+        },
+        "hasAttachments": {
+          "type": "boolean",
+          "description": "Whether the post has attachments.",
+          "x-ms-summary": "Has Attachments"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether you marked the post as read.",
+          "x-ms-summary": "Is Read"
+        },
+        "isArchived": {
+          "type": "boolean",
+          "description": "Whether you archived the post.",
+          "x-ms-summary": "Is Archived"
+        },
+        "isFavorited": {
+          "type": "boolean",
+          "description": "Whether you marked the post as a favorite.",
+          "x-ms-summary": "Is Favorited"
+        },
+        "adminCenterUrl": {
+          "type": "string",
+          "description": "Link to the post in the Microsoft 365 admin center.",
+          "x-ms-summary": "Admin Center Link"
+        },
+        "summary": {
+          "type": "string",
+          "description": "The first part of the post text.",
+          "x-ms-summary": "Summary"
+        }
+      }
+    },
+    "MessageList": {
+      "type": "object",
+      "description": "Message Center posts that match the filters.",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "description": "How many posts are in the messages list.",
+          "x-ms-summary": "Count"
+        },
+        "totalMatches": {
+          "type": "integer",
+          "description": "How many posts matched before the Max Posts limit was applied.",
+          "x-ms-summary": "Total Matches"
+        },
+        "scannedCount": {
+          "type": "integer",
+          "description": "How many posts were examined.",
+          "x-ms-summary": "Scanned Count"
+        },
+        "truncated": {
+          "type": "boolean",
+          "description": "True when the scan stopped at its limit and more posts exist. Narrow the filters.",
+          "x-ms-summary": "Truncated"
+        },
+        "messages": {
+          "type": "array",
+          "description": "The posts, most recently changed first.",
+          "x-ms-summary": "Posts",
+          "items": {
+            "$ref": "#/definitions/MessageSummary"
+          }
+        }
+      }
+    },
+    "MessageTriggerList": {
+      "type": "object",
+      "description": "Posts that changed since the previous check.",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "The posts, newest first.",
+          "x-ms-summary": "Posts",
+          "items": {
+            "$ref": "#/definitions/MessageSummary"
+          }
+        }
+      }
+    },
+    "MessageDetail": {
+      "type": "object",
+      "description": "A Message Center post with its full text.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The post ID, for example MC123456.",
+          "x-ms-summary": "Post ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "The post title.",
+          "x-ms-summary": "Title"
+        },
+        "category": {
+          "type": "string",
+          "description": "PlanForChange, PreventOrFixIssue or StayInformed.",
+          "x-ms-summary": "Category"
+        },
+        "severity": {
+          "type": "string",
+          "description": "Normal, High or Critical.",
+          "x-ms-summary": "Severity"
+        },
+        "services": {
+          "type": "array",
+          "description": "The services the post affects.",
+          "x-ms-summary": "Services",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags such as New feature, Updated message or Retirement.",
+          "x-ms-summary": "Tags",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isMajorChange": {
+          "type": "boolean",
+          "description": "Whether the post describes a major change.",
+          "x-ms-summary": "Major Change"
+        },
+        "startDateTime": {
+          "type": "string",
+          "description": "When the post starts.",
+          "x-ms-summary": "Start"
+        },
+        "endDateTime": {
+          "type": "string",
+          "description": "When the post ends.",
+          "x-ms-summary": "End"
+        },
+        "lastModifiedDateTime": {
+          "type": "string",
+          "description": "When the post was last updated.",
+          "x-ms-summary": "Last Modified"
+        },
+        "actionRequiredByDateTime": {
+          "type": "string",
+          "description": "The deadline for any action you need to take. Empty when no action is required.",
+          "x-ms-summary": "Action Required By"
+        },
+        "hasAttachments": {
+          "type": "boolean",
+          "description": "Whether the post has attachments.",
+          "x-ms-summary": "Has Attachments"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether you marked the post as read.",
+          "x-ms-summary": "Is Read"
+        },
+        "isArchived": {
+          "type": "boolean",
+          "description": "Whether you archived the post.",
+          "x-ms-summary": "Is Archived"
+        },
+        "isFavorited": {
+          "type": "boolean",
+          "description": "Whether you marked the post as a favorite.",
+          "x-ms-summary": "Is Favorited"
+        },
+        "adminCenterUrl": {
+          "type": "string",
+          "description": "Link to the post in the Microsoft 365 admin center.",
+          "x-ms-summary": "Admin Center Link"
+        },
+        "bodyText": {
+          "type": "string",
+          "description": "The post text as plain text.",
+          "x-ms-summary": "Body Text"
+        },
+        "bodyTruncated": {
+          "type": "boolean",
+          "description": "True when the post text was cut at 20,000 characters.",
+          "x-ms-summary": "Body Truncated"
+        },
+        "links": {
+          "type": "array",
+          "description": "Links found in the post.",
+          "x-ms-summary": "Links",
+          "items": {
+            "type": "string"
+          }
+        },
+        "details": {
+          "type": "array",
+          "description": "Extra details the post carries, such as an external link.",
+          "x-ms-summary": "Details",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The detail name.",
+                "x-ms-summary": "Name"
+              },
+              "value": {
+                "type": "string",
+                "description": "The detail value.",
+                "x-ms-summary": "Value"
+              }
+            }
+          }
+        }
+      }
+    },
+    "AttachmentList": {
+      "type": "object",
+      "description": "The attachments of a post.",
+      "properties": {
+        "value": {
+          "type": "array",
+          "description": "The attachments.",
+          "x-ms-summary": "Attachments",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The attachment ID.",
+                "x-ms-summary": "Attachment ID"
+              },
+              "name": {
+                "type": "string",
+                "description": "The attachment file name.",
+                "x-ms-summary": "Name"
+              },
+              "contentType": {
+                "type": "string",
+                "description": "The attachment content type.",
+                "x-ms-summary": "Content Type"
+              },
+              "size": {
+                "type": "integer",
+                "description": "The attachment size in bytes.",
+                "x-ms-summary": "Size"
+              },
+              "lastModifiedDateTime": {
+                "type": "string",
+                "description": "When the attachment was last updated.",
+                "x-ms-summary": "Last Modified"
+              }
+            }
+          }
+        }
+      }
+    },
+    "MessageIdsRequest": {
+      "type": "object",
+      "required": [
+        "messageIds"
+      ],
+      "properties": {
+        "messageIds": {
+          "type": "array",
+          "description": "The IDs of the posts to update, for example MC123456.",
+          "x-ms-summary": "Post IDs",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "StatusResult": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "boolean",
+          "description": "True when the status was updated.",
+          "x-ms-summary": "Succeeded"
+        }
+      }
+    }
+  }
+}
