@@ -1,0 +1,86 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.29/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.29",
+  "version": "1.0.0",
+  "id": "${{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "Troy Taylor",
+    "websiteUrl": "https://troystaylor.com",
+    "privacyUrl": "https://troystaylor.com/privacy",
+    "termsOfUseUrl": "https://troystaylor.com/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "C3 AI${{APP_NAME_SUFFIX}}",
+    "full": "C3 AI (C3 Agentic AI Platform)"
+  },
+  "description": {
+    "short": "Explore, change and build on your C3 Agentic AI Platform applications through App MCP.",
+    "full": "Connects Microsoft 365 Copilot to a C3 Agentic AI Platform application through its App MCP server, and to the C3 Central MCP server for platform documentation. Skills cover exploring entity types and data, reading time series metrics, confirmed data changes, the developer loop (type information, package issues, tests, seed data) and building agent tools. Calls run as you under your C3 roles and are recorded in the application's MCP Monitor. Requires C3 Agentic AI Platform 8.9 or later with the mcpServer package; 8.10 and later include it by default."
+  },
+  "accentColor": "#0B2A4A",
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "${{C3_APP_MCP_SERVER_DOMAIN}}",
+    "mcp.c3.ai"
+  ],
+  "agentConnectors": [
+    {
+      "id": "c3-app-mcp",
+      "displayName": "C3 App MCP",
+      "description": "Tools and prompts exposed by your C3 Agentic AI Platform application through its App MCP server: entity data, entity types, metrics, tests, seed data and any custom tools you enable.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "${{C3_APP_MCP_SERVER_URL}}",
+          "authorization": {
+            "type": "ApiKeyPluginVault",
+            "referenceId": "${{C3_APP_MCP_API_KEY_REFERENCE_ID}}"
+          }
+        }
+      }
+    },
+    {
+      "id": "c3-central-mcp",
+      "displayName": "C3 Central MCP",
+      "description": "C3 platform documentation search, Type and Transform generation, and coding guidance from the C3 Central MCP server.",
+      "toolSource": {
+        "remoteMcpServer": {
+          "mcpServerUrl": "https://mcp.c3.ai/mcp/server",
+          "authorization": {
+            "type": "ApiKeyPluginVault",
+            "referenceId": "${{C3_CENTRAL_MCP_API_KEY_REFERENCE_ID}}"
+          }
+        }
+      }
+    }
+  ],
+  "agentSkills": [
+    {
+      "folder": "skills/c3-access"
+    },
+    {
+      "folder": "skills/c3-write-safety"
+    },
+    {
+      "folder": "skills/c3-explore-data"
+    },
+    {
+      "folder": "skills/c3-metrics"
+    },
+    {
+      "folder": "skills/c3-change-data"
+    },
+    {
+      "folder": "skills/c3-developer-loop"
+    },
+    {
+      "folder": "skills/c3-build-agent-tools"
+    }
+  ]
+}
