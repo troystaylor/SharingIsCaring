@@ -1,0 +1,48 @@
+# Imports a Copilot Studio agent solution and shares the connection it uses
+# with the Power Virtual Agents Service, so the agent works after deployment.
+trigger: none
+
+parameters:
+  - name: targetEnvironment
+    type: string
+    default: test
+    values: [test, prod]
+
+variables:
+  - group: alm-${{ parameters.targetEnvironment }}
+
+stages:
+  - stage: Deploy
+    jobs:
+      - job: ImportAndShare
+        pool: { vmImage: windows-latest }
+        steps:
+          - task: PowerPlatformToolInstaller@2
+
+          - task: PowerPlatformImportSolution@2
+            displayName: Import agent solution
+            inputs:
+              authenticationType: PowerPlatformSPN
+              PowerPlatformSPN: $(PowerPlatformServiceConnection)
+              SolutionInputFile: $(Pipeline.Workspace)/drop/AgentSolution_managed.zip
+              UseDeploymentSettingsFile: true
+              DeploymentSettingsFile: $(Build.SourcesDirectory)/settings/${{ parameters.targetEnvironment }}.json
+              PublishWorkflows: true
+
+          - task: AzureCLI@2
+            displayName: Share connection with Power Virtual Agents Service
+            inputs:
+              azureSubscription: $(AzureServiceConnection)
+              scriptType: pscore
+              scriptLocation: scriptPath
+              scriptPath: $(Build.SourcesDirectory)/Share-ConnectionWithPVAS.ps1
+              arguments: >-
+                -EnvironmentId '$(PowerPlatformEnvironmentId)'
+                -ConnectorName '$(ConnectorName)'
+                -ConnectionName '$(ConnectionName)'
+
+          - task: PowerPlatformPublishCustomizations@2
+            displayName: Publish customizations
+            inputs:
+              authenticationType: PowerPlatformSPN
+              PowerPlatformSPN: $(PowerPlatformServiceConnection)
